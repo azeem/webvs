@@ -11,7 +11,7 @@ window.Webvs = (function() {
         this.components = options.components;
 
         this._initGl();
-        //this._initFrameBuffer();
+        this._initFrameBuffer();
     }
     extend(Webvs, Object, {
         _initGl: function() {
@@ -63,19 +63,19 @@ window.Webvs = (function() {
             var drawFrame = function() {
                 // bind the framebuffer
                 //this.bindFrameBuffer(this.frameBuffer);
-                //gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[this.curFrameTexture]);
+                gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[this.curFrameTexture]);
 
                 for(var i = 0;i < components.length;i++) {
                     var component = components[i];
                     gl.useProgram(component.program);
-                    //if(component.swapFrame) {
-                        //var oldTexture = this.curFrameTexture;
-                        //this.curFrameTexture = (++this.curFrameTexture) % 2;
-                        //gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[this.curFrameTexture]);
-                        //component.update(this.frameTextures[oldTexture]);
-                    //} else {
+                    if(component.swapFrame) {
+                        var oldTexture = this.curFrameTexture;
+                        this.curFrameTexture = (++this.curFrameTexture) % 2;
+                        gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[this.curFrameTexture]);
+                        component.update(this.frameTextures[oldTexture]);
+                    } else {
                         component.updateComponent();
-                    //}
+                    }
                 }
                 requestAnimationFrame(drawFrame);
             }
@@ -127,7 +127,7 @@ window.Webvs = (function() {
             gl.linkProgram(program);
 
             if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                throw new Error("Program link program");
+                throw new Error("Program link Error: " + gl.getProgramInfoLog(program));
             }
 
             this.vertex = vertex;
@@ -147,6 +147,72 @@ window.Webvs = (function() {
         }
     });
 
+    /**
+     * Trans component base class
+     * @param fragmentSrc
+     * @constructor
+     */
+    function Trans(fragmentSrc) {
+        var vertextSrc = [
+            "attribute vec2 a_texCoord;",
+            "varying vec2 v_texCoord;",
+            "void main() {",
+            "    v_texCoord = a_texCoord;",
+            "}"
+        ].join("\n");
+        Trans.super.constructor.call(this, vertextSrc, fragmentSrc);
+    }
+    extend(Trans, Component, {
+        swapFrame: true,
+
+        init: function() {
+            var gl = this.gl;
+            this.texCoordBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+            gl.bufferData(
+                gl.ARRAY_BUFFER,
+                new Float32Array([
+                    0.0,  0.0,
+                    1.0,  0.0,
+                    0.0,  1.0,
+                    0.0,  1.0,
+                    1.0,  0.0,
+                    1.0,  1.0
+                ]),
+                gl.STATIC_DRAW
+            );
+
+            this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_texCoord");
+            this.curRenderLocation = gl.getUniformLocation(this.program, "u_curRender");
+        },
+
+        update: function(texture) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE2D, texture);
+            gl.uniform1i(this.curRenderLocation);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+            gl.enableVertexAttribArray(this.vertexPositionLocation);
+            gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+    });
+
+    function Invert() {
+        var fragmentSrc = [
+            "precision mediump float;",
+            "uniform vec2 u_resolution;",
+            "uniform sampler2D u_curRender;",
+            "varying vec2 v_texCoord;",
+            "void main() {",
+            "   vec4 texColor = texture2D(u_curRender, v_texCoord); ",
+            "   gl_FragColor = texColor.bgra;",
+            "}"
+        ].join("\n");
+        Invert.super.constructor.call(this, fragmentSrc);
+    }
+    extend(Invert, Trans);
+
     /** Utility stuff **/
 
     function extend(C, P, members) {
@@ -155,8 +221,10 @@ window.Webvs = (function() {
         C.prototype = new F();
         C.super = P.prototype;
         C.prototype.constructor = C;
-        for(var key in members) {
-            C.prototype[key] = members[key];
+        if(members) {
+            for(var key in members) {
+                C.prototype[key] = members[key];
+            }
         }
     }
 
@@ -182,5 +250,7 @@ window.Webvs = (function() {
 
     Webvs.extend = extend;
     Webvs.Component = Component;
+    Webvs.Trans = Trans;
+    Webvs.Invert = Invert;
     return Webvs;
 })();
