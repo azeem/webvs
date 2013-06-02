@@ -8,10 +8,10 @@ window.Webvs = (function() {
     function Webvs(options) {
         checkRequiredOptions(options, ["canvas", "components"]);
         this.canvas = options.canvas;
+        this.components = options.components;
 
         this._initGl();
-        this._initComponents(options.components);
-        this._initFrameBuffer();
+        //this._initFrameBuffer();
     }
     extend(Webvs, Object, {
         _initGl: function() {
@@ -24,13 +24,6 @@ window.Webvs = (function() {
             } catch(e) {
                 throw new Error("Couldnt get webgl context");
             }
-        },
-        _initComponents: function(componentOpts) {
-            var components = [];
-            for(var i = 0;i < componentOpts.length;i++) {
-                components.push(new Component(this.gl, this.resolution, componentOpts[i]));
-            }
-            this.components = components;
         },
         _initFrameBuffer: function() {
             var gl = this.gl;
@@ -64,7 +57,7 @@ window.Webvs = (function() {
 
             // initialize all the components
             for(var i = 0;i < components.length;i++) {
-                components[i].init();
+                components[i].initComponent(gl, this.resolution);
             }
 
             var drawFrame = function() {
@@ -81,7 +74,7 @@ window.Webvs = (function() {
                         //gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[this.curFrameTexture]);
                         //component.update(this.frameTextures[oldTexture]);
                     //} else {
-                        component.update();
+                        component.updateComponent();
                     //}
                 }
                 requestAnimationFrame(drawFrame);
@@ -98,16 +91,32 @@ window.Webvs = (function() {
      * @param options
      * @constructor
      */
-    function Component(gl, resolution, options) {
-        checkRequiredOptions(options, ["vertex", "fragment"]);
-        this.gl = gl;
-        this.userInit = options.init || noop;
-        this.userUpdate = options.update || noop;
-        this.resolution = resolution;
-        this.swapFrame = options.swapFrame || false;
-        this._compileProgram(options.vertex, options.fragment);
+    function Component(vertexSrc, fragmentSrc) {
+        this.vertexSrc = vertexSrc;
+        this.fragmentSrc = fragmentSrc;
     }
     extend(Component, Object, {
+        swapFrame: false,
+
+        /**
+         * Initialize the component. Called once before animation starts
+         */
+        initComponent: function(gl, resolution) {
+            this.gl = gl;
+            this.resolution = resolution;
+            this._compileProgram(this.vertexSrc, this.fragmentSrc);
+            this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
+            this.init();
+        },
+
+        /**
+         * Update the screen. Called for every frame of the animation
+         */
+        updateComponent: function() {
+            this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
+            this.update();
+        },
+
         _compileProgram: function(vertexSrc, fragmentSrc) {
             var gl = this.gl;
             var vertex = this._compileShader(vertexSrc, gl.VERTEX_SHADER);
@@ -135,22 +144,6 @@ window.Webvs = (function() {
                 throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
             }
             return shader;
-        },
-
-        /**
-         * Initialize the component. Called once when animation starts
-         */
-        init: function() {
-            this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
-            this.userInit();
-        },
-
-        /**
-         * Update the screen. Called for every frame of the animation
-         */
-        update: function() {
-            this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
-            this.userUpdate();
         }
     });
 
@@ -187,6 +180,7 @@ window.Webvs = (function() {
         }
     );
 
+    Webvs.extend = extend;
     Webvs.Component = Component;
     return Webvs;
 })();

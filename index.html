@@ -4,63 +4,62 @@
     <title>Webvs Demo</title>
     <script type="text/javascript" src="webvs.js"></script>
 
-    <script id="my-vertex-shader" type="x-shader/x-vertex">
-        attribute vec2 a_position;
-        uniform float u_i;
-        uniform vec2 u_resolution;
-
-        void main() {
-            gl_Position = vec4(((((a_position+u_i)/u_resolution)*2.0)-1.0)*vec2(1,-1), 0, 1);
-        }
-    </script>
-
-    <script id="my-fragment-shader" type="x-shader/x-fragment">
-        void main() {
-            gl_FragColor = vec4(0,1,0,1);  // green
-        }
-    </script>
-
     <script type="text/javascript">
-        function BoxEffect(boxArray) {
-            return {
-                vertex: document.getElementById("my-vertex-shader").textContent,
-                fragment: document.getElementById("my-fragment-shader").textContent,
-                init: function() {
-                    var gl = this.gl;
-
-                    console.log("init called")
-                    // initialize buffers
-                    this.buffer = gl.createBuffer();
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-                    gl.bufferData(
-                            gl.ARRAY_BUFFER,
-                            boxArray,
-                            gl.STATIC_DRAW
-                    );
-
-                    // initialize locations
-                    this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
-                    this.incrementLocation = gl.getUniformLocation(this.program, "u_i")
-                    this.increment = 0;
-                },
-                update: function() {
-                    var gl = this.gl;
-                    //console.log("update called")
-                    gl.uniform1f(this.incrementLocation, this.increment);
-                    this.increment = (this.increment + 1)%200;
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-                    gl.enableVertexAttribArray(this.vertexPositionLocation);
-                    gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
-                    gl.drawArrays(gl.TRIANGLES, 0, 6);
-                }
-            }
+        function Box(boxArray) {
+            this.boxArray = boxArray
+            Box.super.constructor.call(this,
+                [
+                    "attribute vec2 a_position;",
+                    "uniform float u_i;",
+                    "uniform vec2 u_resolution;",
+                    "void main() {",
+                    "   gl_Position = vec4(((((a_position+u_i)/u_resolution)*2.0)-1.0)*vec2(1,-1), 0, 1);",
+                    "}"
+                ].join("\n"),
+                [
+                    "void main() {",
+                    "   gl_FragColor = vec4(0,1,0,1);",
+                    "}"
+                ].join("\n")
+            );
         }
+        Webvs.extend(Box, Webvs.Component, {
+            init: function() {
+                var gl = this.gl;
+                console.log("init called")
+                // initialize buffers
+                this.buffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+                gl.bufferData(
+                        gl.ARRAY_BUFFER,
+                        this.boxArray,
+                        gl.STATIC_DRAW
+                );
+
+                // initialize locations
+                this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
+                this.incrementLocation = gl.getUniformLocation(this.program, "u_i")
+                this.increment = 0;
+            },
+
+            update: function() {
+                var gl = this.gl;
+
+                //console.log("update called")
+                gl.uniform1f(this.incrementLocation, this.increment);
+                this.increment = (this.increment + 1)%200;
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+                gl.enableVertexAttribArray(this.vertexPositionLocation);
+                gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            }
+        });
 
         function onLoad() {
             var webvs = new Webvs({
                 canvas: document.getElementById("my-canvas"),
                 components: [
-                        BoxEffect(
+                        new Box(
                             new Float32Array([
                                 10, 20,
                                 80, 20,
@@ -70,7 +69,7 @@
                                 80, 30
                             ])
                         ),
-                        BoxEffect(
+                        new Box(
                             new Float32Array([
                                 100, 200,
                                 180, 200,
