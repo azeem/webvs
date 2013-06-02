@@ -1,16 +1,19 @@
 window.Webvs = (function() {
 
-    // Main Webvs object
+    /**
+     * Main Webvs class
+     * @param options
+     * @constructor
+     */
     function Webvs(options) {
         checkRequiredOptions(options, ["canvas", "components"]);
         this.canvas = options.canvas;
 
         this._initGl();
         this._initComponents(options.components);
-        //this._initFrameBuffer();
+        this._initFrameBuffer();
     }
-    Webvs.prototype = {
-        // Initializes the webgl
+    extend(Webvs, Object, {
         _initGl: function() {
             try {
                 this.gl = this.canvas.getContext("experimental-webgl");
@@ -50,6 +53,9 @@ window.Webvs = (function() {
             this.curFrameTexture = 0;
         },
 
+        /**
+         * Starts the animation
+         */
         start: function() {
             var gl = this.gl;
             var components = this.components;
@@ -83,8 +89,15 @@ window.Webvs = (function() {
             requestAnimationFrame(drawFrame);
             drawFrame();
         }
-    }
+    });
 
+    /**
+     * Component base class
+     * @param gl gl context
+     * @param resolution resolution of the canvas
+     * @param options
+     * @constructor
+     */
     function Component(gl, resolution, options) {
         checkRequiredOptions(options, ["vertex", "fragment"]);
         this.gl = gl;
@@ -94,7 +107,7 @@ window.Webvs = (function() {
         this.swapFrame = options.swapFrame || false;
         this._compileProgram(options.vertex, options.fragment);
     }
-    Component.prototype = {
+    extend(Component, Object, {
         _compileProgram: function(vertexSrc, fragmentSrc) {
             var gl = this.gl;
             var vertex = this._compileShader(vertexSrc, gl.VERTEX_SHADER);
@@ -124,14 +137,33 @@ window.Webvs = (function() {
             return shader;
         },
 
+        /**
+         * Initialize the component. Called once when animation starts
+         */
         init: function() {
             this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
             this.userInit();
         },
 
+        /**
+         * Update the screen. Called for every frame of the animation
+         */
         update: function() {
             this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
             this.userUpdate();
+        }
+    });
+
+    /** Utility stuff **/
+
+    function extend(C, P, members) {
+        var F = function() {};
+        F.prototype = P.prototype;
+        C.prototype = new F();
+        C.super = P.prototype;
+        C.prototype.constructor = C;
+        for(var key in members) {
+            C.prototype[key] = members[key];
         }
     }
 
@@ -155,6 +187,6 @@ window.Webvs = (function() {
         }
     );
 
-
+    Webvs.Component = Component;
     return Webvs;
 })();
