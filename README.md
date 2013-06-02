@@ -1,1 +1,1 @@
-An experiment. Based on glsl.js
+A webgl experiment
