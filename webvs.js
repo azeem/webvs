@@ -27,7 +27,7 @@ window.Webvs = (function() {
         },
         _initFrameBuffer: function() {
             var gl = this.gl;
-            //var frameBuffer = gl.createFrameBuffer();
+            var framebuffer = gl.createFramebuffer();
             var textures = [];
             for(var i = 0;i < 2;i++) {
                 var texture = gl.createTexture();
@@ -41,7 +41,7 @@ window.Webvs = (function() {
                               0, gl.RGBA, gl.UNSIGNED_BYTE, null);
                 textures[i] = texture;
             }
-            //this.frameBuffer = frameBuffer;
+            this.framebuffer = framebuffer;
             this.frameTextures = textures;
             this.curFrameTexture = 0;
         },
@@ -53,26 +53,26 @@ window.Webvs = (function() {
             var gl = this.gl;
             var components = this.components;
 
-            gl.viewport(0, 0, this.resolution.width, this.resolution.height);
-
             // initialize all the components
             for(var i = 0;i < components.length;i++) {
                 components[i].initComponent(gl, this.resolution);
             }
 
+            var self = this;
             var drawFrame = function() {
                 // bind the framebuffer
-                //this.bindFrameBuffer(this.frameBuffer);
-                gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[this.curFrameTexture]);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
+                gl.viewport(0, 0, self.resolution.width, self.resolution.height);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, self.frameTextures[self.curFrameTexture], 0);
 
                 for(var i = 0;i < components.length;i++) {
                     var component = components[i];
                     gl.useProgram(component.program);
                     if(component.swapFrame) {
-                        var oldTexture = this.curFrameTexture;
-                        this.curFrameTexture = (++this.curFrameTexture) % 2;
-                        gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[this.curFrameTexture]);
-                        component.update(this.frameTextures[oldTexture]);
+                        var oldTexture = self.curFrameTexture;
+                        this.curFrameTexture = (++self.curFrameTexture) % 2;
+                        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, self.frameTextures[self.curFrameTexture], 0);
+                        component.updateComponent(self.frameTextures[oldTexture]);
                     } else {
                         component.updateComponent();
                     }
@@ -112,9 +112,9 @@ window.Webvs = (function() {
         /**
          * Update the screen. Called for every frame of the animation
          */
-        updateComponent: function() {
+        updateComponent: function(texture) {
             this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
-            this.update();
+            this.update(texture);
         },
 
         _compileProgram: function(vertexSrc, fragmentSrc) {
@@ -158,6 +158,7 @@ window.Webvs = (function() {
             "varying vec2 v_texCoord;",
             "void main() {",
             "    v_texCoord = a_texCoord;",
+            "    gl_Position = vec4((a_texCoord*2.0)-1.0, 0, 1);",
             "}"
         ].join("\n");
         Trans.super.constructor.call(this, vertextSrc, fragmentSrc);
@@ -187,9 +188,10 @@ window.Webvs = (function() {
         },
 
         update: function(texture) {
+            var gl = this.gl;
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE2D, texture);
-            gl.uniform1i(this.curRenderLocation);
+            gl.uniform1i(this.curRenderLocation, 0);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
             gl.enableVertexAttribArray(this.vertexPositionLocation);
