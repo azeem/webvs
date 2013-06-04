@@ -250,6 +250,11 @@ window.Webvs = (function() {
     }
     extend(Invert, Trans);
 
+    /**
+     * Applies a 3x3 convolution kernel
+     * @param kernel
+     * @constructor
+     */
     function ConvolutionBase(kernel) {
         var fragmentSrc = [
             "precision mediump float;",
@@ -300,6 +305,10 @@ window.Webvs = (function() {
 
     });
 
+    /**
+     * Emboss convolution
+     * @constructor
+     */
     function Emboss() {
         Emboss.super.constructor.call(this, [
             -2, -1,  0,
@@ -310,6 +319,10 @@ window.Webvs = (function() {
     extend(Emboss, ConvolutionBase);
 
 
+    /**
+     * Utility component that copies a texture to the screen
+     * @constructor
+     */
     function Copy() {
         var fragmentSrc = [
             "precision mediump float;",
