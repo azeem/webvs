@@ -250,6 +250,66 @@ window.Webvs = (function() {
     }
     extend(Invert, Trans);
 
+    function ConvolutionBase(kernel) {
+        var fragmentSrc = [
+            "precision mediump float;",
+            "uniform vec2 u_resolution;",
+            "uniform sampler2D u_curRender;",
+            "varying vec2 v_texCoord;",
+
+            "uniform float u_kernel[9];",
+            "uniform float u_kernelWeight;",
+            "void main() {",
+            "   vec2 onePixel = vec2(1.0, 1.0)/u_resolution;",
+            "   vec4 colorSum = texture2D(u_curRender, v_texCoord + onePixel * vec2(-1, 1)) * u_kernel[0] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(0, -1)) * u_kernel[1] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(1, -1)) * u_kernel[2] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(-1, 0)) * u_kernel[3] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(0, 0))  * u_kernel[4] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(1, 0))  * u_kernel[5] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(-1, 1)) * u_kernel[6] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(0, 1))  * u_kernel[7] + ",
+            "                   texture2D(u_curRender, v_texCoord + onePixel * vec2(1, 1))  * u_kernel[8];",
+            "   gl_FragColor = vec4((colorSum / u_kernelWeight).rgb, 1.0);",
+            "}"
+        ].join("\n");
+        this.kernel = kernel;
+        var kernelWeight = 0;
+        for(var i = 0;i < kernel.length;i++) {
+            kernelWeight += kernel[i];
+        }
+        this.kernelWeight = kernelWeight;
+        ConvolutionBase.super.constructor.call(this, fragmentSrc);
+    }
+    extend(ConvolutionBase, Trans, {
+        init: function() {
+            var gl = this.gl;
+
+            this.kernelLocation = gl.getUniformLocation(this.program, "u_kernel[0]");
+            this.kernelWeightLocation = gl.getUniformLocation(this.program, "u_kernelWeight");
+            ConvolutionBase.super.init.call(this);
+        },
+
+        update: function(texture) {
+            var gl = this.gl;
+
+            gl.uniform1fv(this.kernelLocation, this.kernel);
+            gl.uniform1f(this.kernelWeightLocation, this.kernelWeight);
+            ConvolutionBase.super.update.call(this, texture);
+        }
+
+    });
+
+    function Emboss() {
+        Emboss.super.constructor.call(this, [
+            -2, -1,  0,
+            -1,  1,  1,
+             0,  1,  2
+        ]);
+    }
+    extend(Emboss, ConvolutionBase);
+
+
     function Copy() {
         var fragmentSrc = [
             "precision mediump float;",
@@ -303,5 +363,6 @@ window.Webvs = (function() {
     Webvs.Component = Component;
     Webvs.Trans = Trans;
     Webvs.Invert = Invert;
+    Webvs.Emboss = Emboss;
     return Webvs;
 })();
