@@ -21,6 +21,9 @@ window.Webvs = (function() {
                     width: this.canvas.width,
                     height: this.canvas.height
                 }
+                this.canvas.addEventListener("webglcontextlost", function(event) {
+                    console.log("Webvs: lost webgl context");
+                });
             } catch(e) {
                 throw new Error("Couldnt get webgl context");
             }
@@ -28,7 +31,7 @@ window.Webvs = (function() {
         _initFrameBuffer: function() {
             var gl = this.gl;
             var framebuffer = gl.createFramebuffer();
-            var textures = [];
+            var attachments = [];
             for(var i = 0;i < 2;i++) {
                 var texture = gl.createTexture();
                 gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -39,11 +42,34 @@ window.Webvs = (function() {
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.resolution.width, this.resolution.height,
                               0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-                textures[i] = texture;
+
+                var renderbuffer = gl.createRenderbuffer();
+                gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+                gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.resolution.width, this.resolution.height);
+
+                attachments[i] = {
+                    texture: texture,
+                    renderbuffer: renderbuffer
+                };
             }
             this.framebuffer = framebuffer;
-            this.frameTextures = textures;
-            this.curFrameTexture = 0;
+            this.frameAttachments = attachments;
+            this.currAttachment = 0;
+        },
+
+        _setFBAttachment: function() {
+            var gl = this.gl;
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameAttachments[this.currAttachment].texture, 0);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.frameAttachments[this.currAttachment].renderbuffer);
+        },
+
+        _getCurrentTextrue: function() {
+            return this.frameAttachments[this.currAttachment].texture;
+        },
+
+        _swapFBAttachment: function() {
+            this.currAttachment = (this.currAttachment + 1) % 2;
+            this._setFBAttachment();
         },
 
         /**
@@ -52,35 +78,44 @@ window.Webvs = (function() {
         start: function() {
             var gl = this.gl;
             var components = this.components;
+            var copyComponent = new Copy();
 
             // initialize all the components
             for(var i = 0;i < components.length;i++) {
                 components[i].initComponent(gl, this.resolution);
             }
+            copyComponent.initComponent(gl, this.resolution);
 
             var self = this;
             var drawFrame = function() {
-                // bind the framebuffer
+                // draw everything the temporary framebuffer
                 gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
                 gl.viewport(0, 0, self.resolution.width, self.resolution.height);
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, self.frameTextures[self.curFrameTexture], 0);
+                self._setFBAttachment();
+
+                gl.clear(gl.COLOR_BUFFER_BIT);
 
                 for(var i = 0;i < components.length;i++) {
                     var component = components[i];
                     gl.useProgram(component.program);
                     if(component.swapFrame) {
-                        var oldTexture = self.curFrameTexture;
-                        this.curFrameTexture = (++self.curFrameTexture) % 2;
-                        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, self.frameTextures[self.curFrameTexture], 0);
-                        component.updateComponent(self.frameTextures[oldTexture]);
+                        var oldTexture = self._getCurrentTextrue();
+                        self._swapFBAttachment();
+                        component.updateComponent(oldTexture);
                     } else {
                         component.updateComponent();
                     }
                 }
+
+                // flip and copy the current texture to the screen
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.useProgram(copyComponent.program);
+                gl.viewport(0, 0, self.resolution.width, self.resolution.height);
+                copyComponent.updateComponent(self.frameAttachments[self.currAttachment].texture);
+
                 requestAnimationFrame(drawFrame);
             }
             requestAnimationFrame(drawFrame);
-            drawFrame();
         }
     });
 
@@ -190,7 +225,7 @@ window.Webvs = (function() {
         update: function(texture) {
             var gl = this.gl;
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE2D, texture);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.uniform1i(this.curRenderLocation, 0);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
@@ -208,12 +243,26 @@ window.Webvs = (function() {
             "varying vec2 v_texCoord;",
             "void main() {",
             "   vec4 texColor = texture2D(u_curRender, v_texCoord); ",
-            "   gl_FragColor = texColor.bgra;",
+            "   gl_FragColor = texColor.rbga;",
             "}"
         ].join("\n");
         Invert.super.constructor.call(this, fragmentSrc);
     }
     extend(Invert, Trans);
+
+    function Copy() {
+        var fragmentSrc = [
+            "precision mediump float;",
+            "uniform vec2 u_resolution;",
+            "uniform sampler2D u_curRender;",
+            "varying vec2 v_texCoord;",
+            "void main() {",
+            "   gl_FragColor = texture2D(u_curRender, v_texCoord);",
+            "}"
+        ].join("\n");
+        Copy.super.constructor.call(this, fragmentSrc);
+    }
+    extend(Copy, Trans);
 
     /** Utility stuff **/
 
