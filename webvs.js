@@ -81,8 +81,12 @@ window.Webvs = (function() {
             var copyComponent = new Copy();
 
             // initialize all the components
+            var initPromises = [];
             for(var i = 0;i < components.length;i++) {
-                components[i].initComponent(gl, this.resolution);
+                var res = components[i].initComponent(gl, this.resolution);
+                if(res) {
+                    initPromises.push(res);
+                }
             }
             copyComponent.initComponent(gl, this.resolution);
 
@@ -115,7 +119,11 @@ window.Webvs = (function() {
 
                 requestAnimationFrame(drawFrame);
             }
-            requestAnimationFrame(drawFrame);
+
+            // start rendering when all the init promises are done
+            D.all(initPromises).then(function() {
+                requestAnimationFrame(drawFrame);;
+            })
         }
     });
 
@@ -181,6 +189,88 @@ window.Webvs = (function() {
             return shader;
         }
     });
+
+    function DrawImage(src, x, y) {
+        this.src = src;
+        this.x = x;
+        this.y = y;
+        var vertexSrc = [
+            "attribute vec2 a_texCoord;",
+            "varying vec2 v_texCoord;",
+            "uniform vec2 u_resolution;",
+            "uniform vec2 u_imagePos;",
+
+            "void main() {",
+            "    v_texCoord = a_texCoord;",
+            "    gl_Position = vec4((a_texCoord*2.0)-1.0+(u_imagePos/u_resolution), 0, 1);",
+            "}"
+        ].join("\n");
+
+        var fragmentSrc = [
+            "precision mediump float;",
+            "uniform sampler2D u_image;",
+            "varying vec2 v_texCoord;",
+
+            "void main() {",
+            "   gl_FragColor = texture2D(u_image, v_texCoord);",
+            "}"
+        ].join("\n");
+        DrawImage.super.constructor.call(this, vertextSrc, fragmentSrc);
+    }
+    extend(DrawImage, Component, {
+        init: function() {
+            var gl = this.gl;
+
+            var imageTexture = gl.createTexture();
+            var deferred = D();
+            var image = new Image();
+            image.src = this.src;
+
+            image.onload(function() {
+                gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+                deferred.resolve();
+            });
+
+            this.texCoordBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+            gl.bufferData(
+                gl.ARRAY_BUFFER,
+                new Float32Array([
+                    0.0,  0.0,
+                    1.0,  0.0,
+                    0.0,  1.0,
+                    0.0,  1.0,
+                    1.0,  0.0,
+                    1.0,  1.0
+                ]),
+                gl.STATIC_DRAW
+            );
+
+            this.imageLocation = gl.getUniformLocation(this.program, "u_image");
+            this.imagePosLocation = gl.getUniformLocation(this.program, "u_imagePos");
+            this.texCoordLocation = gl.getAttributeLocation(this.program, "a_texCoord");
+            return deferred.promise;
+        },
+
+        update: function() {
+            var gl - this.gl;
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.uniform1i(this.imageLocation, 0);
+
+            gl.uniform2f(this.imagePosLocation, this.x, this.y);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+            gl.enableVertexAttribArray(this.texCoordLocation);
+            gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+    })
 
     /**
      * Trans component base class
@@ -326,9 +416,9 @@ window.Webvs = (function() {
     function Copy() {
         var fragmentSrc = [
             "precision mediump float;",
-            "uniform vec2 u_resolution;",
             "uniform sampler2D u_curRender;",
             "varying vec2 v_texCoord;",
+
             "void main() {",
             "   gl_FragColor = texture2D(u_curRender, v_texCoord);",
             "}"
