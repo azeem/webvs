@@ -215,7 +215,7 @@ window.Webvs = (function() {
             "   gl_FragColor = texture2D(u_image, v_texCoord);",
             "}"
         ].join("\n");
-        DrawImage.super.constructor.call(this, vertextSrc, fragmentSrc);
+        DrawImage.super.constructor.call(this, vertexSrc, fragmentSrc);
     }
     extend(DrawImage, Component, {
         init: function() {
@@ -225,16 +225,16 @@ window.Webvs = (function() {
             var deferred = D();
             var image = new Image();
             image.src = this.src;
+            this.imageTexture = imageTexture;
 
-            image.onload(function() {
+            image.onload = function() {
                 gl.bindTexture(gl.TEXTURE_2D, imageTexture);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
                 deferred.resolve();
-            });
+            };
 
             this.texCoordBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
@@ -253,14 +253,14 @@ window.Webvs = (function() {
 
             this.imageLocation = gl.getUniformLocation(this.program, "u_image");
             this.imagePosLocation = gl.getUniformLocation(this.program, "u_imagePos");
-            this.texCoordLocation = gl.getAttributeLocation(this.program, "a_texCoord");
+            this.texCoordLocation = gl.getAttribLocation(this.program, "a_texCoord");
             return deferred.promise;
         },
 
         update: function() {
-            var gl - this.gl;
+            var gl = this.gl;
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.bindTexture(gl.TEXTURE_2D, this.imageTexture);
             gl.uniform1i(this.imageLocation, 0);
 
             gl.uniform2f(this.imagePosLocation, this.x, this.y);
@@ -464,6 +464,7 @@ window.Webvs = (function() {
 
     Webvs.extend = extend;
     Webvs.Component = Component;
+    Webvs.DrawImage = DrawImage;
     Webvs.Trans = Trans;
     Webvs.Invert = Invert;
     Webvs.Emboss = Emboss;
