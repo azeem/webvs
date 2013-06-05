@@ -61,7 +61,7 @@
                 canvas: document.getElementById("my-canvas"),
                 components: [
                         new Webvs.DrawImage("me.png", 0, 0),
-                        new Webvs.Emboss(),
+                        new Webvs.Convolution(Webvs.Convolution.kernels.gaussianBlur),
                         new Box(
                                 new Float32Array([
                                     10, 20,

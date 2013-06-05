@@ -198,11 +198,13 @@ window.Webvs = (function() {
             "attribute vec2 a_texCoord;",
             "varying vec2 v_texCoord;",
             "uniform vec2 u_resolution;",
+            "uniform vec2 u_imageResolution;",
             "uniform vec2 u_imagePos;",
 
             "void main() {",
-            "    v_texCoord = a_texCoord;",
-            "    gl_Position = vec4((a_texCoord*2.0)-1.0+(u_imagePos/u_resolution), 0, 1);",
+            "    v_texCoord = a_texCoord*vec2(1,-1);",
+            "    vec2 clipSpace = ((a_texCoord*u_imageResolution+u_imagePos)/u_resolution)*2.0-1.0;",
+            "    gl_Position = vec4(clipSpace*vec2(1, -1), 0, 1);",
             "}"
         ].join("\n");
 
@@ -226,8 +228,9 @@ window.Webvs = (function() {
             var image = new Image();
             image.src = this.src;
             this.imageTexture = imageTexture;
-
+            var self = this;
             image.onload = function() {
+                self.imageResolution = [image.width, image.height];
                 gl.bindTexture(gl.TEXTURE_2D, imageTexture);
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
@@ -253,6 +256,7 @@ window.Webvs = (function() {
 
             this.imageLocation = gl.getUniformLocation(this.program, "u_image");
             this.imagePosLocation = gl.getUniformLocation(this.program, "u_imagePos");
+            this.imageResLocation = gl.getUniformLocation(this.program, "u_imageResolution");
             this.texCoordLocation = gl.getAttribLocation(this.program, "a_texCoord");
             return deferred.promise;
         },
@@ -264,6 +268,7 @@ window.Webvs = (function() {
             gl.uniform1i(this.imageLocation, 0);
 
             gl.uniform2f(this.imagePosLocation, this.x, this.y);
+            gl.uniform2f(this.imageResLocation, this.imageResolution[0], this.imageResolution[1]);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
             gl.enableVertexAttribArray(this.texCoordLocation);
@@ -345,7 +350,7 @@ window.Webvs = (function() {
      * @param kernel
      * @constructor
      */
-    function ConvolutionBase(kernel) {
+    function Convolution(kernelName) {
         var fragmentSrc = [
             "precision mediump float;",
             "uniform vec2 u_resolution;",
@@ -368,21 +373,52 @@ window.Webvs = (function() {
             "   gl_FragColor = vec4((colorSum / u_kernelWeight).rgb, 1.0);",
             "}"
         ].join("\n");
-        this.kernel = kernel;
+
+        if(kernelName in Convolution.kernels) {
+            this.kernel = this.kernels[kernelName];
+        } else if(isArray(kernelName) && kernelName.length == 9) {
+            this.kernel = kernelName;
+        } else {
+            throw new Error("Invalid convolution kernel");
+        }
+
+
         var kernelWeight = 0;
-        for(var i = 0;i < kernel.length;i++) {
-            kernelWeight += kernel[i];
+        for(var i = 0;i < this.kernel.length;i++) {
+            kernelWeight += this.kernel[i];
         }
         this.kernelWeight = kernelWeight;
-        ConvolutionBase.super.constructor.call(this, fragmentSrc);
+        Convolution.super.constructor.call(this, fragmentSrc);
     }
-    extend(ConvolutionBase, Trans, {
+    Convolution.kernels = {
+        normal: [
+            0, 0, 0,
+            0, 1, 0,
+            0, 0, 0
+        ],
+        gaussianBlur: [
+            0.045, 0.122, 0.045,
+            0.122, 0.332, 0.122,
+            0.045, 0.122, 0.045
+        ],
+        unsharpen: [
+            -1, -1, -1,
+            -1,  9, -1,
+            -1, -1, -1
+        ],
+        emboss: [
+            -2, -1,  0,
+            -1,  1,  1,
+             0,  1,  2
+        ]
+    };
+    extend(Convolution, Trans, {
         init: function() {
             var gl = this.gl;
 
             this.kernelLocation = gl.getUniformLocation(this.program, "u_kernel[0]");
             this.kernelWeightLocation = gl.getUniformLocation(this.program, "u_kernelWeight");
-            ConvolutionBase.super.init.call(this);
+            Convolution.super.init.call(this);
         },
 
         update: function(texture) {
@@ -390,23 +426,10 @@ window.Webvs = (function() {
 
             gl.uniform1fv(this.kernelLocation, this.kernel);
             gl.uniform1f(this.kernelWeightLocation, this.kernelWeight);
-            ConvolutionBase.super.update.call(this, texture);
+            Convolution.super.update.call(this, texture);
         }
 
     });
-
-    /**
-     * Emboss convolution
-     * @constructor
-     */
-    function Emboss() {
-        Emboss.super.constructor.call(this, [
-            -2, -1,  0,
-            -1,  1,  1,
-             0,  1,  2
-        ]);
-    }
-    extend(Emboss, ConvolutionBase);
 
 
     /**
@@ -453,6 +476,10 @@ window.Webvs = (function() {
         }
     }
 
+    function isArray(value) {
+        return Object.prototype.toString.call( value ) === '[object Array]';
+    }
+
     var requestAnimationFrame = (
         window.requestAnimationFrame       ||
         window.webkitRequestAnimationFrame ||
@@ -467,6 +494,6 @@ window.Webvs = (function() {
     Webvs.DrawImage = DrawImage;
     Webvs.Trans = Trans;
     Webvs.Invert = Invert;
-    Webvs.Emboss = Emboss;
+    Webvs.Convolution = Convolution;
     return Webvs;
 })();
