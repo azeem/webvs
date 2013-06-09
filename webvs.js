@@ -283,7 +283,7 @@ window.Webvs = (function() {
      * @constructor
      */
     function Trans(fragmentSrc) {
-        var vertextSrc = [
+        var vertexSrc = [
             "attribute vec2 a_texCoord;",
             "varying vec2 v_texCoord;",
             "void main() {",
@@ -291,7 +291,7 @@ window.Webvs = (function() {
             "    gl_Position = vec4((a_texCoord*2.0)-1.0, 0, 1);",
             "}"
         ].join("\n");
-        Trans.super.constructor.call(this, vertextSrc, fragmentSrc);
+        Trans.super.constructor.call(this, vertexSrc, fragmentSrc);
     }
     extend(Trans, Component, {
         swapFrame: true,
@@ -375,7 +375,7 @@ window.Webvs = (function() {
         ].join("\n");
 
         if(kernelName in Convolution.kernels) {
-            this.kernel = this.kernels[kernelName];
+            this.kernel = Convolution.kernels[kernelName];
         } else if(isArray(kernelName) && kernelName.length == 9) {
             this.kernel = kernelName;
         } else {
@@ -430,6 +430,99 @@ window.Webvs = (function() {
         }
 
     });
+
+    function SuperScope(analyser, codeName) {
+        this.analyser = analyser;
+
+        if(codeName in SuperScope.examples) {
+            this.code = SuperScope.examples[codeName]();
+        } else if(typeOf(codeName) === 'function') {
+            this.code = codeName();
+        } else {
+            throw new Error("Invalid superscope");
+        }
+
+        this.code.init = this.code.init?this.code.init:noop;
+        this.code.perFrame = this.code.perFrame?this.code.perFrame:noop;
+        this.code.perPoint = this.code.perPoint?this.code.perPoint:noop;
+        this.nPoints = this.code.n?this.code.n:100;
+
+        var vertexSrc = [
+            "attribute vec2 a_position;",
+            "void main() {",
+            "   gl_Position = vec4(a_position, 0, 1);",
+            "}"
+        ].join("\n");
+
+        var fragmentSrc = [
+            "void main() {",
+            "   gl_FragColor = vec4(1, 1, 1, 1);",
+            "}"
+        ].join("\n");
+
+        SuperScope.super.constructor.call(this, vertexSrc, fragmentSrc)
+    }
+    extend(SuperScope, Component, {
+        init: function() {
+            var gl = this.gl;
+
+            this.code.init();
+
+            this.pointBuffer = gl.createBuffer();
+            this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
+        },
+
+        update: function() {
+            var gl = this.gl;
+
+            this.code.perFrame();
+
+            var data = new Uint8Array(this.analyser.frequencyBinCount);
+            this.analyser.getByteTimeDomainData(data);
+            var bucketSize = this.analyser.frequencyBinCount/this.nPoints;
+            var pbi = 0;
+            var pointBufferData = new Float32Array((this.nPoints*2-2)*2);
+            for(var i = 0;i < this.nPoints;i++) {
+                var value = 0;
+                for(var j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++) {
+                    value += data[j];
+                }
+                value = (((value/bucketSize)/256)*2)-1;
+
+                var pos = i/this.nPoints;
+                var points = this.code.perPoint(pos, value);
+                pointBufferData[pbi++] = points[0];
+                pointBufferData[pbi++] = points[1];
+                if(i != 0 && i != this.nPoints-1) {
+                    pointBufferData[pbi++] = points[0];
+                    pointBufferData[pbi++] = points[1];
+                }
+            }
+            console.dir(pointBufferData);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(this.vertexPositionLocation);
+            gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.LINES, 0, pbi/2);
+        }
+    });
+    SuperScope.examples = {
+        diagonalScope: function() {
+            var t;
+            return {
+                n: 64,
+                init: function() {
+                    t = 1;
+                },
+                perPoint: function(i, v) {
+                    var sc = 0.4*Math.sin(i*Math.PI);
+                    var x = 2*(i-0.5-v*sc)*t;
+                    var y = 2*(i-0.5+v*sc);
+                    return [x,y];
+                }
+            };
+        }
+    };
 
 
     /**
@@ -495,5 +588,6 @@ window.Webvs = (function() {
     Webvs.Trans = Trans;
     Webvs.Invert = Invert;
     Webvs.Convolution = Convolution;
+    Webvs.SuperScope = SuperScope;
     return Webvs;
 })();

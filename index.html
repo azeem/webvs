@@ -2,88 +2,32 @@
 <html>
 <head>
     <title>Webvs Demo</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     <script type="text/javascript" src="lib/D.min.js"></script>
     <script type="text/javascript" src="webvs.js"></script>
-
-    <script type="text/javascript">
-        function Box(boxArray) {
-            this.boxArray = boxArray
-            Box.super.constructor.call(this,
-                [
-                    "attribute vec2 a_position;",
-                    "uniform float u_i;",
-                    "uniform vec2 u_resolution;",
-                    "void main() {",
-                    "   gl_Position = vec4(((((a_position+u_i)/u_resolution)*2.0)-1.0)*vec2(1,-1), 0, 1);",
-                    "}"
-                ].join("\n"),
-                [
-                    "void main() {",
-                    "   gl_FragColor = vec4(0,1,0,1);",
-                    "}"
-                ].join("\n")
-            );
-        }
-        Webvs.extend(Box, Webvs.Component, {
-            init: function() {
-                var gl = this.gl;
-                console.log("init called")
-                // initialize buffers
-                this.buffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-                gl.bufferData(
-                        gl.ARRAY_BUFFER,
-                        this.boxArray,
-                        gl.STATIC_DRAW
-                );
-
-                // initialize locations
-                this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
-                this.incrementLocation = gl.getUniformLocation(this.program, "u_i")
-                this.increment = 0;
-            },
-
-            update: function() {
-                var gl = this.gl;
-
-                //console.log("update called")
-                gl.uniform1f(this.incrementLocation, this.increment);
-                this.increment = (this.increment + 1)%200;
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-                gl.enableVertexAttribArray(this.vertexPositionLocation);
-                gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-            }
-        });
-
-        function onLoad() {
-            var webvs = new Webvs({
-                canvas: document.getElementById("my-canvas"),
-                components: [
-                        new Webvs.DrawImage("me.png", 0, 0),
-                        new Webvs.Convolution(Webvs.Convolution.kernels.gaussianBlur),
-                        new Box(
-                                new Float32Array([
-                                    10, 20,
-                                    80, 20,
-                                    10, 30,
-                                    10, 30,
-                                    80, 20,
-                                    80, 30
-                                ])
-                        )
-                ]
-            });
-            webvs.start();
-        }
-    </script>
+    <script type="text/javascript" src="demo.js"></script>
     <style type="text/css">
         #my-canvas {
             border: 1px solid black;
         }
     </style>
 </head>
-<body onload="onLoad()">
-<canvas id="my-canvas" width="640" height="480"></canvas>
+<body>
+
+    <form id="soundcloudurl">
+        <label>
+            Enter Soundcloud track url
+            <input type="text" value="https://soundcloud.com/blisspop/casa-del-mirto-the-nature">
+        </label>
+        <input type="submit" value="play">
+    </form>
+
+    <div>
+        <audio id="my-audio" controls></audio>
+    </div>
+    <div>
+        <canvas id="my-canvas" width="640" height="480"></canvas>
+    </div>
+
 </body>
 </html>
