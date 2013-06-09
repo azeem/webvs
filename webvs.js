@@ -498,7 +498,6 @@ window.Webvs = (function() {
                     pointBufferData[pbi++] = points[1];
                 }
             }
-            console.dir(pointBufferData);
             gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
             gl.enableVertexAttribArray(this.vertexPositionLocation);
