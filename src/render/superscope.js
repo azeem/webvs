@@ -6,9 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function SuperScope(analyser, codeName) {
-    this.analyser = analyser;
-
+function SuperScope(codeName) {
     if(codeName in SuperScope.examples) {
         this.code = SuperScope.examples[codeName]();
     } else if(typeOf(codeName) === 'function') {
@@ -18,6 +16,7 @@ function SuperScope(analyser, codeName) {
     }
 
     this.code.init = this.code.init?this.code.init:noop;
+    this.code.onBeat = this.code.onBeat?this.code.onBeat:noop;
     this.code.perFrame = this.code.perFrame?this.code.perFrame:noop;
     this.code.perPoint = this.code.perPoint?this.code.perPoint:noop;
 
@@ -49,12 +48,16 @@ extend(SuperScope, Component, {
     update: function() {
         var gl = this.gl;
 
-        this.code.perFrame(this.resolution.width, this.resolution.height);
-        var nPoints = this.code.n;
-        var data = new Uint8Array(this.analyser.frequencyBinCount);
+        var beat = this.analyser.beat;
+        this.code.perFrame(beat, this.resolution.width, this.resolution.height);
+        if(beat) {
+            this.code.onBeat(beat, this.resolution.width, this.resolution.height);
+        }
 
-        this.analyser.getByteTimeDomainData(data);
-        var bucketSize = this.analyser.frequencyBinCount/nPoints;
+        var nPoints = Math.floor(this.code.n);
+        var data = this.analyser.getWaveform();
+
+        var bucketSize = data.length/nPoints;
         var pbi = 0;
         var pointBufferData = new Float32Array((nPoints*2-2)*2);
         for(var i = 0;i < nPoints;i++) {
@@ -63,10 +66,10 @@ extend(SuperScope, Component, {
             for(var j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
                 value += data[j];
             }
-            value = (((value/size)/256)*2)-1;
+            value = value/size;
 
             var pos = i/nPoints;
-            var points = this.code.perPoint(pos, value, this.resolution.width, this.resolution.height);
+            var points = this.code.perPoint(pos, value, beat, this.resolution.width, this.resolution.height);
             pointBufferData[pbi++] = points[0];
             pointBufferData[pbi++] = points[1]*-1;
             if(i !== 0 && i != nPoints-1) {
@@ -85,9 +88,12 @@ SuperScope.examples = {
     diagonalScope: function() {
         var t;
         return {
-            n: 63,
+            n: 64,
             init: function() {
                 t = 1;
+            },
+            onBeat: function() {
+                t = -t;
             },
             perPoint: function(i, v) {
                 var sc = 0.4*Math.sin(i*Math.PI);
@@ -103,6 +109,9 @@ SuperScope.examples = {
             n: 100,
             perFrame: function() {
                 t = t + 0.01;
+            },
+            onBeat: function() {
+                this.n = 80+rand(120.0);
             },
             perPoint: function(i, v) {
                 var r = i*Math.PI*128+t;
@@ -130,7 +139,7 @@ SuperScope.examples = {
         var t = 0;
         var sc = 1;
         return {
-            init: function(w) {
+            init: function(b, w, h) {
                 this.n = w;
             },
             perFrame: function() {

@@ -27,6 +27,10 @@ function isArray(value) {
     return Object.prototype.toString.call( value ) === '[object Array]';
 }
 
+function rand(max) {
+    return Math.random()*max;
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
@@ -36,9 +40,10 @@ var requestAnimationFrame = (
     }
 );
 function Webvs(options) {
-    checkRequiredOptions(options, ["canvas", "components"]);
+    checkRequiredOptions(options, ["canvas", "components", "analyser"]);
     this.canvas = options.canvas;
     this.components = options.components;
+    this.analyser = options.analyser;
 
     this._initGl();
     this._initFrameBuffer();
@@ -113,7 +118,7 @@ extend(Webvs, Object, {
         // initialize all the components
         var initPromises = [];
         for(var i = 0;i < components.length;i++) {
-            var res = components[i].initComponent(gl, this.resolution);
+            var res = components[i].initComponent(gl, this.resolution, this.analyser);
             if(res) {
                 initPromises.push(res);
             }
@@ -122,6 +127,10 @@ extend(Webvs, Object, {
 
         var self = this;
         var drawFrame = function() {
+            if(!self.analyser.isPlaying()) {
+                requestAnimationFrame(drawFrame);
+                return;
+            }
             // draw everything the temporary framebuffer
             gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
             gl.viewport(0, 0, self.resolution.width, self.resolution.height);
@@ -174,9 +183,10 @@ extend(Component, Object, {
     /**
      * Initialize the component. Called once before animation starts
      */
-    initComponent: function(gl, resolution) {
+    initComponent: function(gl, resolution, analyser) {
         this.gl = gl;
         this.resolution = resolution;
+        this.analyser = analyser;
         this._compileProgram(this.vertexSrc, this.fragmentSrc);
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
         this.init();
@@ -294,6 +304,37 @@ function Copy() {
 extend(Copy, Trans);
 
 window.Webvs = Webvs;
+function DancerAdapter(dancer) {
+    this.dancer = dancer;
+    this.beat = false;
+
+    var _this = this;
+    this.kick = dancer.createKick({
+        onKick: function(mag) {
+            _this.beat = true;
+        },
+
+        offKick: function() {
+            _this.beat = false;
+        }
+    });
+    this.kick.on();
+}
+extend(DancerAdapter, Object, {
+    isPlaying: function() {
+        return this.dancer.isPlaying();
+    },
+
+    getWaveform: function() {
+        return this.dancer.getWaveform();
+    },
+
+    getSpectrum: function() {
+        return this.dancer.getSpectrum();
+    }
+});
+
+window.Webvs.DancerAdapter = DancerAdapter;
 function Picture(src, x, y) {
     this.src = src;
     this.x = x;
@@ -382,9 +423,7 @@ extend(Picture, Component, {
 });
 
 window.Webvs.Picture = Picture;
-function SuperScope(analyser, codeName) {
-    this.analyser = analyser;
-
+function SuperScope(codeName) {
     if(codeName in SuperScope.examples) {
         this.code = SuperScope.examples[codeName]();
     } else if(typeOf(codeName) === 'function') {
@@ -394,6 +433,7 @@ function SuperScope(analyser, codeName) {
     }
 
     this.code.init = this.code.init?this.code.init:noop;
+    this.code.onBeat = this.code.onBeat?this.code.onBeat:noop;
     this.code.perFrame = this.code.perFrame?this.code.perFrame:noop;
     this.code.perPoint = this.code.perPoint?this.code.perPoint:noop;
 
@@ -425,12 +465,16 @@ extend(SuperScope, Component, {
     update: function() {
         var gl = this.gl;
 
-        this.code.perFrame(this.resolution.width, this.resolution.height);
-        var nPoints = this.code.n;
-        var data = new Uint8Array(this.analyser.frequencyBinCount);
+        var beat = this.analyser.beat;
+        this.code.perFrame(beat, this.resolution.width, this.resolution.height);
+        if(beat) {
+            this.code.onBeat(beat, this.resolution.width, this.resolution.height);
+        }
 
-        this.analyser.getByteTimeDomainData(data);
-        var bucketSize = this.analyser.frequencyBinCount/nPoints;
+        var nPoints = Math.floor(this.code.n);
+        var data = this.analyser.getWaveform();
+
+        var bucketSize = data.length/nPoints;
         var pbi = 0;
         var pointBufferData = new Float32Array((nPoints*2-2)*2);
         for(var i = 0;i < nPoints;i++) {
@@ -439,10 +483,10 @@ extend(SuperScope, Component, {
             for(var j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
                 value += data[j];
             }
-            value = (((value/size)/256)*2)-1;
+            value = value/size;
 
             var pos = i/nPoints;
-            var points = this.code.perPoint(pos, value, this.resolution.width, this.resolution.height);
+            var points = this.code.perPoint(pos, value, beat, this.resolution.width, this.resolution.height);
             pointBufferData[pbi++] = points[0];
             pointBufferData[pbi++] = points[1]*-1;
             if(i !== 0 && i != nPoints-1) {
@@ -461,9 +505,12 @@ SuperScope.examples = {
     diagonalScope: function() {
         var t;
         return {
-            n: 63,
+            n: 64,
             init: function() {
                 t = 1;
+            },
+            onBeat: function() {
+                t = -t;
             },
             perPoint: function(i, v) {
                 var sc = 0.4*Math.sin(i*Math.PI);
@@ -479,6 +526,9 @@ SuperScope.examples = {
             n: 100,
             perFrame: function() {
                 t = t + 0.01;
+            },
+            onBeat: function() {
+                this.n = 80+rand(120.0);
             },
             perPoint: function(i, v) {
                 var r = i*Math.PI*128+t;
@@ -506,7 +556,7 @@ SuperScope.examples = {
         var t = 0;
         var sc = 1;
         return {
-            init: function(w) {
+            init: function(b, w, h) {
                 this.n = w;
             },
             perFrame: function() {

@@ -22,6 +22,7 @@ module.exports = function(grunt) {
                 src: [
                     "src/utils.js",
                     "src/core.js",
+                    "src/dancer_adapter.js",
                     "src/render/*.js",
                     "src/trans/*.js"
                 ],

@@ -4,9 +4,10 @@
  * @constructor
  */
 function Webvs(options) {
-    checkRequiredOptions(options, ["canvas", "components"]);
+    checkRequiredOptions(options, ["canvas", "components", "analyser"]);
     this.canvas = options.canvas;
     this.components = options.components;
+    this.analyser = options.analyser;
 
     this._initGl();
     this._initFrameBuffer();
@@ -81,7 +82,7 @@ extend(Webvs, Object, {
         // initialize all the components
         var initPromises = [];
         for(var i = 0;i < components.length;i++) {
-            var res = components[i].initComponent(gl, this.resolution);
+            var res = components[i].initComponent(gl, this.resolution, this.analyser);
             if(res) {
                 initPromises.push(res);
             }
@@ -90,6 +91,10 @@ extend(Webvs, Object, {
 
         var self = this;
         var drawFrame = function() {
+            if(!self.analyser.isPlaying()) {
+                requestAnimationFrame(drawFrame);
+                return;
+            }
             // draw everything the temporary framebuffer
             gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
             gl.viewport(0, 0, self.resolution.width, self.resolution.height);
@@ -142,9 +147,10 @@ extend(Component, Object, {
     /**
      * Initialize the component. Called once before animation starts
      */
-    initComponent: function(gl, resolution) {
+    initComponent: function(gl, resolution, analyser) {
         this.gl = gl;
         this.resolution = resolution;
+        this.analyser = analyser;
         this._compileProgram(this.vertexSrc, this.fragmentSrc);
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
         this.init();

@@ -34,6 +34,10 @@ function isArray(value) {
     return Object.prototype.toString.call( value ) === '[object Array]';
 }
 
+function rand(max) {
+    return Math.random()*max;
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
