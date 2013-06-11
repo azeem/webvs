@@ -6,14 +6,33 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function SuperScope(codeName) {
-    if(codeName in SuperScope.examples) {
-        this.code = SuperScope.examples[codeName]();
-    } else if(typeOf(codeName) === 'function') {
-        this.code = codeName();
+function SuperScope(options) {
+    checkRequiredOptions(options, ["code"]);
+
+    if(options.code in SuperScope.examples) {
+        this.code = SuperScope.examples[options.code]();
+    } else if(typeOf(options.code) === 'function') {
+        this.code = options.code();
     } else {
         throw new Error("Invalid superscope");
     }
+
+    var colors = options.colors?options.colors:[[255,255,255]];
+    for(var i = 0;i < colors.length;i++) {
+        if(colors[i].length != 3) {
+            throw new Error("Invalid color, must be an array of 3");
+        }
+        for(var j = 0;j < 3;j++) {
+            colors[i][j] = colors[i][j]/255;
+        }
+    }
+    this.colors = colors;
+    this.currentColor = colors[0];
+    this.maxStep = 100;
+
+    this.step = this.maxStep; // so that we compute steps, the first time
+    this.colorId = 0;
+    this.colorStep = [0,0,0];
 
     this.code.init = this.code.init?this.code.init:noop;
     this.code.onBeat = this.code.onBeat?this.code.onBeat:noop;
@@ -28,8 +47,10 @@ function SuperScope(codeName) {
     ].join("\n");
 
     var fragmentSrc = [
+        "precision mediump float;",
+        "uniform vec3 u_color;",
         "void main() {",
-        "   gl_FragColor = vec4(1, 1, 1, 1);",
+        "   gl_FragColor = vec4(u_color, 1);",
         "}"
     ].join("\n");
 
@@ -43,6 +64,7 @@ extend(SuperScope, ShaderComponent, {
 
         this.pointBuffer = gl.createBuffer();
         this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
+        this.colorLocation = gl.getUniformLocation(this.program, "u_color");
     },
 
     update: function() {
@@ -77,11 +99,36 @@ extend(SuperScope, ShaderComponent, {
                 pointBufferData[pbi++] = points[1]*-1;
             }
         }
+
+        this._stepColor();
+        gl.uniform3fv(this.colorLocation, this.currentColor);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(this.vertexPositionLocation);
         gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.LINES, 0, pbi/2);
+    },
+
+    _stepColor: function() {
+        var i;
+        if(this.colors.length > 1) {
+            if(this.step == this.maxStep) {
+                var curColor = this.colors[this.colorId];
+                this.colorId = (this.colorId+1)%this.colors.length;
+                var nextColor = this.colors[this.colorId];
+                for(i = 0;i < 3;i++) {
+                    this.colorStep[i] = (nextColor[i]-curColor[i])/this.maxStep;
+                }
+                this.step = 0;
+                this.currentColor = curColor;
+            } else {
+                for(i = 0;i < 3;i++) {
+                    this.currentColor[i] += this.colorStep[i];
+                }
+                this.step++;
+            }
+        }
     }
 });
 SuperScope.examples = {

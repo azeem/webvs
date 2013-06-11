@@ -18,7 +18,19 @@ function webvsInit() {
         components: [
             new Webvs.OnBeatClear({blend: true}),
             new Webvs.Picture("me.png", 100, 150),
-            new Webvs.SuperScope("spiralGraphFun"),
+            new Webvs.SuperScope({
+                code: "spiralGraphFun",
+                colors:[
+                    [255, 255, 255],
+                    [255, 91, 91],
+                    [111, 255, 111],
+                    [64, 255, 255],
+                    [255, 182, 108],
+                    [255, 89, 172],
+                    [255, 255, 132],
+                    [128, 128, 255]
+                ]
+            }),
             new Webvs.Convolution("gaussianBlur")
         ]
     });
