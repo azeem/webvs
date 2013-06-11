@@ -35,7 +35,7 @@ function SuperScope(codeName) {
 
     SuperScope.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(SuperScope, Component, {
+extend(SuperScope, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 

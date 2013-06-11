@@ -16,6 +16,7 @@ function webvsInit() {
         canvas: document.getElementById("my-canvas"),
         analyser: new Webvs.DancerAdapter(dancer),
         components: [
+            new Webvs.OnBeatClear({blend: true}),
             new Webvs.Picture("me.png", 100, 150),
             new Webvs.SuperScope("spiralGraphFun"),
             new Webvs.Convolution("gaussianBlur")
@@ -26,6 +27,11 @@ function webvsInit() {
 
 function loadAudio(e) {
     e.preventDefault();
+//    dancer.load({
+//        src: "music.mp3"
+//    });
+//    dancer.play();
+
     var input = $("#soundcloudurl").find("input[type=text]");
     var url = input.val();
 

@@ -39,6 +39,18 @@ var requestAnimationFrame = (
         window.setTimeout(callback, 1000 / 60);
     }
 );
+
+function Color(rgba) {
+    this.r = rgba[0];
+    this.g = rgba[1];
+    this.b = rgba[2];
+    this.a = typeof(rgba[3]) === "undefined"?255:rgba[3];
+}
+extend(Color, Object, {
+    getNormalized: function() {
+        return [this.r/256, this.g/256, this.b/256, this.a/256];
+    }
+});
 function Webvs(options) {
     checkRequiredOptions(options, ["canvas", "components", "analyser"]);
     this.canvas = options.canvas;
@@ -126,6 +138,7 @@ extend(Webvs, Object, {
         copyComponent.initComponent(gl, this.resolution);
 
         var self = this;
+        var first = true;
         var drawFrame = function() {
             if(!self.analyser.isPlaying()) {
                 requestAnimationFrame(drawFrame);
@@ -135,8 +148,6 @@ extend(Webvs, Object, {
             gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
             gl.viewport(0, 0, self.resolution.width, self.resolution.height);
             self._setFBAttachment();
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
 
             for(var i = 0;i < components.length;i++) {
                 var component = components[i];
@@ -166,27 +177,35 @@ extend(Webvs, Object, {
     }
 });
 
+function Component() {}
+extend(Component, Object, {
+    initComponent: function(gl, resolution, analyser) {
+        this.gl = gl;
+        this.resolution = resolution;
+        this.analyser = analyser;
+    },
+    updateComponent: function() {}
+});
+
 /**
- * Component base class
+ * ShaderComponent base class
  * @param gl gl context
  * @param resolution resolution of the canvas
  * @param options
  * @constructor
  */
-function Component(vertexSrc, fragmentSrc) {
+function ShaderComponent(vertexSrc, fragmentSrc) {
     this.vertexSrc = vertexSrc;
     this.fragmentSrc = fragmentSrc;
 }
-extend(Component, Object, {
+extend(ShaderComponent, Component, {
     swapFrame: false,
 
     /**
      * Initialize the component. Called once before animation starts
      */
     initComponent: function(gl, resolution, analyser) {
-        this.gl = gl;
-        this.resolution = resolution;
-        this.analyser = analyser;
+        ShaderComponent.super.initComponent.call(this, gl, resolution, analyser);
         this._compileProgram(this.vertexSrc, this.fragmentSrc);
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
         this.init();
@@ -196,6 +215,7 @@ extend(Component, Object, {
      * Update the screen. Called for every frame of the animation
      */
     updateComponent: function(texture) {
+        ShaderComponent.super.updateComponent.call(this, texture);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
         this.update(texture);
     },
@@ -246,7 +266,7 @@ function Trans(fragmentSrc) {
     ].join("\n");
     Trans.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(Trans, Component, {
+extend(Trans, ShaderComponent, {
     swapFrame: true,
 
     init: function() {
@@ -335,6 +355,92 @@ extend(DancerAdapter, Object, {
 });
 
 window.Webvs.DancerAdapter = DancerAdapter;
+function OnBeatClear(options) {
+    options = options?options:{};
+    this.n = options.n?options.n:1;
+    this.color = options.color?options.color:[0,0,0];
+
+    if(this.color.length != 3) {
+        throw new Error("Invalid clear color, must be an array of 3");
+    }
+    for(var i = 0;i < this.color.length;i++) {
+        this.color[i] = this.color[i]/255;
+    }
+
+    if(options.blend) {
+        this.color[3] = 0.5;
+    }
+    this.prevBeat = false;
+    this.beatCount = 0;
+
+    var vertexSrc = [
+        "attribute vec2 a_position;",
+        "void main() {",
+        "   gl_Position = vec4(a_position, 0, 1);",
+        "}"
+    ].join("\n");
+
+    var fragmentSrc = [
+        "precision mediump float;",
+        "uniform vec4 u_color;",
+        "void main() {",
+        "   gl_FragColor = u_color;",
+        "}"
+    ].join("\n");
+
+
+    OnBeatClear.super.constructor.call(this, vertexSrc, fragmentSrc);
+}
+extend(OnBeatClear, ShaderComponent, {
+    init: function() {
+        var gl = this.gl;
+
+        this.vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array([
+                -1,  -1,
+                1,  -1,
+                -1,  1,
+                -1,  1,
+                1,  -1,
+                1,  1
+            ]),
+            gl.STATIC_DRAW
+        );
+
+        this.positionLocation = gl.getAttribLocation(this.program, "a_position");
+        this.colorLocation = gl.getUniformLocation(this.program, "u_color");
+    },
+
+    update: function() {
+        var gl = this.gl;
+
+        var clear = false;
+        if(this.analyser.beat && !this.prevBeat) {
+            this.beatCount++;
+            if(this.beatCount == this.n) {
+                clear = true;
+                this.beatCount = 0;
+            }
+        }
+        this.prevBeat = this.analyser.beat;
+
+        if(clear) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE, gl.SRC_ALPHA);
+            gl.uniform4fv(this.colorLocation, this.color);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+            gl.enableVertexAttribArray(this.vertexPositionLocation);
+            gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            gl.disable(gl.BLEND);
+        }
+    }
+});
+
+window.Webvs.OnBeatClear = OnBeatClear;
 function Picture(src, x, y) {
     this.src = src;
     this.x = x;
@@ -364,7 +470,7 @@ function Picture(src, x, y) {
     ].join("\n");
     Picture.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(Picture, Component, {
+extend(Picture, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 
@@ -452,7 +558,7 @@ function SuperScope(codeName) {
 
     SuperScope.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(SuperScope, Component, {
+extend(SuperScope, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 

@@ -90,6 +90,7 @@ extend(Webvs, Object, {
         copyComponent.initComponent(gl, this.resolution);
 
         var self = this;
+        var first = true;
         var drawFrame = function() {
             if(!self.analyser.isPlaying()) {
                 requestAnimationFrame(drawFrame);
@@ -99,8 +100,6 @@ extend(Webvs, Object, {
             gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
             gl.viewport(0, 0, self.resolution.width, self.resolution.height);
             self._setFBAttachment();
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
 
             for(var i = 0;i < components.length;i++) {
                 var component = components[i];
@@ -130,27 +129,35 @@ extend(Webvs, Object, {
     }
 });
 
+function Component() {}
+extend(Component, Object, {
+    initComponent: function(gl, resolution, analyser) {
+        this.gl = gl;
+        this.resolution = resolution;
+        this.analyser = analyser;
+    },
+    updateComponent: function() {}
+});
+
 /**
- * Component base class
+ * ShaderComponent base class
  * @param gl gl context
  * @param resolution resolution of the canvas
  * @param options
  * @constructor
  */
-function Component(vertexSrc, fragmentSrc) {
+function ShaderComponent(vertexSrc, fragmentSrc) {
     this.vertexSrc = vertexSrc;
     this.fragmentSrc = fragmentSrc;
 }
-extend(Component, Object, {
+extend(ShaderComponent, Component, {
     swapFrame: false,
 
     /**
      * Initialize the component. Called once before animation starts
      */
     initComponent: function(gl, resolution, analyser) {
-        this.gl = gl;
-        this.resolution = resolution;
-        this.analyser = analyser;
+        ShaderComponent.super.initComponent.call(this, gl, resolution, analyser);
         this._compileProgram(this.vertexSrc, this.fragmentSrc);
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
         this.init();
@@ -160,6 +167,7 @@ extend(Component, Object, {
      * Update the screen. Called for every frame of the animation
      */
     updateComponent: function(texture) {
+        ShaderComponent.super.updateComponent.call(this, texture);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
         this.update(texture);
     },
@@ -210,7 +218,7 @@ function Trans(fragmentSrc) {
     ].join("\n");
     Trans.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(Trans, Component, {
+extend(Trans, ShaderComponent, {
     swapFrame: true,
 
     init: function() {

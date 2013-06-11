@@ -35,7 +35,7 @@ function Picture(src, x, y) {
     ].join("\n");
     Picture.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(Picture, Component, {
+extend(Picture, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 
