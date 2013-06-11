@@ -17,9 +17,11 @@ function webvsInit() {
         analyser: new Webvs.DancerAdapter(dancer),
         components: [
             new Webvs.OnBeatClear({blend: true}),
-            new Webvs.Picture("me.png", 100, 150),
+            //new Webvs.Picture("me.png", 100, 150),
             new Webvs.SuperScope({
-                code: "spiralGraphFun",
+                dots: false,
+                spectrum: false,
+                code: "diagonalScope",
                 colors:[
                     [255, 255, 255],
                     [255, 91, 91],

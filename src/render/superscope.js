@@ -17,6 +17,9 @@ function SuperScope(options) {
         throw new Error("Invalid superscope");
     }
 
+    this.spectrum = options.spectrum?options.spectrum:false;
+    this.dots = options.dots?options.dots:false;
+
     var colors = options.colors?options.colors:[[255,255,255]];
     for(var i = 0;i < colors.length;i++) {
         if(colors[i].length != 3) {
@@ -77,11 +80,11 @@ extend(SuperScope, ShaderComponent, {
         }
 
         var nPoints = Math.floor(this.code.n);
-        var data = this.analyser.getWaveform();
-
+        var data = this.spectrum ? this.analyser.getSpectrum() : this.analyser.getWaveform();
         var bucketSize = data.length/nPoints;
         var pbi = 0;
-        var pointBufferData = new Float32Array((nPoints*2-2)*2);
+
+        var pointBufferData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 2);
         for(var i = 0;i < nPoints;i++) {
             var value = 0;
             var size = 0;
@@ -94,7 +97,7 @@ extend(SuperScope, ShaderComponent, {
             var points = this.code.perPoint(pos, value, beat, this.resolution.width, this.resolution.height);
             pointBufferData[pbi++] = points[0];
             pointBufferData[pbi++] = points[1]*-1;
-            if(i !== 0 && i != nPoints-1) {
+            if(i !== 0 && i != nPoints-1 && !this.dots) {
                 pointBufferData[pbi++] = points[0];
                 pointBufferData[pbi++] = points[1]*-1;
             }
@@ -107,7 +110,7 @@ extend(SuperScope, ShaderComponent, {
         gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(this.vertexPositionLocation);
         gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.LINES, 0, pbi/2);
+        gl.drawArrays(this.dots?gl.POINTS:gl.LINES, 0, pbi/2);
     },
 
     _stepColor: function() {
@@ -135,7 +138,7 @@ SuperScope.examples = {
     diagonalScope: function() {
         var t;
         return {
-            n: 64,
+            n: 100,
             init: function() {
                 t = 1;
             },
