@@ -1,0 +1,26 @@
+{
+  "name": "Webvs",
+  "version": "0.0.0",
+  "description": "a webgl experiment",
+  "main": "Gruntfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/azeem/webvs.git"
+  },
+  "author": "Azeem Arshad",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "517cf627b48067e5de484927d021fb95b3f2102c",
+  "bugs": {
+    "url": "https://github.com/azeem/webvs/issues"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.6.0",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-watch": "~0.4.4"
+  }
+}

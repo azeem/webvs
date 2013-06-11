@@ -16,7 +16,7 @@ function webvsInit(audio) {
     var webvs = new Webvs({
         canvas: document.getElementById("my-canvas"),
         components: [
-            new Webvs.DrawImage("me.png", 100, 150),
+            new Webvs.Picture("me.png", 100, 150),
             new Webvs.SuperScope(analyser, "threeDScopeDish"),
             new Webvs.Convolution("gaussianBlur")
         ]
