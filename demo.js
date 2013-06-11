@@ -6,18 +6,33 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function webvsInit(audio) {
-    var context = new webkitAudioContext();
-    var source = context.createMediaElementSource(audio);
-    var analyser = context.createAnalyser();
-    source.connect(analyser);
-    analyser.connect(context.destination);
+(function() {
 
+var dancer;
+var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
+
+function webvsInit() {
     var webvs = new Webvs({
         canvas: document.getElementById("my-canvas"),
+        analyser: new Webvs.DancerAdapter(dancer),
         components: [
-            new Webvs.DrawImage("me.png", 100, 150),
-            new Webvs.SuperScope(analyser, "threeDScopeDish"),
+            new Webvs.OnBeatClear({blend: true}),
+            //new Webvs.Picture("me.png", 100, 150),
+            new Webvs.SuperScope({
+                dots: false,
+                spectrum: false,
+                code: "diagonalScope",
+                colors:[
+                    [255, 255, 255],
+                    [255, 91, 91],
+                    [111, 255, 111],
+                    [64, 255, 255],
+                    [255, 182, 108],
+                    [255, 89, 172],
+                    [255, 255, 132],
+                    [128, 128, 255]
+                ]
+            }),
             new Webvs.Convolution("gaussianBlur")
         ]
     });
@@ -26,7 +41,10 @@ function webvsInit(audio) {
 
 function loadAudio(e) {
     e.preventDefault();
-    var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
+//    dancer.load({
+//        src: "music.mp3"
+//    });
+//    dancer.play();
 
     var input = $("#soundcloudurl").find("input[type=text]");
     var url = input.val();
@@ -40,10 +58,11 @@ function loadAudio(e) {
     });
     prms.done(function(response) {
         input.val("");
-        $("#my-audio").show().attr("src", response.stream_url + "?client_id=" + clientId).on("canplay", function() {
-            $("#my-canvas").show();
-            webvsInit(this);
+        $("#my-canvas").show();
+        dancer.load({
+            src: response.stream_url + "?client_id=" + clientId
         });
+        dancer.play();
     });
     prms.fail(function() {
         alert("Unable to resolve soundcloud track");
@@ -51,8 +70,9 @@ function loadAudio(e) {
 }
 
 $(document).ready(function () {
-
-    $("#my-canvas, #my-audio").hide();
     $("#soundcloudurl").on('submit', loadAudio);
-
+    dancer = new Dancer();
+    webvsInit();
 });
+
+})();
