@@ -31,15 +31,16 @@ extend(Webvs, Object, {
      * Starts the animation
      */
     start: function() {
-        var rootComponent = this.rootComponent
+        var rootComponent = this.rootComponent;
         var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser);
 
+        var _this = this;
         var drawFrame = function() {
-            if(self.analyser.isPlaying()) {
+            if(_this.analyser.isPlaying()) {
                 rootComponent.updateComponent();
             }
             requestAnimationFrame(drawFrame);
-        }
+        };
 
         // start rendering when the promise is done
         promise.then(function() {

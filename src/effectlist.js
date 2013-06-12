@@ -59,9 +59,9 @@ extend(EffectList, Component, {
         var targetFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
 
         // switch to internal framebuffer
-        gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
-        gl.viewport(0, 0, self.resolution.width, self.resolution.height);
-        self._setFBAttachment();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        gl.viewport(0, 0, this.resolution.width, this.resolution.height);
+        this._setFBAttachment();
 
         // render all the components
         var components = this.components;
@@ -69,8 +69,8 @@ extend(EffectList, Component, {
             var component = components[i];
             gl.useProgram(component.program);
             if(component.swapFrame) {
-                var oldTexture = self._getCurrentTextrue();
-                self._swapFBAttachment();
+                var oldTexture = this._getCurrentTextrue();
+                this._swapFBAttachment();
                 component.updateComponent(oldTexture);
             } else {
                 component.updateComponent();
@@ -79,9 +79,9 @@ extend(EffectList, Component, {
 
         // switch to old framebuffer and copy the data
         gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
-        gl.useProgram(copyComponent.program);
-        gl.viewport(0, 0, self.resolution.width, self.resolution.height);
-        copyComponent.updateComponent(self.frameAttachments[self.currAttachment].texture);
+        gl.useProgram(this.copyComponent.program);
+        gl.viewport(0, 0, this.resolution.width, this.resolution.height);
+        this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture);
     },
 
     _initFrameBuffer: function() {
