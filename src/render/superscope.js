@@ -11,7 +11,7 @@ function SuperScope(options) {
 
     if(options.code in SuperScope.examples) {
         this.code = SuperScope.examples[options.code]();
-    } else if(typeOf(options.code) === 'function') {
+    } else if(typeof(options.code) === 'function') {
         this.code = options.code();
     } else {
         throw new Error("Invalid superscope");

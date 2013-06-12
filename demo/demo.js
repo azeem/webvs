@@ -15,25 +15,52 @@ function webvsInit() {
     var webvs = new Webvs({
         canvas: document.getElementById("my-canvas"),
         analyser: new Webvs.DancerAdapter(dancer),
+        clearFrame: false,
         components: [
-            new Webvs.OnBeatClear({blend: true}),
             //new Webvs.Picture("me.png", 100, 150),
-            new Webvs.SuperScope({
-                dots: false,
-                spectrum: false,
-                code: "diagonalScope",
-                colors:[
-                    [255, 255, 255],
-                    [255, 91, 91],
-                    [111, 255, 111],
-                    [64, 255, 255],
-                    [255, 182, 108],
-                    [255, 89, 172],
-                    [255, 255, 132],
-                    [128, 128, 255]
+            new Webvs.EffectList({
+                output: Webvs.BLEND_MAXIMUM,
+                components: [
+                    new Webvs.FadeOut({speed: 0.05}),
+                    new Webvs.SuperScope({
+                        dots: false,
+                        spectrum: false,
+                        code: (function() {
+                            var t = 0;
+                            return {
+                                n: 1000,
+                                onBeat: function() {
+                                    t = t+0.2;
+                                },
+                                perFrame: function() {
+                                    t = t-0.3;
+                                },
+                                perPoint: function(i, v) {
+                                    var d = 1/this.n;
+                                    var r=(i-(t*3));
+                                    var x=(Math.atan(r+d-t)*Math.cos(r+d-t+i));
+                                    var y=((i+Math.cos(d+v*1.5))-1.5)*1.7;
+                                    var z=-(Math.cos(t+i)+Math.log(v)*Math.cos(r*3))*3;
+                                    return [x,y];
+                                }
+                            };
+                        }),
+                        colors:[
+                            [255, 255, 255],
+                            [255, 91, 91],
+                            [111, 255, 111],
+                            [64, 255, 255],
+                            [255, 182, 108],
+                            [255, 89, 172],
+                            [255, 255, 132],
+                            [128, 128, 255]
+                        ]
+                    })
                 ]
             }),
-            new Webvs.Convolution("gaussianBlur")
+            new Webvs.OnBeatClear({blend: true, n:3}),
+            new Webvs.Convolution("blur"),
+            new Webvs.Convolution("blur")
         ]
     });
     webvs.start();

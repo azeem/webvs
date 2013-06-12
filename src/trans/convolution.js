@@ -71,6 +71,11 @@ Convolution.kernels = {
         -2, -1,  0,
         -1,  1,  1,
         0,  1,  2
+    ],
+    blur: [
+        1, 1, 1,
+        1, 1, 1,
+        1, 1, 1
     ]
 };
 extend(Convolution, Trans, {

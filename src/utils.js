@@ -46,15 +46,3 @@ var requestAnimationFrame = (
         window.setTimeout(callback, 1000 / 60);
     }
 );
-
-function Color(rgba) {
-    this.r = rgba[0];
-    this.g = rgba[1];
-    this.b = rgba[2];
-    this.a = typeof(rgba[3]) === "undefined"?255:rgba[3];
-}
-extend(Color, Object, {
-    getNormalized: function() {
-        return [this.r/256, this.g/256, this.b/256, this.a/256];
-    }
-});

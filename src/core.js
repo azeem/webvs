@@ -6,7 +6,8 @@
 function Webvs(options) {
     checkRequiredOptions(options, ["canvas", "components", "analyser"]);
     this.canvas = options.canvas;
-    this.rootComponent = new EffectList(options.components);
+    var clearFrame = options.clearFrame?options.clearFrame:false;
+    this.rootComponent = new EffectList({components:options.components, clearFrame: clearFrame});
     this.analyser = options.analyser;
 
     this._initGl();
@@ -174,5 +175,30 @@ extend(Trans, ShaderComponent, {
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
 });
+
+// Webvs constants
+var constants = {
+    BLEND_REPLACE: 1,
+    BLEND_MAXIMUM: 2
+};
+
+//put all constants into the global variable
+for(var key in constants) {
+    Webvs[key] = constants[key];
+}
+
+function setBlendMode(gl, mode) {
+    switch(mode) {
+        case constants.BLEND_REPLACE:
+            gl.blendFunc(gl.ONE, gl.ZERO);
+            gl.blendEquation(gl.FUNC_ADD);
+            break;
+        case constants.BLEND_MAXIMUM:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.MAX);
+            break;
+        default: throw new Error("Invalid blend mode");
+    }
+}
 
 window.Webvs = Webvs;

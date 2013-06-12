@@ -23,8 +23,14 @@ function Copy() {
 }
 extend(Copy, Trans);
 
-function EffectList(components) {
-    this.components = components;
+function EffectList(options) {
+    checkRequiredOptions(options, ["components"]);
+
+    this.components = options.components;
+    this.output = options.output?options.output:constants.BLEND_REPLACE;
+    this.clearFrame = options.clearFrame?options.clearFrame:false;
+    this.first = true;
+
     EffectList.super.constructor.call(this);
 }
 extend(EffectList, Component, {
@@ -63,6 +69,12 @@ extend(EffectList, Component, {
         gl.viewport(0, 0, this.resolution.width, this.resolution.height);
         this._setFBAttachment();
 
+        if(this.clearFrame || this.first) {
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            this.first = false;
+        }
+
         // render all the components
         var components = this.components;
         for(var i = 0;i < components.length;i++) {
@@ -81,11 +93,18 @@ extend(EffectList, Component, {
         gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
         gl.useProgram(this.copyComponent.program);
         gl.viewport(0, 0, this.resolution.width, this.resolution.height);
+
+        if(this.output != constants.BLEND_REPLACE) {
+            gl.enable(gl.BLEND);
+            setBlendMode(gl, this.output);
+        }
         this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture);
+        gl.disable(gl.BLEND);
     },
 
     _initFrameBuffer: function() {
         var gl = this.gl;
+
         var framebuffer = gl.createFramebuffer();
         var attachments = [];
         for(var i = 0;i < 2;i++) {
@@ -108,15 +127,17 @@ extend(EffectList, Component, {
                 renderbuffer: renderbuffer
             };
         }
+
         this.framebuffer = framebuffer;
         this.frameAttachments = attachments;
         this.currAttachment = 0;
     },
 
     _setFBAttachment: function() {
+        var attachment = this.frameAttachments[this.currAttachment];
         var gl = this.gl;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameAttachments[this.currAttachment].texture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.frameAttachments[this.currAttachment].renderbuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
     },
 
     _getCurrentTextrue: function() {

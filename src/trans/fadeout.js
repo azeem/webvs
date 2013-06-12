@@ -1,14 +1,14 @@
 /**
  * Created with JetBrains WebStorm.
  * User: z33m
- * Date: 6/11/13
- * Time: 4:03 PM
+ * Date: 6/13/13
+ * Time: 12:45 AM
  * To change this template use File | Settings | File Templates.
  */
 
-function OnBeatClear(options) {
+function FadeOut(options) {
     options = options?options:{};
-    this.n = options.n?options.n:1;
+    this.speed = options.speed?options.speed:1;
     this.color = options.color?options.color:[0,0,0];
 
     if(this.color.length != 3) {
@@ -18,9 +18,8 @@ function OnBeatClear(options) {
         this.color[i] = this.color[i]/255;
     }
 
-    this.blend = options.blend?options.blend:false;
-    this.prevBeat = false;
-    this.beatCount = 0;
+    this.frameCount = 0;
+    this.maxFrameCount = Math.floor(1/this.speed);
 
     var vertexSrc = [
         "attribute vec2 a_position;",
@@ -38,9 +37,9 @@ function OnBeatClear(options) {
     ].join("\n");
 
 
-    OnBeatClear.super.constructor.call(this, vertexSrc, fragmentSrc);
+    FadeOut.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(OnBeatClear, ShaderComponent, {
+extend(FadeOut, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 
@@ -65,34 +64,23 @@ extend(OnBeatClear, ShaderComponent, {
 
     update: function() {
         var gl = this.gl;
+        this.frameCount++;
+        if(this.frameCount == this.maxFrameCount) {
+            this.frameCount = 0;
+            // do average blending
+            gl.enable(gl.BLEND);
+            gl.blendColor(0.5, 0.5, 0.5, 1);
+            gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
 
-        var clear = false;
-        if(this.analyser.beat && !this.prevBeat) {
-            this.beatCount++;
-            if(this.beatCount == this.n) {
-                clear = true;
-                this.beatCount = 0;
-            }
-        }
-        this.prevBeat = this.analyser.beat;
-
-        if(clear) {
-            if(this.blend) {
-                // do average blending
-                gl.enable(gl.BLEND);
-                gl.blendColor(0.5, 0.5, 0.5, 1);
-                gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
-            }
             gl.uniform3fv(this.colorLocation, this.color);
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
             gl.enableVertexAttribArray(this.positionLocation);
             gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
-            if(this.blend) {
-                gl.disable(gl.BLEND);
-            }
+
+            gl.disable(gl.BLEND);
         }
     }
 });
 
-window.Webvs.OnBeatClear = OnBeatClear;
+window.Webvs.FadeOut = FadeOut;
