@@ -35,13 +35,13 @@ function webvsInit() {
                                 perFrame: function() {
                                     t = t-0.3;
                                 },
-                                perPoint: function(i, v) {
+                                perPoint: function() {
                                     var d = 1/this.n;
-                                    var r=(i-(t*3));
-                                    var x=(Math.atan(r+d-t)*Math.cos(r+d-t+i));
-                                    var y=((i+Math.cos(d+v*1.5))-1.5)*1.7;
-                                    var z=-(Math.cos(t+i)+Math.log(v)*Math.cos(r*3))*3;
-                                    return [x,y];
+                                    var r=(this.i-(t*3));
+                                    this.x=(Math.atan(r+d-t)*Math.cos(r+d-t+this.i));
+                                    this.y=((this.i+Math.cos(d+this.v*1.5))-1.5)*1.7;
+                                    //var z=-(Math.cos(t+i)+Math.log(v)*Math.cos(r*3))*3;
+                                    //return [x,y];
                                 }
                             };
                         }),
@@ -58,7 +58,7 @@ function webvsInit() {
                     })
                 ]
             }),
-            new Webvs.OnBeatClear({blend: true, n:3}),
+            new Webvs.OnBeatClear({blend: true, n:1}),
             new Webvs.Convolution("blur"),
             new Webvs.Convolution("blur")
         ]

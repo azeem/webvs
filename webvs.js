@@ -684,7 +684,9 @@ extend(SuperScope, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 
-        this.code.init(this.resolution.width, this.resolution.height);
+        this.code.w = this.resolution.width;
+        this.code.h = this.resolution.height;
+        this.code.init();
 
         this.pointBuffer = gl.createBuffer();
         this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
@@ -693,14 +695,21 @@ extend(SuperScope, ShaderComponent, {
 
     update: function() {
         var gl = this.gl;
+        var code = this.code;
+
+        this._stepColor();
+        code.red = this.currentColor[0];
+        code.green = this.currentColor[1];
+        code.blue = this.currentColor[2];
 
         var beat = this.analyser.beat;
-        this.code.perFrame(beat, this.resolution.width, this.resolution.height);
+        code.beat = beat?1:0;
+        code.perFrame();
         if(beat) {
-            this.code.onBeat(beat, this.resolution.width, this.resolution.height);
+            code.onBeat();
         }
 
-        var nPoints = Math.floor(this.code.n);
+        var nPoints = Math.floor(code.n);
         var data = this.spectrum ? this.analyser.getSpectrum() : this.analyser.getWaveform();
         var bucketSize = data.length/nPoints;
         var pbi = 0;
@@ -715,17 +724,18 @@ extend(SuperScope, ShaderComponent, {
             value = value/size;
 
             var pos = i/nPoints;
-            var points = this.code.perPoint(pos, value, beat, this.resolution.width, this.resolution.height);
-            pointBufferData[pbi++] = points[0];
-            pointBufferData[pbi++] = points[1]*-1;
+            code.i = pos;
+            code.v = value;
+            code.perPoint();
+            pointBufferData[pbi++] = code.x;
+            pointBufferData[pbi++] = code.y*-1;
             if(i !== 0 && i != nPoints-1 && !this.dots) {
-                pointBufferData[pbi++] = points[0];
-                pointBufferData[pbi++] = points[1]*-1;
+                pointBufferData[pbi++] = code.x;
+                pointBufferData[pbi++] = code.y*-1;
             }
         }
 
-        this._stepColor();
-        gl.uniform3fv(this.colorLocation, this.currentColor);
+        gl.uniform3fv(this.colorLocation, [code.red, code.green, code.blue]);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
@@ -766,11 +776,10 @@ SuperScope.examples = {
             onBeat: function() {
                 t = -t;
             },
-            perPoint: function(i, v) {
-                var sc = 0.4*Math.sin(i*Math.PI);
-                var x = 2*(i-0.5-v*sc)*t;
-                var y = 2*(i-0.5+v*sc);
-                return [x,y];
+            perPoint: function() {
+                var sc = 0.4*Math.sin(this.i*Math.PI);
+                this.x = 2*(this.i-0.5-this.v*sc)*t;
+                this.y = 2*(this.i-0.5+this.v*sc);
             }
         };
     },
@@ -784,24 +793,22 @@ SuperScope.examples = {
             onBeat: function() {
                 this.n = 80+rand(120.0);
             },
-            perPoint: function(i, v) {
-                var r = i*Math.PI*128+t;
-                var x = Math.cos(r/64)*0.7+Math.sin(r)*0.3;
-                var y = Math.sin(r/64)*0.7+Math.cos(r)*0.3;
-                return [x, y];
+            perPoint: function() {
+                var r = this.i*Math.PI*128+t;
+                this.x = Math.cos(r/64)*0.7+Math.sin(r)*0.3;
+                this.y = Math.sin(r/64)*0.7+Math.cos(r)*0.3;
             }
         };
     },
     threeDScopeDish: function() {
         return {
             n: 200,
-            perPoint: function(i, v) {
-                var iz = 1.3+Math.sin(i*Math.PI*2)*(v+0.5)*0.88;
-                var ix = Math.cos(i*Math.PI*2)*(v+0.5)*0.88;
-                var iy = -0.3+Math.abs(Math.cos(v*3.14159));
-                var x=ix/iz;
-                var y=iy/iz;
-                return [x, y];
+            perPoint: function() {
+                var iz = 1.3+Math.sin(this.i*Math.PI*2)*(this.v+0.5)*0.88;
+                var ix = Math.cos(this.i*Math.PI*2)*(this.v+0.5)*0.88;
+                var iy = -0.3+Math.abs(Math.cos(this.v*3.14159));
+                this.x=ix/iz;
+                this.y=iy/iz;
             }
         };
     },
@@ -810,8 +817,8 @@ SuperScope.examples = {
         var t = 0;
         var sc = 1;
         return {
-            init: function(b, w, h) {
-                this.n = w;
+            init: function() {
+                this.n = this.w;
             },
             perFrame: function() {
                 t=t+dt;
@@ -821,9 +828,8 @@ SuperScope.examples = {
                 }
             },
             perPoint: function(i, v) {
-                var x=Math.cos(2*i+t)*0.9*(v*0.5+0.5);
-                var y=Math.sin(i*2+t)*0.9*(v*0.5+0.5);
-                return [x, y];
+                this.x=Math.cos(2*this.i+t)*0.9*(this.v*0.5+0.5);
+                this.y=Math.sin(this.i*2+t)*0.9*(this.v*0.5+0.5);
             }
         };
     }
