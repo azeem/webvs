@@ -87,10 +87,10 @@ extend(ShaderComponent, Component, {
     /**
      * Update the screen. Called for every frame of the animation
      */
-    updateComponent: function(texture) {
-        ShaderComponent.super.updateComponent.call(this, texture);
+    updateComponent: function() {
+        ShaderComponent.super.updateComponent.apply(this, arguments);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
-        this.update(texture);
+        this.update.apply(this, arguments);
     },
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
@@ -178,8 +178,8 @@ extend(Trans, ShaderComponent, {
 
 // Webvs constants
 var constants = {
-    BLEND_REPLACE: 1,
-    BLEND_MAXIMUM: 2
+    REPLACE: 1,
+    MAXIMUM: 2
 };
 
 //put all constants into the global variable

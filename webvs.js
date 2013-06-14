@@ -31,6 +31,12 @@ function rand(max) {
     return Math.random()*max;
 }
 
+function assert(outcome, message) {
+    if(!assert) {
+        throw new Error("Assertion Failed: " + message);
+    }
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
@@ -123,10 +129,10 @@ extend(ShaderComponent, Component, {
     /**
      * Update the screen. Called for every frame of the animation
      */
-    updateComponent: function(texture) {
-        ShaderComponent.super.updateComponent.call(this, texture);
+    updateComponent: function() {
+        ShaderComponent.super.updateComponent.apply(this, arguments);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
-        this.update(texture);
+        this.update.apply(this, arguments);
     },
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
@@ -214,8 +220,8 @@ extend(Trans, ShaderComponent, {
 
 // Webvs constants
 var constants = {
-    BLEND_REPLACE: 1,
-    BLEND_MAXIMUM: 2
+    REPLACE: 1,
+    MAXIMUM: 2
 };
 
 //put all constants into the global variable
@@ -239,27 +245,60 @@ function setBlendMode(gl, mode) {
 
 window.Webvs = Webvs;
 /**
- * Utility component that copies a texture to the screen
+ * Special component that copies texture to target.
+ * Also blends in additional texture if provided
  * @constructor
  */
-function Copy() {
+function Copy(blendMode) {
+    var blendEq;
+    switch(blendMode) {
+        case constants.REPLACE:
+            blendEq = "src";
+            break;
+        case constants.MAXIMUM:
+            blendEq = "max(src, dest)";
+            break;
+        default:
+            throw new Error("Invalid copy blend mode");
+    }
+
     var fragmentSrc = [
         "precision mediump float;",
         "uniform sampler2D u_curRender;",
+        blendMode != constants.REPLACE?"uniform sampler2D u_destTexture;":"",
         "varying vec2 v_texCoord;",
         "void main() {",
-        "   gl_FragColor = texture2D(u_curRender, v_texCoord);",
+        blendMode != constants.REPLACE?"vec4 dest = texture2D(u_destTexture, v_texCoord);":"",
+        "   vec4 src = texture2D(u_curRender, v_texCoord);",
+        "   gl_FragColor = " + blendEq + ";",
         "}"
     ].join("\n");
+    console.log(fragmentSrc);
     Copy.super.constructor.call(this, fragmentSrc);
 }
-extend(Copy, Trans);
+extend(Copy, Trans, {
+    init: function() {
+        var gl = this.gl;
+        this.destTextureLocation = gl.getUniformLocation(this.program, "u_destTexture");
+        Copy.super.init.call(this);
+    },
+
+    update: function(srcTexture, destTexture) {
+        var gl = this.gl;
+        if(destTexture) {
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, destTexture);
+            gl.uniform1i(this.destTextureLocation, 1);
+        }
+        Copy.super.update.call(this, srcTexture);
+    }
+});
 
 function EffectList(options) {
     checkRequiredOptions(options, ["components"]);
 
     this.components = options.components;
-    this.output = options.output?options.output:constants.BLEND_REPLACE;
+    this.output = options.output?options.output:constants.REPLACE;
     this.clearFrame = options.clearFrame?options.clearFrame:false;
     this.first = true;
 
@@ -273,7 +312,7 @@ extend(EffectList, Component, {
         this._initFrameBuffer();
 
         var components = this.components;
-        var copyComponent = new Copy();
+        var copyComponent = new Copy(this.output);
 
         // initialize all the components
         var initPromises = [];
@@ -289,8 +328,8 @@ extend(EffectList, Component, {
         return D.all(initPromises);
     },
 
-    updateComponent: function(texture) {
-        EffectList.super.updateComponent.call(this, texture);
+    updateComponent: function(inputTexture) {
+        EffectList.super.updateComponent.call(this, inputTexture);
         var gl = this.gl;
 
         // save the current framebuffer
@@ -325,13 +364,8 @@ extend(EffectList, Component, {
         gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
         gl.useProgram(this.copyComponent.program);
         gl.viewport(0, 0, this.resolution.width, this.resolution.height);
-
-        if(this.output != constants.BLEND_REPLACE) {
-            gl.enable(gl.BLEND);
-            setBlendMode(gl, this.output);
-        }
-        this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture);
-        gl.disable(gl.BLEND);
+        assert(inputTexture || this.output == constants.REPLACE, "Cannot blend");
+        this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture, inputTexture);
     },
 
     _initFrameBuffer: function() {

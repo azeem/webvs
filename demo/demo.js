@@ -19,7 +19,7 @@ function webvsInit() {
         components: [
             //new Webvs.Picture("me.png", 100, 150),
             new Webvs.EffectList({
-                output: Webvs.BLEND_MAXIMUM,
+                output: Webvs.MAXIMUM,
                 components: [
                     new Webvs.FadeOut({speed: 0.05}),
                     new Webvs.SuperScope({

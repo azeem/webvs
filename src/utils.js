@@ -38,6 +38,12 @@ function rand(max) {
     return Math.random()*max;
 }
 
+function assert(outcome, message) {
+    if(!assert) {
+        throw new Error("Assertion Failed: " + message);
+    }
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
