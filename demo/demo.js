@@ -28,7 +28,7 @@ function webvsInit() {
                         code: (function() {
                             var t = 0;
                             return {
-                                n: 1000,
+                                n: 800,
                                 onBeat: function() {
                                     t = t+0.2;
                                 },
@@ -40,6 +40,9 @@ function webvsInit() {
                                     var r=(this.i-(t*3));
                                     this.x=(Math.atan(r+d-t)*Math.cos(r+d-t+this.i));
                                     this.y=((this.i+Math.cos(d+this.v*1.5))-1.5)*1.7;
+                                    this.red=Math.cos(r)+1;
+                                    this.blue=Math.sin(r);
+                                    this.green=Math.sin(this.i)/2;
                                     //var z=-(Math.cos(t+i)+Math.log(v)*Math.cos(r*3))*3;
                                     //return [x,y];
                                 }
@@ -59,7 +62,7 @@ function webvsInit() {
                 ]
             }),
             new Webvs.OnBeatClear({blend: true, n:1}),
-            new Webvs.Convolution("blur"),
+            //new Webvs.Convolution("blur"),
             new Webvs.Convolution("blur")
         ]
     });

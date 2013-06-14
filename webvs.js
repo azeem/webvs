@@ -665,16 +665,19 @@ function SuperScope(options) {
 
     var vertexSrc = [
         "attribute vec2 a_position;",
+        "attribute vec3 a_color;",
+        "varying vec3 v_color;",
         "void main() {",
         "   gl_Position = vec4(a_position, 0, 1);",
+        "   v_color = a_color;",
         "}"
     ].join("\n");
 
     var fragmentSrc = [
         "precision mediump float;",
-        "uniform vec3 u_color;",
+        "varying vec3 v_color;",
         "void main() {",
-        "   gl_FragColor = vec4(u_color, 1);",
+        "   gl_FragColor = vec4(v_color, 1);",
         "}"
     ].join("\n");
 
@@ -689,8 +692,9 @@ extend(SuperScope, ShaderComponent, {
         this.code.init();
 
         this.pointBuffer = gl.createBuffer();
+        this.colorBuffer = gl.createBuffer();
         this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
-        this.colorLocation = gl.getUniformLocation(this.program, "u_color");
+        this.vertexColorLocation = gl.getAttribLocation(this.program, "a_color");
     },
 
     update: function() {
@@ -713,8 +717,10 @@ extend(SuperScope, ShaderComponent, {
         var data = this.spectrum ? this.analyser.getSpectrum() : this.analyser.getWaveform();
         var bucketSize = data.length/nPoints;
         var pbi = 0;
+        var cdi = 0;
 
         var pointBufferData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 2);
+        var colorData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 3);
         for(var i = 0;i < nPoints;i++) {
             var value = 0;
             var size = 0;
@@ -729,18 +735,28 @@ extend(SuperScope, ShaderComponent, {
             code.perPoint();
             pointBufferData[pbi++] = code.x;
             pointBufferData[pbi++] = code.y*-1;
+            colorData[cdi++] = code.red;
+            colorData[cdi++] = code.green;
+            colorData[cdi++] = code.blue;
             if(i !== 0 && i != nPoints-1 && !this.dots) {
                 pointBufferData[pbi++] = code.x;
                 pointBufferData[pbi++] = code.y*-1;
+                colorData[cdi++] = code.red;
+                colorData[cdi++] = code.green;
+                colorData[cdi++] = code.blue;
             }
         }
-
-        gl.uniform3fv(this.colorLocation, [code.red, code.green, code.blue]);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(this.vertexPositionLocation);
         gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(this.vertexColorLocation);
+        gl.vertexAttribPointer(this.vertexColorLocation, 3, gl.FLOAT, false, 0, 0);
+
         gl.drawArrays(this.dots?gl.POINTS:gl.LINES, 0, pbi/2);
     },
 
