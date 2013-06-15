@@ -15,57 +15,61 @@ function webvsInit() {
     var webvs = new Webvs({
         canvas: document.getElementById("my-canvas"),
         analyser: new Webvs.DancerAdapter(dancer),
-        clearFrame: false,
-        components: [
+        preset: {
+            clearFrame: false,
+            components: [
 //            new Webvs.FadeOut({speed: 0.0325}),
 //            new Webvs.SuperScope({code: Webvs.SuperScope.examples.vibratingWorm}),
 //            new Webvs.Convolution("blur")
 
-            new Webvs.EffectList({
-                output: Webvs.ADDITIVE,
-                components: [
-                    new Webvs.FadeOut({speed: 0.5}),
-                    new Webvs.SuperScope({
-                        dots: false,
-                        spectrum: false,
-                        code: (function() {
-                            var t = 0;
-                            return {
-                                n: 800,
-                                onBeat: function() {
-                                    t = t+0.3;
-                                    this.n = 100+Webvs.rand(900);
-                                },
-                                perFrame: function() {
-                                    t = t-0.5;
-                                },
-                                perPoint: function() {
-                                    var d = 1/this.n;
-                                    var r=(this.i-(t*3));
-                                    this.x=(Math.atan(r+d-t)*Math.cos(r+d-t+this.i));
-                                    this.y=((this.i+Math.cos(d+this.v*1.2))-1.5)*1.7;
-                                    this.red=Math.cos(r)+1;
-                                    this.blue=Math.sin(r);
-                                    this.green=Math.sin(this.i)/2;
-                                }
-                            };
-                        }),
-                        colors:[
-                            [255, 255, 255],
-                            [255, 91, 91],
-                            [111, 255, 111],
-                            [64, 255, 255],
-                            [255, 182, 108],
-                            [255, 89, 172],
-                            [255, 255, 132],
-                            [128, 128, 255]
-                        ]
-                    })
-                ]
-            }),
-            new Webvs.Convolution("blur"),
-            new Webvs.OnBeatClear()
-        ]
+                {
+                    type: "EffectList",
+                    output: Webvs.ADDITIVE,
+                    components: [
+                        {type:"FadeOut", speed: 0.5},
+                        {
+                            type: "SuperScope",
+                            dots: false,
+                            spectrum: false,
+                            code: (function() {
+                                var t = 0;
+                                return {
+                                    n: 800,
+                                    onBeat: function() {
+                                        t = t+0.3;
+                                        this.n = 100+Webvs.rand(900);
+                                    },
+                                    perFrame: function() {
+                                        t = t-0.5;
+                                    },
+                                    perPoint: function() {
+                                        var d = 1/this.n;
+                                        var r=(this.i-(t*3));
+                                        this.x=(Math.atan(r+d-t)*Math.cos(r+d-t+this.i));
+                                        this.y=((this.i+Math.cos(d+this.v*1.2))-1.5)*1.7;
+                                        this.red=Math.cos(r)+1;
+                                        this.blue=Math.sin(r);
+                                        this.green=Math.sin(this.i)/2;
+                                    }
+                                };
+                            }),
+                            colors:[
+                                [255, 255, 255],
+                                [255, 91, 91],
+                                [111, 255, 111],
+                                [64, 255, 255],
+                                [255, 182, 108],
+                                [255, 89, 172],
+                                [255, 255, 132],
+                                [128, 128, 255]
+                            ]
+                        }
+                    ]
+                },
+                {type: "Convolution", kernel: "blur"},
+                {type: "OnBeatClear"}
+            ]
+        }
     });
     webvs.start();
 }

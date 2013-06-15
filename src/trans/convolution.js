@@ -11,7 +11,8 @@
  * @param kernel
  * @constructor
  */
-function Convolution(kernelName) {
+function Convolution(options) {
+    checkRequiredOptions(options, ["kernel"]);
     var fragmentSrc = [
         "precision mediump float;",
         "uniform vec2 u_resolution;",
@@ -35,10 +36,10 @@ function Convolution(kernelName) {
         "}"
     ].join("\n");
 
-    if(kernelName in Convolution.kernels) {
-        this.kernel = Convolution.kernels[kernelName];
-    } else if(isArray(kernelName) && kernelName.length == 9) {
-        this.kernel = kernelName;
+    if(options.kernel in Convolution.kernels) {
+        this.kernel = Convolution.kernels[options.kernel];
+    } else if(isArray(options.kernel) && options.kernel.length == 9) {
+        this.kernel = options.kernel;
     } else {
         throw new Error("Invalid convolution kernel");
     }

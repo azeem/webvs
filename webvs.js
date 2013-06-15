@@ -46,10 +46,10 @@ var requestAnimationFrame = (
     }
 );
 function Webvs(options) {
-    checkRequiredOptions(options, ["canvas", "components", "analyser"]);
+    checkRequiredOptions(options, ["canvas", "preset", "analyser"]);
     this.canvas = options.canvas;
-    var clearFrame = options.clearFrame?options.clearFrame:false;
-    this.rootComponent = new EffectList({components:options.components, clearFrame: clearFrame});
+    var clearFrame = options.preset.clearFrame?options.preset.clearFrame:false;
+    this.rootComponent = new EffectList({components:options.preset.components, clearFrame: clearFrame});
     this.analyser = options.analyser;
 
     this._initGl();
@@ -277,7 +277,6 @@ function Copy(blendMode) {
         "   gl_FragColor = " + blendEq + ";",
         "}"
     ].join("\n");
-    console.log(fragmentSrc);
     Copy.super.constructor.call(this, fragmentSrc);
 }
 extend(Copy, Trans, {
@@ -301,7 +300,7 @@ extend(Copy, Trans, {
 function EffectList(options) {
     checkRequiredOptions(options, ["components"]);
 
-    this.components = options.components;
+    this._constructComponent(options.components);
     this.output = options.output?options.output:constants.REPLACE;
     this.clearFrame = options.clearFrame?options.clearFrame:false;
     this.first = true;
@@ -310,6 +309,16 @@ function EffectList(options) {
 }
 extend(EffectList, Component, {
     swapFrame: true,
+
+    _constructComponent: function(optList) {
+        var components = [];
+        for(var i = 0;i < optList.length;i++) {
+            var type = optList[i].type;
+            var component = new Webvs[type](optList[i]);
+            components.push(component);
+        }
+        this.components = components;
+    },
 
     initComponent: function(gl, resolution, analyser) {
         EffectList.super.initComponent.call(this, gl, resolution, analyser);
@@ -543,10 +552,11 @@ extend(OnBeatClear, ShaderComponent, {
 });
 
 window.Webvs.OnBeatClear = OnBeatClear;
-function Picture(src, x, y) {
-    this.src = src;
-    this.x = x;
-    this.y = y;
+function Picture(options) {
+    checkRequiredOptions(options, ["src", "x", "y"]);
+    this.src = options.src;
+    this.x = options.x;
+    this.y = options.y;
     var vertexSrc = [
         "attribute vec2 a_texCoord;",
         "varying vec2 v_texCoord;",
@@ -861,7 +871,8 @@ window.Webvs.SuperScope = SuperScope;
  * @param kernel
  * @constructor
  */
-function Convolution(kernelName) {
+function Convolution(options) {
+    checkRequiredOptions(options, ["kernel"]);
     var fragmentSrc = [
         "precision mediump float;",
         "uniform vec2 u_resolution;",
@@ -885,10 +896,10 @@ function Convolution(kernelName) {
         "}"
     ].join("\n");
 
-    if(kernelName in Convolution.kernels) {
-        this.kernel = Convolution.kernels[kernelName];
-    } else if(isArray(kernelName) && kernelName.length == 9) {
-        this.kernel = kernelName;
+    if(options.kernel in Convolution.kernels) {
+        this.kernel = Convolution.kernels[options.kernel];
+    } else if(isArray(options.kernel) && options.kernel.length == 9) {
+        this.kernel = options.kernel;
     } else {
         throw new Error("Invalid convolution kernel");
     }

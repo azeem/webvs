@@ -38,7 +38,6 @@ function Copy(blendMode) {
         "   gl_FragColor = " + blendEq + ";",
         "}"
     ].join("\n");
-    console.log(fragmentSrc);
     Copy.super.constructor.call(this, fragmentSrc);
 }
 extend(Copy, Trans, {
@@ -62,7 +61,7 @@ extend(Copy, Trans, {
 function EffectList(options) {
     checkRequiredOptions(options, ["components"]);
 
-    this.components = options.components;
+    this._constructComponent(options.components);
     this.output = options.output?options.output:constants.REPLACE;
     this.clearFrame = options.clearFrame?options.clearFrame:false;
     this.first = true;
@@ -71,6 +70,16 @@ function EffectList(options) {
 }
 extend(EffectList, Component, {
     swapFrame: true,
+
+    _constructComponent: function(optList) {
+        var components = [];
+        for(var i = 0;i < optList.length;i++) {
+            var type = optList[i].type;
+            var component = new Webvs[type](optList[i]);
+            components.push(component);
+        }
+        this.components = components;
+    },
 
     initComponent: function(gl, resolution, analyser) {
         EffectList.super.initComponent.call(this, gl, resolution, analyser);

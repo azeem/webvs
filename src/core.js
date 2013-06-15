@@ -4,10 +4,10 @@
  * @constructor
  */
 function Webvs(options) {
-    checkRequiredOptions(options, ["canvas", "components", "analyser"]);
+    checkRequiredOptions(options, ["canvas", "preset", "analyser"]);
     this.canvas = options.canvas;
-    var clearFrame = options.clearFrame?options.clearFrame:false;
-    this.rootComponent = new EffectList({components:options.components, clearFrame: clearFrame});
+    var clearFrame = options.preset.clearFrame?options.preset.clearFrame:false;
+    this.rootComponent = new EffectList({components:options.preset.components, clearFrame: clearFrame});
     this.analyser = options.analyser;
 
     this._initGl();

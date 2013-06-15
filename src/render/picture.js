@@ -6,10 +6,11 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function Picture(src, x, y) {
-    this.src = src;
-    this.x = x;
-    this.y = y;
+function Picture(options) {
+    checkRequiredOptions(options, ["src", "x", "y"]);
+    this.src = options.src;
+    this.x = options.x;
+    this.y = options.y;
     var vertexSrc = [
         "attribute vec2 a_texCoord;",
         "varying vec2 v_texCoord;",
