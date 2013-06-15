@@ -17,11 +17,14 @@ function webvsInit() {
         analyser: new Webvs.DancerAdapter(dancer),
         clearFrame: false,
         components: [
-            //new Webvs.Picture("me.png", 100, 150),
+//            new Webvs.FadeOut({speed: 0.0325}),
+//            new Webvs.SuperScope({code: Webvs.SuperScope.examples.vibratingWorm}),
+//            new Webvs.Convolution("blur")
+
             new Webvs.EffectList({
-                output: Webvs.MAXIMUM,
+                output: Webvs.ADDITIVE,
                 components: [
-                    new Webvs.FadeOut({speed: 0.05}),
+                    new Webvs.FadeOut({speed: 0.5}),
                     new Webvs.SuperScope({
                         dots: false,
                         spectrum: false,
@@ -30,21 +33,20 @@ function webvsInit() {
                             return {
                                 n: 800,
                                 onBeat: function() {
-                                    t = t+0.2;
+                                    t = t+0.3;
+                                    this.n = 100+Webvs.rand(900);
                                 },
                                 perFrame: function() {
-                                    t = t-0.3;
+                                    t = t-0.5;
                                 },
                                 perPoint: function() {
                                     var d = 1/this.n;
                                     var r=(this.i-(t*3));
                                     this.x=(Math.atan(r+d-t)*Math.cos(r+d-t+this.i));
-                                    this.y=((this.i+Math.cos(d+this.v*1.5))-1.5)*1.7;
+                                    this.y=((this.i+Math.cos(d+this.v*1.2))-1.5)*1.7;
                                     this.red=Math.cos(r)+1;
                                     this.blue=Math.sin(r);
                                     this.green=Math.sin(this.i)/2;
-                                    //var z=-(Math.cos(t+i)+Math.log(v)*Math.cos(r*3))*3;
-                                    //return [x,y];
                                 }
                             };
                         }),
@@ -61,9 +63,8 @@ function webvsInit() {
                     })
                 ]
             }),
-            new Webvs.OnBeatClear({blend: true, n:1}),
-            //new Webvs.Convolution("blur"),
-            new Webvs.Convolution("blur")
+            new Webvs.Convolution("blur"),
+            new Webvs.OnBeatClear()
         ]
     });
     webvs.start();

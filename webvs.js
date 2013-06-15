@@ -85,7 +85,7 @@ extend(Webvs, Object, {
             requestAnimationFrame(drawFrame);
         };
 
-        // start rendering when the promise is done
+        // start rendering when the promise is  done
         promise.then(function() {
             requestAnimationFrame(drawFrame);
         });
@@ -221,7 +221,8 @@ extend(Trans, ShaderComponent, {
 // Webvs constants
 var constants = {
     REPLACE: 1,
-    MAXIMUM: 2
+    MAXIMUM: 2,
+    ADDITIVE: 3
 };
 
 //put all constants into the global variable
@@ -242,7 +243,7 @@ function setBlendMode(gl, mode) {
         default: throw new Error("Invalid blend mode");
     }
 }
-
+Webvs.rand = rand;
 window.Webvs = Webvs;
 /**
  * Special component that copies texture to target.
@@ -257,6 +258,9 @@ function Copy(blendMode) {
             break;
         case constants.MAXIMUM:
             blendEq = "max(src, dest)";
+            break;
+        case constants.ADDITIVE:
+            blendEq = "clamp(src+dest, vec4(0,0,0,0), vec4(1,1,1,1))";
             break;
         default:
             throw new Error("Invalid copy blend mode");

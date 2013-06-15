@@ -20,6 +20,9 @@ function Copy(blendMode) {
         case constants.MAXIMUM:
             blendEq = "max(src, dest)";
             break;
+        case constants.ADDITIVE:
+            blendEq = "clamp(src+dest, vec4(0,0,0,0), vec4(1,1,1,1))";
+            break;
         default:
             throw new Error("Invalid copy blend mode");
     }
