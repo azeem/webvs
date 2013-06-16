@@ -91,6 +91,14 @@ extend(Picture, ShaderComponent, {
         gl.enableVertexAttribArray(this.texCoordLocation);
         gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+    },
+
+    destroyComponent: function() {
+        Picture.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteTexture(this.imageTexture);
+        gl.dleteBuffer(this.texCoordBuffer);
     }
 });
 

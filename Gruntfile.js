@@ -13,7 +13,8 @@ module.exports = function(grunt) {
             options: {
                 globals: {
                     Webvs: true
-                }
+                },
+                evil: true
             }
         },
 

@@ -92,6 +92,11 @@ extend(OnBeatClear, ShaderComponent, {
                 gl.disable(gl.BLEND);
             }
         }
+    },
+
+    destroyComponent: function() {
+        OnBeatClear.super.destroyComponent.call(this);
+        this.gl.deleteBuffer(this.vertexBuffer);
     }
 });
 

@@ -4,13 +4,12 @@
  * @constructor
  */
 function Webvs(options) {
-    checkRequiredOptions(options, ["canvas", "preset", "analyser"]);
+    checkRequiredOptions(options, ["canvas", "analyser"]);
     this.canvas = options.canvas;
-    var clearFrame = options.preset.clearFrame?options.preset.clearFrame:false;
-    this.rootComponent = new EffectList({components:options.preset.components, clearFrame: clearFrame});
     this.analyser = options.analyser;
 
     this._initGl();
+    //this.loadPreset({clearFrame:true, components: []});
 }
 extend(Webvs, Object, {
     _initGl: function() {
@@ -20,11 +19,29 @@ extend(Webvs, Object, {
                 width: this.canvas.width,
                 height: this.canvas.height
             };
-            this.canvas.addEventListener("webglcontextlost", function(event) {
-                console.log("Webvs: lost webgl context");
-            });
         } catch(e) {
-            throw new Error("Couldnt get webgl context");
+            throw new Error("Couldnt get webgl context" + e);
+        }
+    },
+
+    loadPreset: function(preset) {
+        this.preset = preset;
+        this.stop();
+        if(this.rootComponent) {
+            this.rootComponent.destroyComponent();
+        }
+        this.rootComponent = new EffectList(preset);
+    },
+
+    resetCanvas: function() {
+        this.stop();
+        if(this.rootComponent) {
+            this.rootComponent.destroyComponent();
+            this.rootComponent = null;
+        }
+        this._initGl();
+        if(this.preset) {
+            this.rootComponent = new EffectList(this.preset);
         }
     },
 
@@ -32,6 +49,10 @@ extend(Webvs, Object, {
      * Starts the animation
      */
     start: function() {
+        if(!this.rootComponent) {
+            return; // no preset loaded yet. cannot start!
+        }
+
         var rootComponent = this.rootComponent;
         var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser);
 
@@ -40,13 +61,19 @@ extend(Webvs, Object, {
             if(_this.analyser.isPlaying()) {
                 rootComponent.updateComponent();
             }
-            requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
         // start rendering when the promise is  done
         promise.then(function() {
-            requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         });
+    },
+
+    stop: function() {
+        if(typeof this.animReqId !== "undefined") {
+            cancelAnimationFrame(this.animReqId);
+        }
     }
 });
 
@@ -57,7 +84,8 @@ extend(Component, Object, {
         this.resolution = resolution;
         this.analyser = analyser;
     },
-    updateComponent: function() {}
+    updateComponent: function() {},
+    destroyComponent: function() {}
 });
 
 /**
@@ -91,6 +119,13 @@ extend(ShaderComponent, Component, {
         ShaderComponent.super.updateComponent.apply(this, arguments);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
         this.update.apply(this, arguments);
+    },
+
+    destroyComponent: function() {
+        var gl = this.gl;
+        gl.deleteShader(this.vertex);
+        gl.deleteShader(this.fragment);
+        gl.deleteProgram(this.program);
     },
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
@@ -141,6 +176,13 @@ function Trans(fragmentSrc) {
 }
 extend(Trans, ShaderComponent, {
     swapFrame: true,
+
+    destroyComponent: function() {
+        Trans.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteBuffer(this.texCoordBuffer);
+    },
 
     init: function() {
         var gl = this.gl;

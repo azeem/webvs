@@ -49,6 +49,15 @@ var requestAnimationFrame = (
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame    ||
     function( callback ){
-        window.setTimeout(callback, 1000 / 60);
+        return window.setTimeout(callback, 1000 / 60);
+    }
+);
+
+var cancelAnimationFrame = (
+    window.cancelAnimationFrame ||
+    window.webkitCancelAnimationFrame ||
+    window.mozCancelAnimationFrame ||
+    function(requestId) {
+        return window.clearTimeout(requestId);
     }
 );

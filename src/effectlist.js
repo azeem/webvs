@@ -142,6 +142,25 @@ extend(EffectList, Component, {
         this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture, inputTexture);
     },
 
+    destroyComponent: function() {
+        EffectList.super.destroyComponent.call(this);
+        var gl = this.gl;
+        var i;
+
+        // destory all the sub-components
+        for(i = 0;i < this.components.length;i++) {
+            this.components[i].destroyComponent();
+        }
+        this.copyComponent.destroyComponent();
+
+        // delete the framebuffer
+        for(i = 0;i < 2;i++) {
+            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
+            gl.deleteTexture(this.frameAttachments[i].texture);
+        }
+        gl.deleteFramebuffer(this.framebuffer);
+    },
+
     _initFrameBuffer: function() {
         var gl = this.gl;
 

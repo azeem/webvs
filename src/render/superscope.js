@@ -139,6 +139,14 @@ extend(SuperScope, ShaderComponent, {
         gl.drawArrays(this.dots?gl.POINTS:gl.LINES, 0, pbi/2);
     },
 
+    destroyComponent: function() {
+        SuperScope.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteBuffer(this.vertexBuffer);
+        gl.deleteBuffer(this.colorBuffer);
+    },
+
     _stepColor: function() {
         var i;
         if(this.colors.length > 1) {

@@ -42,17 +42,25 @@ var requestAnimationFrame = (
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame    ||
     function( callback ){
-        window.setTimeout(callback, 1000 / 60);
+        return window.setTimeout(callback, 1000 / 60);
+    }
+);
+
+var cancelAnimationFrame = (
+    window.cancelAnimationFrame ||
+    window.webkitCancelAnimationFrame ||
+    window.mozCancelAnimationFrame ||
+    function(requestId) {
+        return window.clearTimeout(requestId);
     }
 );
 function Webvs(options) {
-    checkRequiredOptions(options, ["canvas", "preset", "analyser"]);
+    checkRequiredOptions(options, ["canvas", "analyser"]);
     this.canvas = options.canvas;
-    var clearFrame = options.preset.clearFrame?options.preset.clearFrame:false;
-    this.rootComponent = new EffectList({components:options.preset.components, clearFrame: clearFrame});
     this.analyser = options.analyser;
 
     this._initGl();
+    //this.loadPreset({clearFrame:true, components: []});
 }
 extend(Webvs, Object, {
     _initGl: function() {
@@ -62,11 +70,29 @@ extend(Webvs, Object, {
                 width: this.canvas.width,
                 height: this.canvas.height
             };
-            this.canvas.addEventListener("webglcontextlost", function(event) {
-                console.log("Webvs: lost webgl context");
-            });
         } catch(e) {
-            throw new Error("Couldnt get webgl context");
+            throw new Error("Couldnt get webgl context" + e);
+        }
+    },
+
+    loadPreset: function(preset) {
+        this.preset = preset;
+        this.stop();
+        if(this.rootComponent) {
+            this.rootComponent.destroyComponent();
+        }
+        this.rootComponent = new EffectList(preset);
+    },
+
+    resetCanvas: function() {
+        this.stop();
+        if(this.rootComponent) {
+            this.rootComponent.destroyComponent();
+            this.rootComponent = null;
+        }
+        this._initGl();
+        if(this.preset) {
+            this.rootComponent = new EffectList(this.preset);
         }
     },
 
@@ -74,6 +100,10 @@ extend(Webvs, Object, {
      * Starts the animation
      */
     start: function() {
+        if(!this.rootComponent) {
+            return; // no preset loaded yet. cannot start!
+        }
+
         var rootComponent = this.rootComponent;
         var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser);
 
@@ -82,13 +112,19 @@ extend(Webvs, Object, {
             if(_this.analyser.isPlaying()) {
                 rootComponent.updateComponent();
             }
-            requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
         // start rendering when the promise is  done
         promise.then(function() {
-            requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         });
+    },
+
+    stop: function() {
+        if(typeof this.animReqId !== "undefined") {
+            cancelAnimationFrame(this.animReqId);
+        }
     }
 });
 
@@ -99,7 +135,8 @@ extend(Component, Object, {
         this.resolution = resolution;
         this.analyser = analyser;
     },
-    updateComponent: function() {}
+    updateComponent: function() {},
+    destroyComponent: function() {}
 });
 
 /**
@@ -133,6 +170,13 @@ extend(ShaderComponent, Component, {
         ShaderComponent.super.updateComponent.apply(this, arguments);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
         this.update.apply(this, arguments);
+    },
+
+    destroyComponent: function() {
+        var gl = this.gl;
+        gl.deleteShader(this.vertex);
+        gl.deleteShader(this.fragment);
+        gl.deleteProgram(this.program);
     },
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
@@ -183,6 +227,13 @@ function Trans(fragmentSrc) {
 }
 extend(Trans, ShaderComponent, {
     swapFrame: true,
+
+    destroyComponent: function() {
+        Trans.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteBuffer(this.texCoordBuffer);
+    },
 
     init: function() {
         var gl = this.gl;
@@ -381,6 +432,25 @@ extend(EffectList, Component, {
         this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture, inputTexture);
     },
 
+    destroyComponent: function() {
+        EffectList.super.destroyComponent.call(this);
+        var gl = this.gl;
+        var i;
+
+        // destory all the sub-components
+        for(i = 0;i < this.components.length;i++) {
+            this.components[i].destroyComponent();
+        }
+        this.copyComponent.destroyComponent();
+
+        // delete the framebuffer
+        for(i = 0;i < 2;i++) {
+            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
+            gl.deleteTexture(this.frameAttachments[i].texture);
+        }
+        gl.deleteFramebuffer(this.framebuffer);
+    },
+
     _initFrameBuffer: function() {
         var gl = this.gl;
 
@@ -548,6 +618,11 @@ extend(OnBeatClear, ShaderComponent, {
                 gl.disable(gl.BLEND);
             }
         }
+    },
+
+    destroyComponent: function() {
+        OnBeatClear.super.destroyComponent.call(this);
+        this.gl.deleteBuffer(this.vertexBuffer);
     }
 });
 
@@ -637,6 +712,14 @@ extend(Picture, ShaderComponent, {
         gl.enableVertexAttribArray(this.texCoordLocation);
         gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+    },
+
+    destroyComponent: function() {
+        Picture.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteTexture(this.imageTexture);
+        gl.dleteBuffer(this.texCoordBuffer);
     }
 });
 
@@ -772,6 +855,14 @@ extend(SuperScope, ShaderComponent, {
         gl.vertexAttribPointer(this.vertexColorLocation, 3, gl.FLOAT, false, 0, 0);
 
         gl.drawArrays(this.dots?gl.POINTS:gl.LINES, 0, pbi/2);
+    },
+
+    destroyComponent: function() {
+        SuperScope.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteBuffer(this.vertexBuffer);
+        gl.deleteBuffer(this.colorBuffer);
     },
 
     _stepColor: function() {
@@ -1033,6 +1124,11 @@ extend(FadeOut, ShaderComponent, {
 
             gl.disable(gl.BLEND);
         }
+    },
+
+    destroyComponent: function() {
+        FadeOut.super.destroyComponent.call(this);
+        this.gl.deleteBuffer(this.vertexBuffer);
     }
 });
 

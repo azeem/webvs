@@ -80,6 +80,11 @@ extend(FadeOut, ShaderComponent, {
 
             gl.disable(gl.BLEND);
         }
+    },
+
+    destroyComponent: function() {
+        FadeOut.super.destroyComponent.call(this);
+        this.gl.deleteBuffer(this.vertexBuffer);
     }
 });
 
