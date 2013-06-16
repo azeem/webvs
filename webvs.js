@@ -31,34 +31,36 @@ function rand(max) {
     return Math.random()*max;
 }
 
+function assert(outcome, message) {
+    if(!assert) {
+        throw new Error("Assertion Failed: " + message);
+    }
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame    ||
     function( callback ){
-        window.setTimeout(callback, 1000 / 60);
+        return window.setTimeout(callback, 1000 / 60);
     }
 );
 
-function Color(rgba) {
-    this.r = rgba[0];
-    this.g = rgba[1];
-    this.b = rgba[2];
-    this.a = typeof(rgba[3]) === "undefined"?255:rgba[3];
-}
-extend(Color, Object, {
-    getNormalized: function() {
-        return [this.r/256, this.g/256, this.b/256, this.a/256];
+var cancelAnimationFrame = (
+    window.cancelAnimationFrame ||
+    window.webkitCancelAnimationFrame ||
+    window.mozCancelAnimationFrame ||
+    function(requestId) {
+        return window.clearTimeout(requestId);
     }
-});
+);
 function Webvs(options) {
-    checkRequiredOptions(options, ["canvas", "components", "analyser"]);
+    checkRequiredOptions(options, ["canvas", "analyser"]);
     this.canvas = options.canvas;
-    this.components = options.components;
     this.analyser = options.analyser;
 
     this._initGl();
-    this._initFrameBuffer();
+    //this.loadPreset({clearFrame:true, components: []});
 }
 extend(Webvs, Object, {
     _initGl: function() {
@@ -68,112 +70,61 @@ extend(Webvs, Object, {
                 width: this.canvas.width,
                 height: this.canvas.height
             };
-            this.canvas.addEventListener("webglcontextlost", function(event) {
-                console.log("Webvs: lost webgl context");
-            });
         } catch(e) {
-            throw new Error("Couldnt get webgl context");
+            throw new Error("Couldnt get webgl context" + e);
         }
     },
-    _initFrameBuffer: function() {
-        var gl = this.gl;
-        var framebuffer = gl.createFramebuffer();
-        var attachments = [];
-        for(var i = 0;i < 2;i++) {
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
 
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.resolution.width, this.resolution.height,
-                          0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-            var renderbuffer = gl.createRenderbuffer();
-            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.resolution.width, this.resolution.height);
-
-            attachments[i] = {
-                texture: texture,
-                renderbuffer: renderbuffer
-            };
+    loadPreset: function(preset) {
+        this.preset = preset;
+        this.stop();
+        if(this.rootComponent) {
+            this.rootComponent.destroyComponent();
         }
-        this.framebuffer = framebuffer;
-        this.frameAttachments = attachments;
-        this.currAttachment = 0;
+        this.rootComponent = new EffectList(preset);
     },
 
-    _setFBAttachment: function() {
-        var gl = this.gl;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameAttachments[this.currAttachment].texture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.frameAttachments[this.currAttachment].renderbuffer);
-    },
-
-    _getCurrentTextrue: function() {
-        return this.frameAttachments[this.currAttachment].texture;
-    },
-
-    _swapFBAttachment: function() {
-        this.currAttachment = (this.currAttachment + 1) % 2;
-        this._setFBAttachment();
+    resetCanvas: function() {
+        this.stop();
+        if(this.rootComponent) {
+            this.rootComponent.destroyComponent();
+            this.rootComponent = null;
+        }
+        this._initGl();
+        if(this.preset) {
+            this.rootComponent = new EffectList(this.preset);
+        }
     },
 
     /**
      * Starts the animation
      */
     start: function() {
-        var gl = this.gl;
-        var components = this.components;
-        var copyComponent = new Copy();
-
-        // initialize all the components
-        var initPromises = [];
-        for(var i = 0;i < components.length;i++) {
-            var res = components[i].initComponent(gl, this.resolution, this.analyser);
-            if(res) {
-                initPromises.push(res);
-            }
+        if(!this.rootComponent) {
+            return; // no preset loaded yet. cannot start!
         }
-        copyComponent.initComponent(gl, this.resolution);
 
-        var self = this;
-        var first = true;
+        var rootComponent = this.rootComponent;
+        var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser);
+
+        var _this = this;
         var drawFrame = function() {
-            if(!self.analyser.isPlaying()) {
-                requestAnimationFrame(drawFrame);
-                return;
+            if(_this.analyser.isPlaying()) {
+                rootComponent.updateComponent();
             }
-            // draw everything the temporary framebuffer
-            gl.bindFramebuffer(gl.FRAMEBUFFER, self.framebuffer);
-            gl.viewport(0, 0, self.resolution.width, self.resolution.height);
-            self._setFBAttachment();
-
-            for(var i = 0;i < components.length;i++) {
-                var component = components[i];
-                gl.useProgram(component.program);
-                if(component.swapFrame) {
-                    var oldTexture = self._getCurrentTextrue();
-                    self._swapFBAttachment();
-                    component.updateComponent(oldTexture);
-                } else {
-                    component.updateComponent();
-                }
-            }
-
-            // flip and copy the current texture to the screen
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.useProgram(copyComponent.program);
-            gl.viewport(0, 0, self.resolution.width, self.resolution.height);
-            copyComponent.updateComponent(self.frameAttachments[self.currAttachment].texture);
-
-            requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
-        // start rendering when all the init promises are done
-        D.all(initPromises).then(function() {
-            requestAnimationFrame(drawFrame);
+        // start rendering when the promise is  done
+        promise.then(function() {
+            _this.animReqId = requestAnimationFrame(drawFrame);
         });
+    },
+
+    stop: function() {
+        if(typeof this.animReqId !== "undefined") {
+            cancelAnimationFrame(this.animReqId);
+        }
     }
 });
 
@@ -184,7 +135,8 @@ extend(Component, Object, {
         this.resolution = resolution;
         this.analyser = analyser;
     },
-    updateComponent: function() {}
+    updateComponent: function() {},
+    destroyComponent: function() {}
 });
 
 /**
@@ -214,10 +166,17 @@ extend(ShaderComponent, Component, {
     /**
      * Update the screen. Called for every frame of the animation
      */
-    updateComponent: function(texture) {
-        ShaderComponent.super.updateComponent.call(this, texture);
+    updateComponent: function() {
+        ShaderComponent.super.updateComponent.apply(this, arguments);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
-        this.update(texture);
+        this.update.apply(this, arguments);
+    },
+
+    destroyComponent: function() {
+        var gl = this.gl;
+        gl.deleteShader(this.vertex);
+        gl.deleteShader(this.fragment);
+        gl.deleteProgram(this.program);
     },
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
@@ -269,6 +228,13 @@ function Trans(fragmentSrc) {
 extend(Trans, ShaderComponent, {
     swapFrame: true,
 
+    destroyComponent: function() {
+        Trans.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteBuffer(this.texCoordBuffer);
+    },
+
     init: function() {
         var gl = this.gl;
         this.texCoordBuffer = gl.createBuffer();
@@ -303,27 +269,238 @@ extend(Trans, ShaderComponent, {
     }
 });
 
+// Webvs constants
+var constants = {
+    REPLACE: 1,
+    MAXIMUM: 2,
+    ADDITIVE: 3
+};
 
+//put all constants into the global variable
+for(var key in constants) {
+    Webvs[key] = constants[key];
+}
 
-
+function setBlendMode(gl, mode) {
+    switch(mode) {
+        case constants.BLEND_REPLACE:
+            gl.blendFunc(gl.ONE, gl.ZERO);
+            gl.blendEquation(gl.FUNC_ADD);
+            break;
+        case constants.BLEND_MAXIMUM:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.MAX);
+            break;
+        default: throw new Error("Invalid blend mode");
+    }
+}
+Webvs.rand = rand;
+window.Webvs = Webvs;
 /**
- * Utility component that copies a texture to the screen
+ * Special component that copies texture to target.
+ * Also blends in additional texture if provided
  * @constructor
  */
-function Copy() {
+function Copy(blendMode) {
+    var blendEq;
+    switch(blendMode) {
+        case constants.REPLACE:
+            blendEq = "src";
+            break;
+        case constants.MAXIMUM:
+            blendEq = "max(src, dest)";
+            break;
+        case constants.ADDITIVE:
+            blendEq = "clamp(src+dest, vec4(0,0,0,0), vec4(1,1,1,1))";
+            break;
+        default:
+            throw new Error("Invalid copy blend mode");
+    }
+
     var fragmentSrc = [
         "precision mediump float;",
         "uniform sampler2D u_curRender;",
+        blendMode != constants.REPLACE?"uniform sampler2D u_destTexture;":"",
         "varying vec2 v_texCoord;",
         "void main() {",
-        "   gl_FragColor = texture2D(u_curRender, v_texCoord);",
+        blendMode != constants.REPLACE?"vec4 dest = texture2D(u_destTexture, v_texCoord);":"",
+        "   vec4 src = texture2D(u_curRender, v_texCoord);",
+        "   gl_FragColor = " + blendEq + ";",
         "}"
     ].join("\n");
     Copy.super.constructor.call(this, fragmentSrc);
 }
-extend(Copy, Trans);
+extend(Copy, Trans, {
+    init: function() {
+        var gl = this.gl;
+        this.destTextureLocation = gl.getUniformLocation(this.program, "u_destTexture");
+        Copy.super.init.call(this);
+    },
 
-window.Webvs = Webvs;
+    update: function(srcTexture, destTexture) {
+        var gl = this.gl;
+        if(destTexture) {
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, destTexture);
+            gl.uniform1i(this.destTextureLocation, 1);
+        }
+        Copy.super.update.call(this, srcTexture);
+    }
+});
+
+function EffectList(options) {
+    checkRequiredOptions(options, ["components"]);
+
+    this._constructComponent(options.components);
+    this.output = options.output?options.output:constants.REPLACE;
+    this.clearFrame = options.clearFrame?options.clearFrame:false;
+    this.first = true;
+
+    EffectList.super.constructor.call(this);
+}
+extend(EffectList, Component, {
+    swapFrame: true,
+
+    _constructComponent: function(optList) {
+        var components = [];
+        for(var i = 0;i < optList.length;i++) {
+            var type = optList[i].type;
+            var component = new Webvs[type](optList[i]);
+            components.push(component);
+        }
+        this.components = components;
+    },
+
+    initComponent: function(gl, resolution, analyser) {
+        EffectList.super.initComponent.call(this, gl, resolution, analyser);
+        this._initFrameBuffer();
+
+        var components = this.components;
+        var copyComponent = new Copy(this.output);
+
+        // initialize all the components
+        var initPromises = [];
+        for(var i = 0;i < components.length;i++) {
+            var res = components[i].initComponent(gl, resolution, analyser);
+            if(res) {
+                initPromises.push(res);
+            }
+        }
+        copyComponent.initComponent(gl, this.resolution, analyser);
+
+        this.copyComponent = copyComponent;
+        return D.all(initPromises);
+    },
+
+    updateComponent: function(inputTexture) {
+        EffectList.super.updateComponent.call(this, inputTexture);
+        var gl = this.gl;
+
+        // save the current framebuffer
+        var targetFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+
+        // switch to internal framebuffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        gl.viewport(0, 0, this.resolution.width, this.resolution.height);
+        this._setFBAttachment();
+
+        if(this.clearFrame || this.first) {
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            this.first = false;
+        }
+
+        // render all the components
+        var components = this.components;
+        for(var i = 0;i < components.length;i++) {
+            var component = components[i];
+            gl.useProgram(component.program);
+            if(component.swapFrame) {
+                var oldTexture = this._getCurrentTextrue();
+                this._swapFBAttachment();
+                component.updateComponent(oldTexture);
+            } else {
+                component.updateComponent();
+            }
+        }
+
+        // switch to old framebuffer and copy the data
+        gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
+        gl.useProgram(this.copyComponent.program);
+        gl.viewport(0, 0, this.resolution.width, this.resolution.height);
+        assert(inputTexture || this.output == constants.REPLACE, "Cannot blend");
+        this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture, inputTexture);
+    },
+
+    destroyComponent: function() {
+        EffectList.super.destroyComponent.call(this);
+        var gl = this.gl;
+        var i;
+
+        // destory all the sub-components
+        for(i = 0;i < this.components.length;i++) {
+            this.components[i].destroyComponent();
+        }
+        this.copyComponent.destroyComponent();
+
+        // delete the framebuffer
+        for(i = 0;i < 2;i++) {
+            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
+            gl.deleteTexture(this.frameAttachments[i].texture);
+        }
+        gl.deleteFramebuffer(this.framebuffer);
+    },
+
+    _initFrameBuffer: function() {
+        var gl = this.gl;
+
+        var framebuffer = gl.createFramebuffer();
+        var attachments = [];
+        for(var i = 0;i < 2;i++) {
+            var texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.resolution.width, this.resolution.height,
+                0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            var renderbuffer = gl.createRenderbuffer();
+            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.resolution.width, this.resolution.height);
+
+            attachments[i] = {
+                texture: texture,
+                renderbuffer: renderbuffer
+            };
+        }
+
+        this.framebuffer = framebuffer;
+        this.frameAttachments = attachments;
+        this.currAttachment = 0;
+    },
+
+    _setFBAttachment: function() {
+        var attachment = this.frameAttachments[this.currAttachment];
+        var gl = this.gl;
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
+    },
+
+    _getCurrentTextrue: function() {
+        return this.frameAttachments[this.currAttachment].texture;
+    },
+
+    _swapFBAttachment: function() {
+        this.currAttachment = (this.currAttachment + 1) % 2;
+        this._setFBAttachment();
+    }
+});
+
+window.Webvs.EffectList = EffectList;
+
 function DancerAdapter(dancer) {
     this.dancer = dancer;
     this.beat = false;
@@ -367,9 +544,7 @@ function OnBeatClear(options) {
         this.color[i] = this.color[i]/255;
     }
 
-    if(options.blend) {
-        this.color[3] = 0.5;
-    }
+    this.blend = options.blend?options.blend:false;
     this.prevBeat = false;
     this.beatCount = 0;
 
@@ -382,9 +557,9 @@ function OnBeatClear(options) {
 
     var fragmentSrc = [
         "precision mediump float;",
-        "uniform vec4 u_color;",
+        "uniform vec3 u_color;",
         "void main() {",
-        "   gl_FragColor = u_color;",
+        "   gl_FragColor = vec4(u_color, 1);",
         "}"
     ].join("\n");
 
@@ -428,23 +603,35 @@ extend(OnBeatClear, ShaderComponent, {
         this.prevBeat = this.analyser.beat;
 
         if(clear) {
-            gl.enable(gl.BLEND);
-            gl.blendFunc(gl.ONE, gl.SRC_ALPHA);
-            gl.uniform4fv(this.colorLocation, this.color);
+            if(this.blend) {
+                // do average blending
+                gl.enable(gl.BLEND);
+                gl.blendColor(0.5, 0.5, 0.5, 1);
+                gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
+            }
+            gl.uniform3fv(this.colorLocation, this.color);
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-            gl.enableVertexAttribArray(this.vertexPositionLocation);
-            gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this.positionLocation);
+            gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
-            gl.disable(gl.BLEND);
+            if(this.blend) {
+                gl.disable(gl.BLEND);
+            }
         }
+    },
+
+    destroyComponent: function() {
+        OnBeatClear.super.destroyComponent.call(this);
+        this.gl.deleteBuffer(this.vertexBuffer);
     }
 });
 
 window.Webvs.OnBeatClear = OnBeatClear;
-function Picture(src, x, y) {
-    this.src = src;
-    this.x = x;
-    this.y = y;
+function Picture(options) {
+    checkRequiredOptions(options, ["src", "x", "y"]);
+    this.src = options.src;
+    this.x = options.x;
+    this.y = options.y;
     var vertexSrc = [
         "attribute vec2 a_texCoord;",
         "varying vec2 v_texCoord;",
@@ -525,6 +712,14 @@ extend(Picture, ShaderComponent, {
         gl.enableVertexAttribArray(this.texCoordLocation);
         gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+    },
+
+    destroyComponent: function() {
+        Picture.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteTexture(this.imageTexture);
+        gl.dleteBuffer(this.texCoordBuffer);
     }
 });
 
@@ -534,7 +729,7 @@ function SuperScope(options) {
 
     if(options.code in SuperScope.examples) {
         this.code = SuperScope.examples[options.code]();
-    } else if(typeOf(options.code) === 'function') {
+    } else if(typeof(options.code) === 'function') {
         this.code = options.code();
     } else {
         throw new Error("Invalid superscope");
@@ -567,16 +762,19 @@ function SuperScope(options) {
 
     var vertexSrc = [
         "attribute vec2 a_position;",
+        "attribute vec3 a_color;",
+        "varying vec3 v_color;",
         "void main() {",
         "   gl_Position = vec4(a_position, 0, 1);",
+        "   v_color = a_color;",
         "}"
     ].join("\n");
 
     var fragmentSrc = [
         "precision mediump float;",
-        "uniform vec3 u_color;",
+        "varying vec3 v_color;",
         "void main() {",
-        "   gl_FragColor = vec4(u_color, 1);",
+        "   gl_FragColor = vec4(v_color, 1);",
         "}"
     ].join("\n");
 
@@ -586,28 +784,40 @@ extend(SuperScope, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 
-        this.code.init(this.resolution.width, this.resolution.height);
+        this.code.w = this.resolution.width;
+        this.code.h = this.resolution.height;
+        this.code.init();
 
         this.pointBuffer = gl.createBuffer();
+        this.colorBuffer = gl.createBuffer();
         this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
-        this.colorLocation = gl.getUniformLocation(this.program, "u_color");
+        this.vertexColorLocation = gl.getAttribLocation(this.program, "a_color");
     },
 
     update: function() {
         var gl = this.gl;
+        var code = this.code;
+
+        this._stepColor();
+        code.red = this.currentColor[0];
+        code.green = this.currentColor[1];
+        code.blue = this.currentColor[2];
 
         var beat = this.analyser.beat;
-        this.code.perFrame(beat, this.resolution.width, this.resolution.height);
+        code.beat = beat?1:0;
+        code.perFrame();
         if(beat) {
-            this.code.onBeat(beat, this.resolution.width, this.resolution.height);
+            code.onBeat();
         }
 
-        var nPoints = Math.floor(this.code.n);
+        var nPoints = Math.floor(code.n);
         var data = this.spectrum ? this.analyser.getSpectrum() : this.analyser.getWaveform();
         var bucketSize = data.length/nPoints;
         var pbi = 0;
+        var cdi = 0;
 
         var pointBufferData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 2);
+        var colorData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 3);
         for(var i = 0;i < nPoints;i++) {
             var value = 0;
             var size = 0;
@@ -617,23 +827,42 @@ extend(SuperScope, ShaderComponent, {
             value = value/size;
 
             var pos = i/nPoints;
-            var points = this.code.perPoint(pos, value, beat, this.resolution.width, this.resolution.height);
-            pointBufferData[pbi++] = points[0];
-            pointBufferData[pbi++] = points[1]*-1;
+            code.i = pos;
+            code.v = value;
+            code.perPoint();
+            pointBufferData[pbi++] = code.x;
+            pointBufferData[pbi++] = code.y*-1;
+            colorData[cdi++] = code.red;
+            colorData[cdi++] = code.green;
+            colorData[cdi++] = code.blue;
             if(i !== 0 && i != nPoints-1 && !this.dots) {
-                pointBufferData[pbi++] = points[0];
-                pointBufferData[pbi++] = points[1]*-1;
+                pointBufferData[pbi++] = code.x;
+                pointBufferData[pbi++] = code.y*-1;
+                colorData[cdi++] = code.red;
+                colorData[cdi++] = code.green;
+                colorData[cdi++] = code.blue;
             }
         }
-
-        this._stepColor();
-        gl.uniform3fv(this.colorLocation, this.currentColor);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(this.vertexPositionLocation);
         gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(this.vertexColorLocation);
+        gl.vertexAttribPointer(this.vertexColorLocation, 3, gl.FLOAT, false, 0, 0);
+
         gl.drawArrays(this.dots?gl.POINTS:gl.LINES, 0, pbi/2);
+    },
+
+    destroyComponent: function() {
+        SuperScope.super.destroyComponent.call(this);
+        var gl = this.gl;
+
+        gl.deleteBuffer(this.vertexBuffer);
+        gl.deleteBuffer(this.colorBuffer);
     },
 
     _stepColor: function() {
@@ -668,11 +897,10 @@ SuperScope.examples = {
             onBeat: function() {
                 t = -t;
             },
-            perPoint: function(i, v) {
-                var sc = 0.4*Math.sin(i*Math.PI);
-                var x = 2*(i-0.5-v*sc)*t;
-                var y = 2*(i-0.5+v*sc);
-                return [x,y];
+            perPoint: function() {
+                var sc = 0.4*Math.sin(this.i*Math.PI);
+                this.x = 2*(this.i-0.5-this.v*sc)*t;
+                this.y = 2*(this.i-0.5+this.v*sc);
             }
         };
     },
@@ -686,24 +914,22 @@ SuperScope.examples = {
             onBeat: function() {
                 this.n = 80+rand(120.0);
             },
-            perPoint: function(i, v) {
-                var r = i*Math.PI*128+t;
-                var x = Math.cos(r/64)*0.7+Math.sin(r)*0.3;
-                var y = Math.sin(r/64)*0.7+Math.cos(r)*0.3;
-                return [x, y];
+            perPoint: function() {
+                var r = this.i*Math.PI*128+t;
+                this.x = Math.cos(r/64)*0.7+Math.sin(r)*0.3;
+                this.y = Math.sin(r/64)*0.7+Math.cos(r)*0.3;
             }
         };
     },
     threeDScopeDish: function() {
         return {
             n: 200,
-            perPoint: function(i, v) {
-                var iz = 1.3+Math.sin(i*Math.PI*2)*(v+0.5)*0.88;
-                var ix = Math.cos(i*Math.PI*2)*(v+0.5)*0.88;
-                var iy = -0.3+Math.abs(Math.cos(v*3.14159));
-                var x=ix/iz;
-                var y=iy/iz;
-                return [x, y];
+            perPoint: function() {
+                var iz = 1.3+Math.sin(this.i*Math.PI*2)*(this.v+0.5)*0.88;
+                var ix = Math.cos(this.i*Math.PI*2)*(this.v+0.5)*0.88;
+                var iy = -0.3+Math.abs(Math.cos(this.v*3.14159));
+                this.x=ix/iz;
+                this.y=iy/iz;
             }
         };
     },
@@ -712,8 +938,8 @@ SuperScope.examples = {
         var t = 0;
         var sc = 1;
         return {
-            init: function(b, w, h) {
-                this.n = w;
+            init: function() {
+                this.n = this.w;
             },
             perFrame: function() {
                 t=t+dt;
@@ -723,9 +949,8 @@ SuperScope.examples = {
                 }
             },
             perPoint: function(i, v) {
-                var x=Math.cos(2*i+t)*0.9*(v*0.5+0.5);
-                var y=Math.sin(i*2+t)*0.9*(v*0.5+0.5);
-                return [x, y];
+                this.x=Math.cos(2*this.i+t)*0.9*(this.v*0.5+0.5);
+                this.y=Math.sin(this.i*2+t)*0.9*(this.v*0.5+0.5);
             }
         };
     }
@@ -737,7 +962,8 @@ window.Webvs.SuperScope = SuperScope;
  * @param kernel
  * @constructor
  */
-function Convolution(kernelName) {
+function Convolution(options) {
+    checkRequiredOptions(options, ["kernel"]);
     var fragmentSrc = [
         "precision mediump float;",
         "uniform vec2 u_resolution;",
@@ -761,10 +987,10 @@ function Convolution(kernelName) {
         "}"
     ].join("\n");
 
-    if(kernelName in Convolution.kernels) {
-        this.kernel = Convolution.kernels[kernelName];
-    } else if(isArray(kernelName) && kernelName.length == 9) {
-        this.kernel = kernelName;
+    if(options.kernel in Convolution.kernels) {
+        this.kernel = Convolution.kernels[options.kernel];
+    } else if(isArray(options.kernel) && options.kernel.length == 9) {
+        this.kernel = options.kernel;
     } else {
         throw new Error("Invalid convolution kernel");
     }
@@ -797,6 +1023,11 @@ Convolution.kernels = {
         -2, -1,  0,
         -1,  1,  1,
         0,  1,  2
+    ],
+    blur: [
+        1, 1, 1,
+        1, 1, 1,
+        1, 1, 1
     ]
 };
 extend(Convolution, Trans, {
@@ -819,4 +1050,87 @@ extend(Convolution, Trans, {
 });
 
 window.Webvs.Convolution = Convolution;
+function FadeOut(options) {
+    options = options?options:{};
+    this.speed = options.speed?options.speed:1;
+    this.color = options.color?options.color:[0,0,0];
+
+    if(this.color.length != 3) {
+        throw new Error("Invalid clear color, must be an array of 3");
+    }
+    for(var i = 0;i < this.color.length;i++) {
+        this.color[i] = this.color[i]/255;
+    }
+
+    this.frameCount = 0;
+    this.maxFrameCount = Math.floor(1/this.speed);
+
+    var vertexSrc = [
+        "attribute vec2 a_position;",
+        "void main() {",
+        "   gl_Position = vec4(a_position, 0, 1);",
+        "}"
+    ].join("\n");
+
+    var fragmentSrc = [
+        "precision mediump float;",
+        "uniform vec3 u_color;",
+        "void main() {",
+        "   gl_FragColor = vec4(u_color, 1);",
+        "}"
+    ].join("\n");
+
+
+    FadeOut.super.constructor.call(this, vertexSrc, fragmentSrc);
+}
+extend(FadeOut, ShaderComponent, {
+    init: function() {
+        var gl = this.gl;
+
+        this.vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array([
+                -1,  -1,
+                1,  -1,
+                -1,  1,
+                -1,  1,
+                1,  -1,
+                1,  1
+            ]),
+            gl.STATIC_DRAW
+        );
+
+        this.positionLocation = gl.getAttribLocation(this.program, "a_position");
+        this.colorLocation = gl.getUniformLocation(this.program, "u_color");
+    },
+
+    update: function() {
+        var gl = this.gl;
+        this.frameCount++;
+        if(this.frameCount == this.maxFrameCount) {
+            this.frameCount = 0;
+            // do average blending
+            gl.enable(gl.BLEND);
+            gl.blendColor(0.5, 0.5, 0.5, 1);
+            gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
+
+            gl.uniform3fv(this.colorLocation, this.color);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+            gl.enableVertexAttribArray(this.positionLocation);
+            gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            gl.disable(gl.BLEND);
+        }
+    },
+
+    destroyComponent: function() {
+        FadeOut.super.destroyComponent.call(this);
+        this.gl.deleteBuffer(this.vertexBuffer);
+    }
+});
+
+window.Webvs.FadeOut = FadeOut;
 })();
