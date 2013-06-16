@@ -15,12 +15,12 @@ var codeMirror;
 var samplePreset = "{\r\n\tclearFrame: false,\r\n\tcomponents: [\r\n\t\t{\r\n\t\t\ttype: \"EffectList\",\r\n\t\t\toutput: Webvs.ADDITIVE,\r\n\t\t\tcomponents: [\r\n\t\t\t\t{type:\"FadeOut\", speed: 0.5},\r\n\t\t\t\t{\r\n\t\t\t\t\ttype: \"SuperScope\",\r\n\t\t\t\t\tcode: (function() {\r\n\t\t\t\t\t\tvar t = 0;\r\n\t\t\t\t\t\treturn {\r\n\t\t\t\t\t\t\tn: 800,\r\n\t\t\t\t\t\t\tonBeat: function() {\r\n\t\t\t\t\t\t\t\tt = t+0.3;\r\n\t\t\t\t\t\t\t\tthis.n = 100+Webvs.rand(900);\r\n\t\t\t\t\t\t\t},\r\n\t\t\t\t\t\t\tperFrame: function() {\r\n\t\t\t\t\t\t\t\tt = t-0.5;\r\n\t\t\t\t\t\t\t},\r\n\t\t\t\t\t\t\tperPoint: function() {\r\n\t\t\t\t\t\t\t\tvar d = 1\/this.n;\r\n\t\t\t\t\t\t\t\tvar r=(this.i-(t*3));\r\n\t\t\t\t\t\t\t\tthis.x=(Math.atan(r+d-t)*Math.cos(r+d-t+this.i));\r\n\t\t\t\t\t\t\t\tthis.y=((this.i+Math.cos(d+this.v*1.2))-1.5)*1.7;\r\n\t\t\t\t\t\t\t\tthis.red=Math.cos(r)+1;\r\n\t\t\t\t\t\t\t\tthis.blue=Math.sin(r);\r\n\t\t\t\t\t\t\t\tthis.green=Math.sin(this.i)\/2;\r\n\t\t\t\t\t\t\t}\r\n\t\t\t\t\t\t};\r\n\t\t\t\t\t})\r\n\t\t\t\t}\r\n\t\t\t]\r\n\t\t},\r\n\t\t{type: \"Convolution\", kernel: \"blur\"},\r\n\t\t{type: \"OnBeatClear\"}\r\n\t]\r\n}";
 
 function loadScTrack() {
-    dancer.load({
-        src: "music.mp3"
-    });
-    dancer.play();
+//    dancer.load({
+//        src: "music.mp3"
+//    });
+//    dancer.play();
 
-    /*var input = $("#soundcloudurl").find("input[type=text]");
+    var input = $("#sc-url");
     var url = input.val();
 
     var prms = $.ajax({
@@ -32,6 +32,7 @@ function loadScTrack() {
     });
     prms.done(function(response) {
         input.val("");
+        dancer.pause();
         dancer.load({
             src: response.stream_url + "?client_id=" + clientId
         });
@@ -39,7 +40,7 @@ function loadScTrack() {
     });
     prms.fail(function() {
         alert("Unable to resolve soundcloud track");
-    });*/
+    });
 }
 
 function setCanvasDim() {
@@ -114,6 +115,7 @@ $(document).ready(function () {
         canvas: $("#my-canvas").get(0),
         analyser: new Webvs.DancerAdapter(dancer)
     });
+    webvs.loadPreset(eval("("+codeMirror.getValue()+")"));
     webvs.start();
 });
 
