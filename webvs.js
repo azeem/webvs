@@ -755,17 +755,23 @@ function SuperScope(options) {
     this.colorId = 0;
     this.colorStep = [0,0,0];
 
+    this.thickness = options.thickness?options.thickness:1;
+
     this.code.init = this.code.init?this.code.init:noop;
     this.code.onBeat = this.code.onBeat?this.code.onBeat:noop;
     this.code.perFrame = this.code.perFrame?this.code.perFrame:noop;
     this.code.perPoint = this.code.perPoint?this.code.perPoint:noop;
 
+    this.inited = false;
+
     var vertexSrc = [
         "attribute vec2 a_position;",
         "attribute vec3 a_color;",
         "varying vec3 v_color;",
+        "uniform float u_pointSize;",
         "void main() {",
-        "   gl_Position = vec4(a_position, 0, 1);",
+        "   gl_PointSize = u_pointSize;",
+        "   gl_Position = vec4(clamp(a_position, vec2(-1,-1), vec2(1,1)), 0, 1);",
         "   v_color = a_color;",
         "}"
     ].join("\n");
@@ -786,12 +792,12 @@ extend(SuperScope, ShaderComponent, {
 
         this.code.w = this.resolution.width;
         this.code.h = this.resolution.height;
-        this.code.init();
 
         this.pointBuffer = gl.createBuffer();
         this.colorBuffer = gl.createBuffer();
         this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
         this.vertexColorLocation = gl.getAttribLocation(this.program, "a_color");
+        this.pointSizeLocation = gl.getUniformLocation(this.program, "u_pointSize");
     },
 
     update: function() {
@@ -802,6 +808,18 @@ extend(SuperScope, ShaderComponent, {
         code.red = this.currentColor[0];
         code.green = this.currentColor[1];
         code.blue = this.currentColor[2];
+
+        if(!this.inited) {
+            code.init();
+            // initialize all known variables to zero
+            // incase any script tries to access it before
+            // its value is  initialized
+            code.i = 0;
+            code.v = 0;
+            code.x = 0;
+            code.y = 0;
+            this.inited = true;
+        }
 
         var beat = this.analyser.beat;
         code.beat = beat?1:0;
@@ -826,7 +844,7 @@ extend(SuperScope, ShaderComponent, {
             }
             value = value/size;
 
-            var pos = i/nPoints;
+            var pos = i/(nPoints-1);
             code.i = pos;
             code.v = value;
             code.perPoint();
@@ -844,6 +862,8 @@ extend(SuperScope, ShaderComponent, {
             }
         }
 
+        gl.uniform1f(this.pointSizeLocation, this.thickness);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(this.vertexPositionLocation);
@@ -854,7 +874,17 @@ extend(SuperScope, ShaderComponent, {
         gl.enableVertexAttribArray(this.vertexColorLocation);
         gl.vertexAttribPointer(this.vertexColorLocation, 3, gl.FLOAT, false, 0, 0);
 
+        var prevLineWidth;
+        if(!this.dots) {
+            prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
+            gl.lineWidth(this.thickness);
+        }
+
         gl.drawArrays(this.dots?gl.POINTS:gl.LINES, 0, pbi/2);
+
+        if(!this.dots) {
+            gl.lineWidth(prevLineWidth);
+        }
     },
 
     destroyComponent: function() {
