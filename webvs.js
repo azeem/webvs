@@ -762,6 +762,8 @@ function SuperScope(options) {
     this.code.perFrame = this.code.perFrame?this.code.perFrame:noop;
     this.code.perPoint = this.code.perPoint?this.code.perPoint:noop;
 
+    this.inited = false;
+
     var vertexSrc = [
         "attribute vec2 a_position;",
         "attribute vec3 a_color;",
@@ -790,7 +792,6 @@ extend(SuperScope, ShaderComponent, {
 
         this.code.w = this.resolution.width;
         this.code.h = this.resolution.height;
-        this.code.init();
 
         this.pointBuffer = gl.createBuffer();
         this.colorBuffer = gl.createBuffer();
@@ -807,6 +808,8 @@ extend(SuperScope, ShaderComponent, {
         code.red = this.currentColor[0];
         code.green = this.currentColor[1];
         code.blue = this.currentColor[2];
+
+        this.code.init();
 
         var beat = this.analyser.beat;
         code.beat = beat?1:0;
