@@ -95,7 +95,7 @@ extend(SuperScope, ShaderComponent, {
             code.init();
             // initialize all known variables to zero
             // incase any script tries to access it before
-            // its value is initialized
+            // its value is  initialized
             code.i = 0;
             code.v = 0;
             code.x = 0;
