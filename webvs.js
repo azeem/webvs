@@ -809,7 +809,17 @@ extend(SuperScope, ShaderComponent, {
         code.green = this.currentColor[1];
         code.blue = this.currentColor[2];
 
-        this.code.init();
+        if(!this.inited) {
+            code.init();
+            // initialize all known variables to zero
+            // incase any script tries to access it before
+            // its value is initialized
+            code.i = 0;
+            code.v = 0;
+            code.x = 0;
+            code.y = 0;
+            this.inited = true;
+        }
 
         var beat = this.analyser.beat;
         code.beat = beat?1:0;
