@@ -44,6 +44,17 @@ function assert(outcome, message) {
     }
 }
 
+function flattenArray(array){
+    if(!isArray(array)) {
+        return array;
+    }
+    var flat = [];
+    for (var i = 0; i < array.length; i++) {
+        flat.concat(flattenArray(array[i]));
+    }
+    return flat;
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
