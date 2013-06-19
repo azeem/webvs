@@ -1,0 +1,48 @@
+program = statement sep* (";" sep* statement sep*)* ";"?
+
+statement
+		= identifier sep* "=" sep* expr
+		/ expr
+
+unary_ops = "+" / "-"
+additive_ops = "+" / "-"
+multiplicative_ops = "*" / "/" / "%"
+boolean_ops = "&" / "|"
+
+expr = boolean_expr
+
+boolean_expr
+		= additive_expr sep* boolean_ops sep* boolean_expr
+		/ additive_expr
+
+additive_expr
+		 = multiplicative_expr sep* additive_ops sep* additive_expr
+		 / multiplicative_expr
+
+multiplicative_expr
+		= unary sep* multiplicative_ops sep* multiplicative_expr
+		/ unary
+
+unary
+		= unary_ops sep* func_call
+		/ func_call
+
+func_call
+		= identifier sep* "(" sep* (expr sep* ",")* sep* expr sep* ")"
+		/ primary_expr
+
+primary_expr
+		= value
+		/ identifier
+		/ "(" expr ")"
+
+identifier
+		= [a-zA-Z_] [a-zA-Z_0-9]*
+
+value
+		= [0-9]* "." [0-9]+ ([Ee] [0-9]+)?
+		/ [a-fA-F0-9]+ [hH]
+        / [0-9]+ [dD]?
+
+sep
+	= [' '\t\r\n]

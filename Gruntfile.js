@@ -18,17 +18,26 @@ module.exports = function(grunt) {
             }
         },
 
+        peg: {
+            expr_lang: {
+                grammar: "src/expr_grammar.pegs",
+                outputFile: "build/pegs_expr_parser.js",
+                exportVar: "Webvs.PegsExprParser"
+            }
+        },
+
         concat: {
             webvs: {
                 src: [
                     "src/utils.js",
                     "src/core.js",
+                    "build/expr_parser.js",
                     "src/effectlist.js",
                     "src/dancer_adapter.js",
                     "src/render/*.js",
                     "src/trans/*.js"
                 ],
-                dest: "webvs.js",
+                dest: "build/webvs.js",
                 options: {
                     stripBanners: true,
                     banner: "(function() {\n",
@@ -48,6 +57,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-jshint");
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-watch");
+    grunt.loadNpmTasks('grunt-peg');
 
-    grunt.registerTask('default', ['jshint', 'concat']);
+    grunt.registerTask('default', ['jshint', 'peg', 'concat']);
 };
