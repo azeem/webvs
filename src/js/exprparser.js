@@ -13,19 +13,6 @@ extend(ExprCodeGenerator, Object, {
             }
         }
     }
-    _getVariables: function(ast) {
-        if(ast instanceof AstBinaryExpr) {
-            var leftVars = this._getVariables(ast.leftOperand)
-            var rightVars = this._getVariables(ast.rightOperand);
-            return leftVars.concat(rightVars)
-        }
-
-        if(ast instanceof AstUnaryExpr) {
-            return this._getVariables(ast.operand);
-        }
-
-        if(as instanceof )
-    }
 });
 
 function AstBase() {}

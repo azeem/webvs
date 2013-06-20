@@ -853,9 +853,23 @@ Webvs.PegExprParser = (function(){
         var result0, result1, result2;
         var pos0, pos1;
         
+        pos0 = pos;
         result0 = parse_value();
+        if (result0 !== null) {
+          result0 = (function(offset, val) {return new AstPrimaryExpr(val);})(pos0, result0);
+        }
         if (result0 === null) {
+          pos = pos0;
+        }
+        if (result0 === null) {
+          pos0 = pos;
           result0 = parse_identifier();
+          if (result0 !== null) {
+            result0 = (function(offset, id) {return new AstPrimaryExpr(id);})(pos0, result0);
+          }
+          if (result0 === null) {
+            pos = pos0;
+          }
           if (result0 === null) {
             pos0 = pos;
             pos1 = pos;

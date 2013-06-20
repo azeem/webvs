@@ -9,7 +9,7 @@
 module.exports = function(grunt) {
     grunt.initConfig({
         jshint: {
-            files: ["Gruntfile.js", "src/**/*.js", "demo/**/*.js"],
+            files: ["Gruntfile.js", "src/**/*.js"],
             options: {
                 globals: {
                     Webvs: true
@@ -47,6 +47,14 @@ module.exports = function(grunt) {
             }
         },
 
+        copy: {
+            webvs: {
+                files:[
+                    {expand: true, cwd: "src/", src: ["demo/**", "test/**"], dest: "build/"},
+                ]
+            }
+        },
+
         watch: {
             scripts: {
                 files: ["src/**/*.js", "src/**/*.pegs"],
@@ -58,7 +66,8 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-jshint");
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-watch");
+    grunt.loadNpmTasks("grunt-contrib-copy");
     grunt.loadNpmTasks('grunt-peg');
 
-    grunt.registerTask('default', ['jshint', 'peg', 'concat']);
+    grunt.registerTask('default', ['jshint', 'peg', 'concat', 'copy']);
 };
