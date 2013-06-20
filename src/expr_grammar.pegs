@@ -1,7 +1,13 @@
-program = statement sep* (";" sep* statement sep*)* ";"?
+program = p:(statement sep* (";" sep* statement sep*)* ";"?) {
+    var stmts = flattenTokens(p, function(item) {
+        console.log(item);
+        return item !== ";";//!((typeof item == "string" && item.match(/^(\s*)$/) != null) || item == ";");
+    });
+    return new AstProgram(stmts);
+}
 
 statement
-		= identifier sep* "=" sep* expr
+		= id:identifier sep* "=" sep* e:expr { return new AstAssignment(id, e); }
 		/ expr
 
 unary_ops = "+" / "-"
@@ -12,37 +18,51 @@ boolean_ops = "&" / "|"
 expr = boolean_expr
 
 boolean_expr
-		= additive_expr sep* boolean_ops sep* boolean_expr
+		= lo:additive_expr sep* op:boolean_ops sep* ro:boolean_expr { return new AstBinaryExpr(op, lo, ro); }
 		/ additive_expr
 
 additive_expr
-		 = multiplicative_expr sep* additive_ops sep* additive_expr
+		 = lo:multiplicative_expr sep* op:additive_ops sep* ro:additive_expr { return new AstBinaryExpr(op, lo, ro); }
 		 / multiplicative_expr
 
 multiplicative_expr
-		= unary sep* multiplicative_ops sep* multiplicative_expr
+		= lo:unary sep* op:multiplicative_ops sep* ro:multiplicative_expr { return new AstBinaryExpr(op, lo, ro); }
 		/ unary
 
 unary
-		= unary_ops sep* func_call
+		= op:unary_ops sep* oper:func_call { return new AstUnaryExpr(op, oper); }
 		/ func_call
 
 func_call
-		= identifier sep* "(" sep* (expr sep* ",")* sep* expr sep* ")"
+		= funcName:identifier sep* "(" sep* args:((expr sep* ",")* sep* expr)? sep* ")" {
+		        var argsList = filter(flattenTokens(args), function(item) {
+                    return !((typeof item == "string" && item.match(/^(\s*)$/) != null) || item == ",");
+		        });
+		       return new AstFuncCall(funcName, argsList);
+		}
 		/ primary_expr
 
 primary_expr
 		= value
 		/ identifier
-		/ "(" expr ")"
+		/ "(" e:expr ")" { return e; }
 
 identifier
-		= [a-zA-Z_] [a-zA-Z_0-9]*
+		= val:([a-zA-Z_] [a-zA-Z_0-9]*) {
+		    return flattenTokens(val).join("");
+		}
 
 value
-		= ([0-9]* "." [0-9]+ ([Ee] [0-9]+)?):val {return new AstValue(parseFloat(flattenArray(val).join("")));}
-		/ [a-fA-F0-9]+ [hH]
-        / [0-9]+ [dD]?
+		= val:([0-9]* "." [0-9]+ ([Ee] [0-9]+)?) {
+		    return parseFloat(flattenTokens(val).join(""));
+		}
+		/ val:([a-fA-F0-9]+) [hH] {
+		    return parseInt(flattenTokens(val).join(""), 16);
+		}
+        / val:([0-9]+) [dD]? {
+            return parseInt(flattenTokens(val).join(""), 10);
+        }
+
 
 sep
 	= [' '\t\r\n]

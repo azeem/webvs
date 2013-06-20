@@ -243,5 +243,6 @@ function setBlendMode(gl, mode) {
         default: throw new Error("Invalid blend mode");
     }
 }
+
 Webvs.rand = rand;
 window.Webvs = Webvs;

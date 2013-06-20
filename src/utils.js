@@ -34,6 +34,7 @@ function isArray(value) {
     return Object.prototype.toString.call( value ) === '[object Array]';
 }
 
+
 function rand(max) {
     return Math.random()*max;
 }
@@ -44,15 +45,28 @@ function assert(outcome, message) {
     }
 }
 
-function flattenArray(array){
+function flattenTokens(array, filter){
     if(!isArray(array)) {
+        if(filter && filter(array)) {
+            return [];
+        }
         return array;
     }
     var flat = [];
     for (var i = 0; i < array.length; i++) {
-        flat.concat(flattenArray(array[i]));
+        flat = flat.concat(flattenTokens(array[i]));
     }
     return flat;
+}
+
+function filter(list, predicate) {
+    var result = [];
+    for(var i = 0;i < list.length;i++) {
+        if(predicate(list[i])) {
+            result.push(list[i]);
+        }
+    }
+    return result;
 }
 
 var requestAnimationFrame = (

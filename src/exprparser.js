@@ -7,13 +7,35 @@ function AstBinaryExpr(operator, leftOperand, rightOperand) {
 }
 extend(AstBinaryExpr, AstBase);
 
-function AstValue(value) {
-    this.value = value;
+function AstUnaryExpr(operator, operand) {
+    this.operator = operator;
+    this.operand = operand;
 }
-extend(AstValue, AstBase);
+extend(AstUnaryExpr, AstBase);
+
+//function AstValue(value) {
+//    this.value = value;
+//}
+//extend(AstValue, AstBase);
+//
+//function AstIdentifier(name) {
+//    this.name = name;
+//}
+//extend(AstIdentifier, AstBase);
 
 function AstFuncCall(funcName, args) {
     this.funcName = funcName;
     this.args = args;
 }
 extend(AstFuncCall, AstBase);
+
+function AstAssignment(identifier, expr) {
+    this.identifier = identifier;
+    this.expr = expr;
+}
+extend(AstAssignment, AstBase);
+
+function AstProgram(statements) {
+    this.statements = statements;
+}
+extend(AstProgram, AstBase);

@@ -31,7 +31,8 @@ module.exports = function(grunt) {
                 src: [
                     "src/utils.js",
                     "src/core.js",
-                    "build/expr_parser.js",
+                    "src/exprparser.js",
+                    "build/pegs_expr_parser.js",
                     "src/effectlist.js",
                     "src/dancer_adapter.js",
                     "src/render/*.js",
@@ -48,7 +49,7 @@ module.exports = function(grunt) {
 
         watch: {
             scripts: {
-                files: ["src/**/*.js"],
+                files: ["src/**/*.js", "src/**/*.pegs"],
                 tasks: ["default"]
             }
         }
