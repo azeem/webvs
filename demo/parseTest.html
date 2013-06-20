@@ -12,8 +12,8 @@
 <script type="text/javascript" src="../lib/dancer.js"></script>
 <script type="text/javascript" src="../build/webvs.js"></script>
 <script type="text/javascript">
-    var text = "a = a+func(12  ,  3);x=sin(1)+0.2";
-    var out = Webvs.PegsExprParser.parse(text);
+    var text = "a = a+func(   12  ,  3;x=sin(1)+0.2";
+    var out = Webvs.PegExprParser.parse(text);
     $("#result").val(JSON.stringify(out));
 </script>
 </body>

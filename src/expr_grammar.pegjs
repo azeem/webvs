@@ -1,7 +1,6 @@
 program = p:(statement sep* (";" sep* statement sep*)* ";"?) {
     var stmts = flattenTokens(p, function(item) {
-        console.log(item);
-        return item !== ";";//!((typeof item == "string" && item.match(/^(\s*)$/) != null) || item == ";");
+        return (isWhitespace(item) || item == ";");
     });
     return new AstProgram(stmts);
 }
@@ -35,16 +34,16 @@ unary
 
 func_call
 		= funcName:identifier sep* "(" sep* args:((expr sep* ",")* sep* expr)? sep* ")" {
-		        var argsList = filter(flattenTokens(args), function(item) {
-                    return !((typeof item == "string" && item.match(/^(\s*)$/) != null) || item == ",");
+		        var argsList = flattenTokens(args, function(item) {
+                    return (isWhitespace(item) || item == ",");
 		        });
 		       return new AstFuncCall(funcName, argsList);
 		}
 		/ primary_expr
 
 primary_expr
-		= value
-		/ identifier
+		= val:value      {return new AstPrimaryExpr(val);}
+		/ id:identifier  {return new AstPrimaryExpr(id);}
 		/ "(" e:expr ")" { return e; }
 
 identifier
