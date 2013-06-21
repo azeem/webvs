@@ -1,5 +1,6 @@
 function ExprCodeGenerator(codeSrc) {
     this.codeSrc = codeSrc;
+    this._parseSrc();
 }
 extend(ExprCodeGenerator, Object, {    
     _parseSrc: function() {
@@ -14,6 +15,7 @@ extend(ExprCodeGenerator, Object, {
         }
     }
 });
+window.Webvs.ExprCodeGenerator = ExprCodeGenerator;
 
 function AstBase() {}
 extend(AstBase, Object, {
@@ -84,7 +86,7 @@ extend(AstProgram, AstBase, {
 function AstPrimaryExpr(value) {
     this.value = value;
 }
-extend(AstValue, AstBase, {
+extend(AstPrimaryExpr, AstBase, {
     getVars: function() {
         if(typeof this.value === "string") {
             return [this.value];

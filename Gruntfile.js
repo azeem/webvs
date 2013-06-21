@@ -26,17 +26,24 @@ module.exports = function(grunt) {
             }
         },
 
+        karma: {
+            webvs: {
+                configFile: "karma.conf.js",
+                //background: true
+            }
+        },
+
         concat: {
             webvs: {
                 src: [
-                    "src/utils.js",
-                    "src/core.js",
-                    "src/exprparser.js",
+                    "src/js/utils.js",
+                    "src/js/core.js",
+                    "src/js/exprparser.js",
                     "build/pegs_expr_parser.js",
-                    "src/effectlist.js",
-                    "src/dancer_adapter.js",
-                    "src/render/*.js",
-                    "src/trans/*.js"
+                    "src/js/effectlist.js",
+                    "src/js/dancer_adapter.js",
+                    "src/js/render/*.js",
+                    "src/js/trans/*.js"
                 ],
                 dest: "build/webvs.js",
                 options: {
@@ -50,7 +57,7 @@ module.exports = function(grunt) {
         copy: {
             webvs: {
                 files:[
-                    {expand: true, cwd: "src/", src: ["demo/**", "test/**"], dest: "build/"},
+                    {expand: true, cwd: "src/", src: ["demo/**"], dest: "build/"},
                 ]
             }
         },
@@ -59,7 +66,11 @@ module.exports = function(grunt) {
             scripts: {
                 files: ["src/**/*.js", "src/**/*.pegs"],
                 tasks: ["default"]
-            }
+            },
+//            karma: {
+//                files: ["src/**/*.js", "src/**/*.pegs"],
+//                tasks: ['karma:unit:run']
+//            }
         }
     });
 
@@ -67,7 +78,8 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-watch");
     grunt.loadNpmTasks("grunt-contrib-copy");
-    grunt.loadNpmTasks('grunt-peg');
+    grunt.loadNpmTasks("grunt-peg");
+    grunt.loadNpmTasks("grunt-karma");
 
     grunt.registerTask('default', ['jshint', 'peg', 'concat', 'copy']);
 };
