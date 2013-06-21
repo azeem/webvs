@@ -8,7 +8,7 @@ extend(ExprCodeGenerator, Object, {
         var codeAst;
         for(var name in this.codeSrc) {
             try {
-                codeAst[name] = Webvs.PegExprParser.parse(this.codeSrc);                
+                codeAst[name] = Webvs.PegExprParser.parse(this.codeSrc[name]);
             } catch(e) {
                 throw new Error("Error parsing " + name + " : " + e);
             }
