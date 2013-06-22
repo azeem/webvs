@@ -244,5 +244,4 @@ function setBlendMode(gl, mode) {
     }
 }
 
-Webvs.rand = rand;
 window.Webvs = Webvs;

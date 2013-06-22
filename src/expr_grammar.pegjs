@@ -1,6 +1,6 @@
 program = p:(statement sep* (";" sep* statement sep*)* ";"?) {
-    var stmts = flattenTokens(p, function(item) {
-        return (isWhitespace(item) || item == ";");
+    var stmts = _.reject(_.flatten(p), function(tok) {
+        return (isWhitespace(tok) || tok == ";")
     });
     return new AstProgram(stmts);
 }
@@ -34,8 +34,8 @@ unary
 
 func_call
 		= funcName:identifier sep* "(" sep* args:((expr sep* ",")* sep* expr)? sep* ")" {
-		        var argsList = flattenTokens(args, function(item) {
-                    return (isWhitespace(item) || item == ",");
+		        var argsList = _.reject(_.flatten(args), function(tok) {
+                    return (isWhitespace(tok) || tok == ",");
 		        });
 		       return new AstFuncCall(funcName, argsList);
 		}
@@ -48,18 +48,18 @@ primary_expr
 
 identifier
 		= val:([a-zA-Z_] [a-zA-Z_0-9]*) {
-		    return flattenTokens(val).join("");
+		    return _.flatten(val).join("").toLowerCase();
 		}
 
 value
 		= val:([0-9]* "." [0-9]+ ([Ee] [0-9]+)?) {
-		    return parseFloat(flattenTokens(val).join(""));
+		    return parseFloat(_.flatten(val).join(""));
 		}
 		/ val:([a-fA-F0-9]+) [hH] {
-		    return parseInt(flattenTokens(val).join(""), 16);
+		    return parseInt(_.flatten(val).join(""), 16);
 		}
         / val:([0-9]+) [dD]? {
-            return parseInt(flattenTokens(val).join(""), 10);
+            return parseInt(_.flatten(val).join(""), 10);
         }
 
 

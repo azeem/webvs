@@ -10,6 +10,7 @@ basePath = "";
 files = [
     QUNIT,
     QUNIT_ADAPTER,
+    "lib/*.js",
     "build/webvs.js",
     "src/test/*.js"
 ];

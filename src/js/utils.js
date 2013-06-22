@@ -34,29 +34,10 @@ function isArray(value) {
     return Object.prototype.toString.call( value ) === '[object Array]';
 }
 
-
-function rand(max) {
-    return Math.random()*max;
-}
-
 function assert(outcome, message) {
     if(!assert) {
         throw new Error("Assertion Failed: " + message);
     }
-}
-
-function flattenTokens(array, filter){
-    if(!isArray(array)) {
-        if(filter && filter(array)) {
-            return [];
-        }
-        return array;
-    }
-    var flat = [];
-    for (var i = 0; i < array.length; i++) {
-        flat = flat.concat(flattenTokens(array[i], filter));
-    }
-    return flat;
 }
 
 function isWhitespace(str) {
@@ -80,3 +61,5 @@ var cancelAnimationFrame = (
         return window.clearTimeout(requestId);
     }
 );
+
+_.flatMap = _.compose(_.flatten, _.map);
