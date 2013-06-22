@@ -219,24 +219,19 @@ extend(Trans, ShaderComponent, {
 });
 
 // Webvs constants
-var constants = {
+var blendModes = {
     REPLACE: 1,
     MAXIMUM: 2,
     ADDITIVE: 3
 };
 
-//put all constants into the global variable
-for(var key in constants) {
-    Webvs[key] = constants[key];
-}
-
 function setBlendMode(gl, mode) {
     switch(mode) {
-        case constants.BLEND_REPLACE:
+        case blendModes.BLEND_REPLACE:
             gl.blendFunc(gl.ONE, gl.ZERO);
             gl.blendEquation(gl.FUNC_ADD);
             break;
-        case constants.BLEND_MAXIMUM:
+        case blendModes.BLEND_MAXIMUM:
             gl.blendFunc(gl.ONE, gl.ONE);
             gl.blendEquation(gl.MAX);
             break;

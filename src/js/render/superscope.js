@@ -19,7 +19,6 @@ function SuperScope(options) {
     }
     var codeGen = new ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
     this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
-    console.log(_.functions(this.code));
     this.code.n = 100;
 
     this.spectrum = options.spectrum?options.spectrum:false;

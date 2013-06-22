@@ -14,13 +14,13 @@
 function Copy(blendMode) {
     var blendEq;
     switch(blendMode) {
-        case constants.REPLACE:
+        case blendModes.REPLACE:
             blendEq = "src";
             break;
-        case constants.MAXIMUM:
+        case blendModes.MAXIMUM:
             blendEq = "max(src, dest)";
             break;
-        case constants.ADDITIVE:
+        case blendModes.ADDITIVE:
             blendEq = "clamp(src+dest, vec4(0,0,0,0), vec4(1,1,1,1))";
             break;
         default:
@@ -30,10 +30,10 @@ function Copy(blendMode) {
     var fragmentSrc = [
         "precision mediump float;",
         "uniform sampler2D u_curRender;",
-        blendMode != constants.REPLACE?"uniform sampler2D u_destTexture;":"",
+        blendMode != blendModes.REPLACE?"uniform sampler2D u_destTexture;":"",
         "varying vec2 v_texCoord;",
         "void main() {",
-        blendMode != constants.REPLACE?"vec4 dest = texture2D(u_destTexture, v_texCoord);":"",
+        blendMode != blendModes.REPLACE?"vec4 dest = texture2D(u_destTexture, v_texCoord);":"",
         "   vec4 src = texture2D(u_curRender, v_texCoord);",
         "   gl_FragColor = " + blendEq + ";",
         "}"
@@ -62,7 +62,7 @@ function EffectList(options) {
     checkRequiredOptions(options, ["components"]);
 
     this._constructComponent(options.components);
-    this.output = options.output?options.output:constants.REPLACE;
+    this.output = options.output?blendModes[options.output]:blendModes.REPLACE;
     this.clearFrame = options.clearFrame?options.clearFrame:false;
     this.first = true;
 
@@ -138,7 +138,7 @@ extend(EffectList, Component, {
         gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
         gl.useProgram(this.copyComponent.program);
         gl.viewport(0, 0, this.resolution.width, this.resolution.height);
-        assert(inputTexture || this.output == constants.REPLACE, "Cannot blend");
+        assert(inputTexture || this.output == blendModes.REPLACE, "Cannot blend");
         this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture, inputTexture);
     },
 

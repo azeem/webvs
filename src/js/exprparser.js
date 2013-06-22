@@ -47,7 +47,6 @@ extend(ExprCodeGenerator, Object, {
         var js = new CodeInstance();
         for(var name in this.codeAst) {
             var codeString = this._generateJs(this.codeAst[name], this.localVars[name]);
-            console.log(codeString);
             js[name] = new Function(codeString);
         }
         _.each(this.instanceVars, function(ivar) {

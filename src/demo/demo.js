@@ -12,7 +12,42 @@ var dancer, webvs;
 var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
 var dimensionFactor = 2;
 var codeMirror;
-var samplePreset = "{\r\n\tclearFrame: false,\r\n\tcomponents: [\r\n\t\t{\r\n\t\t\ttype: \"EffectList\",\r\n\t\t\toutput: Webvs.ADDITIVE,\r\n\t\t\tcomponents: [\r\n\t\t\t\t{type:\"FadeOut\", speed: 0.4},\r\n\t\t\t\t{\r\n\t\t\t\t\ttype: \"SuperScope\",\r\n\t\t\t\t\tcode: {\r\n\t\t\t\t\t\tinit: \"n=800\",\r\n\t\t\t\t\t\tonBeat: \"t=t+0.3;n=100+rand(900);\",\r\n\t\t\t\t\t\tperFrame: \"t=t-v*0.5\",\r\n\t\t\t\t\t\tperPoint: \"d=D\/n;r=(i-(t*3)); x=(atan(r+d-t)*cos(r+d-t+i)); y=((i+cos(d+v*1.2))-1.5)*1.7;z=-(cos(t+i)+log(v)*cos(r*3))*3;red=cos(r)+1;blue=sin(r);green=sin(i)\/2\"\r\n\t\t\t\t\t}\r\n\t\t\t\t}\r\n\t\t\t]\r\n\t\t},\r\n\t\t{type: \"Convolution\", kernel: \"blur\"},\r\n    {type: \"Convolution\", kernel: \"blur\"},\r\n\t\t{type: \"OnBeatClear\"}\r\n\t]\r\n}";
+var samplePreset = {
+    "clearFrame": false,
+    "components": [
+        {
+            "type": "EffectList",
+            "output": "ADDITIVE",
+            "components": [
+                {
+                    "type": "FadeOut",
+                    "speed": 0.4
+                },
+                {
+                    "type": "SuperScope",
+                    "code": {
+                        "init": "n=800",
+                        "onBeat": "t=t+0.3;n=100+rand(900);",
+                        "perFrame": "t=t-v*0.5",
+                        "perPoint": "d=D/n;r=(i-(t*3)); x=(atan(r+d-t)*cos(r+d-t+i)); y=((i+cos(d+v*1.2))-1.5)*1.7;z=-(cos(t+i)+log(v)*cos(r*3))*3;red=cos(r)+1;blue=sin(r);green=sin(i)/2"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Convolution",
+            "kernel": "blur"
+        },
+        {
+            "type": "Convolution",
+            "kernel": "blur"
+        },
+        {
+            "type": "OnBeatClear"
+        }
+    ]
+};
+
 function loadScTrack() {
 //    dancer.load({
 //        src: "music.mp3"
@@ -58,7 +93,7 @@ function setCanvasDim() {
 
 function initEditor() {
     codeMirror = CodeMirror($("#preset-code").get(0), {
-        value: samplePreset,
+        value: JSON.stringify(samplePreset, undefined, 2),
         tabSize: 2
     });
 }
@@ -68,12 +103,10 @@ function initUi() {
 
     initEditor();
 
-    $("#preset-code").val(samplePreset);
-
     $("#btn-play").on("click", loadScTrack);
 
     $("#btn-runpreset").on("click", function() {
-        webvs.loadPreset(eval("("+codeMirror.getValue()+")"));
+        webvs.loadPreset(JSON.parse(codeMirror.getValue()));
         webvs.start();
     });
 
@@ -107,6 +140,7 @@ function initUi() {
 }
 
 $(document).ready(function () {
+    console.log(typeof JSON.stringify(samplePreset, undefined, 2));
     initUi();
     dancer = new Dancer();
 
@@ -114,7 +148,8 @@ $(document).ready(function () {
         canvas: $("#my-canvas").get(0),
         analyser: new Webvs.DancerAdapter(dancer)
     });
-    webvs.loadPreset(eval("("+codeMirror.getValue()+")"));
+    webvs.loadPreset(samplePreset);
+
     webvs.start();
 });
 
