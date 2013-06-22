@@ -1,3 +1,13 @@
+{
+    function makeBinaryExpr(head, tail) {
+        var result = head;
+        _.each(tail, function(tailItem) {
+            result = new AstBinaryExpr(tailItem[1], result, tailItem[3]);
+        });
+        return result;
+    }
+}
+
 program = p:(statement sep* (";" sep* statement sep*)* ";"?) {
     var stmts = _.reject(_.flatten(p), function(tok) {
         return (isWhitespace(tok) || tok == ";")
@@ -17,16 +27,13 @@ boolean_ops = "&" / "|"
 expr = boolean_expr
 
 boolean_expr
-		= lo:additive_expr sep* op:boolean_ops sep* ro:boolean_expr { return new AstBinaryExpr(op, lo, ro); }
-		/ additive_expr
+		= head:additive_expr tail:(sep* boolean_ops sep* additive_expr)* { return makeBinaryExpr(head, tail); }
 
 additive_expr
-		 = lo:multiplicative_expr sep* op:additive_ops sep* ro:additive_expr { return new AstBinaryExpr(op, lo, ro); }
-		 / multiplicative_expr
+		 = head:multiplicative_expr tail:(sep* additive_ops sep* multiplicative_expr)* { return makeBinaryExpr(head, tail); }
 
 multiplicative_expr
-		= lo:unary sep* op:multiplicative_ops sep* ro:multiplicative_expr { return new AstBinaryExpr(op, lo, ro); }
-		/ unary
+		= head:unary tail:(sep* multiplicative_ops sep* unary)* { return makeBinaryExpr(head, tail); }
 
 unary
 		= op:unary_ops sep* oper:func_call { return new AstUnaryExpr(op, oper); }
