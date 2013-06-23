@@ -56,8 +56,9 @@ var samplePreset = {
                 },
                 {
                     "type": "DynamicMovement",
-                    "code": "inAndOut",
-                    "coord": "POLAR"
+                    "enabled": false,
+                    "code": "rollingGridley",
+                    "coord": "RECT"
                 }
             ]
         },

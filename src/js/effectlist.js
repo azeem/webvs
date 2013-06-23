@@ -74,6 +74,9 @@ extend(EffectList, Component, {
     _constructComponent: function(optList) {
         var components = [];
         for(var i = 0;i < optList.length;i++) {
+            if(typeof optList[i].enabled === "boolean" && !optList[i].enabled) {
+                continue;
+            }
             var type = optList[i].type;
             var component = new Webvs[type](optList[i]);
             components.push(component);
