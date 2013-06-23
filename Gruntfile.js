@@ -28,7 +28,7 @@ module.exports = function(grunt) {
 
         karma: {
             webvs: {
-                configFile: "karma.conf.js",
+                configFile: "karma.conf.js"//,
                 //background: true
             }
         },
@@ -55,9 +55,14 @@ module.exports = function(grunt) {
         },
 
         copy: {
-            webvs: {
+            dev: {
                 files:[
-                    {expand: true, cwd: "src/", src: ["demo/**"], dest: "build/"},
+                    {expand: true, flatten:true, cwd: "src/", src: ["demo/**.!(html)"], dest: "build/"},
+                ]
+            },
+            dist: {
+                files: [
+                    {expand: true, flatten:true, cwd: "src/", src: ["demo/**.!(html|js)"], dest: "dist/"},
                 ]
             }
         },
@@ -71,6 +76,37 @@ module.exports = function(grunt) {
 //                files: ["src/**/*.js", "src/**/*.pegs"],
 //                tasks: ['karma:unit:run']
 //            }
+        },
+
+        uglify: {
+            dist: {
+                files: {
+                    "dist/demo.min.js": "build/demo.js",
+                    "dist/webvs.min.js": "build/webvs.js",
+                    "dist/libs.min.js": "lib/*.js"
+                }
+            }
+        },
+
+        preprocess: {
+            dev: {
+                options: {
+                    context: {
+                        mode: "dev"
+                    }
+                },
+                src: "src/demo/index.html",
+                dest: "build/index.html"
+            },
+            dist: {
+                options: {
+                    context: {
+                        mode: "dist"
+                    }
+                },
+                src: "src/demo/index.html",
+                dest: "dist/index.html"
+            }
         }
     });
 
@@ -78,8 +114,11 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-watch");
     grunt.loadNpmTasks("grunt-contrib-copy");
+    grunt.loadNpmTasks("grunt-contrib-uglify");
+    grunt.loadNpmTasks("grunt-preprocess");
     grunt.loadNpmTasks("grunt-peg");
     grunt.loadNpmTasks("grunt-karma");
 
-    grunt.registerTask('default', ['jshint', 'peg', 'concat', 'copy']);
+    grunt.registerTask('default', ['jshint', 'peg', 'concat', 'copy:dev', "preprocess:dev"]);
+    grunt.registerTask("dist", ["default", "uglify:dist", "copy:dist", "preprocess:dist"]);
 };

@@ -33,11 +33,21 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/2.36.0/javascript.min.js"></script>
-    <script type="text/javascript" src="../../lib/underscore.js"></script>
-    <script type="text/javascript" src="../../lib/D.min.js"></script>
-    <script type="text/javascript" src="../../lib/fft.js"></script>
-    <script type="text/javascript" src="../../lib/dancer.js"></script>
-    <script type="text/javascript" src="../webvs.js"></script>
+
+    <!-- @if mode='dev' -->
+    <script type="text/javascript" src="../lib/underscore.js"></script>
+    <script type="text/javascript" src="../lib/D.min.js"></script>
+    <script type="text/javascript" src="../lib/fft.js"></script>
+    <script type="text/javascript" src="../lib/dancer.js"></script>
+    <script type="text/javascript" src="webvs.js"></script>
     <script type="text/javascript" src="demo.js"></script>
+    <!-- @endif -->
+
+    <!-- @if mode='dist' -->
+    <script type="text/javascript" src="libs.min.js"></script>
+    <script type="text/javascript" src="webvs.min.js"></script>
+    <script type="text/javascript" src="demo.min.js"></script>
+    <!-- @endif -->
+
 </body>
 </html>

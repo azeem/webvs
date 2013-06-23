@@ -24,6 +24,8 @@
     "grunt-contrib-watch": "~0.4.4",
     "grunt-peg": "~0.2.0",
     "grunt-contrib-copy": "~0.4.1",
-    "grunt-karma": "~0.4.4"
+    "grunt-karma": "~0.4.4",
+    "grunt-preprocess": "~2.3.0",
+    "grunt-contrib-uglify": "~0.2.2"
   }
 }
