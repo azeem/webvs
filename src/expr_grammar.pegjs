@@ -54,7 +54,7 @@ primary_expr
 		/ "(" e:expr ")" { return e; }
 
 identifier
-		= val:([a-zA-Z_] [a-zA-Z_0-9]*) {
+		= val:([a-zA-Z_$] [a-zA-Z_0-9]*) {
 		    return _.flatten(val).join("").toLowerCase();
 		}
 

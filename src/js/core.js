@@ -94,10 +94,10 @@ extend(Webvs, Object, {
 function Component() {}
 extend(Component, Object, {
     /**
-     * this determines whether this component swaps the render target framebuffer.
-     * if set to true then the updateComponent call will receive swapped out
-     * texture. Used when current rendering depends on what has been rendered
-     * so far
+     * this determines whether current render target should be swapped out
+     * before updating this component. if set to true then the updateComponent
+     * call will receive swapped out texture. Used when current rendering
+     * depends on what has been rendered so far
      */
     swapFrame: false,
 
@@ -128,7 +128,9 @@ extend(Component, Object, {
 
 /**
  * ShaderComponent base class. Any Component that
- * has shader code, extends from this
+ * has shader code, extends from this. A uniform containing
+ * frame resolution is bound automatically.
+ *
  * @param vertexSrc   glsl code for vertex shader
  * @param fragmentSrc glsl code for fragment shader
  * @constructor
@@ -187,13 +189,26 @@ extend(ShaderComponent, Component, {
             throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
         }
         return shader;
-    }
+    },
+
+    /**
+     * Override and implement initialization
+     */
+    init: function() {},
+
+    /**
+     * Called for updating the frame. override and implement updating code.
+     * @param texture texture containing what is rendered so far.
+     *                passed only if swapFrame is true
+     */
+    update: function(texture) {}
 });
 
 /**
  * Trans component base class. This component has a
  * fixed vertex shader that draws a frame sized quad.
- * the shaders get a uniform
+ * the shaders get a uniform sampler2D u_curRender
+ * containing the swapped out frame
  *
  * @param fragmentSrc
  * @constructor

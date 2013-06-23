@@ -6,6 +6,12 @@
  * To change this template use File | Settings | File Templates.
  */
 
+/**
+ * Basic inheritance mechanism
+ * @param C
+ * @param P
+ * @param members
+ */
 function extend(C, P, members) {
     var F = function() {};
     F.prototype = P.prototype;
@@ -19,8 +25,16 @@ function extend(C, P, members) {
     }
 }
 
+/**
+ * no operation function
+ */
 function noop() {}
 
+/**
+ * checks if an object contains the required properties
+ * @param options
+ * @param requiredOptions
+ */
 function checkRequiredOptions(options, requiredOptions) {
     for(var i in requiredOptions) {
         var key =  requiredOptions[i];
@@ -30,16 +44,31 @@ function checkRequiredOptions(options, requiredOptions) {
     }
 }
 
+/**
+ * checks if parameter is an array or not
+ * @param value
+ * @returns {boolean}
+ */
 function isArray(value) {
     return Object.prototype.toString.call( value ) === '[object Array]';
 }
 
+/**
+ * Simple assert mechanism
+ * @param outcome
+ * @param message
+ */
 function assert(outcome, message) {
     if(!assert) {
         throw new Error("Assertion Failed: " + message);
     }
 }
 
+/**
+ * Checks if given string contains only whitespace
+ * @param str
+ * @returns {boolean}
+ */
 function isWhitespace(str) {
     return (typeof str === "string" && str.match(/^(\s*)$/) !== null);
 }

@@ -6,6 +6,11 @@
  * To change this template use File | Settings | File Templates.
  */
 
+/**
+ * OnBeatClear - clears the screen on beat
+ * @param options
+ * @constructor
+ */
 function OnBeatClear(options) {
     options = options?options:{};
     this.n = options.n?options.n:1;

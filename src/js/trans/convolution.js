@@ -52,6 +52,24 @@ function Convolution(options) {
     this.kernelWeight = kernelWeight;
     Convolution.super.constructor.call(this, fragmentSrc);
 }
+extend(Convolution, Trans, {
+    init: function() {
+        var gl = this.gl;
+
+        this.kernelLocation = gl.getUniformLocation(this.program, "u_kernel[0]");
+        this.kernelWeightLocation = gl.getUniformLocation(this.program, "u_kernelWeight");
+        Convolution.super.init.call(this);
+    },
+
+    update: function(texture) {
+        var gl = this.gl;
+
+        gl.uniform1fv(this.kernelLocation, this.kernel);
+        gl.uniform1f(this.kernelWeightLocation, this.kernelWeight);
+        Convolution.super.update.call(this, texture);
+    }
+});
+
 Convolution.kernels = {
     normal: [
         0, 0, 0,
@@ -79,23 +97,5 @@ Convolution.kernels = {
         1, 1, 1
     ]
 };
-extend(Convolution, Trans, {
-    init: function() {
-        var gl = this.gl;
-
-        this.kernelLocation = gl.getUniformLocation(this.program, "u_kernel[0]");
-        this.kernelWeightLocation = gl.getUniformLocation(this.program, "u_kernelWeight");
-        Convolution.super.init.call(this);
-    },
-
-    update: function(texture) {
-        var gl = this.gl;
-
-        gl.uniform1fv(this.kernelLocation, this.kernel);
-        gl.uniform1f(this.kernelWeightLocation, this.kernelWeight);
-        Convolution.super.update.call(this, texture);
-    }
-
-});
 
 window.Webvs.Convolution = Convolution;

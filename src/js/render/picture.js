@@ -6,6 +6,11 @@
  * To change this template use File | Settings | File Templates.
  */
 
+/**
+ * Picture - Renders a picture at given coordinate
+ * @param options
+ * @constructor
+ */
 function Picture(options) {
     checkRequiredOptions(options, ["src", "x", "y"]);
     this.src = options.src;

@@ -1,20 +1,12 @@
-function CodeInstance() {}
-extend(CodeInstance, Object, {
-    rand: function(max) {
-        return Math.random()*max;
-    },
-
-    bindUniforms: function(gl, program, exclude) {
-        _.each(this, function(value, name) {
-            if(typeof value !== "number") {
-                return;
-            }
-            var location = gl.getUniformLocation(program, name);
-            gl.uniform1f(location, value);
-        });
-    }
-});
-
+/**
+ * AVS expression parse and code generator.
+ * Generates JS and GLSL code from avs expressions
+ * @param codeSrc
+ * @param externalVars list of variables that will be supplied externally
+ *                     these variables will be instance values of the generated
+ *                     code instance
+ * @constructor
+ */
 function ExprCodeGenerator(codeSrc, externalVars) {
     this.codeSrc = codeSrc;
     this.externalVars = externalVars?externalVars:[];
@@ -22,7 +14,7 @@ function ExprCodeGenerator(codeSrc, externalVars) {
 }
 extend(ExprCodeGenerator, Object, {
     _parseSrc: function() {
-        // parse all the src
+        // Generate AST and find variables usages in all the expressions
         var codeAst = {};
         var variables = {};
         for(var name in this.codeSrc) {
@@ -35,6 +27,7 @@ extend(ExprCodeGenerator, Object, {
         }
         this.codeAst = codeAst;
 
+        // find the variables shared between expressions
         var sharedVars = [];
         for(var vName in variables) {
             for(var vName2 in variables) {
@@ -44,8 +37,10 @@ extend(ExprCodeGenerator, Object, {
                 sharedVars = sharedVars.concat(_.intersection(variables[vName], variables[vName2]));
             }
         }
+
         this.instanceVars = _.uniq(this.externalVars.concat(sharedVars));
 
+        // find local variables for each expression
         var localVars = {};
         for(var varName in variables) {
             localVars[varName] = _.difference(variables[varName], this.instanceVars);
@@ -53,14 +48,23 @@ extend(ExprCodeGenerator, Object, {
         this.localVars = localVars;
     },
 
+    /**
+     * Generates code and returns a code instance containing
+     * executable functions for the avs expressions. Empty no-op
+     * functions are inserted if the expression was not supplied
+     * @param funcs functions to be generated.
+     * @returns {CodeInstance}
+     */
     generateJs: function(funcs) {
         var js = new CodeInstance();
         var that = this;
 
+        // clear all instance variables
         _.each(this.instanceVars, function(ivar) {
             js[ivar] = 0;
         });
 
+        // generate code and assign function
         _.each(this.codeAst, function(codeAst, name) {
             if(!_.contains(funcs, name)) {
                 return;
@@ -69,15 +73,25 @@ extend(ExprCodeGenerator, Object, {
             js[name] = new Function(codeString);
         });
 
+        // add noops for missing expressions
         _.each(_.difference(funcs, _.functions(js)), function(name) {
             js[name] = noop;
         });
         return js;
     },
 
+    /**
+     * Generates glsl code for avs expressions. Empty void-void functions
+     * are generated for missing functions
+     * @param funcs list of functions to be generated
+     * @param treatAsNonUniform these instance variables will be treated as non uniforms
+     * @returns {string} string containing generated glsl code
+     */
     generateGlsl: function(funcs, treatAsNonUniform) {
         var code = [];
         var that = this;
+
+        // generate uniform and global declarations
         _.each(this.instanceVars, function(ivar) {
             var prefix = "";
             if(!_.contains(treatAsNonUniform, ivar)) {
@@ -86,6 +100,7 @@ extend(ExprCodeGenerator, Object, {
             code.push(prefix + "float " + ivar + ";");
         });
 
+        // generate functions
         _.each(this.codeAst, function(codeAst, name) {
             if(!_.contains(funcs, name)) {
                 return;
@@ -96,6 +111,7 @@ extend(ExprCodeGenerator, Object, {
             code.push("}");
         });
 
+        // generate noops for missing functions
         _.each(_.difference(funcs, _.keys(this.codeAst)), function(name) {
             code.push("void " + name + "() {}");
         });
@@ -131,7 +147,7 @@ extend(ExprCodeGenerator, Object, {
             if(typeof ast.value === "number" && ast.value%1 === 0) {
                 suffix = ".0";
             }
-            return ast.value.toString() + suffix;
+            return this._translateConstants(ast.value).toString() + suffix;
         }
     },
 
@@ -168,7 +184,7 @@ extend(ExprCodeGenerator, Object, {
             if(typeof ast.value === "string" && _.contains(this.instanceVars, ast.value)) {
                 prefix = "this.";
             }
-            return prefix + ast.value.toString();
+            return prefix + this._translateConstants(ast.value).toString();
         }
     },
 
@@ -193,7 +209,7 @@ extend(ExprCodeGenerator, Object, {
             return _.flatMap(ast.statements, function(stmt) {return that._getVars(stmt);});
         }
         if(ast instanceof AstPrimaryExpr) {
-            if(typeof ast.value === "string") {
+            if(typeof ast.value === "string" && ast.value[0] !== "$") {
                 return [ast.value];
             } else {
                 return [];
@@ -225,9 +241,49 @@ extend(ExprCodeGenerator, Object, {
             case "log": return "Math.log";
             case "rand": return "this.rand";
         }
+    },
+
+    _translateConstants: function(value) {
+        switch(value) {
+            case "$pi": return Math.PI;
+            case "$e": return Math.E;
+            case "$phi": return 1.6180339887;
+            default: return value;
+        }
     }
 });
 window.Webvs.ExprCodeGenerator = ExprCodeGenerator;
+
+/**
+ * An object that encapsulated, Generated executable code
+ * and its state values. Also contains implementations of
+ * functions callable from expressions
+ * @constructor
+ */
+function CodeInstance() {}
+extend(CodeInstance, Object, {
+    rand: function(max) {
+        return Math.random()*max;
+    },
+
+    /**
+     * bind state values to uniforms
+     * @param gl
+     * @param program
+     * @param exclude
+     */
+    bindUniforms: function(gl, program, exclude) {
+        _.each(this, function(value, name) {
+            if(typeof value !== "number") {
+                return;
+            }
+            var location = gl.getUniformLocation(program, name);
+            gl.uniform1f(location, value);
+        });
+    }
+});
+
+/*** Abstract Syntax Tree for AVS expressions ***/
 
 function AstBase() {}
 extend(AstBase, Object);

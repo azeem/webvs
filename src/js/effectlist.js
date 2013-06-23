@@ -58,6 +58,13 @@ extend(Copy, Trans, {
     }
 });
 
+/**
+ * EffectList component. Effectlist
+ * is the core component that doesnt lot of the rendering
+ * work
+ * @param options
+ * @constructor
+ */
 function EffectList(options) {
     checkRequiredOptions(options, ["components"]);
 
@@ -73,6 +80,7 @@ extend(EffectList, Component, {
 
     _constructComponent: function(optList) {
         var components = [];
+        // construct components from JSON
         for(var i = 0;i < optList.length;i++) {
             if(typeof optList[i].enabled === "boolean" && !optList[i].enabled) {
                 continue;

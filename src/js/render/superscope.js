@@ -6,6 +6,11 @@
  * To change this template use File | Settings | File Templates.
  */
 
+/**
+ * The-Superscope component
+ * @param options
+ * @constructor
+ */
 function SuperScope(options) {
     checkRequiredOptions(options, ["code"]);
 

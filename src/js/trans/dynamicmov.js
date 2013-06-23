@@ -6,6 +6,11 @@
  * To change this template use File | Settings | File Templates.
  */
 
+/**
+ * Dynamic movement component
+ * @param options
+ * @constructor
+ */
 function DynamicMovement(options) {
     checkRequiredOptions(options, ["code"]);
     options = _.defaults(options, {
@@ -157,6 +162,12 @@ extend(DynamicMovement, ShaderComponent, {
         gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
 
         gl.drawArrays(gl.TRIANGLES, 0, this.pointBufferSize);
+    },
+
+    destroyComponent: function() {
+        DynamicMovement.supert.destroyComponent.call(this);
+
+        gl.deleteBuffer(this.pointBuffer);
     }
 });
 
@@ -164,19 +175,19 @@ DynamicMovement.examples = {
     inAndOut: {
         init: "speed=.2;c=0;",
         onBeat: [
-            "c = c + (3.141/2);",
+            "c = c + ($PI/2);",
             "dd = 1 - (sin(c) * speed);"
         ].join("\n"),
         perPixel: "d = d * dd;"
     },
 
     randomDirection: {
-        init: "speed=.05;dr = (rand(200) / 100) * 3.141;",
+        init: "speed=.05;dr = (rand(200) / 100) * $PI;",
         perFrame: [
             "dx = cos(dr) * speed;",
             "dy = sin(dr) * speed;"
         ].join("\n"),
-        onBeat: "dr = (rand(200) / 100) * 3.141;",
+        onBeat: "dr = (rand(200) / 100) * $PI;",
         perPixel: [
             "x = x + dx;",
             "y = y + dy;"
@@ -187,7 +198,7 @@ DynamicMovement.examples = {
         init: "c=200;f=0;dt=0;dl=0;beatdiv=8",
         perFrame: [
             "f = f + 1;",
-            "t = ((f * 3.141 * 2)/c)/beatdiv;",
+            "t = ((f * $PI * 2)/c)/beatdiv;",
             "dt = dl + t;",
             "dx = 14+(cos(dt)*8);",
             "dy = 10+(sin(dt*2)*4);"
