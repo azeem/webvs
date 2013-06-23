@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2013 Azeem Arshad
+ * See the file license.txt for copying permission.
+ */
+
+/**
  * AVS expression parse and code generator.
  * Generates JS and GLSL code from avs expressions
  * @param codeSrc

@@ -1,9 +1,6 @@
 /**
- * Created with JetBrains WebStorm.
- * User: z33m
- * Date: 6/21/13
- * Time: 10:20 AM
- * To change this template use File | Settings | File Templates.
+ * Copyright (c) 2013 Azeem Arshad
+ * See the file license.txt for copying permission.
  */
 
 test('exprparser', function() {

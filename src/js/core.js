@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2013 Azeem Arshad
+ * See the file license.txt for copying permission.
+ */
+
+/**
  * Main Webvs class
  * @param options
  * @constructor
