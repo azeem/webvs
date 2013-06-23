@@ -78,7 +78,6 @@ function DynamicMovement(options) {
         "   gl_FragColor = vec4(texture2D(u_curRender, mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1);",
         "}"
     ].join("\n");
-    console.log(vertexSrc);
 
     DynamicMovement.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
