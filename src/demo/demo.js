@@ -12,6 +12,28 @@ var dancer, webvs;
 var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
 var dimensionFactor = 2;
 var codeMirror;
+
+//var samplePreset = {
+//    clearFrame: true,
+//    components: [
+//        {
+//            type: "SuperScope",
+//            dots: false,
+//            code: {
+//                init: "n=4",
+//                perPoint: "x=i;y=i"
+//            }
+//        },
+//        {
+//            type: "DynamicMovement",
+//            code: {
+//                perPixel: "x=x;y=y"
+//            }
+//        }
+//    ]
+//};
+
+
 var samplePreset = {
     "clearFrame": false,
     "components": [
@@ -31,6 +53,11 @@ var samplePreset = {
                         "perFrame": "t=t-v*0.5",
                         "perPoint": "d=D/n;r=(i-(t*3)); x=(atan(r+d-t)*cos(r+d-t+i)); y=((i+cos(d+v*1.2))-1.5)*1.7;z=-(cos(t+i)+log(v)*cos(r*3))*3;red=cos(r)+1;blue=sin(r);green=sin(i)/2"
                     }
+                },
+                {
+                    "type": "DynamicMovement",
+                    "code": "inAndOut",
+                    "coord": "POLAR"
                 }
             ]
         },

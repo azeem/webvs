@@ -14,10 +14,8 @@ test('exprparser', function() {
         perPoint: "d=D/n;r=(i-(t*3)); x=(atan(r+d-t)*cos(r+d-t+i)); y=((i+cos(d+v*1.2))-1.5)*1.7;z=-(cos(t+i)+log(v)*cos(r*3))*3;red=cos(r)+1;blue=sin(r);green=sin(i)/2"
     }, ["n", "v", "i", "x", "y", "red", "green", "blue"]);
 
-    var js = codeGen.generateJs();
-    console.log(codeGen.instanceVars);
-    console.log(codeGen.localVars);
-    console.log("n = " + js.n);
+    var glsl = codeGen.generateGlsl(["perPoint", "bleeh"], ["x", "y"]);
+    console.log(glsl);
 
     ok(typeof codeGen !== "undefined", 'Code generator can be constructed');
     deepEqual(codeGen.localVars.perPoint, ["b"], "Code variables can be extracted");

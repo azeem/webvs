@@ -2,6 +2,16 @@ function CodeInstance() {}
 extend(CodeInstance, Object, {
     rand: function(max) {
         return Math.random()*max;
+    },
+
+    bindUniforms: function(gl, program, exclude) {
+        _.each(this, function(value, name) {
+            if(typeof value !== "number") {
+                return;
+            }
+            var location = gl.getUniformLocation(program, name);
+            gl.uniform1f(location, value);
+        });
     }
 });
 
@@ -45,22 +55,90 @@ extend(ExprCodeGenerator, Object, {
 
     generateJs: function(funcs) {
         var js = new CodeInstance();
-        for(var name in this.codeAst) {
-            var codeString = this._generateJs(this.codeAst[name], this.localVars[name]);
-            js[name] = new Function(codeString);
-        }
+        var that = this;
+
         _.each(this.instanceVars, function(ivar) {
             js[ivar] = 0;
         });
+
+        _.each(this.codeAst, function(codeAst, name) {
+            if(!_.contains(funcs, name)) {
+                return;
+            }
+            var codeString = that._generateJs(codeAst, that.localVars[name]);
+            js[name] = new Function(codeString);
+        });
+
         _.each(_.difference(funcs, _.functions(js)), function(name) {
             js[name] = noop;
         });
         return js;
     },
 
+    generateGlsl: function(funcs, treatAsNonUniform) {
+        var code = [];
+        var that = this;
+        _.each(this.instanceVars, function(ivar) {
+            var prefix = "";
+            if(!_.contains(treatAsNonUniform, ivar)) {
+                prefix = "uniform ";
+            }
+            code.push(prefix + "float " + ivar + ";");
+        });
+
+        _.each(this.codeAst, function(codeAst, name) {
+            if(!_.contains(funcs, name)) {
+                return;
+            }
+            var codeString = that._generateGlsl(codeAst, that.localVars[name]);
+            code.push("void " + name + "() {");
+            code.push(codeString);
+            code.push("}");
+        });
+
+        _.each(_.difference(funcs, _.keys(this.codeAst)), function(name) {
+            code.push("void " + name + "() {}");
+        });
+
+        return code.join("\n");
+    },
+
+    _generateGlsl: function(ast, localVars) {
+        var that = this;
+
+        if(ast instanceof AstBinaryExpr) {
+            return "(" + this._generateGlsl(ast.leftOperand) + ast.operator + this._generateGlsl(ast.rightOperand) + ")";
+        }
+        if(ast instanceof AstUnaryExpr) {
+            return "(" + ast.operator + this._generateGlsl(ast.operand) + ")";
+        }
+        if(ast instanceof AstFuncCall) {
+            var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg);}).join(",");
+            return "(" + this._translateGlslFuncName(ast.funcName) + "(" + args + "))";
+        }
+        if(ast instanceof AstAssignment) {
+            return ast.identifier + "=" + this._generateGlsl(ast.expr);
+        }
+        if(ast instanceof AstProgram) {
+            var declarations = _.map(localVars, function(localVar){
+                return "float " + localVar + "=0.0";
+            });
+            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt);});
+            return declarations.concat(stmts).join(";\n")+";";
+        }
+        if(ast instanceof AstPrimaryExpr) {
+            var suffix = "";
+            if(typeof ast.value === "number" && ast.value%1 === 0) {
+                suffix = ".0";
+            }
+            return ast.value.toString() + suffix;
+        }
+    },
+
     _generateJs: function(ast, localVars) {
         var prefix;
         var that = this;
+
         if(ast instanceof AstBinaryExpr) {
             return "(" + this._generateJs(ast.leftOperand) + ast.operator + this._generateJs(ast.rightOperand) + ")";
         }
@@ -120,6 +198,19 @@ extend(ExprCodeGenerator, Object, {
             } else {
                 return [];
             }
+        }
+    },
+
+    _translateGlslFuncName: function(name) {
+        switch(name) {
+            case "sin": return "sin";
+            case "cos": return "cos";
+            case "tan": return "tan";
+            case "asin": return "asin";
+            case "acos": return "acos";
+            case "atan": return "atan";
+            case "log": return "log";
+            //case "rand": return "this.rand";
         }
     },
 

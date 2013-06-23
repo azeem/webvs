@@ -9,7 +9,6 @@ function Webvs(options) {
     this.analyser = options.analyser;
 
     this._initGl();
-    //this.loadPreset({clearFrame:true, components: []});
 }
 extend(Webvs, Object, {
     _initGl: function() {
@@ -24,6 +23,10 @@ extend(Webvs, Object, {
         }
     },
 
+    /**
+     * Loads a preset JSON
+     * @param preset JSON representation of the preset
+     */
     loadPreset: function(preset) {
         this.preset = preset;
         this.stop();
@@ -33,6 +36,10 @@ extend(Webvs, Object, {
         this.rootComponent = new EffectList(preset);
     },
 
+    /**
+     * Reset all the components, call this when canvas
+     * dimensions changes
+     */
     resetCanvas: function() {
         this.stop();
         if(this.rootComponent) {
@@ -70,6 +77,9 @@ extend(Webvs, Object, {
         });
     },
 
+    /**
+     * Stops the animation
+     */
     stop: function() {
         if(typeof this.animReqId !== "undefined") {
             cancelAnimationFrame(this.animReqId);
@@ -77,22 +87,50 @@ extend(Webvs, Object, {
     }
 });
 
+/**
+ * Components base class.
+ * @constructor
+ */
 function Component() {}
 extend(Component, Object, {
+    /**
+     * this determines whether this component swaps the render target framebuffer.
+     * if set to true then the updateComponent call will receive swapped out
+     * texture. Used when current rendering depends on what has been rendered
+     * so far
+     */
+    swapFrame: false,
+
+    /**
+     * Initialize component. Called once before animation starts
+     * @param gl
+     * @param resolution
+     * @param analyser
+     */
     initComponent: function(gl, resolution, analyser) {
         this.gl = gl;
         this.resolution = resolution;
         this.analyser = analyser;
     },
+
+    /**
+     * Render a frame. Called once for every frame
+     */
     updateComponent: function() {},
+
+    /**
+     * Release any Webgl resources. Called during
+     * reinitialization
+     */
     destroyComponent: function() {}
 });
 
+
 /**
- * ShaderComponent base class
- * @param gl gl context
- * @param resolution resolution of the canvas
- * @param options
+ * ShaderComponent base class. Any Component that
+ * has shader code, extends from this
+ * @param vertexSrc   glsl code for vertex shader
+ * @param fragmentSrc glsl code for fragment shader
  * @constructor
  */
 function ShaderComponent(vertexSrc, fragmentSrc) {
@@ -102,9 +140,6 @@ function ShaderComponent(vertexSrc, fragmentSrc) {
 extend(ShaderComponent, Component, {
     swapFrame: false,
 
-    /**
-     * Initialize the component. Called once before animation starts
-     */
     initComponent: function(gl, resolution, analyser) {
         ShaderComponent.super.initComponent.call(this, gl, resolution, analyser);
         this._compileProgram(this.vertexSrc, this.fragmentSrc);
@@ -112,9 +147,6 @@ extend(ShaderComponent, Component, {
         this.init();
     },
 
-    /**
-     * Update the screen. Called for every frame of the animation
-     */
     updateComponent: function() {
         ShaderComponent.super.updateComponent.apply(this, arguments);
         this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
@@ -159,7 +191,10 @@ extend(ShaderComponent, Component, {
 });
 
 /**
- * Trans component base class
+ * Trans component base class. This component has a
+ * fixed vertex shader that draws a frame sized quad.
+ * the shaders get a uniform
+ *
  * @param fragmentSrc
  * @constructor
  */
