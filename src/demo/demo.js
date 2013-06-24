@@ -56,6 +56,10 @@ var samplePreset = {
                     "enabled": false,
                     "code": "rollingGridley",
                     "coord": "RECT"
+                },
+                {
+                    "type": "ChannelShift",
+                    "onBeatRandom": true
                 }
             ]
         },

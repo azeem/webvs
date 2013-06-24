@@ -162,8 +162,7 @@ extend(DynamicMovement, ShaderComponent, {
 
     destroyComponent: function() {
         DynamicMovement.super.destroyComponent.call(this);
-
-        gl.deleteBuffer(this.pointBuffer);
+        this.gl.deleteBuffer(this.pointBuffer);
     }
 });
 
