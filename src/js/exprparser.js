@@ -105,15 +105,21 @@ extend(ExprCodeGenerator, Object, {
             code.push(prefix + "float " + ivar + ";");
         });
 
+        var functionUsages = [];
         // generate functions
         _.each(this.codeAst, function(codeAst, name) {
             if(!_.contains(funcs, name)) {
                 return;
             }
-            var codeString = that._generateGlsl(codeAst, that.localVars[name]);
+            var codeString = that._generateGlsl(codeAst, that.localVars[name], functionUsages);
             code.push("void " + name + "() {");
             code.push(codeString);
             code.push("}");
+        });
+
+        functionUsages = _.uniq(functionUsages);
+        _.each(functionUsages, function(funcName) {
+            code.push(this.glslFuncs[funcName]);
         });
 
         // generate noops for missing functions
@@ -124,27 +130,109 @@ extend(ExprCodeGenerator, Object, {
         return code.join("\n");
     },
 
-    _generateGlsl: function(ast, localVars) {
+    funcArgLengths: {
+        "above": 2,
+        "below": 2,
+        "equal": 2,
+        "loop": 2,
+        "if": 3,
+        "sin": 1,
+        "cos": 1,
+        "tan": 1,
+        "asin": 1,
+        "acos": 1,
+        "atan": 1,
+        "log": 1,
+        "rand": 1
+    },
+
+    jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log"],
+    glslBultinFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log"],
+
+    glslFuncs: {
+        "rand": [
+            "uniform vec2 __randStep;",
+            "vec2 __randSeed;",
+            "float rand(float max) {",
+            "   __randCur += __randStep;",
+            "   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);",
+            "   return (floor(val*max)+1);",
+            "}"
+        ].join("]n")
+    },
+
+    _checkFunc: function(ast) {
+        var requiredArgLength = this.funcArgLengths[ast.funcName];
+        if(requiredArgLength == undefined) {
+            throw Error("Unknown function " + ast.funcName);
+        }
+        if(ast.args.length != requiredArgLength) {
+            throw Error(ast.funcName + " accepts " + requiredArgLength + " arguments");
+        }
+    },
+
+    _generateGlsl: function(ast, fu, localVars) {
         var that = this;
 
         if(ast instanceof AstBinaryExpr) {
-            return "(" + this._generateGlsl(ast.leftOperand) + ast.operator + this._generateGlsl(ast.rightOperand) + ")";
+            return "(" + this._generateGlsl(ast.leftOperand, fu) + ast.operator + this._generateGlsl(ast.rightOperand, fu) + ")";
         }
         if(ast instanceof AstUnaryExpr) {
-            return "(" + ast.operator + this._generateGlsl(ast.operand) + ")";
+            return "(" + ast.operator + this._generateGlsl(ast.operand, fu) + ")";
         }
         if(ast instanceof AstFuncCall) {
-            var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg);}).join(",");
-            return "(" + this._translateGlslFuncName(ast.funcName) + "(" + args + "))";
+            this._checkFunc(ast);
+            switch(ast.funcName) {
+                case "above":
+                    return [
+                        "(",
+                        this._generateGlsl(ast.args[0], fu),
+                        ">",
+                        this._generateGlsl(ast.args[1], fu),
+                        "?1.0:0.0)"
+                    ].join("");
+                case "below":
+                    return [
+                        "(",
+                        this._generateGlsl(ast.args[0], fu),
+                        "<",
+                        this._generateGlsl(ast.args[1], fu),
+                        "?1.0:0.0)"
+                    ].join("");
+                case "equal":
+                    return [
+                        "(",
+                        this._generateGlsl(ast.args[0], fu),
+                        "==",
+                        this._generateGlsl(ast.args[1], fu),
+                        "?1.0:0.0)"
+                    ].join("");
+                case "if":
+                    return [
+                        "(",
+                        this._generateGlsl(ast.args[0], fu),
+                        "!=0.0?",
+                        this._generateGlsl(ast.args[1], fu),
+                        ":",
+                        this._generateGlsl(ast.args[2], fu),
+                        ")"
+                    ].join("");
+                default:
+                    if(!_.contains(this.glslBultinFuncs, ast.funcName)) {
+                        fu.push(ast.funcName);
+                    }
+                    var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg, fu);}).join(",");
+                    return "(" + ast.funcName + "(" + args + "))";
+            }
         }
         if(ast instanceof AstAssignment) {
-            return ast.identifier + "=" + this._generateGlsl(ast.expr);
+            return ast.identifier + "=" + this._generateGlsl(ast.expr, fu);
         }
         if(ast instanceof AstProgram) {
             var declarations = _.map(localVars, function(localVar){
                 return "float " + localVar + "=0.0";
             });
-            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt);});
+            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, fu);});
             return declarations.concat(stmts).join(";\n")+";";
         }
         if(ast instanceof AstPrimaryExpr) {
@@ -167,8 +255,52 @@ extend(ExprCodeGenerator, Object, {
             return "(" + ast.operator + this._generateJs(ast.operand) + ")";
         }
         if(ast instanceof AstFuncCall) {
-            var args = _.map(ast.args, function(arg) {return that._generateJs(arg);}).join(",");
-            return "(" + this._translateJsFuncName(ast.funcName) + "(" + args + "))";
+            this._checkFunc(ast);
+            switch(ast.funcName) {
+                case "above":
+                    return [
+                        "(",
+                        this._generateJs(ast.args[0]),
+                        ">",
+                        this._generateJs(ast.args[1]),
+                        "?1:0)"
+                    ].join("");
+                case "below":
+                    return [
+                        "(",
+                        this._generateJs(ast.args[0]),
+                        "<",
+                        this._generateJs(ast.args[1]),
+                        "?1:0)"
+                    ].join("");
+                case "equal":
+                    return [
+                        "(",
+                        this._generateJs(ast.args[0]),
+                        "==",
+                        this._generateJs(ast.args[1]),
+                        "?1:0)"
+                    ].join("");
+                case "if":
+                    return [
+                        "(",
+                        this._generateJs(ast.args[0]),
+                        "!==0?",
+                        this._generateJs(ast.args[1]),
+                        ":",
+                        this._generateJs(ast.args[2]),
+                        ")"
+                    ].join("");
+                default:
+                    var args = _.map(ast.args, function(arg) {return that._generateJs(arg);}).join(",");
+                    var prefix = "";
+                    if(_.contains(this.jsMathFuncs, ast.funcName)) {
+                        prefix = "Math.";
+                    } else {
+                        prefix = "this.";
+                    }
+                    return "(" + prefix + ast.funcName + "(" + args + "))";
+            }
         }
         if(ast instanceof AstAssignment) {
             prefix = "";
@@ -193,58 +325,44 @@ extend(ExprCodeGenerator, Object, {
         }
     },
 
+    _mergeVars: function(vars1, vars2) {
+        return [vars1[0].concat(vars2[0]), vars1[1].concat(vars2[1])];
+    },
+
     _getVars: function(ast) {
         var that = this;
         if(ast instanceof AstBinaryExpr) {
             var leftVars = this._getVars(ast.leftOperand);
             var rightVars = this._getVars(ast.rightOperand);
-            return leftVars.concat(rightVars);
+            return this._mergeVars(leftVars, rightVars);
         }
         if(ast instanceof AstUnaryExpr) {
             return this._getVars(ast.operand);
         }
         if(ast instanceof AstFuncCall) {
-            return _.map(ast.args, function(arg) {return that._getVars(arg);} );
+            var vars = [[],[ast.funcName]];
+            _.each(ast.args, function(arg) {
+               that._mergeVars(vars, that._getVars(arg));
+            });
+            return vars;
         }
         if(ast instanceof AstAssignment) {
             var vars = this._getVars(ast.expr);
-            return vars.concat(ast.identifier);
+            return this._mergeVars(this._getVars(ast.expr), [[ast.identifier],[]]);
         }
         if(ast instanceof AstProgram) {
-            return _.flatMap(ast.statements, function(stmt) {return that._getVars(stmt);});
+            var vars = [[],[]];
+            _.each(ast.args, function(stmt) {
+                that._mergeVars(vars, that._getVars(stmt));
+            });
+            return vars;
         }
         if(ast instanceof AstPrimaryExpr) {
             if(typeof ast.value === "string" && ast.value[0] !== "$") {
-                return [ast.value];
+                return [[ast.value], []];
             } else {
-                return [];
+                return [[], []];
             }
-        }
-    },
-
-    _translateGlslFuncName: function(name) {
-        switch(name) {
-            case "sin": return "sin";
-            case "cos": return "cos";
-            case "tan": return "tan";
-            case "asin": return "asin";
-            case "acos": return "acos";
-            case "atan": return "atan";
-            case "log": return "log";
-            //case "rand": return "this.rand";
-        }
-    },
-
-    _translateJsFuncName: function(name) {
-        switch(name) {
-            case "sin": return "Math.sin";
-            case "cos": return "Math.cos";
-            case "tan": return "Math.tan";
-            case "asin": return "Math.asin";
-            case "acos": return "Math.acos";
-            case "atan": return "Math.atan";
-            case "log": return "Math.log";
-            case "rand": return "this.rand";
         }
     },
 
