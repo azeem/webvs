@@ -22,15 +22,19 @@ extend(ExprCodeGenerator, Object, {
         // Generate AST and find variables usages in all the expressions
         var codeAst = {};
         var variables = {};
+        var funcUsages = {};
         for(var name in this.codeSrc) {
             try {
                 codeAst[name] = Webvs.PegExprParser.parse(this.codeSrc[name]);
-                variables[name] = _.uniq(this._getVars(codeAst[name]));
+                var vars = this._getVars(codeAst[name]);
+                variables[name] = _.uniq(vars[1]);
+                funcUsages[name] = _.uniq(vars[0]);
             } catch(e) {
                 throw new Error("Error parsing " + name + " : " + e);
             }
         }
         this.codeAst = codeAst;
+        this.funcUsages = funcUsages;
 
         // find the variables shared between expressions
         var sharedVars = [];
@@ -63,6 +67,9 @@ extend(ExprCodeGenerator, Object, {
     generateJs: function(funcs) {
         var js = new CodeInstance();
         var that = this;
+
+        // check if there are usages of rand function
+        js.hasRandom = _.contains(_.flatten(_.values(this.funcUsages)), "rand");
 
         // clear all instance variables
         _.each(this.instanceVars, function(ivar) {
@@ -105,21 +112,19 @@ extend(ExprCodeGenerator, Object, {
             code.push(prefix + "float " + ivar + ";");
         });
 
-        var functionUsages = [];
+        // include all required function codes
+        var funcUsages = _.uniq(_.flatMap(funcs, function(func) { that.funcUsages[func]; }));
+        code = code.concat(_.map(funcUsages, function(func) { that.glslFuncs[func]; }));
+
         // generate functions
         _.each(this.codeAst, function(codeAst, name) {
             if(!_.contains(funcs, name)) {
                 return;
             }
-            var codeString = that._generateGlsl(codeAst, that.localVars[name], functionUsages);
+            var codeString = that._generateGlsl(codeAst, that.localVars[name]);
             code.push("void " + name + "() {");
             code.push(codeString);
             code.push("}");
-        });
-
-        functionUsages = _.uniq(functionUsages);
-        _.each(functionUsages, function(funcName) {
-            code.push(this.glslFuncs[funcName]);
         });
 
         // generate noops for missing functions
@@ -171,14 +176,14 @@ extend(ExprCodeGenerator, Object, {
         }
     },
 
-    _generateGlsl: function(ast, fu, localVars) {
+    _generateGlsl: function(ast, localVars) {
         var that = this;
 
         if(ast instanceof AstBinaryExpr) {
-            return "(" + this._generateGlsl(ast.leftOperand, fu) + ast.operator + this._generateGlsl(ast.rightOperand, fu) + ")";
+            return "(" + this._generateGlsl(ast.leftOperand) + ast.operator + this._generateGlsl(ast.rightOperand) + ")";
         }
         if(ast instanceof AstUnaryExpr) {
-            return "(" + ast.operator + this._generateGlsl(ast.operand, fu) + ")";
+            return "(" + ast.operator + this._generateGlsl(ast.operand) + ")";
         }
         if(ast instanceof AstFuncCall) {
             this._checkFunc(ast);
@@ -186,53 +191,50 @@ extend(ExprCodeGenerator, Object, {
                 case "above":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0], fu),
+                        this._generateGlsl(ast.args[0]),
                         ">",
-                        this._generateGlsl(ast.args[1], fu),
+                        this._generateGlsl(ast.args[1]),
                         "?1.0:0.0)"
                     ].join("");
                 case "below":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0], fu),
+                        this._generateGlsl(ast.args[0]),
                         "<",
-                        this._generateGlsl(ast.args[1], fu),
+                        this._generateGlsl(ast.args[1]),
                         "?1.0:0.0)"
                     ].join("");
                 case "equal":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0], fu),
+                        this._generateGlsl(ast.args[0]),
                         "==",
-                        this._generateGlsl(ast.args[1], fu),
+                        this._generateGlsl(ast.args[1]),
                         "?1.0:0.0)"
                     ].join("");
                 case "if":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0], fu),
+                        this._generateGlsl(ast.args[0]),
                         "!=0.0?",
-                        this._generateGlsl(ast.args[1], fu),
+                        this._generateGlsl(ast.args[1]),
                         ":",
-                        this._generateGlsl(ast.args[2], fu),
+                        this._generateGlsl(ast.args[2]),
                         ")"
                     ].join("");
                 default:
-                    if(!_.contains(this.glslBultinFuncs, ast.funcName)) {
-                        fu.push(ast.funcName);
-                    }
-                    var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg, fu);}).join(",");
+                    var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg);}).join(",");
                     return "(" + ast.funcName + "(" + args + "))";
             }
         }
         if(ast instanceof AstAssignment) {
-            return ast.identifier + "=" + this._generateGlsl(ast.expr, fu);
+            return ast.identifier + "=" + this._generateGlsl(ast.expr);
         }
         if(ast instanceof AstProgram) {
             var declarations = _.map(localVars, function(localVar){
                 return "float " + localVar + "=0.0";
             });
-            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, fu);});
+            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt);});
             return declarations.concat(stmts).join(";\n")+";";
         }
         if(ast instanceof AstPrimaryExpr) {
@@ -403,6 +405,13 @@ extend(CodeInstance, Object, {
             var location = gl.getUniformLocation(program, name);
             gl.uniform1f(location, value);
         });
+
+        // bind random step value if there are usages of random
+        if(this.hasRandom) {
+            var location = gl.getUniformLocation(program, "__randStep");
+            var step = [Math.random()/100, Math.random()/100];
+            gl.uniform2fv(location, step);
+        }
     }
 });
 
