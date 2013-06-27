@@ -57,6 +57,31 @@ extend(ExprCodeGenerator, Object, {
         this.localVars = localVars;
     },
 
+    generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
+        var inst = new CodeInstance();
+        var that = this;
+        var glsl = [];
+
+        _.each(this.instanceVars, function(ivar) {
+            js[ivar] = 0;
+
+            var prefix = "";
+            if(!_.contains(treatAsNonUniform, ivar)) {
+                prefix = "uniform ";
+            }
+            code.push(prefix + "float " + ivar + ";");
+        });
+
+        // generate code and assign function
+        _.each(this.codeAst, function(codeAst, name) {
+            if(!_.contains(funcs, name)) {
+                return;
+            }
+            var codeString = that._generateJs(codeAst, that.localVars[name]);
+            js[name] = new Function(codeString);
+        });
+    },
+
     /**
      * Generates code and returns a code instance containing
      * executable functions for the avs expressions. Empty no-op
@@ -67,9 +92,6 @@ extend(ExprCodeGenerator, Object, {
     generateJs: function(funcs) {
         var js = new CodeInstance();
         var that = this;
-
-        // check if there are usages of rand function
-        js.hasRandom = _.contains(_.flatten(_.values(this.funcUsages)), "rand");
 
         // clear all instance variables
         _.each(this.instanceVars, function(ivar) {
