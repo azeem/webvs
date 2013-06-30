@@ -27,8 +27,8 @@ extend(ExprCodeGenerator, Object, {
             try {
                 codeAst[name] = Webvs.PegExprParser.parse(this.codeSrc[name]);
                 var vars = this._getVars(codeAst[name]);
-                variables[name] = _.uniq(vars[1]);
-                funcUsages[name] = _.uniq(vars[0]);
+                variables[name] = _.uniq(vars[0]);
+                funcUsages[name] = _.uniq(vars[1]);
             } catch(e) {
                 throw new Error("Error parsing " + name + " : " + e);
             }
@@ -63,98 +63,58 @@ extend(ExprCodeGenerator, Object, {
         var glsl = [];
 
         _.each(this.instanceVars, function(ivar) {
-            js[ivar] = 0;
+            // clear instance variables in code instance
+            inst[ivar] = 0;
 
+            // create declarations for instance variables in glsl
             var prefix = "";
             if(!_.contains(treatAsNonUniform, ivar)) {
                 prefix = "uniform ";
             }
-            code.push(prefix + "float " + ivar + ";");
+            glsl.push(prefix + "float " + ivar + ";");
         });
 
-        // generate code and assign function
-        _.each(this.codeAst, function(codeAst, name) {
-            if(!_.contains(funcs, name)) {
-                return;
-            }
-            var codeString = that._generateJs(codeAst, that.localVars[name]);
-            js[name] = new Function(codeString);
+        var jsFuncList = _.intersection(_.keys(this.codeAst), jsFuncs);
+        var missingJsFuncList = _.difference(jsFuncs, jsFuncList);
+
+        // generate javascript functions and assign to code instance
+        _.each(jsFuncList, function(name) {
+            var ast = that.codeAst[name];
+            var codeString = that._generateJs(ast, that.localVars[name]);
+            inst[name] = new Function(codeString);
         });
-    },
-
-    /**
-     * Generates code and returns a code instance containing
-     * executable functions for the avs expressions. Empty no-op
-     * functions are inserted if the expression was not supplied
-     * @param funcs functions to be generated.
-     * @returns {CodeInstance}
-     */
-    generateJs: function(funcs) {
-        var js = new CodeInstance();
-        var that = this;
-
-        // clear all instance variables
-        _.each(this.instanceVars, function(ivar) {
-            js[ivar] = 0;
-        });
-
-        // generate code and assign function
-        _.each(this.codeAst, function(codeAst, name) {
-            if(!_.contains(funcs, name)) {
-                return;
-            }
-            var codeString = that._generateJs(codeAst, that.localVars[name]);
-            js[name] = new Function(codeString);
-        });
-
         // add noops for missing expressions
-        _.each(_.difference(funcs, _.functions(js)), function(name) {
-            js[name] = noop;
-        });
-        return js;
-    },
-
-    /**
-     * Generates glsl code for avs expressions. Empty void-void functions
-     * are generated for missing functions
-     * @param funcs list of functions to be generated
-     * @param treatAsNonUniform these instance variables will be treated as non uniforms
-     * @returns {string} string containing generated glsl code
-     */
-    generateGlsl: function(funcs, treatAsNonUniform) {
-        var code = [];
-        var that = this;
-
-        // generate uniform and global declarations
-        _.each(this.instanceVars, function(ivar) {
-            var prefix = "";
-            if(!_.contains(treatAsNonUniform, ivar)) {
-                prefix = "uniform ";
-            }
-            code.push(prefix + "float " + ivar + ";");
+        _.each(missingJsFuncList, function(name) {
+            inst[name] = noop;
         });
 
-        // include all required function codes
-        var funcUsages = _.uniq(_.flatMap(funcs, function(func) { that.funcUsages[func]; }));
-        code = code.concat(_.map(funcUsages, function(func) { that.glslFuncs[func]; }));
+        var glslFuncList = _.intersection(_.keys(this.codeAst), glslFuncs);
+        var missingGlslFuncList = _.difference(glslFuncs, glslFuncList);
+        var glsFuncUsages = _.uniq(_.flatMap(glslFuncList, function(name) { return that.funcUsages[name]; }));
 
-        // generate functions
-        _.each(this.codeAst, function(codeAst, name) {
-            if(!_.contains(funcs, name)) {
-                return;
-            }
-            var codeString = that._generateGlsl(codeAst, that.localVars[name]);
-            code.push("void " + name + "() {");
-            code.push(codeString);
-            code.push("}");
+        // include required functions in glsl
+        _.each(glsFuncUsages, function(name) {
+            glsl.push(that.glslFuncCode[name]);
         });
-
+        // generate glsl functions
+        _.each(glslFuncList, function(name) {
+            var ast = that.codeAst[name];
+            var codeString = that._generateGlsl(ast, that.localVars[name]);
+            glsl.push("void " + name + "() {");
+            glsl.push(codeString);
+            glsl.push("}");
+        });
         // generate noops for missing functions
-        _.each(_.difference(funcs, _.keys(this.codeAst)), function(name) {
-            code.push("void " + name + "() {}");
+        _.each(missingGlslFuncList, function(name) {
+            glsl.push("void " + name + "() {}");
         });
 
-        return code.join("\n");
+        if(_.contains(glslFuncList, "rand")) {
+            inst.hasRandom = true;
+        }
+        inst._treatAsNonUniform = treatAsNonUniform;
+
+        return [inst, glsl.join("")];
     },
 
     funcArgLengths: {
@@ -176,7 +136,7 @@ extend(ExprCodeGenerator, Object, {
     jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log"],
     glslBultinFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log"],
 
-    glslFuncs: {
+    glslFuncCode: {
         "rand": [
             "uniform vec2 __randStep;",
             "vec2 __randSeed;",
@@ -185,12 +145,12 @@ extend(ExprCodeGenerator, Object, {
             "   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);",
             "   return (floor(val*max)+1);",
             "}"
-        ].join("]n")
+        ].join("\n")
     },
 
     _checkFunc: function(ast) {
         var requiredArgLength = this.funcArgLengths[ast.funcName];
-        if(requiredArgLength == undefined) {
+        if(requiredArgLength === undefined) {
             throw Error("Unknown function " + ast.funcName);
         }
         if(ast.args.length != requiredArgLength) {
@@ -317,7 +277,6 @@ extend(ExprCodeGenerator, Object, {
                     ].join("");
                 default:
                     var args = _.map(ast.args, function(arg) {return that._generateJs(arg);}).join(",");
-                    var prefix = "";
                     if(_.contains(this.jsMathFuncs, ast.funcName)) {
                         prefix = "Math.";
                     } else {
@@ -353,8 +312,11 @@ extend(ExprCodeGenerator, Object, {
         return [vars1[0].concat(vars2[0]), vars1[1].concat(vars2[1])];
     },
 
+
     _getVars: function(ast) {
         var that = this;
+        var vars;
+
         if(ast instanceof AstBinaryExpr) {
             var leftVars = this._getVars(ast.leftOperand);
             var rightVars = this._getVars(ast.rightOperand);
@@ -364,20 +326,20 @@ extend(ExprCodeGenerator, Object, {
             return this._getVars(ast.operand);
         }
         if(ast instanceof AstFuncCall) {
-            var vars = [[],[ast.funcName]];
+            vars = [[],[ast.funcName]];
             _.each(ast.args, function(arg) {
-               that._mergeVars(vars, that._getVars(arg));
+               vars = that._mergeVars(vars, that._getVars(arg));
             });
             return vars;
         }
         if(ast instanceof AstAssignment) {
-            var vars = this._getVars(ast.expr);
+            vars = this._getVars(ast.expr);
             return this._mergeVars(this._getVars(ast.expr), [[ast.identifier],[]]);
         }
         if(ast instanceof AstProgram) {
-            var vars = [[],[]];
-            _.each(ast.args, function(stmt) {
-                that._mergeVars(vars, that._getVars(stmt));
+            vars = [[],[]];
+            _.each(ast.statements, function(stmt) {
+                vars = that._mergeVars(vars, that._getVars(stmt));
             });
             return vars;
         }
@@ -413,26 +375,36 @@ extend(CodeInstance, Object, {
         return Math.random()*max;
     },
 
+    _locationCache: {},
+    _getLocation: function(program, gl, name) {
+        var location = this._locationCache[name];
+        if(typeof location === "undefined") {
+            location = gl.getUniformLocation(program, name);
+            this._locationCache[name] = location;
+        }
+        return location;
+    },
+
     /**
      * bind state values to uniforms
      * @param gl
      * @param program
      * @param exclude
      */
-    bindUniforms: function(gl, program, exclude) {
-        _.each(this, function(value, name) {
-            if(typeof value !== "number") {
-                return;
-            }
-            var location = gl.getUniformLocation(program, name);
-            gl.uniform1f(location, value);
+    bindUniforms: function(gl, program) {
+        var that = this;
+        // bind all values
+        var toBeBound = _.difference(_.keys(this), this._treatAsNonUniform);
+        _.each(toBeBound, function(name) {
+            var value = that[name];
+            if(typeof value !== "number") { return; }
+            gl.uniform1f(that._getLocation(program, gl, name), value);
         });
 
         // bind random step value if there are usages of random
         if(this.hasRandom) {
-            var location = gl.getUniformLocation(program, "__randStep");
             var step = [Math.random()/100, Math.random()/100];
-            gl.uniform2fv(location, step);
+            gl.uniform2fv(that._getLocation(program, gl, "__randStep"), step);
         }
     }
 });

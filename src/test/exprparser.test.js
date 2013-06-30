@@ -5,18 +5,22 @@
 
 test('exprparser', function() {
     var codeGen = new Webvs.ExprCodeGenerator({
-        init: "n=800",
-        perFrame: "t=t-v*0.5",
-        onBeat: "t=t+0.3;n=100+rand(900);",
-        perPoint: "d=D/n;r=(i-(t*3)); x=(atan(r+d-t)*cos(r+d-t+i)); y=((i+cos(d+v*1.2))-1.5)*1.7;z=-(cos(t+i)+log(v)*cos(r*3))*3;red=cos(r)+1;blue=sin(r);green=sin(i)/2"
-    }, ["n", "v", "i", "x", "y", "red", "green", "blue"]);
+        init: "c=200;f=0;dt=0;dl=0;beatdiv=8",
+        perFrame: [
+            "f = f + 1;",
+            "t = ((f * $PI * 2)/c)/beatdiv;",
+            "dt = dl + t;",
+            "dx = 14+(cos(dt)*8);",
+            "dy = 10+(sin(dt*2)*4);"
+        ].join("\n"),
+        onBeat: "c=f;f=0;dl=dt",
+        perPixel: "x=x+(sin(y*dx)*.03); y=rand(y)-(cos(x*dy)*.03);"
+    }, ["x", "y", "r", "d", "b", "w", "h"]);
 
-    var glsl = codeGen.generateGlsl(["perPoint", "bleeh"], ["x", "y"]);
-    console.log(glsl);
+    var glslExpect = "float x;float y;float r;float d;uniform float b;uniform float w;uniform float h;uniform float c;uniform float f;uniform float dt;uniform float dl;uniform float beatdiv;uniform float dx;uniform float dy;uniform vec2 __randStep;\nvec2 __randSeed;\nfloat rand(float max) {\n   __randCur += __randStep;\n   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);\n   return (floor(val*max)+1);\n}void perPixel() {x=(x+((sin((y*dx)))*0.03));\ny=((rand(y))-((cos((x*dy)))*0.03));}";
 
-    ok(typeof codeGen !== "undefined", 'Code generator can be constructed');
-    deepEqual(codeGen.localVars.perPoint, ["b"], "Code variables can be extracted");
-    deepEqual(codeGen.sharedVars, ["a"], "Code Shared variables can be extracted");
-
-    deepEqual(codeGen.generateJs().perPoint, "var b=0;\nthis.a=((this.a)+(b))", "Javascript code can be generated");
+    var list = codeGen.generateCode(["init", "perFrame", "onBeat"], ["perPixel"], ["x", "y", "d", "r"]);
+    var js = list[0];
+    var glsl = list[1];
+    equal(glslExpect, glsl, "Glsl code can be generated");
 });

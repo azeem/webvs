@@ -25,7 +25,8 @@ function DynamicMovement(options) {
         throw new Error("Invalid Dynamic movement code");
     }
     var codeGen = new ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b", "w", "h"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
+    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r"]);
+    this.code = genResult[0];
     this.inited = false;
 
     this.gridW = options.gridW;
@@ -55,8 +56,9 @@ function DynamicMovement(options) {
         "varying vec2 v_newPoint;",
         "uniform vec2 u_resolution;",
         "uniform int u_coordMode;",
-        codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"]),
+        genResult[1],
         "void main() {",
+        (this.code.hasRandom?"__randSeed = a_position;":""),
         "   x = a_position.x;",
         "   y = -a_position.y;",
         rectToPolar,
@@ -75,6 +77,8 @@ function DynamicMovement(options) {
         "   gl_FragColor = vec4(texture2D(u_curRender, mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1);",
         "}"
     ].join("\n");
+
+    console.log(vertexSrc);
 
     DynamicMovement.super.constructor.call(this, vertexSrc, fragmentSrc);
 }

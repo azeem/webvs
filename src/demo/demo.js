@@ -53,12 +53,13 @@ var samplePreset = {
                 },
                 {
                     "type": "DynamicMovement",
-                    "enabled": false,
+                    "enabled": true,
                     "code": "rollingGridley",
                     "coord": "RECT"
                 },
                 {
                     "type": "ChannelShift",
+                    "enabled": false,
                     "onBeatRandom": true
                 }
             ]

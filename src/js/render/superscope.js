@@ -20,7 +20,8 @@ function SuperScope(options) {
         throw new Error("Invalid superscope");
     }
     var codeGen = new ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "w", "h", "red", "green", "blue"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
+    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
+    this.code = genResult[0];
     this.code.n = 100;
 
     this.spectrum = options.spectrum?options.spectrum:false;
