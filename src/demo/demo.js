@@ -113,7 +113,6 @@ function setCanvasDim() {
         width: $(window).outerWidth(),
         height:$(window).outerHeight()
     };
-    console.dir(dimension);
     var canvasDim = {
         width: dimension.width/dimFactor,
         height: dimension.height/dimFactor
@@ -170,7 +169,6 @@ function initUi() {
 }
 
 $(document).ready(function () {
-    console.log(typeof JSON.stringify(samplePreset, undefined, 2));
     initUi();
     dancer = new Dancer();
 

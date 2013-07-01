@@ -78,8 +78,6 @@ function DynamicMovement(options) {
         "}"
     ].join("\n");
 
-    console.log(vertexSrc);
-
     DynamicMovement.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
 extend(DynamicMovement, ShaderComponent, {
