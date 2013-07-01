@@ -121,7 +121,7 @@ extend(ExprCodeGenerator, Object, {
         "above": 2,
         "below": 2,
         "equal": 2,
-        "loop": 2,
+        "pow": 2,
         "if": 3,
         "sin": 1,
         "cos": 1,
@@ -133,8 +133,7 @@ extend(ExprCodeGenerator, Object, {
         "rand": 1
     },
 
-    jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log"],
-    glslBultinFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log"],
+    jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log", "pow"],
 
     glslFuncCode: {
         "rand": [
@@ -238,6 +237,7 @@ extend(ExprCodeGenerator, Object, {
         if(ast instanceof AstUnaryExpr) {
             return "(" + ast.operator + this._generateJs(ast.operand) + ")";
         }
+
         if(ast instanceof AstFuncCall) {
             this._checkFunc(ast);
             switch(ast.funcName) {

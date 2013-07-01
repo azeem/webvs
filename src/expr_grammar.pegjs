@@ -8,15 +8,16 @@
     }
 }
 
-program = p:(statement sep* (";" sep* statement sep*)* ";"?) {
-    var stmts = _.reject(_.flatten(p), function(tok) {
-        return (isWhitespace(tok) || tok == ";")
-    });
+program = p:(statement __ (";" __ statement __)* ";"?) {
+    var stmts = [p[0]];
+    stmts = stmts.concat(_.map(p[2], function(pp) {
+        return pp[2];
+    }));
     return new AstProgram(stmts);
 }
 
 statement
-		= id:identifier sep* "=" sep* e:expr { return new AstAssignment(id, e); }
+		= id:identifier __ "=" __ e:expr { return new AstAssignment(id, e); }
 		/ expr
 
 unary_ops = "+" / "-"
@@ -27,20 +28,20 @@ boolean_ops = "&" / "|"
 expr = boolean_expr
 
 boolean_expr
-		= head:additive_expr tail:(sep* boolean_ops sep* additive_expr)* { return makeBinaryExpr(head, tail); }
+		= head:additive_expr tail:(__ boolean_ops __ additive_expr)* { return makeBinaryExpr(head, tail); }
 
 additive_expr
-		 = head:multiplicative_expr tail:(sep* additive_ops sep* multiplicative_expr)* { return makeBinaryExpr(head, tail); }
+		 = head:multiplicative_expr tail:(__ additive_ops __ multiplicative_expr)* { return makeBinaryExpr(head, tail); }
 
 multiplicative_expr
-		= head:unary tail:(sep* multiplicative_ops sep* unary)* { return makeBinaryExpr(head, tail); }
+		= head:unary tail:(__ multiplicative_ops __ unary)* { return makeBinaryExpr(head, tail); }
 
 unary
-		= op:unary_ops sep* oper:func_call { return new AstUnaryExpr(op, oper); }
+		= op:unary_ops __ oper:func_call { return new AstUnaryExpr(op, oper); }
 		/ func_call
 
 func_call
-		= funcName:identifier sep* "(" sep* args:((expr sep* ",")* sep* expr)? sep* ")" {
+		= funcName:funcNameIdentifier __ "(" __ args:((expr __ ",")* __ expr)? __ ")" {
 		        var argsList = _.reject(_.flatten(args), function(tok) {
                     return (isWhitespace(tok) || tok == ",");
 		        });
@@ -54,9 +55,10 @@ primary_expr
 		/ "(" e:expr ")" { return e; }
 
 identifier
-		= val:([a-zA-Z_$] [a-zA-Z_0-9]*) {
-		    return _.flatten(val).join("").toLowerCase();
-		}
+		= val:([a-zA-Z_$] [a-zA-Z_0-9]*) { return _.flatten(val).join("").toLowerCase(); }
+
+funcNameIdentifier
+        = val:([a-zA-Z_] [a-zA-Z_0-9]*) { return _.flatten(val).join("").toLowerCase(); }
 
 value
 		= val:([0-9]* "." [0-9]+ ([Ee] [0-9]+)?) {
@@ -69,6 +71,15 @@ value
             return parseInt(_.flatten(val).join(""), 10);
         }
 
+__
+        = (whiteSpace / lineEnd / comment)*
 
-sep
-	= [' '\t\r\n]
+whiteSpace
+        = [\t\v\f \u00A0\uFEFF]
+
+lineEnd
+        = [\n\r\u2028\u2029]
+
+comment
+         = "/*" (!"*/" .)* "*/"   // multiline comment
+         / "//" (!lineEnd .)*     // single line comment
