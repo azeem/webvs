@@ -45,11 +45,13 @@ unary
 		/ func_call
 
 func_call
-		= funcName:([a-zA-Z_] [a-zA-Z_0-9]*) __ "(" __ args:((expr __ ",")* __ expr)? __ ")" {
-		        var argsList = _.reject(_.flatten(args), function(tok) {
-                    return (isWhitespace(tok) || tok == ",");
+		= funcName:([a-zA-Z_] [a-zA-Z_0-9]*) __ "(" args:((__ expr __ ",")* __ expr)? __ ")" {
+		        var argsList = [];
+		        _.each(args[0], function(toks) {
+		            argsList.push(toks[1]);
 		        });
-		       return new AstFuncCall(flattenChars(funcName), argsList);
+                argsList.push(args[2]);
+                return new AstFuncCall(flattenChars(funcName), argsList);
 		}
 		/ primary_expr
 

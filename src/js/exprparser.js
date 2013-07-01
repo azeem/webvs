@@ -33,7 +33,7 @@ extend(ExprCodeGenerator, Object, {
                 variables[name] = _.uniq(vars);
                 funcUsages[name] = _.uniq(fu);
             } catch(e) {
-                throw new Error("Error parsing " + name + " : " + e);
+                throw new Error("Error parsing " + name + "(" + e.line + ":" + e.column + ")" + " : " + e);
             }
         }
         this.codeAst = codeAst;

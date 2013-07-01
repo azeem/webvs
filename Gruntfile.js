@@ -22,7 +22,10 @@ module.exports = function(grunt) {
             expr_lang: {
                 grammar: "src/expr_grammar.pegjs",
                 outputFile: "build/pegs_expr_parser.js",
-                exportVar: "Webvs.PegExprParser"
+                exportVar: "Webvs.PegExprParser",
+                options: {
+                    trackLineAndColumn : true
+                }
             }
         },
 

@@ -65,3 +65,18 @@ test("ExprParser register support", function() {
     equal(js2.b, 11, "register variables with @ syntax works");
     equal(js2.c, 12, "register variables with regXX syntax works");
 });
+
+test("ExprParser comparison function test", function() {
+    var codeGen = new Webvs.ExprCodeGenerator({
+        test: "d = if(above(a, b), if(above(a, c), a ,  c), if(above(b, c), b, c));\n" +
+              "e = if(below(a, b), if(below(a, c), a ,  c), if(below(b, c), b, c));"
+    }, ["a", "b", "c", "d", "e"]);
+
+    var js = codeGen.generateCode(["test"], [], [])[0];
+    js.a = 12;
+    js.b = 9.23;
+    js.c = 12.54;
+    js.test();
+    equal(js.d, 12.54, "if and above works");
+    equal(js.e, 9.23, "if and below works");
+});
