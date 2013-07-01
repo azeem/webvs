@@ -74,6 +74,7 @@ extend(SuperScope, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 
+        this.code.initRegisterBank(this.registerBank);
         this.code.w = this.resolution.width;
         this.code.h = this.resolution.height;
 

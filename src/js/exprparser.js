@@ -23,12 +23,15 @@ extend(ExprCodeGenerator, Object, {
         var codeAst = {};
         var variables = {};
         var funcUsages = {};
+        var registerUsages = [];
         for(var name in this.codeSrc) {
             try {
                 codeAst[name] = Webvs.PegExprParser.parse(this.codeSrc[name]);
-                var vars = this._getVars(codeAst[name]);
-                variables[name] = _.uniq(vars[0]);
-                funcUsages[name] = _.uniq(vars[1]);
+                var vars = [];
+                var fu = [];
+                this._getVars(codeAst[name], vars, fu, registerUsages);
+                variables[name] = _.uniq(vars);
+                funcUsages[name] = _.uniq(fu);
             } catch(e) {
                 throw new Error("Error parsing " + name + " : " + e);
             }
@@ -47,12 +50,16 @@ extend(ExprCodeGenerator, Object, {
             }
         }
 
+        // find instance variables
         this.instanceVars = _.uniq(this.externalVars.concat(sharedVars));
+
+        // find register variable usages
+        this.registerUsages = _.uniq(registerUsages);
 
         // find local variables for each expression
         var localVars = {};
         for(var varName in variables) {
-            localVars[varName] = _.difference(variables[varName], this.instanceVars);
+            localVars[varName] = _.difference(variables[varName], this.instanceVars, this.registerUsages);
         }
         this.localVars = localVars;
     },
@@ -113,6 +120,7 @@ extend(ExprCodeGenerator, Object, {
             inst.hasRandom = true;
         }
         inst._treatAsNonUniform = treatAsNonUniform;
+        inst._registerUsages = this.registerUsages;
 
         return [inst, glsl.join("")];
     },
@@ -209,7 +217,7 @@ extend(ExprCodeGenerator, Object, {
             }
         }
         if(ast instanceof AstAssignment) {
-            return ast.identifier + "=" + this._generateGlsl(ast.expr);
+            return this._generateGlsl(ast.lhs) + "=" + this._generateGlsl(ast.expr);
         }
         if(ast instanceof AstProgram) {
             var declarations = _.map(localVars, function(localVar){
@@ -218,12 +226,14 @@ extend(ExprCodeGenerator, Object, {
             var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt);});
             return declarations.concat(stmts).join(";\n")+";";
         }
-        if(ast instanceof AstPrimaryExpr) {
-            var suffix = "";
-            if(typeof ast.value === "number" && ast.value%1 === 0) {
-                suffix = ".0";
-            }
-            return this._translateConstants(ast.value).toString() + suffix;
+        if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
+            return ast.value + (ast.value%1 === 0?".0":"");
+        }
+        if(ast instanceof AstPrimaryExpr && ast.type === "CONST") {
+            return this._translateConstants(ast.value).toString();
+        }
+        if(ast instanceof AstPrimaryExpr && (ast.type === "ID" || ast.type === "REG")) {
+            return ast.value;
         }
     },
 
@@ -286,11 +296,7 @@ extend(ExprCodeGenerator, Object, {
             }
         }
         if(ast instanceof AstAssignment) {
-            prefix = "";
-            if(_.contains(this.instanceVars, ast.identifier)) {
-                prefix = "this.";
-            }
-            return prefix + ast.identifier + "=" + this._generateJs(ast.expr);
+            return this._generateJs(ast.lhs) + "=" + this._generateJs(ast.expr);
         }
         if(ast instanceof AstProgram) {
             var declarations = _.map(localVars, function(localVar){
@@ -299,65 +305,63 @@ extend(ExprCodeGenerator, Object, {
             var stmts = _.map(ast.statements, function(stmt) {return that._generateJs(stmt);});
             return declarations.concat(stmts).join(";\n");
         }
-        if(ast instanceof AstPrimaryExpr) {
-            prefix = "";
-            if(typeof ast.value === "string" && _.contains(this.instanceVars, ast.value)) {
-                prefix = "this.";
+        if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
+            return ast.value.toString();
+        }
+        if(ast instanceof AstPrimaryExpr && ast.type === "CONST") {
+            return this._translateConstants(ast.value).toString();
+        }
+        if(ast instanceof AstPrimaryExpr && ast.type === "ID") {
+            if(_.contains(this.instanceVars, ast.value)) {
+                return "this." + ast.value;
             }
-            return prefix + this._translateConstants(ast.value).toString();
+            return ast.value;
+        }
+        if(ast instanceof AstPrimaryExpr && ast.type === "REG") {
+            return "this._registerBank[\"" + ast.value + "\"]";
         }
     },
 
-    _mergeVars: function(vars1, vars2) {
-        return [vars1[0].concat(vars2[0]), vars1[1].concat(vars2[1])];
-    },
-
-
-    _getVars: function(ast) {
+    _getVars: function(ast, vars, funcUsages, regUsages) {
         var that = this;
-        var vars;
 
         if(ast instanceof AstBinaryExpr) {
-            var leftVars = this._getVars(ast.leftOperand);
-            var rightVars = this._getVars(ast.rightOperand);
-            return this._mergeVars(leftVars, rightVars);
+            this._getVars(ast.leftOperand, vars, funcUsages, regUsages);
+            this._getVars(ast.rightOperand, vars, funcUsages, regUsages);
         }
-        if(ast instanceof AstUnaryExpr) {
-            return this._getVars(ast.operand);
+
+        else if(ast instanceof AstUnaryExpr) {
+            this._getVars(ast.operand, vars, funcUsages, regUsages);
         }
-        if(ast instanceof AstFuncCall) {
-            vars = [[],[ast.funcName]];
+        else if(ast instanceof AstFuncCall) {
+            funcUsages.push(ast.funcName);
             _.each(ast.args, function(arg) {
-               vars = that._mergeVars(vars, that._getVars(arg));
+               that._getVars(arg, vars, funcUsages, regUsages);
             });
-            return vars;
         }
-        if(ast instanceof AstAssignment) {
-            vars = this._getVars(ast.expr);
-            return this._mergeVars(this._getVars(ast.expr), [[ast.identifier],[]]);
+        else if(ast instanceof AstAssignment) {
+            this._getVars(ast.lhs, vars, funcUsages, regUsages);
+            this._getVars(ast.expr, vars, funcUsages, regUsages);
         }
-        if(ast instanceof AstProgram) {
-            vars = [[],[]];
+        else if(ast instanceof AstProgram) {
             _.each(ast.statements, function(stmt) {
-                vars = that._mergeVars(vars, that._getVars(stmt));
+                that._getVars(stmt, vars, funcUsages, regUsages);
             });
-            return vars;
         }
-        if(ast instanceof AstPrimaryExpr) {
-            if(typeof ast.value === "string" && ast.value[0] !== "$") {
-                return [[ast.value], []];
-            } else {
-                return [[], []];
-            }
+        else if(ast instanceof AstPrimaryExpr && ast.type === "ID") {
+            vars.push(ast.value);
+        }
+        else if(ast instanceof AstPrimaryExpr && ast.type === "REG") {
+            regUsages.push(ast.value);
         }
     },
 
     _translateConstants: function(value) {
         switch(value) {
-            case "$pi": return Math.PI;
-            case "$e": return Math.E;
-            case "$phi": return 1.6180339887;
-            default: return value;
+            case "pi": return Math.PI;
+            case "e": return Math.E;
+            case "phi": return 1.6180339887;
+            default: throw new Error("Unknown constant " + value);
         }
     }
 });
@@ -401,11 +405,27 @@ extend(CodeInstance, Object, {
             gl.uniform1f(that._getLocation(program, gl, name), value);
         });
 
+        // bind registers
+        _.each(this._registerUsages, function(name) {
+            gl.uniform1f(that._getLocation(program, gl, name), this._registerBank[name]);
+        });
+
         // bind random step value if there are usages of random
         if(this.hasRandom) {
             var step = [Math.random()/100, Math.random()/100];
             gl.uniform2fv(that._getLocation(program, gl, "__randStep"), step);
         }
+    },
+
+    initRegisterBank: function(registerBank) {
+        // set internal reference
+        this._registerBank = registerBank;
+        // clear all usages
+        _.each(this._registerUsages, function(name) {
+            if(!_.has(registerBank, name)) {
+                registerBank[name] = 0;
+            }
+        });
     }
 });
 
@@ -433,8 +453,8 @@ function AstFuncCall(funcName, args) {
 }
 extend(AstFuncCall, AstBase);
 
-function AstAssignment(identifier, expr) {
-    this.identifier = identifier;
+function AstAssignment(lhs, expr) {
+    this.lhs = lhs;
     this.expr = expr;
 }
 extend(AstAssignment, AstBase);
@@ -444,7 +464,8 @@ function AstProgram(statements) {
 }
 extend(AstProgram, AstBase);
 
-function AstPrimaryExpr(value) {
+function AstPrimaryExpr(value, type) {
     this.value = value;
+    this.type = type;
 }
 extend(AstPrimaryExpr, AstBase);

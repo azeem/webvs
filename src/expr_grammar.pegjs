@@ -6,6 +6,10 @@
         });
         return result;
     }
+
+    function flattenChars(val) {
+        return _.flatten(val).join("");
+    }
 }
 
 program = p:(statement __ (";" __ statement __)* ";"?) {
@@ -17,7 +21,7 @@ program = p:(statement __ (";" __ statement __)* ";"?) {
 }
 
 statement
-		= id:identifier __ "=" __ e:expr { return new AstAssignment(id, e); }
+		= lhs:assignable __ "=" __ e:expr { return new AstAssignment(lhs, e); }
 		/ expr
 
 unary_ops = "+" / "-"
@@ -41,35 +45,39 @@ unary
 		/ func_call
 
 func_call
-		= funcName:funcNameIdentifier __ "(" __ args:((expr __ ",")* __ expr)? __ ")" {
+		= funcName:([a-zA-Z_] [a-zA-Z_0-9]*) __ "(" __ args:((expr __ ",")* __ expr)? __ ")" {
 		        var argsList = _.reject(_.flatten(args), function(tok) {
                     return (isWhitespace(tok) || tok == ",");
 		        });
-		       return new AstFuncCall(funcName, argsList);
+		       return new AstFuncCall(flattenChars(funcName), argsList);
 		}
 		/ primary_expr
 
 primary_expr
-		= val:value      {return new AstPrimaryExpr(val);}
-		/ id:identifier  {return new AstPrimaryExpr(id);}
+		= value
+		/ constant
+		/ register
+	    / identifier
 		/ "(" e:expr ")" { return e; }
 
-identifier
-		= val:([a-zA-Z_$] [a-zA-Z_0-9]*) { return _.flatten(val).join("").toLowerCase(); }
+assignable
+        = register
+        / identifier
 
-funcNameIdentifier
-        = val:([a-zA-Z_] [a-zA-Z_0-9]*) { return _.flatten(val).join("").toLowerCase(); }
+identifier
+		= val:([a-zA-Z_] [a-zA-Z_0-9]*) { return new AstPrimaryExpr(flattenChars(val).toLowerCase(), "ID"); }
+
+constant
+        = "$" val:([a-zA-Z_0-9]*) { return new AstPrimaryExpr(flattenChars(val).toLowerCase(), "CONST"); }
+
+register
+        = "@" val:([a-zA-Z_0-9]*)          { return new AstPrimaryExpr("__REG_AT_" + flattenChars(val).toLowerCase(), "REG"); }
+        / val:([rR] [eE] [gG] [0-9] [0-9]) { return new AstPrimaryExpr("__REG_" + flattenChars(val).toLowerCase(), "REG"); }
 
 value
-		= val:([0-9]* "." [0-9]+ ([Ee] [0-9]+)?) {
-		    return parseFloat(_.flatten(val).join(""));
-		}
-		/ val:([a-fA-F0-9]+) [hH] {
-		    return parseInt(_.flatten(val).join(""), 16);
-		}
-        / val:([0-9]+) [dD]? {
-            return parseInt(_.flatten(val).join(""), 10);
-        }
+		= val:([0-9]* "." [0-9]+ ([Ee] [0-9]+)?) { return new AstPrimaryExpr(parseFloat(flattenChars(val)), "VALUE"); }
+		/ val:([a-fA-F0-9]+) [hH]                { return new AstPrimaryExpr(parseInt(flattenChars(val), 16), "VALUE"); }
+        / val:([0-9]+) [dD]?                     { return new AstPrimaryExpr(parseInt(flattenChars(val), 10), "VALUE"); }
 
 __
         = (whiteSpace / lineEnd / comment)*

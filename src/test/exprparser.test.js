@@ -22,6 +22,7 @@ test('ExprParser GLSL Generation', function() {
     var list = codeGen.generateCode(["init", "perFrame", "onBeat"], ["perPixel"], ["x", "y", "d", "r"]);
     var js = list[0];
     var glsl = list[1];
+
     equal(glslExpect, glsl, "Glsl code can be generated");
 });
 
@@ -40,4 +41,27 @@ test("ExprParser comments", function() {
     js.a = 1;
     js.test();
     equal(js.c, 5, "comments are supported");
+});
+
+test("ExprParser register support", function() {
+    var codeGen1 = new Webvs.ExprCodeGenerator({
+        test: "@hello = a;reg12 = a;"
+    }, ["a"]);
+
+    var codeGen2 = new Webvs.ExprCodeGenerator({
+        test: "b = @hello + 1;c = reg12 + 2"
+    }, ["b", "c"]);
+
+    var js1 = codeGen1.generateCode(["test"], [], [])[0];
+    var js2 = codeGen2.generateCode(["test"], [], [])[0];
+
+    var bank = {};
+    js1.initRegisterBank(bank);
+    js2.initRegisterBank(bank);
+
+    js1.a = 10;
+    js1.test();
+    js2.test();
+    equal(js2.b, 11, "register variables with @ syntax works");
+    equal(js2.c, 12, "register variables with regXX syntax works");
 });

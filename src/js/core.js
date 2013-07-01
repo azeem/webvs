@@ -12,7 +12,6 @@ function Webvs(options) {
     checkRequiredOptions(options, ["canvas", "analyser"]);
     this.canvas = options.canvas;
     this.analyser = options.analyser;
-
     this._initGl();
 }
 extend(Webvs, Object, {
@@ -65,8 +64,9 @@ extend(Webvs, Object, {
             return; // no preset loaded yet. cannot start!
         }
 
+        this.registerBank = {};
         var rootComponent = this.rootComponent;
-        var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser);
+        var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser, this.registerBank);
 
         var _this = this;
         var drawFrame = function() {
@@ -112,10 +112,11 @@ extend(Component, Object, {
      * @param resolution
      * @param analyser
      */
-    initComponent: function(gl, resolution, analyser) {
+    initComponent: function(gl, resolution, analyser, registerBank) {
         this.gl = gl;
         this.resolution = resolution;
         this.analyser = analyser;
+        this.registerBank = registerBank;
     },
 
     /**
@@ -147,8 +148,8 @@ function ShaderComponent(vertexSrc, fragmentSrc) {
 extend(ShaderComponent, Component, {
     swapFrame: false,
 
-    initComponent: function(gl, resolution, analyser) {
-        ShaderComponent.super.initComponent.call(this, gl, resolution, analyser);
+    initComponent: function(gl, resolution, analyser, registerBank) {
+        ShaderComponent.super.initComponent.call(this, gl, resolution, analyser, registerBank);
         this._compileProgram(this.vertexSrc, this.fragmentSrc);
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
         this.init();
