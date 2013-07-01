@@ -376,7 +376,7 @@ window.Webvs.ExprCodeGenerator = ExprCodeGenerator;
 function CodeInstance() {}
 extend(CodeInstance, Object, {
     rand: function(max) {
-        return Math.random()*max;
+        return Math.floor(Math.random() * max) + 1;
     },
 
     _locationCache: {},
