@@ -32,6 +32,8 @@ var codeMirror;
 
 
 var samplePreset = {
+    "name" : "Science of Superscope",
+    "author" : "Marco",
     "clearFrame": false,
     "components": [
         {
