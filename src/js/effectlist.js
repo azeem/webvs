@@ -78,19 +78,22 @@ extend(EffectList, Component, {
     _constructComponent: function(optList) {
         var components = [];
         // construct components from JSON
-        for(var i = 0;i < optList.length;i++) {
-            if(typeof optList[i].enabled === "boolean" && !optList[i].enabled) {
-                continue;
+        _.each(optList, function(componentOptions, i) {
+            if(typeof componentOptions.enabled === "boolean" && !componentOptions.enabled) {
+                return;
             }
-            var type = optList[i].type;
-            var component = new Webvs[type](optList[i]);
-            components.push(component);
-        }
+            var type = componentOptions.type;
+            var cloneCount = typeof componentOptions.clone === "undefined"?1:componentOptions.clone;
+            _.times(cloneCount, function() {
+                var component = new Webvs[type](componentOptions);
+                components.push(component);
+            });
+        });
         this.components = components;
     },
 
-    initComponent: function(gl, resolution, analyser) {
-        EffectList.super.initComponent.call(this, gl, resolution, analyser);
+    initComponent: function(gl, resolution, analyser, registerBank, bootTime) {
+        EffectList.super.initComponent.apply(this, arguments);
         this._initFrameBuffer();
 
         var components = this.components;
@@ -99,12 +102,12 @@ extend(EffectList, Component, {
         // initialize all the components
         var initPromises = [];
         for(var i = 0;i < components.length;i++) {
-            var res = components[i].initComponent(gl, resolution, analyser);
+            var res = components[i].initComponent.apply(components[i], arguments);
             if(res) {
                 initPromises.push(res);
             }
         }
-        copyComponent.initComponent(gl, this.resolution, analyser);
+        copyComponent.initComponent.apply(copyComponent, arguments);
 
         this.copyComponent = copyComponent;
         return D.all(initPromises);

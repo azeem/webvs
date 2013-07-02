@@ -26,7 +26,11 @@ extend(ExprCodeGenerator, Object, {
         var registerUsages = [];
         for(var name in this.codeSrc) {
             try {
-                codeAst[name] = Webvs.PegExprParser.parse(this.codeSrc[name]);
+                var codeSrc = this.codeSrc[name];
+                if(_.isArray(codeSrc)) {
+                    codeSrc = codeSrc.join("\n");
+                }
+                codeAst[name] = Webvs.PegExprParser.parse(codeSrc);
                 var vars = [];
                 var fu = [];
                 this._getVars(codeAst[name], vars, fu, registerUsages);
@@ -119,6 +123,9 @@ extend(ExprCodeGenerator, Object, {
         if(_.contains(glslFuncList, "rand")) {
             inst.hasRandom = true;
         }
+        if(_.contains(glslFuncList, "gettime")) {
+            inst.hasGettime = true;
+        }
         inst._treatAsNonUniform = treatAsNonUniform;
         inst._registerUsages = this.registerUsages;
 
@@ -130,6 +137,11 @@ extend(ExprCodeGenerator, Object, {
         "below": 2,
         "equal": 2,
         "pow": 2,
+        "sqr": 1,
+        "sqrt": 1,
+        "invsqrt": 1,
+        "floor" : 1,
+        "ceil" : 1,
         "if": 3,
         "sin": 1,
         "cos": 1,
@@ -137,11 +149,16 @@ extend(ExprCodeGenerator, Object, {
         "asin": 1,
         "acos": 1,
         "atan": 1,
+        "atan2": 2,
         "log": 1,
-        "rand": 1
+        "band": 2,
+        "bor": 2,
+        "bnot": 1,
+        "rand": 1,
+        "gettime": 1
     },
 
-    jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log", "pow"],
+    jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
 
     glslFuncCode: {
         "rand": [
@@ -152,7 +169,17 @@ extend(ExprCodeGenerator, Object, {
             "   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);",
             "   return (floor(val*max)+1);",
             "}"
-        ].join("\n")
+        ].join("\n"),
+        "gettime": [
+            "uniform float __gettime0;",
+            "int gettime(int startTime) {",
+            "   int time = 0;",
+            "   if(startTime == 0) {",
+            "       time = __gettime0;",
+            "   }",
+            "   return time;",
+            "}"
+        ],
     },
 
     _checkFunc: function(ast) {
@@ -211,6 +238,18 @@ extend(ExprCodeGenerator, Object, {
                         this._generateGlsl(ast.args[2]),
                         ")"
                     ].join("");
+                case "sqr":
+                    return "(pow((" + this._generateGlsl(ast.args[0]) + "), 2))";
+                case "band":
+                    return "(float(("+this._generateGlsl(ast.args[0])+")&&("+this._generateGlsl(ast.args[1])+")))";
+                case "bor":
+                    return "(float(("+this._generateGlsl(ast.args[0])+")||("+this._generateGlsl(ast.args[1])+")))";
+                case "bnot":
+                    return "(float(!("+this._generateGlsl(ast.args[0])+")))";
+                case "invsqrt":
+                    return "(1/sqrt("+this._generateGlsl(ast.args[0])+"))";
+                case "atan2":
+                    return "(atan(("+this._generateGlsl(ast.args[0])+"),("+this._generateGlsl(ast.args[1])+"))";
                 default:
                     var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg);}).join(",");
                     return "(" + ast.funcName + "(" + args + "))";
@@ -285,6 +324,18 @@ extend(ExprCodeGenerator, Object, {
                         this._generateJs(ast.args[2]),
                         ")"
                     ].join("");
+                case "sqr":
+                    return "(Math.pow((" + this._generateJs(ast.args[0]) + "),2))";
+                case "band":
+                    return "((("+this._generateJs(ast.args[0])+")&&("+this._generateJs(ast.args[1])+"))?1:0)";
+                case "bor":
+                    return "((("+this._generateJs(ast.args[0])+")||("+this._generateJs(ast.args[1])+"))?1:0)";
+                case "bnot":
+                    return "((!("+this._generateJs(ast.args[0])+"))?1:0)";
+                case "invsqrt":
+                    return "(1/Math.sqrt("+this._generateJs(ast.args[0])+"))";
+                case "atan2":
+                    return "(Math.atan(("+this._generateJs(ast.args[0])+")/("+this._generateJs(ast.args[1])+")))";
                 default:
                     var args = _.map(ast.args, function(arg) {return that._generateJs(arg);}).join(",");
                     if(_.contains(this.jsMathFuncs, ast.funcName)) {
@@ -375,8 +426,17 @@ window.Webvs.ExprCodeGenerator = ExprCodeGenerator;
  */
 function CodeInstance() {}
 extend(CodeInstance, Object, {
-    rand: function(max) {
+    rand: function(max) { 
         return Math.floor(Math.random() * max) + 1;
+    },
+
+    gettime: function(startTime) {
+        switch(startTime) {
+            case 0:
+                var currentTime = (new Date()).getTime();
+                return Math.floor((currentTime-this._bootTime)/1000);
+            default: throw new Error("Invalid startTime mode for gettime call");
+        }
     },
 
     _locationCache: {},
@@ -413,14 +473,22 @@ extend(CodeInstance, Object, {
         // bind random step value if there are usages of random
         if(this.hasRandom) {
             var step = [Math.random()/100, Math.random()/100];
-            gl.uniform2fv(that._getLocation(program, gl, "__randStep"), step);
+            gl.uniform2fv(this._getLocation(program, gl, "__randStep"), step);
+        }
+
+        // bind time values for gettime calls
+        if(this.hasGettime) {
+            var time0 = Math.floor(((new Date()).getTime()-this._bootTime)/1000);
+            gl.uniform1f(this._getLocation(program, gl, "__gettime0"), time0);
         }
     },
 
-    initRegisterBank: function(registerBank) {
-        // set internal reference
+    setup: function(registerBank, bootTime, analyser) {
         this._registerBank = registerBank;
-        // clear all usages
+        this._bootTime = bootTime;
+        this._analyser = analyser;
+
+        // clear all used registers
         _.each(this._registerUsages, function(name) {
             if(!_.has(registerBank, name)) {
                 registerBank[name] = 0;

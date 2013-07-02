@@ -45,6 +45,7 @@ module.exports = function(grunt) {
                     "build/pegs_expr_parser.js",
                     "src/js/effectlist.js",
                     "src/js/dancer_adapter.js",
+                    "src/js/misc/*.js",
                     "src/js/render/*.js",
                     "src/js/trans/*.js"
                 ],

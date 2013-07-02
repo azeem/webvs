@@ -66,7 +66,8 @@ extend(Webvs, Object, {
 
         this.registerBank = {};
         var rootComponent = this.rootComponent;
-        var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser, this.registerBank);
+        var bootTime = (new Date()).getTime();
+        var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser, this.registerBank, bootTime);
 
         var _this = this;
         var drawFrame = function() {
@@ -112,11 +113,12 @@ extend(Component, Object, {
      * @param resolution
      * @param analyser
      */
-    initComponent: function(gl, resolution, analyser, registerBank) {
+    initComponent: function(gl, resolution, analyser, registerBank, bootTime) {
         this.gl = gl;
         this.resolution = resolution;
         this.analyser = analyser;
         this.registerBank = registerBank;
+        this.bootTime = bootTime;
     },
 
     /**

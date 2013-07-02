@@ -19,7 +19,7 @@ extend(GlobalVar, Component, {
 	initComponent: function() {
 		GlobalVar.super.initComponent.apply(this, arguments);
 
-        this.code.initRegisterBank(this.registerBank);
+        this.code.setup(this.registerBank, this.bootTime, this.analyser);
         this.code.w = this.resolution.width;
         this.code.h = this.resolution.height;
 	},
