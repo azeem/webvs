@@ -11,14 +11,17 @@ function ColorMap(options) {
     options = _.defaults(options, {
         key: "RED",
         output: "REPLACE",
-        onBeatRandom: false
+        mapCycleMode: "SINGLE",
     });
 
     var that = this;
     this.maps = options.maps;
     this.currentMap = 0;
 
-    this.onBeatRandom = options.onBeatRandom;
+    this.mapCycleMode = this.mapCycleModes[options.mapCycleMode];
+    if(!this.mapCycleMode) {
+        throw new Error("Unknown mapCycleMode " + options.mapCycleMode);
+    }
 
     var keyEq = "";
     switch(options.key) {
@@ -42,6 +45,12 @@ function ColorMap(options) {
     ColorMap.super.constructor.call(this, fragmentSrc, blendModes[options.output]);
 }
 extend(ColorMap, Trans, {
+    mapCycleModes: {
+        SINGLE: 1,
+        ONBEATRANDOM: 2,
+        ONBEATSEQUENTIAL: 3
+    },
+
     init: function() {
         var gl = this.gl;
         var that = this;
@@ -55,8 +64,15 @@ extend(ColorMap, Trans, {
 
     update: function() {
         var gl = this.gl;
-        if(this.onBeatRandom && this.analyser.beat) {
-            this.currentMap = Math.floor(Math.random()*this.colorMaps.length);
+        if(this.analyser.beat) {
+            switch(this.mapCycleMode) {
+                case this.mapCycleModes.ONBEATRANDOM:
+                    this.currentMap = Math.floor(Math.random()*this.colorMaps.length);
+                    break;
+                case this.mapCycleModes.ONBEATSEQUENTIAL:
+                    this.currentMap = (this.currentMap+1)%this.colorMaps.length;
+                    break;
+            }
         }
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.colorMaps[this.currentMap]);
@@ -82,7 +98,7 @@ extend(ColorMap, Trans, {
         }
         var last = _.last(map);
         if(last[1] !== 255) {
-            map.splice(0, 0, [last[0], 255]);
+            map.push([last[0], 255]);
         }
 
         // lerp intermediate values
