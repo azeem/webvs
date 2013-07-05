@@ -16,29 +16,29 @@ function Picture(options) {
     var vertexSrc = [
         "attribute vec2 a_texCoord;",
         "varying vec2 v_texCoord;",
-        "uniform vec2 u_resolution;",
         "uniform vec2 u_imageResolution;",
         "uniform vec2 u_imagePos;",
 
         "void main() {",
         "    v_texCoord = a_texCoord*vec2(1,-1);",
         "    vec2 clipSpace = ((a_texCoord*u_imageResolution+u_imagePos)/u_resolution)*2.0-1.0;",
-        "    gl_Position = vec4(clipSpace*vec2(1, -1), 0, 1);",
+        "    setPosition(vec4(clipSpace*vec2(1, -1), 0, 1));",
         "}"
     ].join("\n");
 
     var fragmentSrc = [
-        "precision mediump float;",
         "uniform sampler2D u_image;",
         "varying vec2 v_texCoord;",
 
         "void main() {",
-        "   gl_FragColor = texture2D(u_image, v_texCoord);",
+        "   setFragColor(texture2D(u_image, v_texCoord));",
         "}"
     ].join("\n");
     Picture.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
 extend(Picture, ShaderComponent, {
+    componentName: "Picture",
+
     init: function() {
         var gl = this.gl;
 

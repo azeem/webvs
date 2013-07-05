@@ -50,11 +50,8 @@ function DynamicMovement(options) {
     }
 
     var vertexSrc = [
-        "precision mediump float;",
         "attribute vec2 a_position;",
-
         "varying vec2 v_newPoint;",
-        "uniform vec2 u_resolution;",
         "uniform int u_coordMode;",
         genResult[1],
         "void main() {",
@@ -65,22 +62,22 @@ function DynamicMovement(options) {
         "   perPixel();",
         polarToRect,
         "   v_newPoint = vec2(x,-y);",
-        "   gl_Position = vec4(a_position, 0, 1);",
+        "   setPosition(vec4(a_position, 0, 1));",
         "}"
     ].join("\n");
 
     var fragmentSrc = [
-        "precision mediump float;",
         "varying vec2 v_newPoint;",
-        "uniform sampler2D u_curRender;",
         "void main() {",
-        "   gl_FragColor = vec4(texture2D(u_curRender, mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1);",
+        "   setFragColor(vec4(getSrcColorAtPos(mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1));",
         "}"
     ].join("\n");
 
     DynamicMovement.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
 extend(DynamicMovement, ShaderComponent, {
+    componentName: "DynamicMovement",
+
     swapFrame: true,
 
     init: function() {

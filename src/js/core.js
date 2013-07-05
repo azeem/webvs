@@ -130,9 +130,39 @@ extend(Component, Object, {
      * Release any Webgl resources. Called during
      * reinitialization
      */
-    destroyComponent: function() {}
+    destroyComponent: function() {},
+
+    getIdString: function() {
+        if(!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
+            return this.parent.getIdString() + "/" + this.componentName + "#" + this.id;
+        } else {
+            return this.componentName + "#Main";
+        }
+    }
 });
 
+// Webvs constants
+var blendModes = {
+    REPLACE: 1,
+    MAXIMUM: 2,
+    AVERAGE: 3,
+    ADDITIVE: 4
+};
+
+function setBlendMode(gl, mode) {
+    switch(mode) {
+        case blendModes.ADDITIVE:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.FUNC_ADD);
+            break;
+        case blendModes.AVERAGE:
+            gl.blendColor(0.5, 0.5, 0.5, 1);
+            gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
+            gl.blendEquation(gl.FUNC_ADD);
+            break;
+        default: throw new Error("Invalid blend mode");
+    }
+}
 
 /**
  * ShaderComponent base class. Any Component that
@@ -143,24 +173,80 @@ extend(Component, Object, {
  * @param fragmentSrc glsl code for fragment shader
  * @constructor
  */
-function ShaderComponent(vertexSrc, fragmentSrc) {
+function ShaderComponent(vertexSrc, fragmentSrc, blendMode) {
     this.vertexSrc = vertexSrc;
     this.fragmentSrc = fragmentSrc;
+
+    var fragmentExtraSrc = ["precision mediump float;", "uniform vec2 u_resolution;"];
+    var vertexExtraSrc= ["precision mediump float;", "uniform vec2 u_resolution;"];
+
+    var blendEq = "color";
+    this.outputBlendMode = blendMode || blendModes.REPLACE;
+    if(_.contains(this.glBlendModes, this.outputBlendMode)) {
+        this._glBlendMode = true;
+    } else {
+        this._glBlendMode = false;
+        this.swapFrame = true;
+
+        switch(this.outputBlendMode) {
+            case blendModes.MAXIMUM:
+                blendEq = "max(color, texture2D(u_srcTexture, v_position))";
+                break;
+            default:
+                throw new Error("Blend Mode "+this.outputBlendMode+" not supported through shaders");
+        }
+    }
+
+    fragmentExtraSrc.push("#define setFragColor(color) (gl_FragColor = ("+blendEq+"))");
+    if(this.swapFrame) {
+        fragmentExtraSrc.push("uniform sampler2D u_srcTexture;");
+        fragmentExtraSrc.push("varying vec2 v_position;");
+        fragmentExtraSrc.push("#define getSrcColor() (texture2D(u_srcTexture, v_position))");
+        fragmentExtraSrc.push("#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))");
+        vertexExtraSrc.push("varying vec2 v_position;");
+        vertexExtraSrc.push("#define setPosition(pos) (v_position = (((pos)+1.0)/2.0),gl_Position = vec4((pos), 0, 1))");
+    } else {
+        vertexExtraSrc.push("#define setPosition(pos) (gl_Position = vec4((pos), 0, 1))");
+    }
+
+    this.fragmentSrc = fragmentExtraSrc.join("\n") + "\n" + fragmentSrc;
+    this.vertexSrc = vertexExtraSrc.join("\n") + "\n" + vertexSrc;
 }
 extend(ShaderComponent, Component, {
+    glBlendModes: [blendModes.REPLACE, blendModes.AVERAGE],
     swapFrame: false,
 
     initComponent: function(gl, resolution, analyser, registerBank) {
         ShaderComponent.super.initComponent.call(this, gl, resolution, analyser, registerBank);
         this._compileProgram(this.vertexSrc, this.fragmentSrc);
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
+        this.srcTextureLocation = this.gl.getUniformLocation(this.program, "u_srcTexture");
+        if(this.srcTextureLocation) {
+            this.srcTextureLocation.program = this.program;
+        }
         this.init();
     },
 
-    updateComponent: function() {
+    updateComponent: function(texture) {
         ShaderComponent.super.updateComponent.apply(this, arguments);
-        this.gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
+        var gl = this.gl;
+        gl.useProgram(this.program);
+        gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
+        if(this.swapFrame) {
+            assert(this.srcTextureLocation.program === this.program, "location not for program");
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.uniform1i(this.srcTextureLocation, 0);
+        }
+
+        if(this._glBlendMode && this.outputBlendMode != blendModes.REPLACE){
+            gl.enable(gl.BLEND);
+            setBlendMode(this.outputBlendMode);
+        } else {
+            gl.disable(gl.BLEND);
+        }
         this.update.apply(this, arguments);
+        gl.disable(gl.BLEND);
     },
 
     destroyComponent: function() {
@@ -172,8 +258,12 @@ extend(ShaderComponent, Component, {
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
         var gl = this.gl;
+        console.log("Compiling shader for " + this.getIdString());
+        console.log("VERTEX_SHADER\n-----------------------\n" + vertexSrc);
         var vertex = this._compileShader(vertexSrc, gl.VERTEX_SHADER);
+        console.log("FRAGMENT_SHADER\n-----------------------\n" + fragmentSrc);
         var fragment = this._compileShader(fragmentSrc, gl.FRAGMENT_SHADER);
+        console.log("-----------------------\n");
         var program = gl.createProgram();
         gl.attachShader(program, vertex);
         gl.attachShader(program, fragment);
@@ -221,16 +311,14 @@ extend(ShaderComponent, Component, {
  * @param fragmentSrc
  * @constructor
  */
-function Trans(fragmentSrc) {
+function Trans(fragmentSrc, outputBlendMode) {
     var vertexSrc = [
-        "attribute vec2 a_texCoord;",
-        "varying vec2 v_texCoord;",
+        "attribute vec2 a_position;",
         "void main() {",
-        "    v_texCoord = a_texCoord;",
-        "    gl_Position = vec4((a_texCoord*2.0)-1.0, 0, 1);",
+        "   setPosition(a_position);",
         "}"
     ].join("\n");
-    Trans.super.constructor.call(this, vertexSrc, fragmentSrc);
+    Trans.super.constructor.call(this, vertexSrc, fragmentSrc, outputBlendMode);
 }
 extend(Trans, ShaderComponent, {
     swapFrame: true,
@@ -249,52 +337,26 @@ extend(Trans, ShaderComponent, {
         gl.bufferData(
             gl.ARRAY_BUFFER,
             new Float32Array([
-                0.0,  0.0,
-                1.0,  0.0,
-                0.0,  1.0,
-                0.0,  1.0,
-                1.0,  0.0,
-                1.0,  1.0
+                -1,  -1,
+                1,  -1,
+                -1,  1,
+                -1,  1,
+                1,  -1,
+                1,  1
             ]),
             gl.STATIC_DRAW
         );
 
-        this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_texCoord");
-        this.curRenderLocation = gl.getUniformLocation(this.program, "u_curRender");
+        this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
     },
 
     update: function(texture) {
         var gl = this.gl;
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(this.curRenderLocation, 0);
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
         gl.enableVertexAttribArray(this.vertexPositionLocation);
         gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
 });
-
-// Webvs constants
-var blendModes = {
-    REPLACE: 1,
-    MAXIMUM: 2,
-    ADDITIVE: 3
-};
-
-function setBlendMode(gl, mode) {
-    switch(mode) {
-        case blendModes.BLEND_REPLACE:
-            gl.blendFunc(gl.ONE, gl.ZERO);
-            gl.blendEquation(gl.FUNC_ADD);
-            break;
-        case blendModes.BLEND_MAXIMUM:
-            gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.MAX);
-            break;
-        default: throw new Error("Invalid blend mode");
-    }
-}
 
 window.Webvs = Webvs;

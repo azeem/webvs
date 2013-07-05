@@ -24,7 +24,8 @@ module.exports = function(grunt) {
                 outputFile: "build/pegs_expr_parser.js",
                 exportVar: "Webvs.PegExprParser",
                 options: {
-                    trackLineAndColumn : true
+                    trackLineAndColumn : true,
+                    cache: true
                 }
             }
         },

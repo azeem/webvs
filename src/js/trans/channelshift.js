@@ -21,19 +21,14 @@ function ChannelShift(options) {
     this.onBeatRandom = options.onBeatRandom;
 
     var fragmentSrc = [
-        "precision mediump float;",
-        "uniform vec2 u_resolution;",
-        "uniform sampler2D u_curRender;",
-        "varying vec2 v_texCoord;",
         "uniform int u_channel;",
-
         "void main() {",
-        "   vec3 color = texture2D(u_curRender, v_texCoord).rgb;",
+        "   vec3 color = getSrcColor().rgb;",
 
         _.flatMap(this.channels, function(channel, index) {
             return [
                 "if(u_channel == "+index+") {",
-                "   gl_FragColor = vec4(color." + channel.toLowerCase() + ",1);",
+                "   setFragColor(vec4(color." + channel.toLowerCase() + ",1));",
                 "}"
             ];
         }).join("\n"),
@@ -44,6 +39,8 @@ function ChannelShift(options) {
     ChannelShift.super.constructor.call(this, fragmentSrc);
 }
 extend(ChannelShift, Trans, {
+    componentName: "ChannelShift",
+
     channels: ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"],
 
     init: function() {

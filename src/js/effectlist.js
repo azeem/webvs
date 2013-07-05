@@ -9,51 +9,15 @@
  * @constructor
  */
 function Copy(blendMode) {
-    var blendEq;
-    switch(blendMode) {
-        case blendModes.REPLACE:
-            blendEq = "src";
-            break;
-        case blendModes.MAXIMUM:
-            blendEq = "max(src, dest)";
-            break;
-        case blendModes.ADDITIVE:
-            blendEq = "clamp(src+dest, vec4(0,0,0,0), vec4(1,1,1,1))";
-            break;
-        default:
-            throw new Error("Invalid copy blend mode");
-    }
-
     var fragmentSrc = [
         "precision mediump float;",
-        "uniform sampler2D u_curRender;",
-        blendMode != blendModes.REPLACE?"uniform sampler2D u_destTexture;":"",
-        "varying vec2 v_texCoord;",
         "void main() {",
-        blendMode != blendModes.REPLACE?"vec4 dest = texture2D(u_destTexture, v_texCoord);":"",
-        "   vec4 src = texture2D(u_curRender, v_texCoord);",
-        "   gl_FragColor = " + blendEq + ";",
+        "   setFragColor(getSrcColor());",
         "}"
     ].join("\n");
-    Copy.super.constructor.call(this, fragmentSrc);
+    Copy.super.constructor.call(this, fragmentSrc, blendMode);
 }
-extend(Copy, Trans, {
-    init: function() {
-        var gl = this.gl;
-        this.destTextureLocation = gl.getUniformLocation(this.program, "u_destTexture");
-        Copy.super.init.call(this);
-    },
-
-    update: function(srcTexture, destTexture) {
-        var gl = this.gl;
-        if(destTexture) {
-            gl.activeTexture(gl.TEXTURE1);
-            gl.bindTexture(gl.TEXTURE_2D, destTexture);
-            gl.uniform1i(this.destTextureLocation, 1);
-        }
-        Copy.super.update.call(this, srcTexture);
-    }
-});
+extend(Copy, Trans, {componentName: "Copy"});
 
 /**
  * EffectList component. Effectlist
@@ -73,10 +37,13 @@ function EffectList(options) {
     EffectList.super.constructor.call(this);
 }
 extend(EffectList, Component, {
+    componentName: "EffectList",
+
     swapFrame: true,
 
     _constructComponent: function(optList) {
         var components = [];
+        var that = this;
         // construct components from JSON
         _.each(optList, function(componentOptions, i) {
             if(typeof componentOptions.enabled === "boolean" && !componentOptions.enabled) {
@@ -86,6 +53,8 @@ extend(EffectList, Component, {
             var cloneCount = typeof componentOptions.clone === "undefined"?1:componentOptions.clone;
             _.times(cloneCount, function() {
                 var component = new Webvs[type](componentOptions);
+                component.id = i;
+                component.parent = that;
                 components.push(component);
             });
         });
@@ -97,7 +66,8 @@ extend(EffectList, Component, {
         this._initFrameBuffer();
 
         var components = this.components;
-        var copyComponent = new Copy(this.output);
+        var outCopyComponent = new Copy(this.output);
+        var copyComponent = new Copy();
 
         // initialize all the components
         var initPromises = [];
@@ -107,9 +77,11 @@ extend(EffectList, Component, {
                 initPromises.push(res);
             }
         }
+        outCopyComponent.initComponent.apply(outCopyComponent, arguments);
         copyComponent.initComponent.apply(copyComponent, arguments);
 
         this.copyComponent = copyComponent;
+        this.outCopyComponent = outCopyComponent;
         return D.all(initPromises);
     },
 
@@ -135,10 +107,12 @@ extend(EffectList, Component, {
         var components = this.components;
         for(var i = 0;i < components.length;i++) {
             var component = components[i];
-            gl.useProgram(component.program);
             if(component.swapFrame) {
                 var oldTexture = this._getCurrentTextrue();
                 this._swapFBAttachment();
+                if(component.copyOnSwap) {
+                    this.copyComponent.updateComponent(oldTexture);
+                }
                 component.updateComponent(oldTexture);
             } else {
                 component.updateComponent();
@@ -147,10 +121,9 @@ extend(EffectList, Component, {
 
         // switch to old framebuffer and copy the data
         gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
-        gl.useProgram(this.copyComponent.program);
         gl.viewport(0, 0, this.resolution.width, this.resolution.height);
         assert(inputTexture || this.output == blendModes.REPLACE, "Cannot blend");
-        this.copyComponent.updateComponent(this.frameAttachments[this.currAttachment].texture, inputTexture);
+        this.outCopyComponent.updateComponent(this._getCurrentTextrue());
     },
 
     destroyComponent: function() {
@@ -217,7 +190,7 @@ extend(EffectList, Component, {
     _swapFBAttachment: function() {
         this.currAttachment = (this.currAttachment + 1) % 2;
         this._setFBAttachment();
-    }
+    },
 });
 
 window.Webvs.EffectList = EffectList;

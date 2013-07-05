@@ -27,22 +27,23 @@ function OnBeatClear(options) {
     var vertexSrc = [
         "attribute vec2 a_position;",
         "void main() {",
-        "   gl_Position = vec4(a_position, 0, 1);",
+        "   setPosition(a_position);",
         "}"
     ].join("\n");
 
     var fragmentSrc = [
-        "precision mediump float;",
         "uniform vec3 u_color;",
         "void main() {",
-        "   gl_FragColor = vec4(u_color, 1);",
+        "   setFragColor(vec4(u_color, 1));",
         "}"
     ].join("\n");
 
 
-    OnBeatClear.super.constructor.call(this, vertexSrc, fragmentSrc);
+    OnBeatClear.super.constructor.call(this, vertexSrc, this.blend?blendModes.AVERAGE:blend.REPLACE);
 }
 extend(OnBeatClear, ShaderComponent, {
+    componentName: "OnBeatClear",
+
     init: function() {
         var gl = this.gl;
 
@@ -79,20 +80,11 @@ extend(OnBeatClear, ShaderComponent, {
         this.prevBeat = this.analyser.beat;
 
         if(clear) {
-            if(this.blend) {
-                // do average blending
-                gl.enable(gl.BLEND);
-                gl.blendColor(0.5, 0.5, 0.5, 1);
-                gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
-            }
             gl.uniform3fv(this.colorLocation, this.color);
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
             gl.enableVertexAttribArray(this.positionLocation);
             gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
-            if(this.blend) {
-                gl.disable(gl.BLEND);
-            }
         }
     },
 

@@ -55,22 +55,25 @@ function SuperScope(options) {
         "uniform float u_pointSize;",
         "void main() {",
         "   gl_PointSize = u_pointSize;",
-        "   gl_Position = vec4(clamp(a_position, vec2(-1,-1), vec2(1,1)), 0, 1);",
+        "   setPosition(clamp(a_position, vec2(-1,-1), vec2(1,1)));",
         "   v_color = a_color;",
         "}"
     ].join("\n");
 
     var fragmentSrc = [
-        "precision mediump float;",
         "varying vec3 v_color;",
         "void main() {",
-        "   gl_FragColor = vec4(v_color, 1);",
+        "   setFragColor(vec4(v_color, 1));",
         "}"
     ].join("\n");
 
     SuperScope.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
 extend(SuperScope, ShaderComponent, {
+    componentName: "SuperScope",
+
+    copyOnSwap: true,
+
     init: function() {
         var gl = this.gl;
 
