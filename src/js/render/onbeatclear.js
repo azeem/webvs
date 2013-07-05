@@ -39,7 +39,7 @@ function OnBeatClear(options) {
     ].join("\n");
 
 
-    OnBeatClear.super.constructor.call(this, vertexSrc, this.blend?blendModes.AVERAGE:blend.REPLACE);
+    OnBeatClear.super.constructor.call(this, vertexSrc, this.blend?blendModes.AVERAGE:blendModes.REPLACE);
 }
 extend(OnBeatClear, ShaderComponent, {
     componentName: "OnBeatClear",

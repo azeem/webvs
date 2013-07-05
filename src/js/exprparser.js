@@ -434,7 +434,7 @@ extend(CodeInstance, Object, {
         switch(startTime) {
             case 0:
                 var currentTime = (new Date()).getTime();
-                return Math.floor((currentTime-this._bootTime)/1000);
+                return (currentTime-this._bootTime)/1000;
             default: throw new Error("Invalid startTime mode for gettime call");
         }
     },
@@ -478,7 +478,7 @@ extend(CodeInstance, Object, {
 
         // bind time values for gettime calls
         if(this.hasGettime) {
-            var time0 = Math.floor(((new Date()).getTime()-this._bootTime)/1000);
+            var time0 = ((new Date()).getTime()-this._bootTime)/1000;
             gl.uniform1f(this._getLocation(program, gl, "__gettime0"), time0);
         }
     },

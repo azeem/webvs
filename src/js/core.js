@@ -10,8 +10,20 @@
  */
 function Webvs(options) {
     checkRequiredOptions(options, ["canvas", "analyser"]);
+    options = _.defaults(options, {
+        showStat: false
+    });
     this.canvas = options.canvas;
     this.analyser = options.analyser;
+    if(options.showStat) {
+        var stats = new Stats();
+        stats.setMode(0);
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.right = '5px';
+        stats.domElement.style.bottom = '5px';
+        document.body.appendChild(stats.domElement);
+        this.stats = stats;
+    }
     this._initGl();
 }
 extend(Webvs, Object, {
@@ -76,6 +88,16 @@ extend(Webvs, Object, {
             }
             _this.animReqId = requestAnimationFrame(drawFrame);
         };
+
+        // wrap drawframe in stats collection if required
+        if(this.stats) {
+            var oldDrawFrame = drawFrame;
+            drawFrame = function() {
+                _this.stats.begin();
+                oldDrawFrame.call(this, arguments);
+                _this.stats.end();
+            };
+        }
 
         // start rendering when the promise is  done
         promise.then(function() {
@@ -213,7 +235,7 @@ function ShaderComponent(vertexSrc, fragmentSrc, blendMode) {
     this.vertexSrc = vertexExtraSrc.join("\n") + "\n" + vertexSrc;
 }
 extend(ShaderComponent, Component, {
-    glBlendModes: [blendModes.REPLACE, blendModes.AVERAGE],
+    glBlendModes: [blendModes.REPLACE, blendModes.AVERAGE, blendModes.ADDITIVE],
     swapFrame: false,
 
     initComponent: function(gl, resolution, analyser, registerBank) {
@@ -233,7 +255,6 @@ extend(ShaderComponent, Component, {
         gl.useProgram(this.program);
         gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
         if(this.swapFrame) {
-            assert(this.srcTextureLocation.program === this.program, "location not for program");
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.uniform1i(this.srcTextureLocation, 0);
@@ -241,7 +262,7 @@ extend(ShaderComponent, Component, {
 
         if(this._glBlendMode && this.outputBlendMode != blendModes.REPLACE){
             gl.enable(gl.BLEND);
-            setBlendMode(this.outputBlendMode);
+            setBlendMode(gl, this.outputBlendMode);
         } else {
             gl.disable(gl.BLEND);
         }
@@ -258,12 +279,8 @@ extend(ShaderComponent, Component, {
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
         var gl = this.gl;
-        console.log("Compiling shader for " + this.getIdString());
-        console.log("VERTEX_SHADER\n-----------------------\n" + vertexSrc);
         var vertex = this._compileShader(vertexSrc, gl.VERTEX_SHADER);
-        console.log("FRAGMENT_SHADER\n-----------------------\n" + fragmentSrc);
         var fragment = this._compileShader(fragmentSrc, gl.FRAGMENT_SHADER);
-        console.log("-----------------------\n");
         var program = gl.createProgram();
         gl.attachShader(program, vertex);
         gl.attachShader(program, fragment);

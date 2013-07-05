@@ -94,6 +94,7 @@ var samplePreset = {
         },
         {
             "type": "SuperScope",
+            "clone" : 18,
             "code" : {
                 "init" : [
                     "n=90;",
@@ -135,6 +136,15 @@ var samplePreset = {
                     "red=(1-sqr(i))*cv;green=red*.5;blue=red*.2;"
                 ]
             }
+        },
+        {
+            "type": "ColorMap",
+            "output": "ADDITIVE",
+            "maps": [
+                [
+                    [[82, 18, 55], 43]
+                ]
+            ]
         }
     ]
 };
@@ -189,12 +199,12 @@ var samplePreset1 = {
 };
 
 function loadScTrack() {
-    dancer.load({
+    /*dancer.load({
         src: "music.mp3"
     });
-    dancer.play();
+    dancer.play();*/
 
-/*    var input = $("#sc-url");
+    var input = $("#sc-url");
     var url = input.val();
 
     var prms = $.ajax({
@@ -214,7 +224,7 @@ function loadScTrack() {
     });
     prms.fail(function() {
         alert("Unable to resolve soundcloud track");
-    });*/
+    });
 }
 
 function setCanvasDim() {
@@ -284,7 +294,8 @@ $(document).ready(function () {
 
     webvs = new Webvs({
         canvas: $("#my-canvas").get(0),
-        analyser: new Webvs.DancerAdapter(dancer)
+        analyser: new Webvs.DancerAdapter(dancer),
+        showStat: true
     });
     webvs.loadPreset(samplePreset);
 
