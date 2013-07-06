@@ -93,11 +93,8 @@ extend(EffectList, Component, {
         EffectList.super.initComponent.apply(this, arguments);
         this._initFrameBuffer();
 
-        var components = this.components;
-        var outCopyComponent = new Copy(this.output, true);
-        var copyComponent = new Copy();
-
         // initialize all the components
+        var components = this.components;
         var initPromises = [];
         for(var i = 0;i < components.length;i++) {
             var res = components[i].initComponent.apply(components[i], arguments);
@@ -105,17 +102,26 @@ extend(EffectList, Component, {
                 initPromises.push(res);
             }
         }
-        outCopyComponent.initComponent.apply(outCopyComponent, arguments);
-        copyComponent.initComponent.apply(copyComponent, arguments);
 
+        // intialize some copy components
+
+        // copies input texture onto internal texutre
         if(this.input !== -1) {
-            var inCopyComponent = new Copy(this.input);
-            inCopyComponent.initComponent.apply(inCopyComponent, arguments);
-            this.inCopyComponent = inCopyComponent;
+            this.inCopyComponent = new Copy(this.input);
+            this.inCopyComponent.initComponent.apply(this.inCopyComponent, arguments);
         }
 
-        this.copyComponent = copyComponent;
-        this.outCopyComponent = outCopyComponent;
+        // simple copier without any blending, for copyOnSwap
+        this.copyComponent = new Copy();
+        this.copyComponent.initComponent.apply(this.copyComponent, arguments);
+
+        // copies output to parent's buffer
+        // forceShaderBlend here becuase effectlist is swapFrame and 
+        // output texture has different content than inputtexture 
+        // hence gl blend modes wont work
+        this.outCopyComponent = new Copy(this.output, true); 
+        this.outCopyComponent.initComponent.apply(this.outCopyComponent, arguments);
+
         return D.all(initPromises);
     },
 
@@ -145,13 +151,14 @@ extend(EffectList, Component, {
         gl.viewport(0, 0, this.resolution.width, this.resolution.height);
         this._setFBAttachment();
 
+        // clear frame
         if(this.clearFrame || this.first) {
             gl.clearColor(0,0,0,1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             this.first = false;
         }
 
-        // blend in input texture onto internal texture
+        // blend input texture onto internal texture
         if(this.input !== -1) {
             this.inCopyComponent.setCopy(inputTexture);
             this._updateSubComponent(this.inCopyComponent);
