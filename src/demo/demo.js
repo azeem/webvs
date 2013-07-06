@@ -10,29 +10,9 @@ var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
 var dimensionFactor = 2;
 var codeMirror;
 
-//var samplePreset = {
-//    clearFrame: true,
-//    components: [
-//        {
-//            type: "SuperScope",
-//            dots: false,
-//            code: {
-//                init: "n=4",
-//                perPoint: "x=i;y=i"
-//            }
-//        },
-//        {
-//            type: "DynamicMovement",
-//            code: {
-//                perPixel: "x=x;y=y"
-//            }
-//        }
-//    ]
-//};
-
 var samplePreset = {
     "name" : "Silk Strings",
-    "author" : "Steven Wittens / UnConeD",
+    "author" : "Steven Wittens / UnConeD (http://acko.net)",
 
     "clearFrame" : true,
     "components" : [
@@ -331,8 +311,8 @@ $(document).ready(function () {
         showStat: true
     });
     webvs.loadPreset(samplePreset);
-
     webvs.start();
+    loadScTrack();
 });
 
 })();
