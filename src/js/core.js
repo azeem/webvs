@@ -195,7 +195,7 @@ function setBlendMode(gl, mode) {
  * @param fragmentSrc glsl code for fragment shader
  * @constructor
  */
-function ShaderComponent(vertexSrc, fragmentSrc, blendMode) {
+function ShaderComponent(vertexSrc, fragmentSrc) {
     this.vertexSrc = vertexSrc;
     this.fragmentSrc = fragmentSrc;
 
@@ -203,49 +203,74 @@ function ShaderComponent(vertexSrc, fragmentSrc, blendMode) {
     var vertexExtraSrc= ["precision mediump float;", "uniform vec2 u_resolution;"];
 
     var blendEq = "color";
-    this.outputBlendMode = blendMode || blendModes.REPLACE;
-    if(_.contains(this.glBlendModes, this.outputBlendMode)) {
-        this._glBlendMode = true;
-    } else {
+
+    if(this.swapFrame || _.contains(this.glBlendModes, this.outputBlendMode)) {
+        // shader based blending: used for components with swapFrame=true
+        // or for blends not supported with gl BlendMode
         this._glBlendMode = false;
         this.swapFrame = true;
 
         switch(this.outputBlendMode) {
+            case blendModes.REPLACE:
+                blendEq = "color";
+                break;
             case blendModes.MAXIMUM:
                 blendEq = "max(color, texture2D(u_srcTexture, v_position))";
                 break;
+            case blendModes.AVERAGE:
+                blendEq = "((color+texture2D(u_srcTexture, v_position))/2.0)";
+                break;
+            case blendModes.ADDITIVE:
+                blendEq = "clamp(color+texture2D(u_srcTexture, v_position), vec4(0,0,0,0), vec4(1,1,1,1))";
+                break;
             default:
-                throw new Error("Blend Mode "+this.outputBlendMode+" not supported through shaders");
+                throw new Error("Blend Mode "+this.outputBlendMode+" not supported");
         }
+    } else {
+        this._glBlendMode = true;
     }
 
+    // color blend macro
     fragmentExtraSrc.push("#define setFragColor(color) (gl_FragColor = ("+blendEq+"))");
-    if(this.swapFrame) {
-        fragmentExtraSrc.push("uniform sampler2D u_srcTexture;");
+
+    // insert varying position variable and macros
+    if(this.swapFrame || this.varyingPos) {
         fragmentExtraSrc.push("varying vec2 v_position;");
-        fragmentExtraSrc.push("#define getSrcColor() (texture2D(u_srcTexture, v_position))");
-        fragmentExtraSrc.push("#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))");
         vertexExtraSrc.push("varying vec2 v_position;");
         vertexExtraSrc.push("#define setPosition(pos) (v_position = (((pos)+1.0)/2.0),gl_Position = vec4((pos), 0, 1))");
     } else {
         vertexExtraSrc.push("#define setPosition(pos) (gl_Position = vec4((pos), 0, 1))");
     }
 
+    // insert srctexture uniform variable and macros
+    if(this.swapFrame) {
+        fragmentExtraSrc.push("uniform sampler2D u_srcTexture;");
+        fragmentExtraSrc.push("#define getSrcColor() (texture2D(u_srcTexture, v_position))");
+        fragmentExtraSrc.push("#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))");
+    }
+
     this.fragmentSrc = fragmentExtraSrc.join("\n") + "\n" + fragmentSrc;
     this.vertexSrc = vertexExtraSrc.join("\n") + "\n" + vertexSrc;
 }
 extend(ShaderComponent, Component, {
-    glBlendModes: [blendModes.REPLACE, blendModes.AVERAGE, blendModes.ADDITIVE],
     swapFrame: false,
+    outputBlendMode: blendModes.REPLACE,
+    varyingPos: false,
+    copyOnSwap: false,
+    glBlendModes: [blendModes.REPLACE, blendModes.AVERAGE, blendModes.ADDITIVE],
 
     initComponent: function(gl, resolution, analyser, registerBank) {
         ShaderComponent.super.initComponent.call(this, gl, resolution, analyser, registerBank);
-        this._compileProgram(this.vertexSrc, this.fragmentSrc);
+        try {
+            this._compileProgram(this.vertexSrc, this.fragmentSrc);
+        } catch(e) {
+            console.log("Shader Compilation error:");
+            console.log("Vertex Shader:\n"+this.vertexSrc);
+            console.log("Fragment Shader:\n"+this.fragmentSrc);
+            throw e;
+        }
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "u_resolution");
         this.srcTextureLocation = this.gl.getUniformLocation(this.program, "u_srcTexture");
-        if(this.srcTextureLocation) {
-            this.srcTextureLocation.program = this.program;
-        }
         this.init();
     },
 
@@ -254,7 +279,7 @@ extend(ShaderComponent, Component, {
         var gl = this.gl;
         gl.useProgram(this.program);
         gl.uniform2f(this.resolutionLocation, this.resolution.width, this.resolution.height);
-        if(this.swapFrame) {
+        if(this.swapFrame && texture) {
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.uniform1i(this.srcTextureLocation, 0);
@@ -320,28 +345,26 @@ extend(ShaderComponent, Component, {
 });
 
 /**
- * Trans component base class. This component has a
+ * QuadBoxComponent component base class. This component has a
  * fixed vertex shader that draws a frame sized quad.
- * the shaders get a uniform sampler2D u_curRender
- * containing the swapped out frame
  *
  * @param fragmentSrc
  * @constructor
  */
-function Trans(fragmentSrc, outputBlendMode) {
+function QuadBoxComponent(fragmentSrc) {
     var vertexSrc = [
         "attribute vec2 a_position;",
         "void main() {",
         "   setPosition(a_position);",
         "}"
     ].join("\n");
-    Trans.super.constructor.call(this, vertexSrc, fragmentSrc, outputBlendMode);
+    QuadBoxComponent.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(Trans, ShaderComponent, {
-    swapFrame: true,
+extend(QuadBoxComponent, ShaderComponent, {
+    varyingPos: true,
 
     destroyComponent: function() {
-        Trans.super.destroyComponent.call(this);
+        QuadBoxComponent.super.destroyComponent.call(this);
         var gl = this.gl;
 
         gl.deleteBuffer(this.texCoordBuffer);

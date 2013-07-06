@@ -266,7 +266,7 @@ extend(ExprCodeGenerator, Object, {
             return declarations.concat(stmts).join(";\n")+";";
         }
         if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
-            return ast.value + (ast.value%1 === 0?".0":"");
+            return glslFloatRepr(ast.value);
         }
         if(ast instanceof AstPrimaryExpr && ast.type === "CONST") {
             return this._translateConstants(ast.value).toString();

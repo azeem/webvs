@@ -19,7 +19,7 @@ function SuperScope(options) {
     } else {
         throw new Error("Invalid superscope");
     }
-    var codeGen = new ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "w", "h", "red", "green", "blue"]);
+    var codeGen = new ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "w", "h", "red", "green", "blue", "cid"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
     this.code = genResult[0];
     this.code.n = 100;
@@ -80,6 +80,7 @@ extend(SuperScope, ShaderComponent, {
         this.code.setup(this.registerBank, this.bootTime, this.analyser);
         this.code.w = this.resolution.width;
         this.code.h = this.resolution.height;
+        this.code.cid = this.cloneId;
 
         this.pointBuffer = gl.createBuffer();
         this.colorBuffer = gl.createBuffer();

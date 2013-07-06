@@ -42,9 +42,12 @@ function ColorMap(options) {
         "}"
     ].join("\n");
 
-    ColorMap.super.constructor.call(this, fragmentSrc, blendModes[options.output]);
+    this.outputBlendMode = blendModes[options.output];
+
+    ColorMap.super.constructor.call(this, fragmentSrc);
 }
-extend(ColorMap, Trans, {
+extend(ColorMap, QuadBoxComponent, {
+    swapFrame: true,
     mapCycleModes: {
         SINGLE: 1,
         ONBEATRANDOM: 2,
@@ -59,7 +62,7 @@ extend(ColorMap, Trans, {
         });
         this.currentMap = 0;
         this.colorMapLocation = gl.getUniformLocation(this.program, "u_colorMap");
-        ColorMap.super.init.call(this, arguments);
+        ColorMap.super.init.apply(this, arguments);
     },
 
     update: function() {
@@ -78,7 +81,7 @@ extend(ColorMap, Trans, {
         gl.bindTexture(gl.TEXTURE_2D, this.colorMaps[this.currentMap]);
         gl.uniform1i(this.colorMapLocation, 1);
 
-        Convolution.super.update.apply(this, arguments);
+        ColorMap.super.update.apply(this, arguments);
     },
 
     _buildColorMap: function(map) {

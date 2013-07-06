@@ -20,7 +20,10 @@ function OnBeatClear(options) {
         this.color[i] = this.color[i]/255;
     }
 
-    this.blend = options.blend?options.blend:false;
+    if(options.blend) {
+        this.outputBlendMode = blendModes.AVERAGE;
+    }
+
     this.prevBeat = false;
     this.beatCount = 0;
 
@@ -38,8 +41,7 @@ function OnBeatClear(options) {
         "}"
     ].join("\n");
 
-
-    OnBeatClear.super.constructor.call(this, vertexSrc, this.blend?blendModes.AVERAGE:blendModes.REPLACE);
+    OnBeatClear.super.constructor.call(this, vertexSrc);
 }
 extend(OnBeatClear, ShaderComponent, {
     componentName: "OnBeatClear",

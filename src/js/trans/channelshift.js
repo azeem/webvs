@@ -38,8 +38,9 @@ function ChannelShift(options) {
 
     ChannelShift.super.constructor.call(this, fragmentSrc);
 }
-extend(ChannelShift, Trans, {
+extend(ChannelShift, QuadBoxComponent, {
     componentName: "ChannelShift",
+    swapFrame: true,
 
     channels: ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"],
 

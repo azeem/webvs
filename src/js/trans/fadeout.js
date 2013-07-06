@@ -32,10 +32,11 @@ function FadeOut(options) {
         "}"
     ].join("\n");
 
-    FadeOut.super.constructor.call(this, vertexSrc, fragmentSrc, blendModes.AVERAGE);
+    FadeOut.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
 extend(FadeOut, ShaderComponent, {
     componentName: "FadeOut",
+    outputBlendMode: blendModes.AVERAGE,
 
     init: function() {
         var gl = this.gl;

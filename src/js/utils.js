@@ -70,6 +70,10 @@ function isWhitespace(str) {
     return (typeof str === "string" && str.match(/^(\s*)$/) !== null);
 }
 
+function glslFloatRepr(val) {
+    return val + (val%1 === 0?".0":"");
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||

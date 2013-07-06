@@ -133,9 +133,40 @@ var samplePreset = {
                     "dt=if(above(z2,.01),1/z2,0);",
                     "x=if(dt,x3*dt,x);y=if(dt,y3*dt*asp,y);",
                     "cv=band(dt,ldt)*(.5+cv*5);",
-                    "red=(1-sqr(i))*cv;green=red*.5;blue=red*.2;"
+                    "red=(1-sqr(i))*cv;",
+                    "green=if(above(cid, 15), red, red*.5);",
+                    "blue=if(above(cid, 15), red, red*.5);"
                 ]
             }
+        },
+        {
+            "type": "EffectList",
+            "input": "REPLACE",
+            "output": "ADDITIVE",
+            "components":[
+                {
+                    "type": "Convolution",
+                    "kernel": [
+                        0, 0, 1, 0, 0,
+                        0, 1, 0, 1, 0,
+                        1, 0, 0, 0, 1,
+                        0, 1, 0, 1, 0,
+                        0, 0, 1, 0, 0
+                    ]
+                },
+                {
+                    "type": "Convolution",
+                    "kernel": [
+                        0, 0, 0, 1, 0, 0, 0,
+                        0, 0, 1, 0, 1, 0, 0,
+                        0, 1, 1, 0, 1, 1, 0,
+                        1, 0, 0, 0, 0, 0, 1,
+                        0, 1, 1, 0, 1, 1, 0,
+                        0, 0, 1, 0, 1, 0, 0,
+                        0, 0, 0, 1, 0, 0, 0,
+                    ]
+                }
+            ]
         },
         {
             "type": "ColorMap",
