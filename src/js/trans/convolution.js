@@ -11,7 +11,8 @@
 function Convolution(options) {
     checkRequiredOptions(options, ["kernel"]);
     options = _.defaults(options, {
-        edgeMode: "EXTEND"
+        edgeMode: "EXTEND",
+        bias: 0
     });
 
     var kernel;
@@ -54,10 +55,10 @@ function Convolution(options) {
         }
     }
 
-    // compute kernel weight
-    var kernelWeight = 0;
-    for(i = 0;i < kernel.length;i++) {
-        kernelWeight += kernel[i];
+    // compute kernel scaling factor
+    var scale = options.scale;
+    if(_.isUndefined(scale)) {
+        scale = _.reduce(kernel, function(memo, num){ return memo + num; }, 0);
     }
 
     var fragmentSrc = [
@@ -66,7 +67,7 @@ function Convolution(options) {
         "   vec2 pos;",
         "   vec4 colorSum = vec4(0,0,0,0);",
         colorSumEq.join("\n"),
-        "   setFragColor(vec4((colorSum / "+glslFloatRepr(kernelWeight)+").rgb, 1.0));",
+        "   setFragColor(vec4(((colorSum+"+glslFloatRepr(options.bias)+") / "+glslFloatRepr(scale)+").rgb, 1.0));",
         "}"
     ].join("\n");
 

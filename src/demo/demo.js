@@ -146,6 +146,7 @@ var samplePreset = {
             "components":[
                 {
                     "type": "Convolution",
+                    "scale": 8,
                     "kernel": [
                         0, 0, 1, 0, 0,
                         0, 1, 0, 1, 0,
@@ -156,6 +157,7 @@ var samplePreset = {
                 },
                 {
                     "type": "Convolution",
+                    "scale": 4,
                     "kernel": [
                         0, 0, 0, 1, 0, 0, 0,
                         0, 0, 1, 0, 1, 0, 0,
