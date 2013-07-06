@@ -8,7 +8,7 @@
  * Also blends in additional texture if provided
  * @constructor
  */
-function Copy(blendMode) {
+function Copy(blendMode, forceShaderBlend) {
     var fragmentSrc = [
         "uniform sampler2D u_copySource;",
         "void main() {",
@@ -16,6 +16,7 @@ function Copy(blendMode) {
         "}"
     ].join("\n");
     this.outputBlendMode = blendMode || blendModes.REPLACE;
+    this.forceShaderBlend = forceShaderBlend?true:false;
     Copy.super.constructor.call(this, fragmentSrc);
 }
 extend(Copy, QuadBoxComponent, {
@@ -93,7 +94,7 @@ extend(EffectList, Component, {
         this._initFrameBuffer();
 
         var components = this.components;
-        var outCopyComponent = new Copy(this.output);
+        var outCopyComponent = new Copy(this.output, true);
         var copyComponent = new Copy();
 
         // initialize all the components
@@ -106,13 +107,6 @@ extend(EffectList, Component, {
         }
         outCopyComponent.initComponent.apply(outCopyComponent, arguments);
         copyComponent.initComponent.apply(copyComponent, arguments);
-
-        // TODO: find better solution, hack since effectlist
-        // itself has swapFrame if output blending is gl blendmode
-        // then the target texture of parent should have the precious texture
-        if(outCopyComponent._glBlendMode) {
-            this.copyOnSwap = true;
-        }
 
         if(this.input !== -1) {
             var inCopyComponent = new Copy(this.input);
