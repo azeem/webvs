@@ -204,7 +204,7 @@ function ShaderComponent(vertexSrc, fragmentSrc) {
 
     var blendEq = "color";
 
-    if(this.swapFrame || _.contains(this.glBlendModes, this.outputBlendMode)) {
+    if(this.swapFrame || !_.contains(this.glBlendModes, this.outputBlendMode)) {
         // shader based blending: used for components with swapFrame=true
         // or for blends not supported with gl BlendMode
         this._glBlendMode = false;

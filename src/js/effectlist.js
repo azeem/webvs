@@ -15,7 +15,8 @@ function Copy(blendMode) {
         "   setFragColor(texture2D(u_copySource, v_position));",
         "}"
     ].join("\n");
-    Copy.super.constructor.call(this, fragmentSrc, blendMode);
+    this.outputBlendMode = blendMode || blendModes.REPLACE;
+    Copy.super.constructor.call(this, fragmentSrc);
 }
 extend(Copy, QuadBoxComponent, {
     componentName: "Copy",
@@ -55,7 +56,7 @@ function EffectList(options) {
 
     this._constructComponent(options.components);
     this.output = blendModes[options.output];
-    this.input = options.input=="IGNORE"?-1:blendModes[options.output];
+    this.input = options.input=="IGNORE"?-1:blendModes[options.input];
     this.clearFrame = options.clearFrame;
     this.first = true;
 
@@ -105,6 +106,13 @@ extend(EffectList, Component, {
         }
         outCopyComponent.initComponent.apply(outCopyComponent, arguments);
         copyComponent.initComponent.apply(copyComponent, arguments);
+
+        // TODO: find better solution, hack since effectlist
+        // itself has swapFrame if output blending is gl blendmode
+        // then the target texture of parent should have the precious texture
+        if(outCopyComponent._glBlendMode) {
+            this.copyOnSwap = true;
+        }
 
         if(this.input !== -1) {
             var inCopyComponent = new Copy(this.input);
