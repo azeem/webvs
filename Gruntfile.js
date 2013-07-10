@@ -63,18 +63,20 @@ module.exports = function(grunt) {
             dev: {
                 files:[
                     {expand: true, flatten:true, cwd: "src/", src: ["demo/**.!(html)"], dest: "build/"},
+                    {expand: true, flatten:true, cwd: "src/", src: ["editor/**.!(html)"], dest: "build/"},
                 ]
             },
             dist: {
                 files: [
                     {expand: true, flatten:true, cwd: "src/", src: ["demo/**.!(html|js)"], dest: "dist/"},
+                    {expand: true, flatten:true, cwd: "src/", src: ["editor/**.!(html|js)"], dest: "/dist"},
                 ]
             }
         },
 
         watch: {
             scripts: {
-                files: ["src/**/*.js", "!src/**/*.test.js", "src/**/*.pegjs"],
+                files: ["src/**/*.js", "!src/**/*.test.js", "src/**/*.pegjs", "src/**/*.css", "src/**/*.html"],
                 tasks: ["default"]
             }
 //            karma: {
@@ -87,6 +89,7 @@ module.exports = function(grunt) {
             dist: {
                 files: {
                     "dist/demo.min.js": "build/demo.js",
+                    "dist/editor.min.js": "build/editor.js",
                     "dist/webvs.min.js": "build/webvs.js",
                     "dist/libs.min.js": "lib/*.js"
                 }
@@ -100,8 +103,10 @@ module.exports = function(grunt) {
                         mode: "dev"
                     }
                 },
-                src: "src/demo/index.html",
-                dest: "build/index.html"
+                files: {
+                    "build/demo.html": "src/demo/index.html",
+                    "build/editor.html": "src/editor/index.html"
+                }
             },
             dist: {
                 options: {
@@ -109,8 +114,10 @@ module.exports = function(grunt) {
                         mode: "dist"
                     }
                 },
-                src: "src/demo/index.html",
-                dest: "dist/index.html"
+                files: {
+                    "dist/demo.html": "src/demo/index.html",
+                    "dist/editor.html": "src/editor/index.html"
+                }
             }
         }
     });

@@ -1,0 +1,22 @@
+body {
+    font-family: arial, sans-serif;
+    font-size: 13px;
+}
+
+.editor {
+    padding: 10px;
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 572px;
+    height: 425px;
+    background-color: #ECECEC;
+}
+
+.new-button { float: left; }
+.remove-button { float: right; }
+.tree { 
+    margin-top: 30px;
+    padding: 5px;
+    clear: both;
+}

@@ -312,7 +312,6 @@ $(document).ready(function () {
     });
     webvs.loadPreset(samplePreset);
     webvs.start();
-    loadScTrack();
 });
 
 })();

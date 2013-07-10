@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebVS Editor</title>
+</head>
+<body>
+    <div class="editor container-fluid">
+        <div class="row-fluid">
+            <div class="left-pane span4">
+                <div class="toolbar">
+
+                    <div class="new-button btn-group">
+                      <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                        <span class="icon-plus"></span>
+                        <span class="caret"></span>
+                      </a>
+                      <ul class="dropdown-menu">
+                      </ul>
+                    </div>
+
+                    <button class="btn btn-mini remove-button"><span class="icon-minus"></span></button>
+                </div>
+                <div class="tree"></div>
+            </div>
+            <div class="config-pane span8">
+                <form class="form">
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- @if mode='dev' -->
+    <link rel="stylesheet" href="../lib/bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="../lib/jqtree/jqtree.css">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="../lib/jquery-2.0.3.js"></script>
+    <script type="text/javascript" src="../lib/underscore.js"></script>
+    <script type="text/javascript" src="../lib/D.min.js"></script>
+    <script type="text/javascript" src="../lib/fft.js"></script>
+    <script type="text/javascript" src="../lib/dancer.js"></script>
+    <script type="text/javascript" src="../lib/stats.min.js"></script>
+    <script type="text/javascript" src="../lib/jsonform.js"></script>
+    <script type="text/javascript" src="../lib/jqtree/tree.jquery.js"></script>
+    <script type="text/javascript" src="../lib/bootstrap/js/bootstrap.js"></script>
+    <script type="text/javascript" src="webvs.js"></script>
+    <script type="text/javascript" src="editor.js"></script>
+    <!-- @endif -->
+
+    <!-- @if mode='dist' -->
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="libs.min.js"></script>
+    <script type="text/javascript" src="webvs.min.js"></script>
+    <script type="text/javascript" src="editor.min.js"></script>
+    <!-- @endif -->
+</body>
+</html>

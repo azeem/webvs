@@ -246,4 +246,30 @@ extend(EffectList, Component, {
     },
 });
 
+EffectList.ui = {
+    disp: "Effect List",
+    type: "EffectList",
+    leaf: false,
+    schema: {
+        clearFrame: {
+            type: "boolean",
+            title: "Clear Frame",
+            default: false,
+            required: true
+        },
+        output: {
+            type: "string",
+            title: "Output",
+            default: "REPLACE",
+            enum: _.keys(blendModes)
+        },
+        input: {
+            type: "string",
+            title: "Input",
+            default: "IGNORE",
+            enum: _.union(_.keys(blendModes), ["IGNORE"])
+        }
+    }
+};
+
 window.Webvs.EffectList = EffectList;

@@ -115,6 +115,18 @@ extend(Webvs, Object, {
     }
 });
 
+Webvs.ui = {
+    leaf: false,
+    schema: {
+        clearFrame: {
+            type: "boolean",
+            title: "Clear Frame",
+            default: false,
+            required: true
+        }
+    }
+};
+
 /**
  * Components base class.
  * @constructor
