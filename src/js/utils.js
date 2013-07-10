@@ -74,6 +74,30 @@ function glslFloatRepr(val) {
     return val + (val%1 === 0?".0":"");
 }
 
+function parseColor(color) {
+    if(_.isArray(color) && color.length == 3) {
+        return color;
+    }
+    if(_.isString(color)) {
+        var match;
+        color = color.toLowerCase();
+        match = color.match(/^#([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})$/);
+        if(match) {
+            return _.chain(match).last(3).map(function(channel) {
+                return parseInt(channel, 16);
+            }).value();
+        }
+
+        match = color.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
+        if(match) {
+            return _.chain(match).last(3).map(function(channel) {
+                return Math.min(parseInt(channel, 10), 255);
+            }).value();
+        }
+    }
+    throw new Error("Invalid Color Format");
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||

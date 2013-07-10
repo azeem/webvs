@@ -14,6 +14,15 @@ function addNode() {
     tree.tree("openNode", rootNode);
 }
 
+function removeNode(e) {
+    var node = tree.tree("getSelectedNode");
+    if(node.id === 1) {
+        return;
+    }
+    tree.tree("selectNode", node.parent);
+    tree.tree("removeNode", node);
+}
+
 function nodeSelect(e) {
     var node = e.node;
     form.empty();
@@ -22,8 +31,9 @@ function nodeSelect(e) {
     }
     form.jsonForm({
         schema: node.ui.schema,
-        form: ["*"],
-        onSubmitValid: formSubmitValid
+        form: node.ui.form || ["*"],
+        onSubmitValid: formSubmitValid,
+        value: node.values
     });
 }
 
@@ -54,7 +64,10 @@ function initUI() {
     _.chain(Webvs).values().filter(function(value) {
         return _.isFunction(value) && _.isObject(value.ui);
     }).map(function(value) { 
-        return value.ui;
+        var ui = _.defaults(value.ui, {
+            leaf: true
+        });
+        return ui;
     }).each(function(ui) {
         $("<li><a href='#'>"+ui.disp+"</a></li>").data("webvs-ui", ui).appendTo(".new-button .dropdown-menu");
     });
@@ -65,6 +78,11 @@ function initUI() {
     // initialize the tree
     tree = $(".tree");
     tree.tree({
+        dragAndDrop: true,
+        onCanMoveTo: function(movedNode, targetNode, position) {
+            var targetUi = targetNode.ui;
+            return ((position != "inside" || !targetUi.leaf) && (targetNode.id !== 1 || position == "inside"));
+        },
         data: [
             {
                 id: 1,
@@ -79,6 +97,7 @@ function initUI() {
 
     // ---- Begin event Bindings ----
     $(".new-button .dropdown-menu li").click(addNode);
+    $(".remove-button").click(removeNode);
     tree.bind("tree.select", nodeSelect);
     form.change(function() { form.submit(); }); // submit the form on change so that we get values from jsonform
 }

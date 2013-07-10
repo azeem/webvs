@@ -3,6 +3,14 @@ body {
     font-size: 13px;
 }
 
+label, input, button, select, textarea {
+    font-size: 13px;
+}
+
+textarea {
+    font-family: monospace;
+}
+
 .editor {
     padding: 10px;
     position: absolute;
@@ -13,10 +21,19 @@ body {
     background-color: #ECECEC;
 }
 
+.editor .row-fluid {
+    height: 100%;
+}
+
 .new-button { float: left; }
 .remove-button { float: right; }
 .tree { 
     margin-top: 30px;
     padding: 5px;
     clear: both;
+}
+
+.config-pane {
+    height: 100%;
+    overflow: auto;
 }

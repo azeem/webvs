@@ -10,6 +10,11 @@
  */
 function SuperScope(options) {
     checkRequiredOptions(options, ["code"]);
+    options = _.defaults(options, {
+        source: "SPECTRUM",
+        drawMode: "DOTS",
+        colors: ["#ffffff"]
+    });
 
     var codeSrc;
     if(options.code in SuperScope.examples) {
@@ -24,8 +29,8 @@ function SuperScope(options) {
     this.code = genResult[0];
     this.code.n = 100;
 
-    this.spectrum = options.spectrum?options.spectrum:false;
-    this.dots = options.dots?options.dots:false;
+    this.spectrum = options.source == "SPECTRUM";
+    this.dots = options.drawMode == "DOTS";
 
     var colors = options.colors?options.colors:[[255,255,255]];
     for(var i = 0;i < colors.length;i++) {
@@ -36,7 +41,7 @@ function SuperScope(options) {
             colors[i][j] = colors[i][j]/255;
         }
     }
-    this.colors = colors;
+    this.colors = _.map(options.colors, parseColor);
     this.currentColor = colors[0];
     this.maxStep = 100;
 
@@ -198,6 +203,67 @@ extend(SuperScope, ShaderComponent, {
         }
     }
 });
+
+SuperScope.ui = {
+    disp: "SuperScope",
+    type: "SuperScope",
+    schema: {
+        code: {
+            type: "object",
+            title: "Code",
+            default: {},
+            properties: {
+                init: {
+                    type: "string",
+                    title: "Init",
+                },
+                onBeat: {
+                    type: "string",
+                    title: "On Beat",
+                },
+                perFrame: {
+                    type: "string",
+                    title: "Per Frame",
+                },
+                perPoint: {
+                    type: "string",
+                    title: "Per Point",
+                }
+            },
+        },
+        source: {
+            type: "string",
+            title: "Source",
+            default: "WAVEFORM",
+            enum: ["WAVEFORM", "SPECTRUM"]
+        },
+        drawMode: {
+            type: "string",
+            title: "Draw Mode",
+            default: "LINES",
+            enum: ["DOTS", "LINES"]
+        },
+        colors: {
+            type: "array",
+            title: "Cycle Colors",
+            items: {
+                type: "string",
+                format: "color",
+                default: "#FFFFFF"
+            }
+        }
+    },
+    form: [
+        { key: "code.init", type: "textarea", width: "90%", height: "100px" },
+        { key: "code.onBeat", type: "textarea", width: "90%", height: "100px" },
+        { key: "code.perFrame", type: "textarea", width: "90%", height: "100px" },
+        { key: "code.perPoint", type: "textarea", width: "90%", height: "100px" },
+        "colors",
+        "source",
+        "drawMode"
+    ]
+};
+
 SuperScope.examples = {
     diagonalScope: {
         init: "n=64; t=1;",
