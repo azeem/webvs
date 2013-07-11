@@ -5,7 +5,7 @@
 </head>
 <body>
     <div id="main-window">
-        <ul class="nav nav-tabs" id="myTab">
+        <ul class="nav nav-tabs">
           <li class="active"><a href="#editor" data-toggle="tab">Editor</a></li>
           <li><a href="#player" data-toggle="tab">Player</a></li>
         </ul>
@@ -17,28 +17,26 @@
                 </p>
             </div>
 
-            <div id="editor" class="container-fluid tab-pane active">
-                <div class="row-fluid">
-                    <div class="left-pane span4">
-                        <div class="toolbar">
+            <div id="editor" class="tab-pane active">
+                <div class="left-pane">
+                    <div class="toolbar">
 
-                            <div class="new-button btn-group">
-                              <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
-                                <span class="icon-plus"></span>
-                                <span class="caret"></span>
-                              </a>
-                              <ul class="dropdown-menu">
-                              </ul>
-                            </div>
-
-                            <button class="btn btn-mini remove-button"><span class="icon-minus"></span></button>
+                        <div class="new-button btn-group">
+                          <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                            <span class="icon-plus"></span>
+                            <span class="caret"></span>
+                          </a>
+                          <ul class="dropdown-menu">
+                          </ul>
                         </div>
-                        <div class="tree"></div>
+
+                        <button class="btn btn-mini remove-button"><span class="icon-minus"></span></button>
                     </div>
-                    <div class="config-pane span8">
-                        <form class="form">
-                        </form>
-                    </div>
+                    <div class="tree"></div>
+                </div>
+                <div class="right-pane">
+                    <form class="form">
+                    </form>
                 </div>
             </div>
 

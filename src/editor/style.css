@@ -20,56 +20,58 @@ textarea {
     width: 572px;
     height: 425px;
     background-color: #ECECEC;
-    padding-bottom: 45px;
+    display: -webkit-flex;
+    -webkit-flex-direction: column;
 }
 
-#main-window > .nav-tabs {
+#main-window .nav-tabs {
     margin-bottom: 10px;
 }
 
-#main-window > .nav-tabs > li > a {
+#main-window .nav-tabs li a {
     line-height: 10px;
     padding: 5px;
+    -webkit-flex: 0 1 auto;
 }
-/** End main window styles **/
 
-/* Making heights expand */
 #main-window .tab-content {
     height: 100%;
-    overflow: hidden;
+    display: -webkit-flex;
 }
 
-#main-window .tab-content .tab-pane,  
-#main-window .tab-content .tab-pane .row-fluid,
-#main-window .tab-content .tab-pane .row-fluid > div
-{
-    height: 100%;
-}
-/** End making heights expand **/
-
-/** Begin Editor pane styles **/
-#editor {
-    padding: 0px;
+#main-window .tab-content .tab-pane {
+    -webkit-flex: 1 1 auto;
 }
 
-#editor .row-fluid {
-    height: 100%;
+#main-window .tab-content .tab-pane.active {
+    display: -webkit-flex;
+    -webkit-justify-content: space-between;
 }
 
-.new-button { float: left; }
-.remove-button { float: right; }
-.tree { 
-    margin-top: 30px;
+#main-window .left-pane {
+    width: 37%;
+    display: -webkit-flex;
+    -webkit-flex-direction: column;
+}
+
+#main-window .right-pane {
+    width: 60%;
+    overflow: auto;
+}
+
+#main-window .toolbar {
+    -webkit-flex: 0 1 30px;
+}
+#main-window .toolbar .new-button { float: left; }
+#main-window .toolbar .remove-button { float: right; }
+
+#main-window .tree { 
+    -webkit-flex: 1 1 100%;
     padding: 5px;
-    clear: both;
-    overflow: auto;
-}
-.config-pane {
     overflow: auto;
 }
 
-.config-pane textarea {
+#main-window .right-pane textarea {
     width: 90% !important; /* Important because jsonform uses inline styles for width and height */
     height: 100px !important;
 }
-/** End Editor pane styles **/
