@@ -59,4 +59,21 @@ extend(ChannelShift, QuadBoxComponent, {
         ChannelShift.super.update.call(this, texture);
     }
 });
+
+ChannelShift.ui = {
+    disp: "Channel Shift",
+    type: "ChannelShift",
+    schema: {
+        channel: {
+            type: "string",
+            title: "Channel",
+            enum: ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"]
+        },
+        onBeatRandom: {
+            type: "boolean",
+            title: "On beat random",
+        }
+    }
+};
+
 Webvs.ChannelShift = ChannelShift;

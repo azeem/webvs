@@ -254,10 +254,10 @@ SuperScope.ui = {
         }
     },
     form: [
-        { key: "code.init", type: "textarea", width: "90%", height: "100px" },
-        { key: "code.onBeat", type: "textarea", width: "90%", height: "100px" },
-        { key: "code.perFrame", type: "textarea", width: "90%", height: "100px" },
-        { key: "code.perPoint", type: "textarea", width: "90%", height: "100px" },
+        { key: "code.init", type: "textarea" },
+        { key: "code.onBeat", type: "textarea" },
+        { key: "code.perFrame", type: "textarea" },
+        { key: "code.perPoint", type: "textarea" },
         "colors",
         "source",
         "drawMode"

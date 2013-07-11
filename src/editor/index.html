@@ -4,28 +4,44 @@
     <title>WebVS Editor</title>
 </head>
 <body>
-    <div class="editor container-fluid">
-        <div class="row-fluid">
-            <div class="left-pane span4">
-                <div class="toolbar">
+    <div id="main-window">
+        <ul class="nav nav-tabs" id="myTab">
+          <li class="active"><a href="#editor" data-toggle="tab">Editor</a></li>
+          <li><a href="#player" data-toggle="tab">Player</a></li>
+        </ul>
 
-                    <div class="new-button btn-group">
-                      <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
-                        <span class="icon-plus"></span>
-                        <span class="caret"></span>
-                      </a>
-                      <ul class="dropdown-menu">
-                      </ul>
+        <div class="tab-content">
+            <div id="player" class="tab-pane">
+                <p>
+                    Playah!
+                </p>
+            </div>
+
+            <div id="editor" class="container-fluid tab-pane active">
+                <div class="row-fluid">
+                    <div class="left-pane span4">
+                        <div class="toolbar">
+
+                            <div class="new-button btn-group">
+                              <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                <span class="icon-plus"></span>
+                                <span class="caret"></span>
+                              </a>
+                              <ul class="dropdown-menu">
+                              </ul>
+                            </div>
+
+                            <button class="btn btn-mini remove-button"><span class="icon-minus"></span></button>
+                        </div>
+                        <div class="tree"></div>
                     </div>
-
-                    <button class="btn btn-mini remove-button"><span class="icon-minus"></span></button>
+                    <div class="config-pane span8">
+                        <form class="form">
+                        </form>
+                    </div>
                 </div>
-                <div class="tree"></div>
             </div>
-            <div class="config-pane span8">
-                <form class="form">
-                </form>
-            </div>
+
         </div>
     </div>
 

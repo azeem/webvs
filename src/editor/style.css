@@ -11,7 +11,8 @@ textarea {
     font-family: monospace;
 }
 
-.editor {
+/** Begin main window styles **/
+#main-window {
     padding: 10px;
     position: absolute;
     top: 100px;
@@ -19,9 +20,39 @@ textarea {
     width: 572px;
     height: 425px;
     background-color: #ECECEC;
+    padding-bottom: 45px;
 }
 
-.editor .row-fluid {
+#main-window > .nav-tabs {
+    margin-bottom: 10px;
+}
+
+#main-window > .nav-tabs > li > a {
+    line-height: 10px;
+    padding: 5px;
+}
+/** End main window styles **/
+
+/* Making heights expand */
+#main-window .tab-content {
+    height: 100%;
+    overflow: hidden;
+}
+
+#main-window .tab-content .tab-pane,  
+#main-window .tab-content .tab-pane .row-fluid,
+#main-window .tab-content .tab-pane .row-fluid > div
+{
+    height: 100%;
+}
+/** End making heights expand **/
+
+/** Begin Editor pane styles **/
+#editor {
+    padding: 0px;
+}
+
+#editor .row-fluid {
     height: 100%;
 }
 
@@ -31,9 +62,14 @@ textarea {
     margin-top: 30px;
     padding: 5px;
     clear: both;
-}
-
-.config-pane {
-    height: 100%;
     overflow: auto;
 }
+.config-pane {
+    overflow: auto;
+}
+
+.config-pane textarea {
+    width: 90% !important; /* Important because jsonform uses inline styles for width and height */
+    height: 100px !important;
+}
+/** End Editor pane styles **/
