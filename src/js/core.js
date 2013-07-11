@@ -118,13 +118,31 @@ extend(Webvs, Object, {
 Webvs.ui = {
     leaf: false,
     schema: {
+        name: {
+            type: "string",
+            title: "Name"
+        },
+        author: {
+            type: "string",
+            title: "Author"
+        },
+        description: {
+            type: "string",
+            title: "Description"
+        },
         clearFrame: {
             type: "boolean",
-            title: "Clear Frame",
+            title: "Clear every frame",
             default: false,
             required: true
         }
-    }
+    },
+    form: [
+        "clearFrame",
+        "name",
+        "author",
+        { key: "description", type: "textarea" }
+    ]
 };
 
 /**

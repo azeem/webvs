@@ -59,6 +59,27 @@ function generateJson(node) {
     return json;
 }
 
+function search(e) {
+    e.preventDefault();
+    var input = $("#search-form input");
+    var list = $("#search-result ul");
+    var query = input.val();
+    SC.get("/tracks", {q: query}, function(tracks) {
+        input.val("");
+        list.empty();
+        _.each(tracks, function(track) {
+            var link = $("<a href='#'/>").data("webvs-track", track).text(track.title);
+            $("<li/>").append(link).appendTo(list);
+        });
+    });
+}
+
+function queueTrack() {
+    var track = $(this).data("webvs-track");
+    var list = $("#play-queue ul");
+    $("<li/>").data("webvs-track", track).text(track.title).appendTo(list);
+}
+
 function initUI() {
     // initialize the add effect menu
     _.chain(Webvs).values().filter(function(value) {
@@ -100,10 +121,15 @@ function initUI() {
     $(".remove-button").click(removeNode);
     tree.bind("tree.select", nodeSelect);
     form.change(function() { form.submit(); }); // submit the form on change so that we get values from jsonform
+    $("#search-form").submit(search);
+    $(document).on("click", "#search-result ul li a", queueTrack);
 }
 
 $(document).ready(function() {
     initUI();
+    SC.initialize({
+        client_id: "e818e8c85bb8ec3e90a9bbca23ca5e2a"
+    });
 });
 
 })();

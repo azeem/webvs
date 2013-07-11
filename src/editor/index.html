@@ -12,9 +12,24 @@
 
         <div class="tab-content">
             <div id="player" class="tab-pane">
-                <p>
-                    Playah!
-                </p>
+                <form id="search-form">
+                    <input class="input-xlarge search-query" type="text" placeholder="Search tracks on SoundCloud.com"/>
+                    <button type="submit" class="btn">Search</button>
+                </form>
+                <div id="search-result">
+                    <div>
+                        <span class="label">Search Result</span>
+                    </div>
+                    <ul>
+                    </ul>
+                </div>
+                <div id="play-queue"> 
+                    <div>
+                        <span class="label">Play Queue</span>
+                    </div>
+                    <ul>
+                    </ul>
+                </div>
             </div>
 
             <div id="editor" class="tab-pane active">
@@ -44,14 +59,12 @@
     </div>
 
 
+    <script src="http://connect.soundcloud.com/sdk.js"></script>
     <!-- @if mode='dev' -->
     <link rel="stylesheet" href="../lib/bootstrap/css/bootstrap.css">
     <link rel="stylesheet" href="../lib/jqtree/jqtree.css">
     <link rel="stylesheet" href="../lib/spectrum/spectrum.css">
-    <link rel="stylesheet" href="style.css">
-    <script type="text/javascript" src="../lib/jquery-2.0.3.js"></script>
-    <script type="text/javascript" src="../lib/underscore.js"></script>
-    <script type="text/javascript" src="../lib/D.min.js"></script>
+    <link rel="stylesheet" href="style.css"> <script type="text/javascript" src="../lib/jquery-2.0.3.js"></script> <script type="text/javascript" src="../lib/underscore.js"></script> <script type="text/javascript" src="../lib/D.min.js"></script>
     <script type="text/javascript" src="../lib/fft.js"></script>
     <script type="text/javascript" src="../lib/dancer.js"></script>
     <script type="text/javascript" src="../lib/stats.min.js"></script>

@@ -45,17 +45,25 @@ textarea {
 
 #main-window .tab-content .tab-pane.active {
     display: -webkit-flex;
+}
+
+#main-window #editor {
     -webkit-justify-content: space-between;
 }
 
+#main-window #player {
+    -webkit-flex-direction: column;
+    -webkit-align-items: center;
+}
+
 #main-window .left-pane {
-    width: 37%;
+    width: 30%;
     display: -webkit-flex;
     -webkit-flex-direction: column;
 }
 
 #main-window .right-pane {
-    width: 60%;
+    width: 68%;
     overflow: auto;
 }
 
@@ -74,4 +82,19 @@ textarea {
 #main-window .right-pane textarea {
     width: 90% !important; /* Important because jsonform uses inline styles for width and height */
     height: 100px !important;
+}
+
+#search-result, #play-queue {
+    -webkit-flex: 1 1 50%;
+    display: -webkit-flex;
+    -webkit-flex-direction: column;
+    width: 100%;
+}
+
+#search-result ul, #play-queue ul {
+    background-color: #ffffff;
+    -webkit-flex: 1 1 100%;
+    overflow: auto;
+    margin: 3px 0px;
+    padding: 5px;
 }
