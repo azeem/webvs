@@ -53,7 +53,6 @@ textarea {
 
 #main-window #player {
     -webkit-flex-direction: column;
-    -webkit-align-items: center;
 }
 
 #main-window .left-pane {
@@ -84,11 +83,32 @@ textarea {
     height: 100px !important;
 }
 
+#search-result {
+    display: inline;
+}
+
+.player-toolbar {
+    text-align: right;
+    width: 100%;
+    -webkit-flex: 0 1 30px;
+    margin-bottom: 5px;
+}
+
+.player-lists {
+    width: 100%;
+    -webkit-flex: 1 1 100%;
+    -webkit-justify-content: space-between;
+    display: -webkit-flex;
+}
+
+#search-form {
+    float: left;
+}
+
 #search-result, #play-queue {
-    -webkit-flex: 1 1 50%;
+    width: 49%;
     display: -webkit-flex;
     -webkit-flex-direction: column;
-    width: 100%;
 }
 
 #search-result ul, #play-queue ul {
@@ -97,4 +117,8 @@ textarea {
     overflow: auto;
     margin: 3px 0px;
     padding: 5px;
+}
+
+.playing {
+    color: red;
 }

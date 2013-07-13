@@ -12,23 +12,29 @@
 
         <div class="tab-content">
             <div id="player" class="tab-pane">
-                <form id="search-form">
-                    <input class="input-xlarge search-query" type="text" placeholder="Search tracks on SoundCloud.com"/>
-                    <button type="submit" class="btn">Search</button>
-                </form>
-                <div id="search-result">
-                    <div>
-                        <span class="label">Search Result</span>
-                    </div>
-                    <ul>
-                    </ul>
+                <div class="player-toolbar">
+                    <form id="search-form">
+                        <input class="input-small search-query" type="text" placeholder="Search tracks on SoundCloud.com"/>
+                        <button type="submit" class="btn">Search</button>
+                    </form>
+                    <button id="play-btn" class="btn">Play</button>
+                    <button id="skip-btn" class="btn">Skip</button>
                 </div>
-                <div id="play-queue"> 
-                    <div>
-                        <span class="label">Play Queue</span>
+                <div class="player-lists">
+                    <div id="search-result">
+                        <div>
+                            <span class="label">Search Result</span>
+                        </div>
+                        <ul>
+                        </ul>
                     </div>
-                    <ul>
-                    </ul>
+                    <div id="play-queue"> 
+                        <div>
+                            <span class="label">Play Queue</span>
+                        </div>
+                        <ul>
+                        </ul>
+                    </div>
                 </div>
             </div>
 

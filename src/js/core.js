@@ -117,6 +117,7 @@ extend(Webvs, Object, {
 
 Webvs.ui = {
     leaf: false,
+    disp: "Main",
     schema: {
         name: {
             type: "string",
