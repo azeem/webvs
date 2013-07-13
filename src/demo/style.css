@@ -16,6 +16,7 @@ body {
     background-color: transparent;
     border-radius: 5px;
     padding: 15px;
+    cursor: move;
 }
 
 #panel:hover {
