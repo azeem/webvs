@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webvs Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
+</head>
+<body>
+    <canvas id="my-canvas"></canvas>
+    <button id="btn-panel-toggle">Hide Panel</button>
+    <div id="panel">
+        <div class="controls">
+            <div class="song-controls">
+                <label>
+                    <input placeholder="Soundcloud Track URL" id="sc-url" type="text" value="https://soundcloud.com/lungela-randy/galimatias-major-crimes"/>
+                </label>
+                <button id="btn-play">Play</button>
+            </div>
+            <div class="code-controls">
+                <button id="btn-runpreset">Run Preset</button>
+                <select id="dim-factor" title="Canvas Size Factor">
+                    <option value="1">1x</option>
+                    <option value="2">2x</option>
+                    <option value="4">4x</option>
+                    <option value="8">8x</option>
+                </select>
+            </div>
+        </div>
+        <div id="preset-code">
+        </div>
+    </div>
+
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+    <script type="text/javascript" src="//code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/codemirror/2.36.0/javascript.min.js"></script>
+
+    <!-- @if mode='dev' -->
+    <script type="text/javascript" src="../lib/underscore.js"></script>
+    <script type="text/javascript" src="../lib/D.min.js"></script>
+    <script type="text/javascript" src="../lib/fft.js"></script>
+    <script type="text/javascript" src="../lib/dancer.js"></script>
+    <script type="text/javascript" src="../lib/stats.min.js"></script>
+    <script type="text/javascript" src="webvs.js"></script>
+    <script type="text/javascript" src="demo.js"></script>
+    <!-- @endif -->
+
+    <!-- @if mode='dist' -->
+    <script type="text/javascript" src="libs.min.js"></script>
+    <script type="text/javascript" src="webvs.min.js"></script>
+    <script type="text/javascript" src="demo.min.js"></script>
+    <!-- @endif -->
+
+    <!-- URL parameters -->
+    <script>
+        $.urlParam = function(name){
+            var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
+            if (results) return results[1] || 0;
+        }
+
+        // initial zoom factor
+        zoom = $.urlParam('zoom')
+        if ( $.isNumeric(zoom) ) $('#dim-factor').val(zoom);
+
+        // initial soundcloud track
+        sound = $.urlParam('sound')
+        if (sound) $('#sc-url').val(sound);
+
+        // hide controls
+        controls = $.urlParam('controls')
+        if (controls == 'hide') {
+            $('#btn-panel-toggle, #panel').hide();
+        }
+    </script>
+
+    <!-- http://jqueryui.com/draggable/ -->
+    <script>
+        $(function() {
+            $( "#panel" ).draggable();
+        });
+    </script>
+</body>
+</html>
