@@ -11,7 +11,8 @@ var unknownUi = {
     schema: {
         json: {
             type: "string",
-            title: "json"
+            title: "json",
+            default: "{}"
         }
     },
     form: [
@@ -177,7 +178,11 @@ function addNode() {
         id: nodeIdCounter++,
         ui: ui,
         label: ui.disp,
+        values: {}
     };
+    if(ui.isJson) {
+        data.values.json = "{}";
+    }
     tree.tree("appendNode", data, rootNode);
     tree.tree("openNode", rootNode);
 }
@@ -216,18 +221,14 @@ function generateJson(node) {
     if(!node) {
         node = rootNode;
     } else {
-        if(node.ui === unknownUi) {
-            json.type = node.realType;
-        } else {
-            json.type = node.ui.type;
-        }
+        json.type = node.ui.type;
     }
 
     if(node.children && node.children.length > 0) {
         json.components = _.map(node.children, generateJson);
     }
 
-    if(node.ui === unknownUi) {
+    if(node.ui.isJson) {
         json = _.extend(json, JSON.parse(node.values.json));
     } else {
         json = _.extend(json, node.values);
@@ -244,17 +245,11 @@ function loadPresetJson(preset) {
         } else {
             ui = Webvs.ui;
         }
-        if(!ui) {
-            ui = unknownUi;
-            label = preset.type;
-        } else {
-            label = ui.disp;
-        }
 
         var node = {
             id: nodeIdCounter++,
             ui: ui,
-            label: label
+            label: ui.disp
         };
 
         // add children
@@ -270,8 +265,7 @@ function loadPresetJson(preset) {
             values[key] = preset[key];
         });
 
-        if(ui === unknownUi) {
-            node.realType = preset.type;
+        if(ui.isJson) {
             node.values = {
                 json: JSON.stringify(values, undefined, 2)
             };
@@ -351,13 +345,43 @@ function skipTrack() {
     loadTrack();
 }
 
+function setCanvasDim() {
+    var dimFactor = $("#dim-factor").val();
+    var dimension = {
+        width: $(window).outerWidth(),
+        height:$(window).outerHeight()
+    };
+    var canvasDim = {
+        width: dimension.width/dimFactor,
+        height: dimension.height/dimFactor
+    };
+    $("#webvs-canvas").attr(canvasDim).css(dimension);
+}
+
+function resetCanvas() {
+    setCanvasDim();
+    webvs.resetCanvas();
+    webvs.start();
+}
+
 function initUI() {
     uiMap = {};
-    // initialize the add effect menu
-    _.chain(Webvs).values().filter(function(value) {
-        return _.isFunction(value) && _.isObject(value.ui);
-    }).map(function(value) { 
-        var ui = _.defaults(value.ui, {
+    // initialize the add effect menu and ui object map
+    _.chain(Webvs).pairs().filter(function(pair) {
+        return _.isFunction(pair[1]);
+    }).map(function(pair) { 
+        var className = pair[0];
+        var componentClass = pair[1];
+
+        var ui = componentClass.ui;
+        if(!ui) {
+            ui = _.extend({
+                type: className,
+                disp: className,
+                isJson: true
+            }, unknownUi);
+        }
+        ui = _.defaults(ui, {
             leaf: true
         });
         return ui;
@@ -381,11 +405,22 @@ function initUI() {
     });
     loadPresetJson(samplePreset);
 
+    // set the canvas dimensions
+    setCanvasDim();
+
     // ---- Begin event Bindings ----
     $(".new-button .dropdown-menu li").click(addNode);
     $(".remove-button").click(removeNode);
     tree.bind("tree.select", nodeSelect);
     form.change(function() { form.submit(); }); // submit the form on change so that we get values from jsonform
+    $("#dim-factor").on("change", resetCanvas);
+
+    var resizeTimer;
+    $(window).on("resize", function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(resetCanvas, 100);
+    });
+
     $("#search-form").submit(search);
     $(document).on("click", "#search-result ul li a", queueTrack);
     $("#play-btn").click(playPause);
@@ -398,6 +433,14 @@ $(document).ready(function() {
         client_id:  SCClientId   
     });
     dancer = new Dancer();
+
+    webvs = new Webvs({
+        canvas: $("#webvs-canvas").get(0),
+        analyser: new Webvs.DancerAdapter(dancer),
+        showStat: true
+    });
+    webvs.loadPreset(samplePreset);
+    webvs.start();
 });
 
 })();

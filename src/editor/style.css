@@ -1,6 +1,7 @@
 body {
     font-family: arial, sans-serif;
     font-size: 13px;
+    overflow: hidden;
 }
 
 label, input, button, select, textarea {
@@ -9,6 +10,13 @@ label, input, button, select, textarea {
 
 textarea {
     font-family: monospace;
+}
+
+select {
+    height: auto;
+    line-height: 14px;
+    width: auto;
+    padding: 1px 5px;
 }
 
 /** Begin main window styles **/
@@ -70,7 +78,13 @@ textarea {
     -webkit-flex: 0 1 30px;
 }
 #main-window .toolbar .new-button { float: left; }
-#main-window .toolbar .remove-button { float: right; }
+#main-window .toolbar .remove-button { 
+    float: left;
+    margin-left: 5px;
+}
+#dim-factor {
+    float: right;
+}
 
 #main-window .tree { 
     -webkit-flex: 1 1 100%;

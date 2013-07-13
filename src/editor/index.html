@@ -4,6 +4,7 @@
     <title>WebVS Editor</title>
 </head>
 <body>
+    <canvas id="webvs-canvas"></canvas>
     <div id="main-window">
         <ul class="nav nav-tabs">
           <li class="active"><a href="#editor" data-toggle="tab">Editor</a></li>
@@ -50,6 +51,13 @@
                           <ul class="dropdown-menu">
                           </ul>
                         </div>
+
+                        <select id="dim-factor" title="Canvas Size Factor">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>4</option>
+                            <option>8</option>
+                        </select>
 
                         <button class="btn btn-mini remove-button"><span class="icon-minus"></span></button>
                     </div>

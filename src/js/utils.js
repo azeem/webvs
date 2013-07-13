@@ -98,6 +98,10 @@ function parseColor(color) {
     throw new Error("Invalid Color Format");
 }
 
+function parseColorNorm(color) {
+    return _.map(parseColor(color), function(value) { return value/255; });
+}
+
 var requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||

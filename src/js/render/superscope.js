@@ -12,7 +12,7 @@ function SuperScope(options) {
     checkRequiredOptions(options, ["code"]);
     options = _.defaults(options, {
         source: "SPECTRUM",
-        drawMode: "DOTS",
+        drawMode: "LINES",
         colors: ["#ffffff"]
     });
 
@@ -32,17 +32,8 @@ function SuperScope(options) {
     this.spectrum = options.source == "SPECTRUM";
     this.dots = options.drawMode == "DOTS";
 
-    var colors = options.colors?options.colors:[[255,255,255]];
-    for(var i = 0;i < colors.length;i++) {
-        if(colors[i].length != 3) {
-            throw new Error("Invalid color, must be an array of 3");
-        }
-        for(var j = 0;j < 3;j++) {
-            colors[i][j] = colors[i][j]/255;
-        }
-    }
-    this.colors = _.map(options.colors, parseColor);
-    this.currentColor = colors[0];
+    this.colors = _.map(options.colors, parseColorNorm);
+    this.currentColor = this.colors[0];
     this.maxStep = 100;
 
     this.step = this.maxStep; // so that we compute steps, the first time
