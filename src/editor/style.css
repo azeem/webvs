@@ -27,9 +27,12 @@ select {
     left: 100px;
     width: 572px;
     height: 425px;
-    background-color: #ECECEC;
+    background-color: rgba(0,0,0,0.5);
     display: -webkit-flex;
+    color: white;
     -webkit-flex-direction: column;
+    border-radius: 10px;
+    border: 1px solid #555555;
 }
 
 #main-window .nav-tabs {
@@ -40,6 +43,11 @@ select {
     line-height: 10px;
     padding: 5px;
     -webkit-flex: 0 1 auto;
+    color: white;
+}
+
+#main-window .nav-tabs li.active a, #main-window .nav-tabs li a:hover {
+    color: black;
 }
 
 #main-window .tab-content {
@@ -92,6 +100,25 @@ select {
     overflow: auto;
 }
 
+#main-window .tree .jqtree-toggler { 
+    color: white;
+}
+
+#main-window .tree .jqtree-title { 
+    color: white;
+}
+
+#main-window .tree .jqtree-selected > .jqtree-element { 
+    background: rgba(100,100,100,0.5);
+    text-shadow: none;
+    padding-left: 5px;
+}
+
+#tree-context-menu {
+    position: absolute;
+    display: none;
+}
+
 #main-window .right-pane textarea {
     width: 90% !important; /* Important because jsonform uses inline styles for width and height */
     height: 100px !important;
@@ -126,11 +153,16 @@ select {
 }
 
 #search-result ul, #play-queue ul {
-    background-color: #ffffff;
+    background-color: rgba(0,0,0,0.5);
     -webkit-flex: 1 1 100%;
     overflow: auto;
     margin: 3px 0px;
     padding: 5px;
+    color: white;
+}
+
+#search-result ul a, #play-queue ul a {
+    color: white;
 }
 
 .playing {

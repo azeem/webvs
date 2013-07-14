@@ -1,6 +1,7 @@
 (function() {
 
 var tree, rootNode, form;
+var contextMenu;
 var uiMap;
 var nodeIdCounter = 2;
 var dancer, webvs;
@@ -225,6 +226,14 @@ function generateJson(node) {
         json.type = node.ui.type;
     }
 
+    if(!node.enabled) {
+        json.enabled = false;
+    }
+
+    if(node.clone > 1) {
+        json.clone = node.clone;
+    }
+
     if(node.children && node.children.length > 0) {
         json.components = _.map(node.children, generateJson);
     }
@@ -250,8 +259,10 @@ function loadPresetJson(preset) {
         var node = {
             id: nodeIdCounter++,
             ui: ui,
-            label: ui.disp
+            enabled: (!_.isBoolean(preset.enabled) || preset.enabled),
+            clone: (preset.clone > 1)?preset.clone:1
         };
+        node.label = makeNodeLabel(node.enabled, ui.disp, node.clone);
 
         // add children
         if(preset.components) {
@@ -365,6 +376,32 @@ function resetCanvas() {
     webvs.start();
 }
 
+function makeNodeLabel(enabled, disp, clone) {
+    return (!enabled?"! ":"") + disp + (clone > 1?" x"+clone:"");
+}
+
+function toggleEnable() {
+    var node = tree.tree("getSelectedNode");
+    var newState = !node.enabled;
+    tree.tree("updateNode", node, {
+        enabled: newState,
+        label: makeNodeLabel(newState, node.ui.disp, node.clone)
+    });
+    console.dir(generateJson());
+}
+
+function setClone() {
+    var node = tree.tree("getSelectedNode");
+    var clone = prompt("Enter the number of times this component should be cloned", node.clone);
+    clone = parseInt(clone, 10);
+    clone = _.isNaN(clone)?node.clone:clone;
+    tree.tree("updateNode", node, {
+        clone: clone,
+        label: makeNodeLabel(node.enabled, node.ui.disp, clone)
+    });
+    console.dir(generateJson());
+}
+
 function initUI() {
     uiMap = {};
     // initialize the add effect menu and ui object map
@@ -385,19 +422,6 @@ function initUI() {
         ui = _.defaults(ui, {
             leaf: true
         });
-        ui.schema = _.defaults(ui.schema, {
-            clone: {
-                type: "number",
-                title: "Clone",
-                default: 1
-            },
-            enabled: {
-                type: "boolean",
-                title: "Enabled",
-                default: true
-            },
-        });
-        ui.form = ui.form?(["enabled", "clone"].concat(ui.form)):["*"];
         return ui;
     }).each(function(ui) {
         uiMap[ui.type] = ui;
@@ -406,6 +430,8 @@ function initUI() {
 
     //initialize form
     form = $('.form');
+
+    contextMenu = $("#tree-context-menu");
 
     // initialize the tree
     tree = $(".tree");
@@ -416,6 +442,25 @@ function initUI() {
             return ((position != "inside" || !targetUi.leaf) && (targetNode.id !== 1 || position == "inside"));
         },
         data: []
+    });
+    tree.bind("tree.contextmenu", function(event) {
+        var node = tree.tree("getSelectedNode");
+        if(node.id != event.node.id) {
+            tree.tree("selectNode", event.node);
+        }
+        if(node.id === 1) {
+            return;
+        }
+
+        if(node.enabled) {
+            contextMenu.find(".toggle-enable").text("Disable");
+        } else {
+            contextMenu.find(".toggle-enable").text("Enable");
+        }
+        contextMenu.show().css({left: event.click_event.pageX, top: event.click_event.pageY});
+    });
+    $(document).click(function() {
+        contextMenu.hide();
     });
     loadPresetJson(samplePreset);
 
@@ -428,6 +473,8 @@ function initUI() {
     tree.bind("tree.select", nodeSelect);
     form.change(function() { form.submit(); }); // submit the form on change so that we get values from jsonform
     $("#dim-factor").on("change", resetCanvas);
+    $("#tree-context-menu .toggle-enable").click(toggleEnable);
+    $("#tree-context-menu .clone").click(setClone);
 
     var resizeTimer;
     $(window).on("resize", function() {
