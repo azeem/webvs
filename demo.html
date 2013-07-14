@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webvs Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <button id="btn-panel-toggle">Hide Panel</button>
+    <div id="panel">
+        <div class="controls">
+            <div class="song-controls">
+                <label>
+                    <input placeholder="Soundcloud Track URL" id="sc-url" type="text" value="https://soundcloud.com/lungela-randy/galimatias-major-crimes"/>
+                </label>
+                <button id="btn-play">Play</button>
+            </div>
+            <div class="code-controls">
+                <button id="btn-runpreset">Run Preset</button>
+                <select id="dim-factor" title="Canvas Size Factor">
+                    <option>1</option>
+                    <option>2</option>
+                    <option>4</option>
+                    <option>8</option>
+                </select>
+            </div>
+        </div>
+        <div id="preset-code">
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/2.36.0/javascript.min.js"></script>
+
+    
+
+    
+    <script type="text/javascript" src="libs.min.js"></script>
+    <script type="text/javascript" src="webvs.min.js"></script>
+    <script type="text/javascript" src="demo.min.js"></script>
+    
+</body>
+</html>
