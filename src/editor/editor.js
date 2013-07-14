@@ -178,11 +178,11 @@ function addNode() {
         id: nodeIdCounter++,
         ui: ui,
         label: ui.disp,
-        values: {}
+        //values: {}
     };
-    if(ui.isJson) {
+    /*if(ui.isJson) {
         data.values.json = "{}";
-    }
+    }*/
     tree.tree("appendNode", data, rootNode);
     tree.tree("openNode", rootNode);
 }
@@ -206,7 +206,8 @@ function nodeSelect(e) {
         schema: node.ui.schema,
         form: node.ui.form || ["*"],
         onSubmitValid: formSubmitValid,
-        value: node.values
+        value: node.values,
+        forceDefaults: true
     });
 }
 
@@ -384,6 +385,19 @@ function initUI() {
         ui = _.defaults(ui, {
             leaf: true
         });
+        ui.schema = _.defaults(ui.schema, {
+            clone: {
+                type: "number",
+                title: "Clone",
+                default: 1
+            },
+            enabled: {
+                type: "boolean",
+                title: "Enabled",
+                default: true
+            },
+        });
+        ui.form = ui.form?(["enabled", "clone"].concat(ui.form)):["*"];
         return ui;
     }).each(function(ui) {
         uiMap[ui.type] = ui;

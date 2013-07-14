@@ -44,12 +44,13 @@ extend(Webvs, Object, {
      * @param preset JSON representation of the preset
      */
     loadPreset: function(preset) {
-        this.preset = preset;
+        var newRoot = new EffectList(preset);
         this.stop();
+        this.preset = preset;
         if(this.rootComponent) {
             this.rootComponent.destroyComponent();
         }
-        this.rootComponent = new EffectList(preset);
+        this.rootComponent = newRoot;
     },
 
     /**
