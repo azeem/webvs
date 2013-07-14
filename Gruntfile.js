@@ -69,7 +69,8 @@ module.exports = function(grunt) {
             dist: {
                 files: [
                     {expand: true, flatten:true, cwd: "src/", src: ["demo/**.!(html|js)"], dest: "dist/"},
-                    {expand: true, flatten:true, cwd: "src/", src: ["editor/**.!(html|js)"], dest: "/dist"},
+                    {expand: true, flatten:true, cwd: "src/", src: ["editor/**.!(html|js)"], dest: "dist/"},
+                    {expand: true, flatten:false, cwd: "lib/", src: ["./**", "!./**/*.js"], dest: "dist/"},
                 ]
             }
         },
@@ -91,7 +92,7 @@ module.exports = function(grunt) {
                     "dist/demo.min.js": "build/demo.js",
                     "dist/editor.min.js": "build/editor.js",
                     "dist/webvs.min.js": "build/webvs.js",
-                    "dist/libs.min.js": "lib/*.js"
+                    "dist/libs.min.js": ["lib/underscore.js", "lib/*.js", "lib/**/*.js"]
                 }
             }
         },
@@ -116,7 +117,7 @@ module.exports = function(grunt) {
                 },
                 files: {
                     "dist/demo.html": "src/demo/index.html",
-                    "dist/editor.html": "src/editor/index.html"
+                    "dist/index.html": "src/editor/index.html"
                 }
             }
         }

@@ -417,11 +417,23 @@ function setClone() {
     generateAndLoadPreset();
 }
 
+function isSubClassOf(classA, classB) {
+    if(classA.super) {
+        if(classA.super.constructor == classB) {
+            return true;
+        } else {
+            return isSubClassOf(classA.super.constructor, classB);
+        }
+    } else {
+        return false;
+    }
+}
+
 function initUI() {
     uiMap = {};
     // initialize the add effect menu and ui object map
     _.chain(Webvs).pairs().filter(function(pair) {
-        return _.isFunction(pair[1]);
+        return isSubClassOf(pair[1], Webvs.Component);
     }).map(function(pair) { 
         var className = pair[0];
         var componentClass = pair[1];

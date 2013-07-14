@@ -195,6 +195,7 @@ extend(Component, Object, {
     }
 });
 
+
 // Webvs constants
 var blendModes = {
     REPLACE: 1,
@@ -433,3 +434,4 @@ extend(QuadBoxComponent, ShaderComponent, {
 });
 
 window.Webvs = Webvs;
+window.Webvs.Component = Component;
