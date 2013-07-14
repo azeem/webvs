@@ -35,6 +35,23 @@ select {
     border: 1px solid #555555;
 }
 
+#main-window .top {
+    position: relative;
+}
+
+#load-status {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    right: 5px;
+    top: 0px;
+    background-color: green;
+}
+
+#load-status.fail {
+    background-color: red;
+}
+
 #main-window .nav-tabs {
     margin-bottom: 10px;
 }

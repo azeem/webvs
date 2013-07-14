@@ -12,10 +12,13 @@
 
     <canvas id="webvs-canvas"></canvas>
     <div id="main-window">
-        <ul class="nav nav-tabs">
-          <li class="active"><a href="#editor" data-toggle="tab">Editor</a></li>
-          <li><a href="#player" data-toggle="tab">Player</a></li>
-        </ul>
+        <div class="top">
+            <div id="load-status"></div>
+            <ul class="nav nav-tabs">
+              <li class="active"><a href="#editor" data-toggle="tab">Editor</a></li>
+              <li><a href="#player" data-toggle="tab">Player</a></li>
+            </ul>
+        </div>
 
         <div class="tab-content">
             <div id="player" class="tab-pane">
@@ -84,7 +87,11 @@
     <link rel="stylesheet" href="../lib/bootstrap/css/bootstrap.css">
     <link rel="stylesheet" href="../lib/jqtree/jqtree.css">
     <link rel="stylesheet" href="../lib/spectrum/spectrum.css">
-    <link rel="stylesheet" href="style.css"> <script type="text/javascript" src="../lib/jquery-2.0.3.js"></script> <script type="text/javascript" src="../lib/underscore.js"></script> <script type="text/javascript" src="../lib/D.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="../lib/jquery-2.0.3.js"></script>
+    <script type="text/javascript" src="../lib/jquery-ui-1.10.3.custom.js"></script>
+    <script type="text/javascript" src="../lib/underscore.js"></script>
+    <script type="text/javascript" src="../lib/D.min.js"></script>
     <script type="text/javascript" src="../lib/fft.js"></script>
     <script type="text/javascript" src="../lib/dancer.js"></script>
     <script type="text/javascript" src="../lib/stats.min.js"></script>

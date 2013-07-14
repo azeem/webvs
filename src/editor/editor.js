@@ -217,7 +217,7 @@ function nodeSelect(e) {
 function formSubmitValid(values) {
     var selectedNode = tree.tree("getSelectedNode");
     selectedNode.values = values;
-    console.dir(generateJson());
+    generateAndLoadPreset();
 }
 
 function generateJson(node) {
@@ -245,7 +245,20 @@ function generateJson(node) {
     } else {
         json = _.extend(json, node.values);
     }
+    
     return json;
+}
+
+function generateAndLoadPreset() {
+    var preset = generateJson();
+    try {
+        webvs.loadPreset(preset);
+        webvs.start();
+        $("#load-status").removeClass("fail");
+    } catch(e) {
+        $("#load-status").addClass("fail");
+        console.log("Error loading preset " + e);
+    }
 }
 
 function loadPresetJson(preset) {
@@ -389,7 +402,7 @@ function toggleEnable() {
         enabled: newState,
         label: makeNodeLabel(newState, node.ui.disp, node.clone)
     });
-    console.dir(generateJson());
+    generateAndLoadPreset();
 }
 
 function setClone() {
@@ -401,7 +414,7 @@ function setClone() {
         clone: clone,
         label: makeNodeLabel(node.enabled, node.ui.disp, clone)
     });
-    console.dir(generateJson());
+    generateAndLoadPreset();
 }
 
 function initUI() {
@@ -433,7 +446,11 @@ function initUI() {
     //initialize form
     form = $('.form');
 
+    // initialize context menu
     contextMenu = $("#tree-context-menu");
+
+    // initialize main window
+    $("#main-window").draggable();
 
     // initialize the tree
     tree = $(".tree");
@@ -490,6 +507,14 @@ function initUI() {
     $("#skip-btn").click(skipTrack);
 }
 
+function loadAndPlayDefaultTrack() {
+    SC.get("/tracks/88460121", function(track) {
+        var list = $("#play-queue ul");
+        $("<li/>").data("webvs-track", track).text(track.title).appendTo(list);
+        $("#play-btn").click();
+    });
+}
+
 $(document).ready(function() {
     initUI();
     SC.initialize({
@@ -504,6 +529,7 @@ $(document).ready(function() {
     });
     webvs.loadPreset(samplePreset);
     webvs.start();
+    loadAndPlayDefaultTrack();
 });
 
 })();
