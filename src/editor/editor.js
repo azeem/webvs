@@ -179,11 +179,13 @@ function addNode() {
         id: nodeIdCounter++,
         ui: ui,
         label: ui.disp,
-        //values: {}
+        enabled: true,
+        clone: 1,
+        values: {}
     };
-    /*if(ui.isJson) {
+    if(ui.isJson) {
         data.values.json = "{}";
-    }*/
+    }
     tree.tree("appendNode", data, rootNode);
     tree.tree("openNode", rootNode);
 }
