@@ -463,7 +463,7 @@ function initUI() {
     contextMenu = $("#tree-context-menu");
 
     // initialize main window
-    $("#main-window").draggable();
+    $("#main-window").draggable({handle: ".top"});
 
     // initialize the tree
     tree = $(".tree");
