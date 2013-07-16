@@ -4,16 +4,12 @@
  */
 
 function FadeOut(options) {
-    options = options?options:{};
-    this.speed = options.speed?options.speed:1;
-    this.color = options.color?options.color:[0,0,0];
-
-    if(this.color.length != 3) {
-        throw new Error("Invalid clear color, must be an array of 3");
-    }
-    for(var i = 0;i < this.color.length;i++) {
-        this.color[i] = this.color[i]/255;
-    }
+    options = _.defaults(options, {
+        speed: 1,
+        color: "#FFFFFF"
+    });
+    this.speed = options.speed;
+    this.color = parseColorNorm(options.color);
 
     this.frameCount = 0;
     this.maxFrameCount = Math.floor(1/this.speed);
@@ -77,5 +73,28 @@ extend(FadeOut, ShaderComponent, {
         this.gl.deleteBuffer(this.vertexBuffer);
     }
 });
+FadeOut.ui = {
+    type: "FadeOut",
+    disp: "Fade Out",
+    schema: {
+        speed: {
+            type: "number",
+            title: "Speed",
+            maximum: 0,
+            minimum: 1,
+            default: 1
+        },
+        color: {
+            type: "string",
+            title: "Fadeout color",
+            format: "color",
+            default: "#FFFFFF"
+        }
+    },
+    form: [
+        {key: "speed", type: "range", step: "0.05"},
+        "color"
+    ]
+};
 
 window.Webvs.FadeOut = FadeOut;

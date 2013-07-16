@@ -166,7 +166,7 @@ var samplePreset = {
             "output": "ADDITIVE",
             "maps": [
                 [
-                    [[82, 18, 55], 43]
+                    {color: "#521237", index:43}
                 ]
             ]
         }
@@ -287,7 +287,7 @@ function loadPresetJson(preset) {
         // add remaining preset values
         var values = {};
         _.chain(_.keys(preset)).filter(function(key) {
-            return (key != "components" && key != "type");
+            return (key != "components" && key != "type" && key != "enabled" && key != "clone");
         }).each(function(key) {
             values[key] = preset[key];
         });
@@ -370,6 +370,7 @@ function playPause() {
 function skipTrack() {
     dancer.pause();
     loadTrack();
+    dancer.play();
 }
 
 function setCanvasDim() {

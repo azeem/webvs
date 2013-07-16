@@ -165,6 +165,60 @@ extend(DynamicMovement, ShaderComponent, {
         this.gl.deleteBuffer(this.pointBuffer);
     }
 });
+DynamicMovement.ui = {
+    type: "DynamicMovement",
+    disp: "Dynamic Movement",
+    schema: {
+        code: {
+            type: "object",
+            title: "Code",
+            default: {},
+            properties: {
+                init: {
+                    type: "string",
+                    title: "Init",
+                },
+                onBeat: {
+                    type: "string",
+                    title: "On Beat",
+                },
+                perFrame: {
+                    type: "string",
+                    title: "Per Frame",
+                },
+                perPixel: {
+                    type: "string",
+                    title: "Per Point",
+                }
+            },
+        },
+        gridW: {
+            type: "number",
+            title: "Grid Width",
+            default: 16,
+        },
+        gridH: {
+            type: "number",
+            title: "Grid Height",
+            default: 16,
+        },
+        coord: {
+            type: "string",
+            title: "Coordinate System",
+            enum: ["POLAR", "RECT"],
+            default: "POLAR"
+        }
+    },
+    form: [
+        { key: "code.init", type: "textarea" },
+        { key: "code.onBeat", type: "textarea" },
+        { key: "code.perFrame", type: "textarea" },
+        { key: "code.perPixel", type: "textarea" },
+        "gridW",
+        "gridH",
+        "coord"
+    ]
+};
 
 DynamicMovement.examples = {
     inAndOut: {

@@ -86,46 +86,52 @@ extend(ColorMap, QuadBoxComponent, {
 
     _buildColorMap: function(map) {
         var gl = this.gl;
-        map = _.sortBy(map, function(mapItem) {return mapItem[1];});
+        map = _.sortBy(map, function(mapItem) {return mapItem.index;});
 
         // check for repeated indices
-        var indices = _.map(map, function(mapItem) {return mapItem[1];});
+        var indices = _.map(map, function(mapItem) {return mapItem.index;});
         if(_.uniq(indices).length != indices.length) {
             throw new Error("map cannot have repeated indices");
         }
 
         // add a cap entries at the ends
         var first = _.first(map);
-        if(first[1] !== 0) {
-            map.splice(0, 0, [first[0], 0]);
+        if(first.index !== 0) {
+            map.splice(0, 0, {color:first.color, index:0});
         }
         var last = _.last(map);
-        if(last[1] !== 255) {
-            map.push([last[0], 255]);
+        if(last.index !== 255) {
+            map.push({color:last.color, index:255});
         }
+
+        map = _.map(map, function(mapItem) {
+            var color = parseColor(mapItem.color);
+            return {color:color, index:mapItem.index};
+        });
 
         // lerp intermediate values
         var colorMap = new Uint8Array(256*4);
         var cmi = 0;
         var pairs = _.zip(_.first(map, map.length-1), _.last(map, map.length-1));
         _.each(pairs, function(pair, i) {
-            var first = pair[0], second = pair[1];
-            var steps = second[1] - first[1];
+            var first = pair[0];
+            var second = pair[1];
+            var steps = second.index - first.index;
             var colorStep = [
-                (second[0][0] - first[0][0])/steps,
-                (second[0][1] - first[0][1])/steps,
-                (second[0][2] - first[0][2])/steps
+                (second.color[0] - first.color[0])/steps,
+                (second.color[1] - first.color[1])/steps,
+                (second.color[2] - first.color[2])/steps
             ];
             _.times(steps, function(i) {
-                colorMap[cmi++] = (first[0][0] + colorStep[0]*i);
-                colorMap[cmi++] = (first[0][1] + colorStep[1]*i);
-                colorMap[cmi++] = (first[0][2] + colorStep[2]*i);
+                colorMap[cmi++] = (first.color[0] + colorStep[0]*i);
+                colorMap[cmi++] = (first.color[1] + colorStep[1]*i);
+                colorMap[cmi++] = (first.color[2] + colorStep[2]*i);
                 colorMap[cmi++] = 255;
             });
         });
-        colorMap[cmi++] = last[0][0];
-        colorMap[cmi++] = last[0][1];
-        colorMap[cmi++] = last[0][2];
+        colorMap[cmi++] = last.color[0];
+        colorMap[cmi++] = last.color[1];
+        colorMap[cmi++] = last.color[2];
         colorMap[cmi++] = 255;
 
         // put the color values into a 256x1 texture
@@ -137,5 +143,53 @@ extend(ColorMap, QuadBoxComponent, {
         return texture;
     }
 });
+/*ColorMap.ui = {
+    disp: "Color Map",
+    type: "ColorMap",
+    schema: {
+        map: {
+            type: "array",
+            items: {
+                type: "array",
+                title: "Map",
+                items: {
+                    type: "object",
+                    properties: {
+                        color: {
+                            type: "string",
+                            title: "Color",
+                            format: "color",
+                            default: "#FFFFFF"
+                        },
+                        index: {
+                            type: "number",
+                            title: "Index",
+                            minimum: 0,
+                            maximum: 255,
+                        }
+                    }
+                }
+            }
+        },
+        key: {
+            type: "string",
+            title: "Map key",
+            enum: ["RED", "GREEN", "BLUE", "(R+G+B)/2", "(R+G+B)/3", "MAX"],
+            default: "RED"
+        },
+        mapCycleMode: {
+            type: "string",
+            title: "Map Cycle Mode",
+            enum: ["SINGLE", "ONBEATRANDOM", "ONBEATSEQUENTIAL"],
+            default: "SINGLE"
+        },
+        output: {
+            type: "string",
+            title: "Output blend mode",
+            enum: blendModes,
+            default: "REPLACE"
+        }
+    }
+};*/
 
 window.Webvs.ColorMap = ColorMap;

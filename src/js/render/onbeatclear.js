@@ -9,16 +9,12 @@
  * @constructor
  */
 function OnBeatClear(options) {
-    options = options?options:{};
-    this.n = options.n?options.n:1;
-    this.color = options.color?options.color:[0,0,0];
-
-    if(this.color.length != 3) {
-        throw new Error("Invalid clear color, must be an array of 3");
-    }
-    for(var i = 0;i < this.color.length;i++) {
-        this.color[i] = this.color[i]/255;
-    }
+    options = _.defaults(options, {
+        n: 1,
+        color: "#FFFFFF"
+    });
+    this.n = options.n;
+    this.color = parseColorNorm(options.color);
 
     if(options.blend) {
         this.outputBlendMode = blendModes.AVERAGE;
@@ -95,5 +91,22 @@ extend(OnBeatClear, ShaderComponent, {
         this.gl.deleteBuffer(this.vertexBuffer);
     }
 });
+OnBeatClear.ui = {
+    type: "OnBeatClear",
+    disp: "On Beat Clear",
+    schema: {
+        n: {
+            type: "number",
+            title: "Beat Count",
+            default: 1
+        },
+        color: {
+            type: "string",
+            title: "Clear color",
+            format: "color",
+            default: "#FFFFFF"
+        }
+    }
+};
 
 window.Webvs.OnBeatClear = OnBeatClear;

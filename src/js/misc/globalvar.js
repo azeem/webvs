@@ -40,5 +40,35 @@ extend(GlobalVar, Component, {
 		code.perFrame();
 	}
 });
+GlobalVar.ui = {
+    disp: "Global Var",
+    type: "GlobalVar",
+    schema: {
+        code: {
+            type: "object",
+            title: "Code",
+            default: {},
+            properties: {
+                init: {
+                    type: "string",
+                    title: "Init",
+                },
+                onBeat: {
+                    type: "string",
+                    title: "On Beat",
+                },
+                perFrame: {
+                    type: "string",
+                    title: "Per Frame",
+                }
+            },
+        }
+    },
+    form: [
+        { key: "code.init", type: "textarea" },
+        { key: "code.onBeat", type: "textarea" },
+        { key: "code.perFrame", type: "textarea" },
+    ]
+};
 
 window.Webvs.GlobalVar = GlobalVar;
