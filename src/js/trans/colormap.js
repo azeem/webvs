@@ -143,11 +143,11 @@ extend(ColorMap, QuadBoxComponent, {
         return texture;
     }
 });
-/*ColorMap.ui = {
+ColorMap.ui = {
     disp: "Color Map",
     type: "ColorMap",
     schema: {
-        map: {
+        maps: {
             type: "array",
             items: {
                 type: "array",
@@ -186,10 +186,10 @@ extend(ColorMap, QuadBoxComponent, {
         output: {
             type: "string",
             title: "Output blend mode",
-            enum: blendModes,
+            enum: _.keys(blendModes),
             default: "REPLACE"
         }
     }
-};*/
+};
 
 window.Webvs.ColorMap = ColorMap;

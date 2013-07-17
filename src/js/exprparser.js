@@ -107,14 +107,16 @@ extend(ExprCodeGenerator, Object, {
         _.each(glsFuncUsages, function(name) {
             glsl.push(that.glslFuncCode[name]);
         });
+        var preCompute = []; // list of precomputed bindings
         // generate glsl functions
         _.each(glslFuncList, function(name) {
             var ast = that.codeAst[name];
-            var codeString = that._generateGlsl(ast, that.localVars[name]);
+            var codeString = that._generateGlsl(ast, preCompute, that.localVars[name]);
             glsl.push("void " + name + "() {");
             glsl.push(codeString);
             glsl.push("}");
         });
+        inst._preCompute = preCompute;
         // generate noops for missing functions
         _.each(missingGlslFuncList, function(name) {
             glsl.push("void " + name + "() {}");
@@ -155,7 +157,8 @@ extend(ExprCodeGenerator, Object, {
         "bor": 2,
         "bnot": 1,
         "rand": 1,
-        "gettime": 1
+        "gettime": 1,
+        "getosc": 3
     },
 
     jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
@@ -192,14 +195,14 @@ extend(ExprCodeGenerator, Object, {
         }
     },
 
-    _generateGlsl: function(ast, localVars) {
+    _generateGlsl: function(ast, preCompute, localVars) {
         var that = this;
 
         if(ast instanceof AstBinaryExpr) {
-            return "(" + this._generateGlsl(ast.leftOperand) + ast.operator + this._generateGlsl(ast.rightOperand) + ")";
+            return "(" + this._generateGlsl(ast.leftOperand, preCompute) + ast.operator + this._generateGlsl(ast.rightOperand, preCompute) + ")";
         }
         if(ast instanceof AstUnaryExpr) {
-            return "(" + ast.operator + this._generateGlsl(ast.operand) + ")";
+            return "(" + ast.operator + this._generateGlsl(ast.operand, preCompute) + ")";
         }
         if(ast instanceof AstFuncCall) {
             this._checkFunc(ast);
@@ -207,62 +210,76 @@ extend(ExprCodeGenerator, Object, {
                 case "above":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0]),
+                        this._generateGlsl(ast.args[0], preCompute),
                         ">",
-                        this._generateGlsl(ast.args[1]),
+                        this._generateGlsl(ast.args[1], preCompute),
                         "?1.0:0.0)"
                     ].join("");
                 case "below":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0]),
+                        this._generateGlsl(ast.args[0], preCompute),
                         "<",
-                        this._generateGlsl(ast.args[1]),
+                        this._generateGlsl(ast.args[1], preCompute),
                         "?1.0:0.0)"
                     ].join("");
                 case "equal":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0]),
+                        this._generateGlsl(ast.args[0], preCompute),
                         "==",
-                        this._generateGlsl(ast.args[1]),
+                        this._generateGlsl(ast.args[1], preCompute),
                         "?1.0:0.0)"
                     ].join("");
                 case "if":
                     return [
                         "(",
-                        this._generateGlsl(ast.args[0]),
+                        this._generateGlsl(ast.args[0], preCompute),
                         "!=0.0?",
-                        this._generateGlsl(ast.args[1]),
+                        this._generateGlsl(ast.args[1], preCompute),
                         ":",
-                        this._generateGlsl(ast.args[2]),
+                        this._generateGlsl(ast.args[2], preCompute),
                         ")"
                     ].join("");
                 case "sqr":
-                    return "(pow((" + this._generateGlsl(ast.args[0]) + "), 2))";
+                    return "(pow((" + this._generateGlsl(ast.args[0], preCompute) + "), 2))";
                 case "band":
-                    return "(float(("+this._generateGlsl(ast.args[0])+")&&("+this._generateGlsl(ast.args[1])+")))";
+                    return "(float(("+this._generateGlsl(ast.args[0], preCompute)+")&&("+this._generateGlsl(ast.args[1], preCompute)+")))";
                 case "bor":
-                    return "(float(("+this._generateGlsl(ast.args[0])+")||("+this._generateGlsl(ast.args[1])+")))";
+                    return "(float(("+this._generateGlsl(ast.args[0], preCompute)+")||("+this._generateGlsl(ast.args[1], preCompute)+")))";
                 case "bnot":
-                    return "(float(!("+this._generateGlsl(ast.args[0])+")))";
+                    return "(float(!("+this._generateGlsl(ast.args[0], preCompute)+")))";
                 case "invsqrt":
-                    return "(1/sqrt("+this._generateGlsl(ast.args[0])+"))";
+                    return "(1/sqrt("+this._generateGlsl(ast.args[0], preCompute)+"))";
                 case "atan2":
-                    return "(atan(("+this._generateGlsl(ast.args[0])+"),("+this._generateGlsl(ast.args[1])+"))";
+                    return "(atan(("+this._generateGlsl(ast.args[0], preCompute)+"),("+this._generateGlsl(ast.args[1], preCompute)+"))";
+                case "getosc":
+                    var allStatic = _.every(ast.args, function(arg) {
+                        return arg instanceof AstPrimaryExpr;
+                    });
+                    if(!allStatic) {
+                        throw new Error("Non Pre-Computable arguments for getosc in shader code, use variables or constants");
+                    }
+                    var item = [ast.funcName].concat(_.map(ast.args, function(arg) {return arg.value;}));
+                    var pos = _.indexOf(preCompute, item);
+                    if(pos == -1) {
+                        preCompute.push(item);
+                        pos = preCompute.length-1;
+                    }
+                    return "__PC_" +  ast.funcName + "_" + pos;
                 default:
-                    var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg);}).join(",");
+                    var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg, preCompute);}).join(",");
                     return "(" + ast.funcName + "(" + args + "))";
             }
         }
         if(ast instanceof AstAssignment) {
-            return this._generateGlsl(ast.lhs) + "=" + this._generateGlsl(ast.expr);
+            return this._generateGlsl(ast.lhs, preCompute) + "=" + this._generateGlsl(ast.expr, preCompute);
         }
         if(ast instanceof AstProgram) {
             var declarations = _.map(localVars, function(localVar){
                 return "float " + localVar + "=0.0";
             });
-            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt);});
+            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, preCompute);});
             return declarations.concat(stmts).join(";\n")+";";
         }
         if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
@@ -439,6 +456,18 @@ extend(CodeInstance, Object, {
         }
     },
 
+    getosc: function(band, width, channel) {
+        var osc = this._analyser.getWaveform();
+        var pos = Math.floor((band - width/2)*osc.length);
+        var end = Math.floor((band + width/2)*osc.length);
+
+        var sum = 0;
+        for(var i = pos;i <= end;pos++) {
+            sum += osc[i];
+        }
+        return sum/(end-pos+1);
+    },
+
     _locationCache: {},
     _getLocation: function(program, gl, name) {
         var location = this._locationCache[name];
@@ -481,6 +510,24 @@ extend(CodeInstance, Object, {
             var time0 = ((new Date()).getTime()-this._bootTime)/1000;
             gl.uniform1f(this._getLocation(program, gl, "__gettime0"), time0);
         }
+
+        // bind precomputed values
+        _.each(this._preCompute, function(item, index) {
+            var args = _.map(_.last(item, item.length-1), function(arg) {
+                if(_.isString(arg)) {
+                    if(arg.substring(0, 5) == "__REG") {
+                        return this._registerBank[arg];
+                    } else {
+                        return this[arg];
+                    }
+                } else {
+                    return arg;
+                }
+            });
+            var result = this[item[0]].apply(this, args);
+            var uniformName = "__PC_" + item[0] + "_" + index;
+            gl.uniform1f(this._getLocation(program, gl, uniformName), result);
+        });
     },
 
     setup: function(registerBank, bootTime, analyser) {
