@@ -21,7 +21,7 @@ extend(ExprCodeGenerator, Object, {
     _parseSrc: function() {
         // Generate AST and find variables usages in all the expressions
         var codeAst = {};
-        var variables = {};
+        var variables = [];
         var funcUsages = {};
         var registerUsages = [];
         for(var name in this.codeSrc) {
@@ -33,8 +33,7 @@ extend(ExprCodeGenerator, Object, {
                 codeAst[name] = Webvs.PegExprParser.parse(codeSrc);
                 var vars = [];
                 var fu = [];
-                this._getVars(codeAst[name], vars, fu, registerUsages);
-                variables[name] = _.uniq(vars);
+                this._getVars(codeAst[name], variables, fu, registerUsages);
                 funcUsages[name] = _.uniq(fu);
             } catch(e) {
                 throw new Error("Error parsing " + name + "(" + e.line + ":" + e.column + ")" + " : " + e);
@@ -43,29 +42,11 @@ extend(ExprCodeGenerator, Object, {
         this.codeAst = codeAst;
         this.funcUsages = funcUsages;
 
-        // find the variables shared between expressions
-        var sharedVars = [];
-        for(var vName in variables) {
-            for(var vName2 in variables) {
-                if(vName2 == vName) {
-                    continue;
-                }
-                sharedVars = sharedVars.concat(_.intersection(variables[vName], variables[vName2]));
-            }
-        }
-
         // find instance variables
-        this.instanceVars = _.uniq(this.externalVars.concat(sharedVars));
+        this.instanceVars = _.uniq(this.externalVars.concat(variables));
 
         // find register variable usages
         this.registerUsages = _.uniq(registerUsages);
-
-        // find local variables for each expression
-        var localVars = {};
-        for(var varName in variables) {
-            localVars[varName] = _.difference(variables[varName], this.instanceVars, this.registerUsages);
-        }
-        this.localVars = localVars;
     },
 
     generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
@@ -91,7 +72,7 @@ extend(ExprCodeGenerator, Object, {
         // generate javascript functions and assign to code instance
         _.each(jsFuncList, function(name) {
             var ast = that.codeAst[name];
-            var codeString = that._generateJs(ast, that.localVars[name]);
+            var codeString = that._generateJs(ast);
             inst[name] = new Function(codeString);
         });
         // add noops for missing expressions
@@ -112,7 +93,7 @@ extend(ExprCodeGenerator, Object, {
         // generate glsl functions
         _.each(glslFuncList, function(name) {
             var ast = that.codeAst[name];
-            var codeString = that._generateGlsl(ast, preCompute, that.localVars[name]);
+            var codeString = that._generateGlsl(ast, preCompute);
             generatedGlslFuncs.push("void " + name + "() {");
             generatedGlslFuncs.push(codeString);
             generatedGlslFuncs.push("}");
@@ -203,7 +184,7 @@ extend(ExprCodeGenerator, Object, {
         }
     },
 
-    _generateGlsl: function(ast, preCompute, localVars) {
+    _generateGlsl: function(ast, preCompute) {
         var that = this;
 
         if(ast instanceof AstBinaryExpr) {
@@ -285,9 +266,6 @@ extend(ExprCodeGenerator, Object, {
             return this._generateGlsl(ast.lhs, preCompute) + "=" + this._generateGlsl(ast.expr, preCompute);
         }
         if(ast instanceof AstProgram) {
-            var declarations = _.map(localVars, function(localVar){
-                return "float " + localVar + "=0.0";
-            });
             var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, preCompute);});
             return declarations.concat(stmts).join(";\n")+";";
         }
@@ -302,7 +280,7 @@ extend(ExprCodeGenerator, Object, {
         }
     },
 
-    _generateJs: function(ast, localVars) {
+    _generateJs: function(ast) {
         var prefix;
         var that = this;
 
@@ -312,7 +290,6 @@ extend(ExprCodeGenerator, Object, {
         if(ast instanceof AstUnaryExpr) {
             return "(" + ast.operator + this._generateJs(ast.operand) + ")";
         }
-
         if(ast instanceof AstFuncCall) {
             this._checkFunc(ast);
             switch(ast.funcName) {
@@ -376,11 +353,8 @@ extend(ExprCodeGenerator, Object, {
             return this._generateJs(ast.lhs) + "=" + this._generateJs(ast.expr);
         }
         if(ast instanceof AstProgram) {
-            var declarations = _.map(localVars, function(localVar){
-                return "var " + localVar + "=0";
-            });
             var stmts = _.map(ast.statements, function(stmt) {return that._generateJs(stmt);});
-            return declarations.concat(stmts).join(";\n");
+            return stmts.join(";\n");
         }
         if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
             return ast.value.toString();
@@ -389,10 +363,7 @@ extend(ExprCodeGenerator, Object, {
             return this._translateConstants(ast.value).toString();
         }
         if(ast instanceof AstPrimaryExpr && ast.type === "ID") {
-            if(_.contains(this.instanceVars, ast.value)) {
-                return "this." + ast.value;
-            }
-            return ast.value;
+            return "this." + ast.value;
         }
         if(ast instanceof AstPrimaryExpr && ast.type === "REG") {
             return "this._registerBank[\"" + ast.value + "\"]";
