@@ -108,15 +108,22 @@ extend(ExprCodeGenerator, Object, {
             glsl.push(that.glslFuncCode[name]);
         });
         var preCompute = []; // list of precomputed bindings
+        var generatedGlslFuncs = [];
         // generate glsl functions
         _.each(glslFuncList, function(name) {
             var ast = that.codeAst[name];
             var codeString = that._generateGlsl(ast, preCompute, that.localVars[name]);
-            glsl.push("void " + name + "() {");
-            glsl.push(codeString);
-            glsl.push("}");
+            generatedGlslFuncs.push("void " + name + "() {");
+            generatedGlslFuncs.push(codeString);
+            generatedGlslFuncs.push("}");
         });
+        // add the uniform declarations for precomputed functions
+        glsl = glsl.concat(_.map(preCompute, function(item) {
+            return "uniform float " + item[1] + ";";
+        }));
+        glsl = glsl.concat(generatedGlslFuncs);
         inst._preCompute = preCompute;
+
         // generate noops for missing functions
         _.each(missingGlslFuncList, function(name) {
             glsl.push("void " + name + "() {}");
@@ -144,6 +151,7 @@ extend(ExprCodeGenerator, Object, {
         "invsqrt": 1,
         "floor" : 1,
         "ceil" : 1,
+        "abs": 1,
         "if": 3,
         "sin": 1,
         "cos": 1,
@@ -161,7 +169,7 @@ extend(ExprCodeGenerator, Object, {
         "getosc": 3
     },
 
-    jsMathFuncs: ["sin", "cos", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
+    jsMathFuncs: ["sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
 
     glslFuncCode: {
         "rand": [
@@ -260,13 +268,14 @@ extend(ExprCodeGenerator, Object, {
                     if(!allStatic) {
                         throw new Error("Non Pre-Computable arguments for getosc in shader code, use variables or constants");
                     }
-                    var item = [ast.funcName].concat(_.map(ast.args, function(arg) {return arg.value;}));
+                    var uniformName = "__PC_" +  ast.funcName + "_" + pos;
+                    var item = [ast.funcName, uniformName].concat(_.map(ast.args, function(arg) {return arg.value;}));
                     var pos = _.indexOf(preCompute, item);
                     if(pos == -1) {
                         preCompute.push(item);
                         pos = preCompute.length-1;
                     }
-                    return "__PC_" +  ast.funcName + "_" + pos;
+                    return uniformName;
                 default:
                     var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg, preCompute);}).join(",");
                     return "(" + ast.funcName + "(" + args + "))";
@@ -462,7 +471,7 @@ extend(CodeInstance, Object, {
         var end = Math.floor((band + width/2)*osc.length);
 
         var sum = 0;
-        for(var i = pos;i <= end;pos++) {
+        for(var i = pos;i <= end;i++) {
             sum += osc[i];
         }
         return sum/(end-pos+1);
@@ -513,7 +522,7 @@ extend(CodeInstance, Object, {
 
         // bind precomputed values
         _.each(this._preCompute, function(item, index) {
-            var args = _.map(_.last(item, item.length-1), function(arg) {
+            var args = _.map(_.last(item, item.length-2), function(arg) {
                 if(_.isString(arg)) {
                     if(arg.substring(0, 5) == "__REG") {
                         return this._registerBank[arg];
@@ -525,8 +534,7 @@ extend(CodeInstance, Object, {
                 }
             });
             var result = this[item[0]].apply(this, args);
-            var uniformName = "__PC_" + item[0] + "_" + index;
-            gl.uniform1f(this._getLocation(program, gl, uniformName), result);
+            gl.uniform1f(this._getLocation(program, gl, item[1]), result);
         });
     },
 

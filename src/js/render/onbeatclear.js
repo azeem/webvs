@@ -37,7 +37,7 @@ function OnBeatClear(options) {
         "}"
     ].join("\n");
 
-    OnBeatClear.super.constructor.call(this, vertexSrc);
+    OnBeatClear.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
 extend(OnBeatClear, ShaderComponent, {
     componentName: "OnBeatClear",
