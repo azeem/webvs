@@ -49,9 +49,13 @@ function Convolution(options) {
     var mid = Math.floor(kernelSize/2);
     for(i = 0;i < kernelSize;i++) {
         for(j = 0;j < kernelSize;j++) {
+            var value = kernel[(i*kernelSize+j)];
+            if(value === 0) {
+                continue;
+            }
             colorSumEq.push("pos = v_position + onePixel * vec2("+(i-mid)+","+(j-mid)+");");
             colorSumEq.push(edgeFunc);
-            colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+glslFloatRepr(kernel[(i*kernelSize+j)])+";");
+            colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+glslFloatRepr(value)+";");
         }
     }
 

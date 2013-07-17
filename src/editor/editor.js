@@ -21,21 +21,6 @@ var unknownUi = {
     ]
 };
 
-var samplePreset2 = {
-    components: {
-        type: "EffectList",
-        components: [
-            {
-                type: "SuperScope",
-                code: {
-                    init: "dx=8;n=sqr(dx);id=2/dx;id1=1/(dx-1);",
-                    onBeat: ""
-                }
-            }
-        ]
-    }
-};
-
 var samplePreset = {
     "name" : "Silk Strings",
     "author" : "Steven Wittens / UnConeD (http://acko.net)",
@@ -272,6 +257,8 @@ function generateAndLoadPreset() {
         $("#load-status").removeClass("fail");
     } catch(e) {
         $("#load-status").addClass("fail");
+        console.dir(preset);
+        console.trace();
         console.log("Error loading preset " + e);
     }
 }
@@ -378,6 +365,8 @@ function playPause() {
             });
             $(this).text("Pause");
             dancer.play();
+        } else {
+            $(this).text("Play");
         }
     }
 }
