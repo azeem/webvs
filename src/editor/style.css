@@ -138,7 +138,11 @@ select {
 
 #main-window .right-pane textarea {
     width: 90% !important; /* Important because jsonform uses inline styles for width and height */
-    height: 100px !important;
+    height: 150px !important;
+    font-size: 95%;
+    line-height:1.4em;
+    white-space: nowrap;
+    overflow: auto;
 }
 
 #search-result {

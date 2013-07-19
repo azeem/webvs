@@ -201,7 +201,9 @@ var blendModes = {
     REPLACE: 1,
     MAXIMUM: 2,
     AVERAGE: 3,
-    ADDITIVE: 4
+    ADDITIVE: 4,
+    SUBTRACTIVE1: 5,
+    SUBTRACTIVE2: 6
 };
 
 function setBlendMode(gl, mode) {
@@ -255,6 +257,12 @@ function ShaderComponent(vertexSrc, fragmentSrc) {
                 break;
             case blendModes.ADDITIVE:
                 blendEq = "clamp(color+texture2D(u_srcTexture, v_position), vec4(0,0,0,0), vec4(1,1,1,1))";
+                break;
+            case blendModes.SUBTRACTIVE1:
+                blendEq = "clamp(color-texture2D(u_srcTexture, v_position), vec4(0,0,0,0), vec4(1,1,1,1))";
+                break;
+            case blendModes.SUBTRACTIVE2:
+                blendEq = "clamp(texture2D(u_srcTexture, v_position)-color, vec4(0,0,0,0), vec4(1,1,1,1))";
                 break;
             default:
                 throw new Error("Blend Mode "+this.outputBlendMode+" not supported");

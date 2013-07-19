@@ -34,7 +34,7 @@ extend(ExprCodeGenerator, Object, {
                 var vars = [];
                 var fu = [];
                 this._getVars(codeAst[name], variables, fu, registerUsages);
-                funcUsages[name] = _.uniq(fu);
+                funcUsages[name] = fu;
             } catch(e) {
                 throw new Error("Error parsing " + name + "(" + e.line + ":" + e.column + ")" + " : " + e);
             }
@@ -73,6 +73,7 @@ extend(ExprCodeGenerator, Object, {
         _.each(jsFuncList, function(name) {
             var ast = that.codeAst[name];
             var codeString = that._generateJs(ast);
+            console.log(codeString);
             inst[name] = new Function(codeString);
         });
         // add noops for missing expressions
@@ -82,11 +83,17 @@ extend(ExprCodeGenerator, Object, {
 
         var glslFuncList = _.intersection(_.keys(this.codeAst), glslFuncs);
         var missingGlslFuncList = _.difference(glslFuncs, glslFuncList);
-        var glsFuncUsages = _.uniq(_.flatMap(glslFuncList, function(name) { return that.funcUsages[name]; }));
+        var glsFuncUsages = _.uniq(
+            _.flatMap(glslFuncList, function(name) { return that.funcUsages[name]; })
+        );
 
         // include required functions in glsl
-        _.each(glsFuncUsages, function(name) {
-            glsl.push(that.glslFuncCode[name]);
+        _.each(glsFuncUsages, function(usage) {
+            var code = that.glslFuncCode[usage.name];
+            if(!code) {
+                return;
+            }
+            glsl.push(code);
         });
         var preCompute = []; // list of precomputed bindings
         var generatedGlslFuncs = [];
@@ -147,7 +154,8 @@ extend(ExprCodeGenerator, Object, {
         "bnot": 1,
         "rand": 1,
         "gettime": 1,
-        "getosc": 3
+        "getosc": 3,
+        "select": {min: 2}
     },
 
     jsMathFuncs: ["sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
@@ -171,7 +179,7 @@ extend(ExprCodeGenerator, Object, {
             "   }",
             "   return time;",
             "}"
-        ],
+        ].join("\n")
     },
 
     _checkFunc: function(ast) {
@@ -179,8 +187,14 @@ extend(ExprCodeGenerator, Object, {
         if(requiredArgLength === undefined) {
             throw Error("Unknown function " + ast.funcName);
         }
-        if(ast.args.length != requiredArgLength) {
-            throw Error(ast.funcName + " accepts " + requiredArgLength + " arguments");
+        if(_.isNumber(requiredArgLength)) {
+            if(ast.args.length != requiredArgLength) {
+                throw Error(ast.funcName + " accepts " + requiredArgLength + " arguments");
+            }
+        } else if(requiredArgLength.min) {
+            if(ast.args.length < requiredArgLength.min) {
+                throw Error(ast.funcName + " accepts atleast " + requiredArgLength.min + " arguments");
+            }
         }
     },
 
@@ -230,6 +244,21 @@ extend(ExprCodeGenerator, Object, {
                         this._generateGlsl(ast.args[2], preCompute),
                         ")"
                     ].join("");
+                case "select":
+                    var selectExpr = this._generateGlsl(ast.args[0], preCompute);
+                    var generateSelect = function(args, i) {
+                        if(args.length == 1) {
+                            return that._generateGlsl(args[0], preCompute);
+                        }
+                        else {
+                            return [
+                                "(("+selectExpr+" === "+i+")?",
+                                "("+that._generateGlsl(args[0], preCompute)+"):",
+                                "("+generateSelect(_.last(args, args.length-1), i+1)+"))"
+                            ].join("");
+                        }
+                    };
+                    return generateSelect(_.last(ast.args, ast.args.length-1), 0);
                 case "sqr":
                     return "(pow((" + this._generateGlsl(ast.args[0], preCompute) + "), 2))";
                 case "band":
@@ -259,7 +288,11 @@ extend(ExprCodeGenerator, Object, {
                     return uniformName;
                 default:
                     var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg, preCompute);}).join(",");
-                    return "(" + ast.funcName + "(" + args + "))";
+                    var funcName = ast.funcName;
+                    if(_.contains(this.varArgFuncs, ast.funcName)) {
+                        funcName += ast.args.length;
+                    }
+                    return "(" + funcName + "(" + args + "))";
             }
         }
         if(ast instanceof AstAssignment) {
@@ -327,6 +360,15 @@ extend(ExprCodeGenerator, Object, {
                         this._generateJs(ast.args[2]),
                         ")"
                     ].join("");
+                case "select":
+                    var code = ["((function() {"];
+                    code.push("switch("+this._generateJs(ast.args[0])+") {");
+                    _.each(_.last(ast.args, ast.args.length-1), function(arg, i) {
+                        code.push("case "+i+": return "+this._generateJs(arg)+";");
+                    }, this);
+                    code.push("default : throw new Error('Unknown selector value in select');");
+                    code.push("}}).call(this))");
+                    return code.join("");
                 case "sqr":
                     return "(Math.pow((" + this._generateJs(ast.args[0]) + "),2))";
                 case "band":
