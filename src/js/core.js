@@ -212,6 +212,14 @@ function setBlendMode(gl, mode) {
             gl.blendFunc(gl.ONE, gl.ONE);
             gl.blendEquation(gl.FUNC_ADD);
             break;
+        case blendModes.SUBTRACTIVE1:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.FUNC_SUBTRACT);
+            break;
+        case blendModes.SUBTRACTIVE2:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+            break;
         case blendModes.AVERAGE:
             gl.blendColor(0.5, 0.5, 0.5, 1);
             gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
@@ -299,7 +307,7 @@ extend(ShaderComponent, Component, {
     forceShaderBlend: false,
     varyingPos: false,
     copyOnSwap: false,
-    glBlendModes: [blendModes.REPLACE, blendModes.AVERAGE, blendModes.ADDITIVE],
+    glBlendModes: [blendModes.REPLACE, blendModes.AVERAGE, blendModes.ADDITIVE, blendModes.SUBTRACTIVE1, blendModes.SUBTRACTIVE2],
 
     initComponent: function(gl, resolution, analyser, registerBank) {
         ShaderComponent.super.initComponent.call(this, gl, resolution, analyser, registerBank);

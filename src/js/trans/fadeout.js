@@ -8,18 +8,10 @@ function FadeOut(options) {
         speed: 1,
         color: "#FFFFFF"
     });
-    this.speed = options.speed;
     this.color = parseColorNorm(options.color);
 
     this.frameCount = 0;
     this.maxFrameCount = Math.floor(1/this.speed);
-
-    var vertexSrc = [
-        "attribute vec2 a_position;",
-        "void main() {",
-        "   setPosition(a_position);",
-        "}"
-    ].join("\n");
 
     var fragmentSrc = [
         "uniform vec3 u_color;",
@@ -28,31 +20,16 @@ function FadeOut(options) {
         "}"
     ].join("\n");
 
-    FadeOut.super.constructor.call(this, vertexSrc, fragmentSrc);
+    FadeOut.super.constructor.call(this, fragmentSrc);
 }
-extend(FadeOut, ShaderComponent, {
+extend(FadeOut, QuadBoxComponent, {
     componentName: "FadeOut",
     outputBlendMode: blendModes.AVERAGE,
 
     init: function() {
         var gl = this.gl;
-
-        this.vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(
-            gl.ARRAY_BUFFER,
-            new Float32Array([
-                -1,  -1,
-                1,  -1,
-                -1,  1,
-                -1,  1,
-                1,  -1,
-                1,  1
-            ]),
-            gl.STATIC_DRAW
-        );
-
         this.colorLocation = gl.getUniformLocation(this.program, "u_color");
+        FadeOut.super.init.apply(this, arguments);
     },
 
     update: function() {
@@ -60,18 +37,9 @@ extend(FadeOut, ShaderComponent, {
         this.frameCount++;
         if(this.frameCount == this.maxFrameCount) {
             this.frameCount = 0;
-            gl.uniform3fv(this.colorLocation, this.color);
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-            gl.enableVertexAttribArray(this.positionLocation);
-            gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            FadeOut.super.update.apply(this, arguments);
         }
     },
-
-    destroyComponent: function() {
-        FadeOut.super.destroyComponent.call(this);
-        this.gl.deleteBuffer(this.vertexBuffer);
-    }
 });
 FadeOut.ui = {
     type: "FadeOut",

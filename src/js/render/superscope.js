@@ -128,12 +128,18 @@ extend(SuperScope, ShaderComponent, {
             code.perPoint();
             pointBufferData[pbi++] = code.x;
             pointBufferData[pbi++] = code.y*-1;
-            colorData[cdi++] = code.red;
-            colorData[cdi++] = code.green;
-            colorData[cdi++] = code.blue;
             if(i !== 0 && i != nPoints-1 && !this.dots) {
                 pointBufferData[pbi++] = code.x;
                 pointBufferData[pbi++] = code.y*-1;
+            }
+            if(this.dots) {
+                colorData[cdi++] = code.red;
+                colorData[cdi++] = code.green;
+                colorData[cdi++] = code.blue;
+            } else if(i !== 0) {
+                colorData[cdi++] = code.red;
+                colorData[cdi++] = code.green;
+                colorData[cdi++] = code.blue;
                 colorData[cdi++] = code.red;
                 colorData[cdi++] = code.green;
                 colorData[cdi++] = code.blue;

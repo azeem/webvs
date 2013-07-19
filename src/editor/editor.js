@@ -25,15 +25,21 @@ var samplePreset = {
     name : "Silk Strings",
     author : "Steven Wittens / UnConeD (http://acko.net)",
     clearFrame : false,
-
     components: [
         {
-            type: "OnBeatClear",
-            n: 1,
-            color: "#FFFFFF"
+            "type": "ColorMap",
+            "output": "REPLACE",
+            "maps": [
+                [
+                    {color: "#FFFFFF", index:52},
+                    {color: "#0FA7F0", index:130},
+                    {color: "#000000", index:255}
+                ]
+            ]
         },
         {
             type: "EffectList",
+            clearFrame: true,
             components: [
                 {
                     type: "SuperScope",
@@ -120,7 +126,18 @@ var samplePreset = {
                             "blue=x1*2;"
                         ].join("\n")
                     }
-                }
+                },
+                {
+                    "type": "Convolution",
+                    "scale": 8,
+                    "kernel": [
+                        0, 0, 1, 0, 0,
+                        0, 2, 4, 2, 0,
+                        1, 4, 2, 4, 1,
+                        0, 2, 4, 2, 0,
+                        0, 0, 1, 0, 0
+                    ]
+                },
             ]
         }
     ]
