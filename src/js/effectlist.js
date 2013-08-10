@@ -53,13 +53,18 @@ function EffectList(options) {
         output: "REPLACE",
         input: "IGNORE",
         clearFrame: false,
+        enableOnBeat: false,
+        enableOnBeatFor: 1
     });
 
     this._constructComponent(options.components);
     this.output = blendModes[options.output];
     this.input = options.input=="IGNORE"?-1:blendModes[options.input];
     this.clearFrame = options.clearFrame;
+    this.enableOnBeat = options.enableOnBeat;
+    this.enableOnBeatFor = options.enableOnBeatFor;
     this.first = true;
+    this._frameCounter = 0;
 
     EffectList.super.constructor.call(this);
 }
@@ -142,6 +147,19 @@ extend(EffectList, Component, {
     updateComponent: function(inputTexture) {
         EffectList.super.updateComponent.call(this, inputTexture);
         var gl = this.gl;
+
+        if(this.enableOnBeat) {
+            if(this.analyser.beat) {
+                this._frameCounter = this.enableOnBeatFor;
+            } else if(this._frameCounter > 0) {
+                this._frameCounter--;
+            }
+
+            // only enable for enableOnBeatFor # of frames
+            if(this._frameCounter === 0) {
+                return;
+            }
+        }
 
         // save the current framebuffer
         var targetFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
@@ -256,6 +274,16 @@ EffectList.ui = {
             title: "Clear Frame",
             default: false,
             required: true
+        },
+        enableOnBeat: {
+            type: "boolean",
+            title: "Enable on beat",
+            default: false,
+        },
+        enableOnBeatFor: {
+            type: "number",
+            title: "Enable on beat for frames",
+            default: 1
         },
         output: {
             type: "string",

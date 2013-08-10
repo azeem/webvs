@@ -133,5 +133,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-karma");
 
     grunt.registerTask('default', ['jshint', 'peg', 'concat', 'copy:dev', "preprocess:dev"]);
+    grunt.registerTask("w", ["default", "watch"]);
     grunt.registerTask("dist", ["default", "uglify:dist", "copy:dist", "preprocess:dist"]);
 };
