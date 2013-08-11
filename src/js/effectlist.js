@@ -131,16 +131,16 @@ extend(EffectList, Component, {
     },
 
     _updateSubComponent: function(component) {
+        var inputTexture = this._getCurrentTextrue();
         if(component.swapFrame) {
-            var oldTexture = this._getCurrentTextrue();
             this._swapFBAttachment();
             if(component.copyOnSwap) {
-                this.copyComponent.setCopy(oldTexture);
+                this.copyComponent.setCopy(inputTexture);
                 this._updateSubComponent(this.copyComponent);
             }
-            component.updateComponent(oldTexture);
+            component.updateComponent(inputTexture);
         } else {
-            component.updateComponent();
+            component.updateComponent(inputTexture);
         }
     },
 
