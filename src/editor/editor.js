@@ -21,11 +21,59 @@ var unknownUi = {
     ]
 };
 
+var samplePreset2 = {
+    name: "Blend Test",
+    clearFrame: false,
+    components: [
+        {
+            type: "ClearScreen",
+            color: "#FF0000",
+        },
+        {
+            type: "EffectList",
+            clearFrame: true,
+            output: "SUBTRACTIVE1",
+            components: [
+                {
+                    type: "SuperScope",
+                    code: {
+                        perPoint: "x=i;y=i;"
+                    }
+                }
+            ]
+        }
+    ]
+};
+
 var samplePreset = {
-    name : "Silk Strings",
+    name : "Jello Cube",
     author : "Steven Wittens / UnConeD (http://acko.net)",
     clearFrame : false,
     components: [
+        {
+            type: "EffectList",
+            clearFrame: false,
+            components: [
+                {
+                    type: "DynamicMovement",
+                    code: {
+                        perPixel: "d=sin(d*(1+d*sin(r*150)*.15))*.5+d*.5;r=r+.01;"
+                    }
+                },
+                {
+                    type: "EffectList",
+                    enableOnBeat: true,
+                    enableOnBeatFor: 1,
+                    output: "MAXIMUM",
+                    components: [
+                        {
+                            type: "BufferSave",
+                            action: "RESTORE"
+                        }
+                    ]
+                },
+            ]
+        },
         {
             "type": "ColorMap",
             "output": "REPLACE",
@@ -40,6 +88,7 @@ var samplePreset = {
         {
             type: "EffectList",
             clearFrame: true,
+            output: "SUBTRACTIVE1",
             components: [
                 {
                     type: "SuperScope",
@@ -138,6 +187,10 @@ var samplePreset = {
                         0, 0, 1, 0, 0
                     ]
                 },
+                {
+                    type: "BufferSave",
+                    action: "SAVE"
+                }
             ]
         }
     ]

@@ -29,7 +29,7 @@ function Webvs(options) {
 extend(Webvs, Object, {
     _initGl: function() {
         try {
-            this.gl = this.canvas.getContext("experimental-webgl");
+            this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
             this.resolution = {
                 width: this.canvas.width,
                 height: this.canvas.height
@@ -261,16 +261,16 @@ function ShaderComponent(vertexSrc, fragmentSrc) {
                 blendEq = "max(color, texture2D(u_srcTexture, v_position))";
                 break;
             case blendModes.AVERAGE:
-                blendEq = "((color+texture2D(u_srcTexture, v_position))/2.0)";
+                blendEq = "(color+texture2D(u_srcTexture, v_position))/2.0";
                 break;
             case blendModes.ADDITIVE:
-                blendEq = "clamp(color+texture2D(u_srcTexture, v_position), vec4(0,0,0,0), vec4(1,1,1,1))";
+                blendEq = "color+texture2D(u_srcTexture, v_position)";
                 break;
             case blendModes.SUBTRACTIVE1:
-                blendEq = "clamp(color-texture2D(u_srcTexture, v_position), vec4(0,0,0,0), vec4(1,1,1,1))";
+                blendEq = "texture2D(u_srcTexture, v_position)-color";
                 break;
             case blendModes.SUBTRACTIVE2:
-                blendEq = "clamp(texture2D(u_srcTexture, v_position)-color, vec4(0,0,0,0), vec4(1,1,1,1))";
+                blendEq = "color-texture2D(u_srcTexture, v_position)";
                 break;
             default:
                 throw new Error("Blend Mode "+this.outputBlendMode+" not supported");

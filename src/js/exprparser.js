@@ -73,7 +73,6 @@ extend(ExprCodeGenerator, Object, {
         _.each(jsFuncList, function(name) {
             var ast = that.codeAst[name];
             var codeString = that._generateJs(ast);
-            console.log(codeString);
             inst[name] = new Function(codeString);
         });
         // add noops for missing expressions
@@ -300,7 +299,7 @@ extend(ExprCodeGenerator, Object, {
         }
         if(ast instanceof AstProgram) {
             var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, preCompute);});
-            return declarations.concat(stmts).join(";\n")+";";
+            return stmts.join(";\n")+";";
         }
         if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
             return glslFloatRepr(ast.value);

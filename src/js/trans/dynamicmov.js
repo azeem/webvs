@@ -62,7 +62,7 @@ function DynamicMovement(options) {
         "   perPixel();",
         polarToRect,
         "   v_newPoint = vec2(x,-y);",
-        "   setPosition(vec4(a_position, 0, 1));",
+        "   setPosition(a_position);",
         "}"
     ].join("\n");
 
@@ -83,7 +83,7 @@ extend(DynamicMovement, ShaderComponent, {
     init: function() {
         var gl = this.gl;
 
-        this.code.initRegisterBank(this.registerBank);
+        this.code.setup(this.registerBank, this.bootTime, this.analyser);
         this.code.w = this.resolution.width;
         this.code.h = this.resolution.height;
 
