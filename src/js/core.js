@@ -214,11 +214,11 @@ function setBlendMode(gl, mode) {
             break;
         case blendModes.SUBTRACTIVE1:
             gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_SUBTRACT);
+            gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
             break;
         case blendModes.SUBTRACTIVE2:
             gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+            gl.blendEquation(gl.FUNC_SUBTRACT);
             break;
         case blendModes.AVERAGE:
             gl.blendColor(0.5, 0.5, 0.5, 1);
@@ -293,6 +293,9 @@ function ShaderComponent(vertexSrc, fragmentSrc) {
 
     // insert srctexture uniform variable and macros
     if(this.swapFrame) {
+        vertexExtraSrc.push("uniform sampler2D u_srcTexture;");
+        vertexExtraSrc.push("#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))");
+
         fragmentExtraSrc.push("uniform sampler2D u_srcTexture;");
         fragmentExtraSrc.push("#define getSrcColor() (texture2D(u_srcTexture, v_position))");
         fragmentExtraSrc.push("#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))");
