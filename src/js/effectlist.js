@@ -71,7 +71,7 @@ function EffectList(options) {
 extend(EffectList, Component, {
     componentName: "EffectList",
 
-    swapFrame: true,
+    swapFrame: false,
 
     _constructComponent: function(optList) {
         var components = [];
@@ -124,7 +124,7 @@ extend(EffectList, Component, {
         // forceShaderBlend here becuase effectlist is swapFrame and 
         // output texture has different content than inputtexture 
         // hence gl blend modes wont work
-        this.outCopyComponent = new Copy(this.output, true); 
+        this.outCopyComponent = new Copy(this.output); 
         this.outCopyComponent.initComponent.apply(this.outCopyComponent, arguments);
 
         return D.all(initPromises);
