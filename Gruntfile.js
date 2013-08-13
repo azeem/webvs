@@ -7,6 +7,26 @@
  */
 
 module.exports = function(grunt) {
+    var jsFiles = [
+        "src/utils.js",
+        "src/core.js",
+        "src/exprparser.js",
+        "build/pegs_expr_parser.js",
+        "src/effectlist.js",
+        "src/dancer_adapter.js",
+        "src/misc/*.js",
+        "src/render/*.js",
+        "src/trans/*.js"
+    ];
+
+    var libFiles = [
+        "bower_components/underscore/underscore.js",
+        "bower_components/D.js/lib/D.js",
+        "bower_components/dancer.js/lib/fft.js",
+        "bower_components/dancer.js/dancer.js",
+        "bower_components/stats.js/src/Stats.js"
+    ];
+
     grunt.initConfig({
         jshint: {
             files: ["Gruntfile.js", "src/**/*.js"],
@@ -37,102 +57,47 @@ module.exports = function(grunt) {
             }
         },
 
-        concat: {
-            webvs: {
-                src: [
-                    "src/js/utils.js",
-                    "src/js/core.js",
-                    "src/js/exprparser.js",
-                    "build/pegs_expr_parser.js",
-                    "src/js/effectlist.js",
-                    "src/js/dancer_adapter.js",
-                    "src/js/misc/*.js",
-                    "src/js/render/*.js",
-                    "src/js/trans/*.js"
-                ],
-                dest: "build/webvs.js",
-                options: {
-                    stripBanners: true,
-                    banner: "(function() {\n",
-                    footer: "\n})();"
-                }
-            }
-        },
-
-        copy: {
-            dev: {
-                files:[
-                    {expand: true, flatten:true, cwd: "src/", src: ["demo/**.!(html)"], dest: "build/"},
-                    {expand: true, flatten:true, cwd: "src/", src: ["editor/**.!(html)"], dest: "build/"},
-                ]
-            },
-            dist: {
-                files: [
-                    {expand: true, flatten:true, cwd: "src/", src: ["demo/**.!(html|js)"], dest: "dist/"},
-                    {expand: true, flatten:true, cwd: "src/", src: ["editor/**.!(html|js)"], dest: "dist/"},
-                    {expand: true, flatten:false, cwd: "lib/", src: ["./**", "!./**/*.js"], dest: "dist/"},
-                ]
-            }
-        },
-
         watch: {
             scripts: {
-                files: ["src/**/*.js", "!src/**/*.test.js", "src/**/*.pegjs", "src/**/*.css", "src/**/*.html"],
+                files: ["src/**/*.js"],
                 tasks: ["default"]
             }
-//            karma: {
-//                files: ["src/**/*.js", "src/**/*.pegs"],
-//                tasks: ['karma:unit:run']
-//            }
+        },
+
+        concat: {
+            dev: {
+                files: {
+                    "build/webvs.js": jsFiles,
+                    "build/libs.js": libFiles
+                }
+            }
         },
 
         uglify: {
             dist: {
                 files: {
-                    "dist/demo.min.js": "build/demo.js",
-                    "dist/editor.min.js": "build/editor.js",
-                    "dist/webvs.min.js": "build/webvs.js",
-                    "dist/libs.min.js": ["lib/underscore.js", "lib/*.js", "lib/**/*.js"]
+                    "dist/webvs.min.js": jsFiles,
+                    "dist/libs.min.js": libFiles,
+                    "dist/webvs.full.min.js": libFiles.concat(jsFiles)
                 }
             }
         },
 
-        preprocess: {
-            dev: {
-                options: {
-                    context: {
-                        mode: "dev"
-                    }
-                },
-                files: {
-                    "build/demo.html": "src/demo/index.html",
-                    "build/editor.html": "src/editor/index.html"
-                }
-            },
-            dist: {
-                options: {
-                    context: {
-                        mode: "dist"
-                    }
-                },
-                files: {
-                    "dist/demo.html": "src/demo/index.html",
-                    "dist/index.html": "src/editor/index.html"
-                }
-            }
+        clean: {
+            dev: ["build/*"],
+            dist: ["dist/*"]
         }
     });
 
     grunt.loadNpmTasks("grunt-contrib-jshint");
-    grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-watch");
-    grunt.loadNpmTasks("grunt-contrib-copy");
     grunt.loadNpmTasks("grunt-contrib-uglify");
-    grunt.loadNpmTasks("grunt-preprocess");
+    grunt.loadNpmTasks("grunt-contrib-clean");
+    grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-peg");
     grunt.loadNpmTasks("grunt-karma");
 
-    grunt.registerTask('default', ['jshint', 'peg', 'concat', 'copy:dev', "preprocess:dev"]);
+    grunt.registerTask('default', ['clean:dev', 'jshint', 'peg', 'concat:dev']);
     grunt.registerTask("w", ["default", "watch"]);
-    grunt.registerTask("dist", ["default", "uglify:dist", "copy:dist", "preprocess:dist"]);
+    grunt.registerTask('dist', ['clean:dist', 'jshint', 'peg', 'uglify:dist']);
 };
