@@ -3,6 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
 /**
  * Special component that copies texture to target.
  * Also blends in additional texture if provided
@@ -19,7 +20,9 @@ function Copy(blendMode, forceShaderBlend) {
     this.forceShaderBlend = forceShaderBlend?true:false;
     Copy.super.constructor.call(this, fragmentSrc);
 }
-extend(Copy, QuadBoxComponent, {
+Webvs.Copy = Copy;
+Copy.prototype = Object.create(QuadBoxComponent.prototype);
+_.extend(Copy.prototype, {
     componentName: "Copy",
 
     setCopy: function(copySource) {
@@ -68,7 +71,9 @@ function EffectList(options) {
 
     EffectList.super.constructor.call(this);
 }
-extend(EffectList, Component, {
+Webvs.EffectList = EffectList;
+EffectList.prototype = Object.create(Component.prototype);
+_.extend(EffectList.prototype, {
     componentName: "EffectList",
 
     swapFrame: false,
