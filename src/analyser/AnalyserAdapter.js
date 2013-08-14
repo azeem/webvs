@@ -11,8 +11,7 @@
  * @constructor
  */
 function AnalyserAdapter() {}
-Webvs.AnalyserAdapter = AnalyserAdapter;
-_.extend(AnalyserAdapter.prototype, Object, {
+Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
     /**
      * boolean value indicating whether a beat
      * is in progress or not

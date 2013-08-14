@@ -20,9 +20,7 @@ function Copy(blendMode, forceShaderBlend) {
     this.forceShaderBlend = forceShaderBlend?true:false;
     Copy.super.constructor.call(this, fragmentSrc);
 }
-Webvs.Copy = Copy;
-Copy.prototype = Object.create(QuadBoxComponent.prototype);
-_.extend(Copy.prototype, {
+Webvs.Copy = Webvs.defineClass(Copy, Webvs.QuadBoxComponent, {
     componentName: "Copy",
 
     setCopy: function(copySource) {
@@ -71,9 +69,7 @@ function EffectList(options) {
 
     EffectList.super.constructor.call(this);
 }
-Webvs.EffectList = EffectList;
-EffectList.prototype = Object.create(Component.prototype);
-_.extend(EffectList.prototype, {
+Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     componentName: "EffectList",
 
     swapFrame: false,
@@ -305,4 +301,4 @@ EffectList.ui = {
     }
 };
 
-window.Webvs.EffectList = EffectList;
+})(Webvs);

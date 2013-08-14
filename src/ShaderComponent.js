@@ -5,6 +5,29 @@
 
 (function(Webvs) {
 
+function setBlendMode(gl, mode) {
+    switch(mode) {
+        case blendModes.ADDITIVE:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.FUNC_ADD);
+            break;
+        case blendModes.SUBTRACTIVE1:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+            break;
+        case blendModes.SUBTRACTIVE2:
+            gl.blendFunc(gl.ONE, gl.ONE);
+            gl.blendEquation(gl.FUNC_SUBTRACT);
+            break;
+        case blendModes.AVERAGE:
+            gl.blendColor(0.5, 0.5, 0.5, 1);
+            gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
+            gl.blendEquation(gl.FUNC_ADD);
+            break;
+        default: throw new Error("Invalid blend mode");
+    }
+}
+
 /**
  * ShaderComponent base class. Any Component that
  * has shader code, extends from this. A uniform containing
@@ -80,9 +103,7 @@ function ShaderComponent(vertexSrc, fragmentSrc) {
     this.fragmentSrc = fragmentExtraSrc.join("\n") + "\n" + fragmentSrc;
     this.vertexSrc = vertexExtraSrc.join("\n") + "\n" + vertexSrc;
 }
-Webvs.ShaderComponent = ShaderComponent;
-ShaderComponent.prototype = Object.create(Component.prototype);
-_.extend(ShaderComponent.prototype, {
+Webvs.ShaderComponent = Webvs.defineClass(ShaderComponent, Webvs.Component, {
     swapFrame: false,
     outputBlendMode: blendModes.REPLACE,
     forceShaderBlend: false,

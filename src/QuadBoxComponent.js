@@ -20,9 +20,7 @@ function QuadBoxComponent(fragmentSrc) {
     ].join("\n");
     QuadBoxComponent.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-Webvs.QuadBoxComponent = QuadBoxComponent;
-QuadBoxComponent.prototype = Object.create(ShaderComponent.prototype);
-_.extend(QuadBoxComponent.prototype, {
+Webvs.QuadBoxComponent = Webvs.defineClass(QuadBoxComponent, Webvs.ShaderComponent, {
     varyingPos: true,
 
     destroyComponent: function() {

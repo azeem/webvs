@@ -26,9 +26,7 @@ function DancerAdapter(dancer) {
     });
     this.kick.on();
 }
-Webvs.DancerAdapter = DancerAdapter;
-DancerAdapter.prototype = Object.create(Webvs.AnalyserAdapter.prototype);
-_.extend(DancerAdapter.prototype, {
+Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
     isPlaying: function() {
         return this.dancer.isPlaying();
     },

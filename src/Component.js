@@ -10,8 +10,7 @@
  * @constructor
  */
 function Component() {}
-Webvs.Component = Component;
-_.extend(Component.prototype, {
+Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
      * this determines whether current render target should be swapped out
      * before updating this component. if set to true then the updateComponent

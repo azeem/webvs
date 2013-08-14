@@ -3,14 +3,14 @@
  * See the file license.txt for copying permission.
  */
 
-(function(window) {
+(function(Webvs) {
 
 /**
  * Main Webvs class
  * @param options
  * @constructor
  */
-function Webvs(options) {
+function Main(options) {
     checkRequiredOptions(options, ["canvas", "analyser"]);
     options = _.defaults(options, {
         showStat: false
@@ -28,8 +28,7 @@ function Webvs(options) {
     }
     this._initGl();
 }
-window.Webvs = Webvs;
-_.extend(Webvs.prototype, {
+Webvs.Main = Webvs.defineClass(Main, Object, {
     _initGl: function() {
         try {
             this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
@@ -119,7 +118,7 @@ _.extend(Webvs.prototype, {
     }
 });
 
-Webvs.ui = {
+Main.ui = {
     leaf: false,
     disp: "Main",
     schema: {
@@ -150,39 +149,8 @@ Webvs.ui = {
     ]
 };
 
-})(window);
+})(Webvs);
 
 
 
-// Webvs constants
-var blendModes = {
-    REPLACE: 1,
-    MAXIMUM: 2,
-    AVERAGE: 3,
-    ADDITIVE: 4,
-    SUBTRACTIVE1: 5,
-    SUBTRACTIVE2: 6
-};
 
-function setBlendMode(gl, mode) {
-    switch(mode) {
-        case blendModes.ADDITIVE:
-            gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_ADD);
-            break;
-        case blendModes.SUBTRACTIVE1:
-            gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
-            break;
-        case blendModes.SUBTRACTIVE2:
-            gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_SUBTRACT);
-            break;
-        case blendModes.AVERAGE:
-            gl.blendColor(0.5, 0.5, 0.5, 1);
-            gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
-            gl.blendEquation(gl.FUNC_ADD);
-            break;
-        default: throw new Error("Invalid blend mode");
-    }
-}
