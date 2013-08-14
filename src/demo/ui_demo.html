@@ -2,12 +2,12 @@
 <html>
 <head>
     <title>Webvs Demo</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="yiui.css">
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    <button id="btn-panel-toggle">Hide Panel</button>
+    <canvas id="my-canvas"></canvas>
+    <button id="btn-fps-toggle">Hide FPS</button>
     <div id="panel">
         <div class="controls">
             <div class="song-controls">
@@ -51,11 +51,7 @@
     <script type="text/javascript" src="demo.min.js"></script>
     <!-- @endif -->
 
-    <!-- http://jqueryui.com/draggable/ -->
-    <script>
-        $(function() {
-            $( "#panel" ).draggable();
-        });
-    </script>
+     <!-- yiUI -->
+    <script type="text/javascript" src="yiui.js"></script>
 </body>
 </html>
