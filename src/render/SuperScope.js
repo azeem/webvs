@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 /**
  * The-Superscope component
  * @param options
@@ -65,7 +67,7 @@ function SuperScope(options) {
 
     SuperScope.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(SuperScope, ShaderComponent, {
+Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.ShaderComponent, {
     componentName: "SuperScope",
 
     copyOnSwap: true,
@@ -337,4 +339,4 @@ SuperScope.examples = {
 //    }
 };
 
-window.Webvs.SuperScope = SuperScope;
+})(Webvs);

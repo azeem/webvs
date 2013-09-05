@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 /**
  * Manages global variables
  */
@@ -15,7 +17,7 @@ function GlobalVar(options) {
 
     GlobalVar.super.constructor.call(this);
 }
-extend(GlobalVar, Component, {
+Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
 	initComponent: function() {
 		GlobalVar.super.initComponent.apply(this, arguments);
 
@@ -71,4 +73,4 @@ GlobalVar.ui = {
     ]
 };
 
-window.Webvs.GlobalVar = GlobalVar;
+})(Webvs);

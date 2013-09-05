@@ -8,12 +8,20 @@
 
 module.exports = function(grunt) {
     var jsFiles = [
-        "src/utils.js",
-        "src/core.js",
-        "src/exprparser.js",
+        "src/Base.js",
+        "src/analyser/*.js",
+
+        "src/Main.js",
+        "src/Component.js",
+        "src/ShaderComponent.js",
+        "src/QuadBoxComponent.js",
+
         "build/pegs_expr_parser.js",
-        "src/effectlist.js",
-        "src/dancer_adapter.js",
+        "src/Ast.js",
+        "src/CodeInstance.js",
+        "src/ExprCodeGenerator.js",
+
+        "src/EffectList.js",
         "src/misc/*.js",
         "src/render/*.js",
         "src/trans/*.js"

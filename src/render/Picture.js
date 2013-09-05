@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 /**
  * Picture - Renders a picture at given coordinate
  * @param options
@@ -36,7 +38,7 @@ function Picture(options) {
     ].join("\n");
     Picture.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(Picture, ShaderComponent, {
+Webvs.Picture = Webvs.defineClass(Picture, Webvs.ShaderComponent, {
     componentName: "Picture",
 
     init: function() {
@@ -104,4 +106,4 @@ extend(Picture, ShaderComponent, {
     }
 });
 
-window.Webvs.Picture = Picture;
+})(Webvs);

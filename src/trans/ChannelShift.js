@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 /**
  * ChannelShift component
  * @param options
@@ -38,7 +40,7 @@ function ChannelShift(options) {
 
     ChannelShift.super.constructor.call(this, fragmentSrc);
 }
-extend(ChannelShift, QuadBoxComponent, {
+Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.QuadBoxComponent, {
     componentName: "ChannelShift",
     swapFrame: true,
 
@@ -76,4 +78,4 @@ ChannelShift.ui = {
     }
 };
 
-Webvs.ChannelShift = ChannelShift;
+})(Webvs);

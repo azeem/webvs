@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 /**
  * Applies a 3x3 convolution kernel
  * @param kernel
@@ -77,7 +79,7 @@ function Convolution(options) {
 
     Convolution.super.constructor.call(this, fragmentSrc);
 }
-extend(Convolution, QuadBoxComponent, {
+Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.QuadBoxComponent, {
     componentName: "Convolution",
     swapFrame: true
 });
@@ -110,4 +112,4 @@ Convolution.kernels = {
     ]
 };
 
-window.Webvs.Convolution = Convolution;
+})(Webvs);

@@ -12,14 +12,14 @@ Webvs.defineClass = function(constructor, baseConstructor, properties) {
     constructor.prototype = Object.create(baseConstructor.prototype);
     if(properties) {
         _.extend(constructor.prototype, properties);
-    };
+    }
     return constructor;
-}
+};
 
 /**
  * no operation function
  */
-Webvs.noop = function() {}
+Webvs.noop = function() {};
 
 /**
  * checks if an object contains the required properties
@@ -33,7 +33,7 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
             throw new Error("Required option " + key + "not found");
         }
     }
-}
+};
 
 /**
  * Simple assert mechanism
@@ -44,7 +44,7 @@ Webvs.assert = function(outcome, message) {
     if(!assert) {
         throw new Error("Assertion Failed: " + message);
     }
-}
+};
 
 /**
  * Checks if given string contains only whitespace
@@ -53,11 +53,11 @@ Webvs.assert = function(outcome, message) {
  */
 Webvs.isWhitespace = function(str) {
     return (typeof str === "string" && str.match(/^(\s*)$/) !== null);
-}
+};
 
 Webvs.glslFloatRepr = function(val) {
     return val + (val%1 === 0?".0":"");
-}
+};
 
 Webvs.parseColor = function(color) {
     if(_.isArray(color) && color.length == 3) {
@@ -81,11 +81,11 @@ Webvs.parseColor = function(color) {
         }
     }
     throw new Error("Invalid Color Format");
-}
+};
 
 Webvs.parseColorNorm = function(color) {
     return _.map(parseColor(color), function(value) { return value/255; });
-}
+};
 
 Webvs.requestAnimationFrame = (
     window.requestAnimationFrame       ||

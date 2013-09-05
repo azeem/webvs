@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 function FadeOut(options) {
     options = _.defaults(options, {
         speed: 1,
@@ -22,7 +24,7 @@ function FadeOut(options) {
 
     FadeOut.super.constructor.call(this, fragmentSrc);
 }
-extend(FadeOut, QuadBoxComponent, {
+Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.QuadBoxComponent, {
     componentName: "FadeOut",
     outputBlendMode: blendModes.AVERAGE,
 
@@ -65,4 +67,4 @@ FadeOut.ui = {
     ]
 };
 
-window.Webvs.FadeOut = FadeOut;
+})(Webvs);

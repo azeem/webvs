@@ -3,6 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
 /**
  * OnBeatClear - clears the screen on beat
  * @param options
@@ -30,7 +31,7 @@ function ClearScreen(options) {
 
     ClearScreen.super.constructor.call(this, fragmentSrc);
 }
-extend(ClearScreen, QuadBoxComponent, {
+ClearScreen = Webvs.defineClass(ClearScreen, Webvs.QuadBoxComponent, {
     componentName: "ClearScreen",
 
     init: function() {
@@ -85,4 +86,4 @@ ClearScreen.ui = {
     }
 };
 
-window.Webvs.ClearScreen = ClearScreen;
+})(Webvs);

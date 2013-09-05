@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 /**
  * Maps colors to a map based on a key
  */
@@ -46,7 +48,7 @@ function ColorMap(options) {
 
     ColorMap.super.constructor.call(this, fragmentSrc);
 }
-extend(ColorMap, QuadBoxComponent, {
+Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.QuadBoxComponent, {
     swapFrame: true,
     mapCycleModes: {
         SINGLE: 1,
@@ -192,4 +194,4 @@ ColorMap.ui = {
     }
 };
 
-window.Webvs.ColorMap = ColorMap;
+})(Webvs);

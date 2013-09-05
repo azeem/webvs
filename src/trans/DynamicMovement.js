@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 /**
  * Dynamic movement component
  * @param options
@@ -75,7 +77,7 @@ function DynamicMovement(options) {
 
     DynamicMovement.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-extend(DynamicMovement, ShaderComponent, {
+Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.ShaderComponent, {
     componentName: "DynamicMovement",
 
     swapFrame: true,
@@ -257,4 +259,4 @@ DynamicMovement.examples = {
     }
 };
 
-Webvs.DynamicMovement = DynamicMovement;
+})(Webvs);

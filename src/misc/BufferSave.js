@@ -3,6 +3,8 @@
  * See the file license.txt for copying permission.
  */
 
+(function(Webvs) {
+
 function BufferSave(options) {
     options = _.defaults(options, {
         action: "SAVE",
@@ -20,7 +22,7 @@ function BufferSave(options) {
     }
     this._bufferId = "__BUFFERSAVE_" + options.bufferId;
 }
-extend(BufferSave, Component, {
+Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
     actions: {
         SAVE: 1,
         RESTORE: 2,
@@ -143,4 +145,4 @@ BufferSave.ui = {
     }
 };
 
-window.Webvs.BufferSave = BufferSave;
+})(Webvs);
