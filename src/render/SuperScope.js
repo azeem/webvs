@@ -11,7 +11,7 @@
  * @constructor
  */
 function SuperScope(options) {
-    checkRequiredOptions(options, ["code"]);
+    Webvs.checkRequiredOptions(options, ["code"]);
     options = _.defaults(options, {
         source: "SPECTRUM",
         drawMode: "LINES",
@@ -26,7 +26,7 @@ function SuperScope(options) {
     } else {
         throw new Error("Invalid superscope");
     }
-    var codeGen = new ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "w", "h", "red", "green", "blue", "cid"]);
+    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "w", "h", "red", "green", "blue", "cid"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
     this.code = genResult[0];
     this.code.n = 100;
@@ -34,7 +34,7 @@ function SuperScope(options) {
     this.spectrum = options.source == "SPECTRUM";
     this.dots = options.drawMode == "DOTS";
 
-    this.colors = _.map(options.colors, parseColorNorm);
+    this.colors = _.map(options.colors, Webvs.parseColorNorm);
     this.currentColor = this.colors[0];
     this.maxStep = 100;
 

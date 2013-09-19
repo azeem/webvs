@@ -9,7 +9,7 @@
  * Maps colors to a map based on a key
  */
 function ColorMap(options) {
-    checkRequiredOptions(options, ["maps"]);
+    Webvs.checkRequiredOptions(options, ["maps"]);
     options = _.defaults(options, {
         key: "RED",
         output: "REPLACE",
@@ -44,7 +44,7 @@ function ColorMap(options) {
         "}"
     ].join("\n");
 
-    this.outputBlendMode = blendModes[options.output];
+    this.outputBlendMode = Webvs.blendModes[options.output];
 
     ColorMap.super.constructor.call(this, fragmentSrc);
 }
@@ -107,7 +107,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.QuadBoxComponent, {
         }
 
         map = _.map(map, function(mapItem) {
-            var color = parseColor(mapItem.color);
+            var color = Webvs.parseColor(mapItem.color);
             return {color:color, index:mapItem.index};
         });
 
@@ -188,7 +188,7 @@ ColorMap.ui = {
         output: {
             type: "string",
             title: "Output blend mode",
-            enum: _.keys(blendModes),
+            enum: _.keys(Webvs.blendModes),
             default: "REPLACE"
         }
     }

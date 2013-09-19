@@ -11,7 +11,7 @@ function BufferSave(options) {
         bufferId: 1,
         blendMode: "REPLACE"
     });
-    this.blendMode = blendModes[options.blendMode];
+    this.blendMode = Webvs.blendModes[options.blendMode];
     this.action = this.actions[options.action];
     if(!this.action) {
         throw new Error("Unknown BufferSave action " + options.action);
@@ -140,7 +140,7 @@ BufferSave.ui = {
         blendMode: {
             type: "string",
             title: "Blend mode",
-            enum: _.keys(blendModes)
+            enum: _.keys(Webvs.blendModes)
         }
     }
 };

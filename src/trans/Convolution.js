@@ -11,7 +11,7 @@
  * @constructor
  */
 function Convolution(options) {
-    checkRequiredOptions(options, ["kernel"]);
+    Webvs.checkRequiredOptions(options, ["kernel"]);
     options = _.defaults(options, {
         edgeMode: "EXTEND",
         bias: 0
@@ -20,7 +20,7 @@ function Convolution(options) {
     var kernel;
     if(options.kernel in Convolution.kernels) {
         kernel = Convolution.kernels[options.kernel];
-    } else if(isArray(options.kernel) && options.kernel.length%2 === 1) {
+    } else if(_.isArray(options.kernel) && options.kernel.length%2 === 1) {
         kernel = options.kernel;
     } else {
         throw new Error("Invalid convolution kernel");
@@ -57,7 +57,7 @@ function Convolution(options) {
             }
             colorSumEq.push("pos = v_position + onePixel * vec2("+(i-mid)+","+(j-mid)+");");
             colorSumEq.push(edgeFunc);
-            colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+glslFloatRepr(value)+";");
+            colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+Webvs.glslFloatRepr(value)+";");
         }
     }
 
@@ -73,7 +73,7 @@ function Convolution(options) {
         "   vec2 pos;",
         "   vec4 colorSum = vec4(0,0,0,0);",
         colorSumEq.join("\n"),
-        "   setFragColor(vec4(((colorSum+"+glslFloatRepr(options.bias)+") / "+glslFloatRepr(scale)+").rgb, 1.0));",
+        "   setFragColor(vec4(((colorSum+"+Webvs.glslFloatRepr(options.bias)+") / "+Webvs.glslFloatRepr(scale)+").rgb, 1.0));",
         "}"
     ].join("\n");
 

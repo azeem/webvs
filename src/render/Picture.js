@@ -11,7 +11,7 @@
  * @constructor
  */
 function Picture(options) {
-    checkRequiredOptions(options, ["src", "x", "y"]);
+    Webvs.checkRequiredOptions(options, ["src", "x", "y"]);
     this.src = options.src;
     this.x = options.x;
     this.y = options.y;

@@ -26,7 +26,7 @@ function FadeOut(options) {
 }
 Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.QuadBoxComponent, {
     componentName: "FadeOut",
-    outputBlendMode: blendModes.AVERAGE,
+    outputBlendMode: Webvs.AVERAGE,
 
     init: function() {
         var gl = this.gl;

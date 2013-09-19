@@ -10,6 +10,8 @@ window.Webvs = Webvs;
 
 Webvs.defineClass = function(constructor, baseConstructor, properties) {
     constructor.prototype = Object.create(baseConstructor.prototype);
+    constructor.prototype.constructor = constructor; // fix the constructor reference
+    constructor.super = baseConstructor.prototype; // add a superclass reference
     if(properties) {
         _.extend(constructor.prototype, properties);
     }
@@ -84,7 +86,7 @@ Webvs.parseColor = function(color) {
 };
 
 Webvs.parseColorNorm = function(color) {
-    return _.map(parseColor(color), function(value) { return value/255; });
+    return _.map(Webvs.parseColor(color), function(value) { return value/255; });
 };
 
 Webvs.requestAnimationFrame = (
@@ -109,13 +111,14 @@ _.flatMap = _.compose(_.flatten, _.map);
 
 /** Webvs constants **/
 
-_.extend(Webvs ,{
+Webvs.blendModes = {
     REPLACE: 1,
     MAXIMUM: 2,
     AVERAGE: 3,
     ADDITIVE: 4,
     SUBTRACTIVE1: 5,
     SUBTRACTIVE2: 6
-});
+};
+_.extend(Webvs, Webvs.blendModes);
 
 })(window);

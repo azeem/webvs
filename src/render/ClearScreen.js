@@ -17,7 +17,7 @@ function ClearScreen(options) {
     });
     this.n = options.n;
     this.color = parseColorNorm(options.color);
-    this.outputBlendMode = blendModes[options.blendMode];
+    this.outputBlendMode = Webvs.blendModes[options.blendMode];
 
     this.prevBeat = false;
     this.beatCount = 0;
@@ -31,7 +31,7 @@ function ClearScreen(options) {
 
     ClearScreen.super.constructor.call(this, fragmentSrc);
 }
-ClearScreen = Webvs.defineClass(ClearScreen, Webvs.QuadBoxComponent, {
+Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.QuadBoxComponent, {
     componentName: "ClearScreen",
 
     init: function() {
@@ -81,7 +81,7 @@ ClearScreen.ui = {
         blendMode: {
             type: "string",
             title: "Blend Mode",
-            enum: _.keys(blendModes)
+            enum: _.keys(Webvs.blendModes)
         }
     }
 };

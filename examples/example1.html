@@ -157,7 +157,7 @@ See the file license.txt for copying permission.
                     "output": "ADDITIVE",
                     "maps": [
                         [
-                            [[82, 18, 55], 43]
+                            {color: "rgb(82,18,55)", index:43}
                         ]
                     ]
                 }
@@ -217,7 +217,7 @@ See the file license.txt for copying permission.
             // initialize dancer and webvs
             var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
             var dancer = new Dancer();
-            var webvs = new Webvs({
+            var webvs = new Webvs.Main({
                 canvas: document.getElementById("canvas"),
                 analyser: new Webvs.DancerAdapter(dancer),
                 showStat: true

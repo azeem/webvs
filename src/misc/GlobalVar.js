@@ -9,8 +9,8 @@
  * Manages global variables
  */
 function GlobalVar(options) {
-	checkRequiredOptions(options, ["code"]);
-	var codeGen = new ExprCodeGenerator(options.code, ["b", "w", "h"]);
+	Webvs.checkRequiredOptions(options, ["code"]);
+	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b", "w", "h"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], [], []);
     this.code = genResult[0];
     this.inited = false;

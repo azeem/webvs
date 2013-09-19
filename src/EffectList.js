@@ -16,7 +16,7 @@ function Copy(blendMode, forceShaderBlend) {
         "   setFragColor(texture2D(u_copySource, v_position));",
         "}"
     ].join("\n");
-    this.outputBlendMode = blendMode || blendModes.REPLACE;
+    this.outputBlendMode = blendMode || Webvs.blendModes.REPLACE;
     this.forceShaderBlend = forceShaderBlend?true:false;
     Copy.super.constructor.call(this, fragmentSrc);
 }
@@ -49,7 +49,7 @@ Webvs.Copy = Webvs.defineClass(Copy, Webvs.QuadBoxComponent, {
  * @constructor
  */
 function EffectList(options) {
-    checkRequiredOptions(options, ["components"]);
+    Webvs.checkRequiredOptions(options, ["components"]);
     options = _.defaults(options, {
         output: "REPLACE",
         input: "IGNORE",
@@ -59,8 +59,8 @@ function EffectList(options) {
     });
 
     this._constructComponent(options.components);
-    this.output = blendModes[options.output];
-    this.input = options.input=="IGNORE"?-1:blendModes[options.input];
+    this.output = Webvs.blendModes[options.output];
+    this.input = options.input=="IGNORE"?-1:Webvs.blendModes[options.input];
     this.clearFrame = options.clearFrame;
     this.enableOnBeat = options.enableOnBeat;
     this.enableOnBeatFor = options.enableOnBeatFor;
@@ -290,13 +290,13 @@ EffectList.ui = {
             type: "string",
             title: "Output",
             default: "REPLACE",
-            enum: _.keys(blendModes)
+            enum: _.keys(Webvs.blendModes)
         },
         input: {
             type: "string",
             title: "Input",
             default: "IGNORE",
-            enum: _.union(_.keys(blendModes), ["IGNORE"])
+            enum: _.union(_.keys(Webvs.blendModes), ["IGNORE"])
         }
     }
 };

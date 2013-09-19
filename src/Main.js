@@ -11,7 +11,7 @@
  * @constructor
  */
 function Main(options) {
-    checkRequiredOptions(options, ["canvas", "analyser"]);
+    Webvs.checkRequiredOptions(options, ["canvas", "analyser"]);
     options = _.defaults(options, {
         showStat: false
     });
@@ -46,7 +46,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @param preset JSON representation of the preset
      */
     loadPreset: function(preset) {
-        var newRoot = new EffectList(preset);
+        var newRoot = new Webvs.EffectList(preset);
         this.stop();
         this.preset = preset;
         if(this.rootComponent) {

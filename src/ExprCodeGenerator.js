@@ -52,7 +52,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
     },
 
     generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
-        var inst = new CodeInstance();
+        var inst = new Webvs.CodeInstance();
         var that = this;
         var glsl = [];
 
@@ -79,7 +79,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         });
         // add noops for missing expressions
         _.each(missingJsFuncList, function(name) {
-            inst[name] = noop;
+            inst[name] = Webvs.noop;
         });
 
         var glslFuncList = _.intersection(_.keys(this.codeAst), glslFuncs);
@@ -202,13 +202,13 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
     _generateGlsl: function(ast, preCompute) {
         var that = this;
 
-        if(ast instanceof AstBinaryExpr) {
+        if(ast instanceof Webvs.AstBinaryExpr) {
             return "(" + this._generateGlsl(ast.leftOperand, preCompute) + ast.operator + this._generateGlsl(ast.rightOperand, preCompute) + ")";
         }
-        if(ast instanceof AstUnaryExpr) {
+        if(ast instanceof Webvs.AstUnaryExpr) {
             return "(" + ast.operator + this._generateGlsl(ast.operand, preCompute) + ")";
         }
-        if(ast instanceof AstFuncCall) {
+        if(ast instanceof Webvs.AstFuncCall) {
             this._checkFunc(ast);
             switch(ast.funcName) {
                 case "above":
@@ -274,7 +274,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                     return "(atan(("+this._generateGlsl(ast.args[0], preCompute)+"),("+this._generateGlsl(ast.args[1], preCompute)+"))";
                 case "getosc":
                     var allStatic = _.every(ast.args, function(arg) {
-                        return arg instanceof AstPrimaryExpr;
+                        return arg instanceof Webvs.AstPrimaryExpr;
                     });
                     if(!allStatic) {
                         throw new Error("Non Pre-Computable arguments for getosc in shader code, use variables or constants");
@@ -296,20 +296,20 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                     return "(" + funcName + "(" + args + "))";
             }
         }
-        if(ast instanceof AstAssignment) {
+        if(ast instanceof Webvs.AstAssignment) {
             return this._generateGlsl(ast.lhs, preCompute) + "=" + this._generateGlsl(ast.expr, preCompute);
         }
-        if(ast instanceof AstProgram) {
+        if(ast instanceof Webvs.AstProgram) {
             var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, preCompute);});
             return stmts.join(";\n")+";";
         }
-        if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
             return glslFloatRepr(ast.value);
         }
-        if(ast instanceof AstPrimaryExpr && ast.type === "CONST") {
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "CONST") {
             return this._translateConstants(ast.value).toString();
         }
-        if(ast instanceof AstPrimaryExpr && (ast.type === "ID" || ast.type === "REG")) {
+        if(ast instanceof Webvs.AstPrimaryExpr && (ast.type === "ID" || ast.type === "REG")) {
             return ast.value;
         }
     },
@@ -318,13 +318,13 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         var prefix;
         var that = this;
 
-        if(ast instanceof AstBinaryExpr) {
+        if(ast instanceof Webvs.AstBinaryExpr) {
             return "(" + this._generateJs(ast.leftOperand) + ast.operator + this._generateJs(ast.rightOperand) + ")";
         }
-        if(ast instanceof AstUnaryExpr) {
+        if(ast instanceof Webvs.AstUnaryExpr) {
             return "(" + ast.operator + this._generateJs(ast.operand) + ")";
         }
-        if(ast instanceof AstFuncCall) {
+        if(ast instanceof Webvs.AstFuncCall) {
             this._checkFunc(ast);
             switch(ast.funcName) {
                 case "above":
@@ -392,23 +392,23 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                     return "(" + prefix + ast.funcName + "(" + args + "))";
             }
         }
-        if(ast instanceof AstAssignment) {
+        if(ast instanceof Webvs.AstAssignment) {
             return this._generateJs(ast.lhs) + "=" + this._generateJs(ast.expr);
         }
-        if(ast instanceof AstProgram) {
+        if(ast instanceof Webvs.AstProgram) {
             var stmts = _.map(ast.statements, function(stmt) {return that._generateJs(stmt);});
             return stmts.join(";\n");
         }
-        if(ast instanceof AstPrimaryExpr && ast.type === "VALUE") {
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
             return ast.value.toString();
         }
-        if(ast instanceof AstPrimaryExpr && ast.type === "CONST") {
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "CONST") {
             return this._translateConstants(ast.value).toString();
         }
-        if(ast instanceof AstPrimaryExpr && ast.type === "ID") {
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "ID") {
             return "this." + ast.value;
         }
-        if(ast instanceof AstPrimaryExpr && ast.type === "REG") {
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "REG") {
             return "this._registerBank[\"" + ast.value + "\"]";
         }
     },
@@ -416,33 +416,33 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
     _getVars: function(ast, vars, funcUsages, regUsages) {
         var that = this;
 
-        if(ast instanceof AstBinaryExpr) {
+        if(ast instanceof Webvs.AstBinaryExpr) {
             this._getVars(ast.leftOperand, vars, funcUsages, regUsages);
             this._getVars(ast.rightOperand, vars, funcUsages, regUsages);
         }
 
-        else if(ast instanceof AstUnaryExpr) {
+        else if(ast instanceof Webvs.AstUnaryExpr) {
             this._getVars(ast.operand, vars, funcUsages, regUsages);
         }
-        else if(ast instanceof AstFuncCall) {
+        else if(ast instanceof Webvs.AstFuncCall) {
             funcUsages.push(ast.funcName);
             _.each(ast.args, function(arg) {
                that._getVars(arg, vars, funcUsages, regUsages);
             });
         }
-        else if(ast instanceof AstAssignment) {
+        else if(ast instanceof Webvs.AstAssignment) {
             this._getVars(ast.lhs, vars, funcUsages, regUsages);
             this._getVars(ast.expr, vars, funcUsages, regUsages);
         }
-        else if(ast instanceof AstProgram) {
+        else if(ast instanceof Webvs.AstProgram) {
             _.each(ast.statements, function(stmt) {
                 that._getVars(stmt, vars, funcUsages, regUsages);
             });
         }
-        else if(ast instanceof AstPrimaryExpr && ast.type === "ID") {
+        else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "ID") {
             vars.push(ast.value);
         }
-        else if(ast instanceof AstPrimaryExpr && ast.type === "REG") {
+        else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "REG") {
             regUsages.push(ast.value);
         }
     },

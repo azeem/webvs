@@ -11,7 +11,7 @@
  * @constructor
  */
 function DynamicMovement(options) {
-    checkRequiredOptions(options, ["code"]);
+    Webvs.checkRequiredOptions(options, ["code"]);
     options = _.defaults(options, {
         gridW: 16,
         gridH: 16,
