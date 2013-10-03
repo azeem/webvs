@@ -164,55 +164,6 @@ See the file license.txt for copying permission.
             ]
         };
 
-        var samplePreset1 = {
-            "name" : "Science of Superscope",
-            "author" : "Marco",
-            "clearFrame": false,
-            "components": [
-                {
-                    "type": "EffectList",
-                    "output": "ADDITIVE",
-                    "components": [
-                        {
-                            "type": "FadeOut",
-                            "speed": 0.4
-                        },
-                        {
-                            "type": "SuperScope",
-                            "code": {
-                                "init": "n=800",
-                                "onBeat": "t=t+0.3;n=100+rand(900);",
-                                "perFrame": "t=t-v*0.5",
-                                "perPoint": "d=D/n;r=(i-(t*3)); x=(atan(r+d-t)*cos(r+d-t+i)); y=((i+cos(d+v*1.2))-1.5)*1.7;z=-(cos(t+i)+log(v)*cos(r*3))*3;red=cos(r)+1;blue=sin(r);green=sin(i)/2"
-                            }
-                        },
-                        {
-                            "type": "DynamicMovement",
-                            "enabled": true,
-                            "code": "rollingGridley",
-                            "coord": "RECT"
-                        },
-                        {
-                            "type": "ChannelShift",
-                            "enabled": false,
-                            "onBeatRandom": true
-                        }
-                    ]
-                },
-                {
-                    "type": "Convolution",
-                    "kernel": "blur"
-                },
-                {
-                    "type": "Convolution",
-                    "kernel": "blur"
-                },
-                {
-                    "type": "OnBeatClear"
-                }
-            ]
-        };
-
         window.onload = function () {
             // initialize dancer and webvs
             var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";

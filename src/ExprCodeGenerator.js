@@ -304,7 +304,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             return stmts.join(";\n")+";";
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
-            return glslFloatRepr(ast.value);
+            return Webvs.glslFloatRepr(ast.value);
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "CONST") {
             return this._translateConstants(ast.value).toString();

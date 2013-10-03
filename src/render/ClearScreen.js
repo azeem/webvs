@@ -16,7 +16,7 @@ function ClearScreen(options) {
         blendMode: "REPLACE"
     });
     this.n = options.n;
-    this.color = parseColorNorm(options.color);
+    this.color = Webvs.parseColorNorm(options.color);
     this.outputBlendMode = Webvs.blendModes[options.blendMode];
 
     this.prevBeat = false;
@@ -37,7 +37,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.QuadBoxComponent, {
     init: function() {
         var gl = this.gl;
         this.colorLocation = gl.getUniformLocation(this.program, "u_color");
-        FadeOut.super.init.apply(this, arguments);
+        ClearScreen.super.init.apply(this, arguments);
     },
 
     update: function() {

@@ -8,12 +8,13 @@
 function FadeOut(options) {
     options = _.defaults(options, {
         speed: 1,
-        color: "#FFFFFF"
+        color: "#000000"
     });
-    this.color = parseColorNorm(options.color);
+    this.color = Webvs.parseColorNorm(options.color);
 
     this.frameCount = 0;
-    this.maxFrameCount = Math.floor(1/this.speed);
+    this.maxFrameCount = Math.floor(1/options.speed);
+    console.log("MAx Frame Count = " + this.maxFrameCount);
 
     var fragmentSrc = [
         "uniform vec3 u_color;",
