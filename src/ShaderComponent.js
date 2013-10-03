@@ -5,28 +5,6 @@
 
 (function(Webvs) {
 
-function setBlendMode(gl, mode) {
-    switch(mode) {
-        case Webvs.ADDITIVE:
-            gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_ADD);
-            break;
-        case Webvs.SUBTRACTIVE1:
-            gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
-            break;
-        case Webvs.SUBTRACTIVE2:
-            gl.blendFunc(gl.ONE, gl.ONE);
-            gl.blendEquation(gl.FUNC_SUBTRACT);
-            break;
-        case Webvs.AVERAGE:
-            gl.blendColor(0.5, 0.5, 0.5, 1);
-            gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
-            gl.blendEquation(gl.FUNC_ADD);
-            break;
-        default: throw new Error("Invalid blend mode");
-    }
-}
 
 /**
  * ShaderComponent base class. Any Component that
@@ -139,7 +117,7 @@ Webvs.ShaderComponent = Webvs.defineClass(ShaderComponent, Webvs.Component, {
 
         if(this._glBlendMode && this.outputBlendMode != Webvs.REPLACE){
             gl.enable(gl.BLEND);
-            setBlendMode(gl, this.outputBlendMode);
+            this._setBlendMode(gl, this.outputBlendMode);
         } else {
             gl.disable(gl.BLEND);
         }
@@ -181,6 +159,29 @@ Webvs.ShaderComponent = Webvs.defineClass(ShaderComponent, Webvs.Component, {
             throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
         }
         return shader;
+    },
+
+    _setBlendMode: function(gl, mode) {
+        switch(mode) {
+            case Webvs.ADDITIVE:
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
+            case Webvs.SUBTRACTIVE1:
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+                break;
+            case Webvs.SUBTRACTIVE2:
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.blendEquation(gl.FUNC_SUBTRACT);
+                break;
+            case Webvs.AVERAGE:
+                gl.blendColor(0.5, 0.5, 0.5, 1);
+                gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
+            default: throw new Error("Invalid blend mode");
+        }
     },
 
     /**
