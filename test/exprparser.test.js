@@ -17,8 +17,7 @@ test('ExprParser GLSL Generation', function() {
         perPixel: "x=x+(sin(y*dx)*.03); y=rand(y)-(cos(x*dy)*.03);"
     }, ["x", "y", "r", "d", "b", "w", "h"]);
 
-    var glslExpect = "float x;float y;float r;float d;uniform float b;uniform float w;uniform float h;uniform float c;uniform float f;uniform float dt;uniform float dl;uniform float beatdiv;uniform float dx;uniform float dy;uniform vec2 __randStep;\nvec2 __randSeed;\nfloat rand(float max) {\n   __randCur += __randStep;\n   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);\n   return (floor(val*max)+1);\n}void perPixel() {x=(x+((sin((y*dx)))*0.03));\ny=((rand(y))-((cos((x*dy)))*0.03));}";
-
+    var glslExpect = "float x;float y;float r;float d;uniform float b;uniform float w;uniform float h;uniform float c;uniform float f;uniform float dt;uniform float dl;uniform float beatdiv;uniform float t;uniform float dx;uniform float dy;uniform vec2 __randStep;\nvec2 __randSeed;\nfloat rand(float max) {\n   __randCur += __randStep;\n   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);\n   return (floor(val*max)+1);\n}void perPixel() {x=(x+((sin((y*dx)))*0.03));\ny=((rand(y))-((cos((x*dy)))*0.03));}";
     var list = codeGen.generateCode(["init", "perFrame", "onBeat"], ["perPixel"], ["x", "y", "d", "r"]);
     var js = list[0];
     var glsl = list[1];
@@ -56,8 +55,8 @@ test("ExprParser register support", function() {
     var js2 = codeGen2.generateCode(["test"], [], [])[0];
 
     var bank = {};
-    js1.initRegisterBank(bank);
-    js2.initRegisterBank(bank);
+    js1.setup(bank);
+    js2.setup(bank);
 
     js1.a = 10;
     js1.test();

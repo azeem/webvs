@@ -90,7 +90,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
 
         // include required functions in glsl
         _.each(glsFuncUsages, function(usage) {
-            var code = that.glslFuncCode[usage.name];
+            var code = that.glslFuncCode[usage];
             if(!code) {
                 return;
             }

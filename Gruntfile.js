@@ -59,9 +59,14 @@ module.exports = function(grunt) {
         },
 
         karma: {
-            webvs: {
-                configFile: "karma.conf.js"//,
-                //background: true
+            options: {
+                configFile: "karma.conf.js"
+            },
+            test: {
+                singleRun: true
+            },
+            debug: {
+                singleRun: false
             }
         },
 
@@ -108,4 +113,5 @@ module.exports = function(grunt) {
     grunt.registerTask('default', ['clean:dev', 'jshint', 'peg', 'concat:dev']);
     grunt.registerTask("w", ["default", "watch"]);
     grunt.registerTask('dist', ['clean:dist', 'jshint', 'peg', 'uglify:dist']);
+    grunt.registerTask('test', ['default', 'karma:test']);
 };

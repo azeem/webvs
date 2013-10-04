@@ -17,21 +17,28 @@
  * varyingPos - if true then a varying called v_position is added
  *              automatically
  */
-function ShaderProgram(vertexSrc, fragmentSrc, fm, forceShaderBlend, outputBlendMode, varyingPos, dynamicBlend) {
+function ShaderProgram(options) { 
+    options = _.defaults(options, {
+        forceShaderBlend: false,
+        outputBlendMode: Webvs.REPLACE,
+        varyingPos: false,
+        dynamicBlend: false,
+        swapFrame: false
+    });
     var fsrc = [
         "precision mediump float;",
         "uniform vec2 u_resolution;"
     ];
     var vsrc = _.clone(fragmentExtraSrc);
 
-    this.fm = fm;
-    this.varyingPos = varyingPos;
-    this.swapFrame = false;
-    this.dynamicBlend = dynamicBlend?true:false
+    this.fm = options.fm;
+    this.varyingPos = options.varyingPos;
+    this.swapFrame = options.swapFrame;
+    this.dynamicBlend = options.dynamicBlend;
 
     // select the blend equation
-    this.outputBlendMode = outputBlendMode || Webvs.REPLACE;
-    if(this.dynamicBlend || forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
+    this.outputBlendMode = options.outputBlendMode;
+    if(this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
         this.swapFrame = true;
         this.glBlendMode = false;
         this.varyingPos = true;
@@ -86,8 +93,8 @@ function ShaderProgram(vertexSrc, fragmentSrc, fm, forceShaderBlend, outputBlend
         );
     }
 
-    this.fragmentSrc = fsrc.join("\n") + "\n" + fragmentSrc;
-    this.vertexSrc = vsrc.join("\n") + "\n" + vertexSrc;
+    this.fragmentSrc = options.fragmentSrc.join("\n") + "\n" + fragmentSrc;
+    this.vertexSrc = options.vertexSrc.join("\n") + "\n" + vertexSrc;
     this._locations = {};
     this._textureVars = [];
     this._arrBuffers = {};
@@ -104,14 +111,14 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         Webvs.SUBTRACTIVE2
     ],
 
-    blendEqs: {
-        Webvs.REPLACE: "color",
-        Webvs.MAXIMUM: "max(color, texture2D(u_srcTexture, v_position))",
-        Webvs.AVERAGE: "(color+texture2D(u_srcTexture, v_position))/2.0",
-        Webvs.ADDITIVE: "color+texture2D(u_srcTexture, v_position)",
-        Webvs.SUBTRACTIVE1: "texture2D(u_srcTexture, v_position)-color",
-        Webvs.SUBTRACTIVE2: "color-texture2D(u_srcTexture, v_position)"
-    },
+    blendEqs: _.object(
+        [Webvs.REPLACE, "color"],
+        [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"],
+        [Webvs.AVERAGE, "(color+texture2D(u_srcTexture, v_position))/2.0"],
+        [Webvs.ADDITIVE, "color+texture2D(u_srcTexture, v_position)"],
+        [Webvs.SUBTRACTIVE1, "texture2D(u_srcTexture, v_position)-color"],
+        [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"]
+    ),
 
 	init: function(gl) {
 		this.gl = gl;
@@ -130,11 +137,13 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
     },
 
     run: function() {
+        var gl = this.gl;
+
         this.setUniform("u_resolution", "2f", this.fm.width, this.fm.height);
         if(this.swapFrame) {
             this.setUniform("u_srcTexture", "texture2D", this.fm.getCurrentTexture());
             if(this.copyOnSwap) {
-                this.fm.copyCurrentTexture()
+                this.fm.copyCurrentTexture();
             }
             this.fm.swapTexture();
         }
@@ -143,10 +152,17 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             this.setUniform("u_blendMode", "1i", this.outputBlendMode);
         }
 
-        var gl = this.gl;
+        if(this.glBlendMode && this.outputBlendMode != Webvs.REPLACE) {
+            gl.enable(gl.BLEND);
+            this._setGlBlendMode(gl, this.outputBlendMode);
+        } else {
+            gl.disable(gl.BLEND);
+        }
+
         var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
         gl.drawArrays.apply(gl, arguments);
+        gl.disable(gl.BLEND);
         gl.useProgram(oldProgram);
     },
 
@@ -230,12 +246,12 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             buffer = gl.createBuffer();
             this._arrBuffers[name] = buffer;
         }
-        var location = this.getLocation(name);
+        var location = this.getLocation(name, true);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(location);
-        gl.vertexAttribPointer.apply(gl, [location].concat(_.drop(arguments, 2)))
+        gl.vertexAttribPointer.apply(gl, [location].concat(_.drop(arguments, 2)));
     },
 
     cleanup: function() {
