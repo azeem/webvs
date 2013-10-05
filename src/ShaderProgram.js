@@ -23,15 +23,16 @@ function ShaderProgram(options) {
         outputBlendMode: Webvs.REPLACE,
         varyingPos: false,
         dynamicBlend: false,
-        swapFrame: false
+        swapFrame: false,
+        copyOnSwap: false
     });
     var fsrc = [
         "precision mediump float;",
         "uniform vec2 u_resolution;"
     ];
-    var vsrc = _.clone(fragmentExtraSrc);
+    var vsrc = _.clone(fsrc);
 
-    this.fm = options.fm;
+    this.copyOnSwap = options.copyOnSwap;
     this.varyingPos = options.varyingPos;
     this.swapFrame = options.swapFrame;
     this.dynamicBlend = options.dynamicBlend;
@@ -93,8 +94,8 @@ function ShaderProgram(options) {
         );
     }
 
-    this.fragmentSrc = options.fragmentSrc.join("\n") + "\n" + fragmentSrc;
-    this.vertexSrc = options.vertexSrc.join("\n") + "\n" + vertexSrc;
+    this.fragmentSrc = fsrc.join("\n") + "\n" + options.fragmentShader.join("\n");
+    this.vertexSrc = vsrc.join("\n") + "\n" + options.vertexShader.join("\n");
     this._locations = {};
     this._textureVars = [];
     this._arrBuffers = {};
@@ -111,14 +112,14 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         Webvs.SUBTRACTIVE2
     ],
 
-    blendEqs: _.object(
+    blendEqs: _.object([
         [Webvs.REPLACE, "color"],
         [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"],
         [Webvs.AVERAGE, "(color+texture2D(u_srcTexture, v_position))/2.0"],
         [Webvs.ADDITIVE, "color+texture2D(u_srcTexture, v_position)"],
         [Webvs.SUBTRACTIVE1, "texture2D(u_srcTexture, v_position)-color"],
         [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"]
-    ),
+    ]),
 
 	init: function(gl) {
 		this.gl = gl;
@@ -136,32 +137,33 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         this.outputBlendMode = mode;
     },
 
-    run: function() {
+    run: function(fm, outputBlendMode) {
         var gl = this.gl;
 
-        this.setUniform("u_resolution", "2f", this.fm.width, this.fm.height);
+        this.setUniform("u_resolution", "2f", fm.width, fm.height);
         if(this.swapFrame) {
-            this.setUniform("u_srcTexture", "texture2D", this.fm.getCurrentTexture());
+            this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
             if(this.copyOnSwap) {
-                this.fm.copyCurrentTexture();
+                fm.copyCurrentTexture();
             }
-            this.fm.swapTexture();
+            fm.swapAttachment();
         }
 
+        outputBlendMode = outputBlendMode || this.outputBlendMode;
         if(this.dynamicBlend) {
-            this.setUniform("u_blendMode", "1i", this.outputBlendMode);
+            this.setUniform("u_blendMode", "1i", outputBlendMode);
         }
 
-        if(this.glBlendMode && this.outputBlendMode != Webvs.REPLACE) {
+        if(this.glBlendMode && outputBlendMode != Webvs.REPLACE) {
             gl.enable(gl.BLEND);
-            this._setGlBlendMode(gl, this.outputBlendMode);
+            this._setGlBlendMode(gl, outputBlendMode);
         } else {
             gl.disable(gl.BLEND);
         }
 
         var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
-        gl.drawArrays.apply(gl, arguments);
+        gl.drawArrays.apply(gl, _.drop(arguments, 2));
         gl.disable(gl.BLEND);
         gl.useProgram(oldProgram);
     },
@@ -239,8 +241,14 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
     },
 
-    setVertexAttribArray: function(name, array) {
+    setVertexAttribArray: function(name, array, size, type, normalized, stride, offset) {
         var gl = this.gl;
+        size = size || 2;
+        type = type || gl.FLOAT;
+        normalized = normalized || false;
+        stride = stride || 0;
+        offset = offset || 0;
+
         var buffer = this._arrBuffers[name];
         if(_.isUndefined(buffer)) {
             buffer = gl.createBuffer();
@@ -251,7 +259,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(location);
-        gl.vertexAttribPointer.apply(gl, [location].concat(_.drop(arguments, 2)));
+        gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
     },
 
     cleanup: function() {

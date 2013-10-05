@@ -5,21 +5,28 @@
  * Time: 10:18 AM
  * To change this template use File | Settings | File Templates.
  */
-basePath = "";
-
-files = [
-    QUNIT,
-    QUNIT_ADAPTER,
-    "build/libs.js",
-    "build/webvs.js",
-    "test/*.js"
-];
-
-reporters = ['progress'];
-port = 9876;
-runnerPort = 9100;
-colors = true;
-logLevel = LOG_DEBUG;
-autoWatch = false;
-browsers = ['Chrome'];
-captureTimeout = 60000;
+module.exports = function(config) {
+    config.set({
+        basePath: "",
+        frameworks: ["qunit"],
+        files: [
+            "build/libs.js",
+            "build/webvs.js",
+            "test/*.js"
+        ],
+        reporters: ['progress'],
+        port: 9876,
+        runnerPort: 9100,
+        colors: true,
+        logLevel: config.LOG_DEBUG,
+        autoWatch: true,
+        browsers: ['ChromeWithWebgl'],
+        captureTimeout: 60000,
+        customLaunchers: {
+            ChromeWithWebgl: {
+                base: "Chrome",
+                flags: ["--enable-webgl", "--ignore-gpu-blacklist"]
+            }
+        }
+    });
+};
