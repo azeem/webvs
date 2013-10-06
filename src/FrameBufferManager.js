@@ -64,7 +64,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     },
 
     copyOver: function() {
-        var prevTexture = this.frameAttachments[(this.currAttachment-1)%2].texture;
+        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%2].texture;
         this.copier.run(null, null, prevTexture);
     },
 

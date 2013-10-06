@@ -21,6 +21,7 @@ function CanvasTest() {
             preserveDrawingBuffer: true
         });
         testFunc(canvas, gl);
+        document.body.removeChild(canvas);
     }
     var testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-1);
     testArgs.push(wrapper);
