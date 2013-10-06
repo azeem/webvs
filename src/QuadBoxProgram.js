@@ -6,19 +6,19 @@
 (function(Webvs) {
 
 function QuadBoxProgram(options) {
-    options = _.defautls(options, {
+    options = _.defaults(options, {
         vertexShader: [
             "attribute vec2 a_position;",
             "void main() {",
             "   setPosition(a_position);",
             "}"
         ],
-        varyingPos: true;
+        varyingPos: true
     });
     QuadBoxProgram.super.constructor.call(this, options);
 }
-Webvs.QuadBoxProgram = Webvs.defineClass(CopyProgram, Webvs.ShaderProgram, {
-    run: function() {
+Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
+    draw: function() {
         this.setVertexAttribArray(
             "a_position", 
             new Float32Array([
@@ -30,7 +30,7 @@ Webvs.QuadBoxProgram = Webvs.defineClass(CopyProgram, Webvs.ShaderProgram, {
                 1,  1
             ])
         );
-        QuadBoxProgram.super.run.apply(this, arguments);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     }
 });
 

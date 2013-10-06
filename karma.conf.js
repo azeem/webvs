@@ -12,7 +12,8 @@ module.exports = function(config) {
         files: [
             "build/libs.js",
             "build/webvs.js",
-            "test/*.js"
+            "test/base.js",
+            "test/*.test.js"
         ],
         reporters: ['progress'],
         port: 9876,

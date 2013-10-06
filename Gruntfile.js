@@ -16,6 +16,9 @@ module.exports = function(grunt) {
         "src/ShaderComponent.js",
         "src/QuadBoxComponent.js",
         "src/ShaderProgram.js",
+        "src/QuadBoxProgram.js",
+        "src/CopyProgram.js",
+        "src/FrameBufferManager.js",
 
         "src/Ast.js",
         "build/pegs_expr_parser.js",

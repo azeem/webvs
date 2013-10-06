@@ -9,13 +9,13 @@
  * Webgl Shader program abstraction
  * with support for blended output and stuff
  *
- * vertexSrc - the source for the vertex shader
- * fragmentSrc - the source for the fragment shader
- * fm - the frame manager
- * forceShaderBlend - force the use of shader based blending mode
- * oututBlendMode - the output blending mode
- * varyingPos - if true then a varying called v_position is added
- *              automatically
+ * options
+ *   vertexSrc - the source for the vertex shader
+ *   fragmentSrc - the source for the fragment shader
+ *   forceShaderBlend - force the use of shader based blending mode
+ *   oututBlendMode - the output blending mode
+ *   varyingPos - if true then a varying called v_position is added
+ *                automatically
  */
 function ShaderProgram(options) { 
     options = _.defaults(options, {
@@ -32,6 +32,9 @@ function ShaderProgram(options) {
     ];
     var vsrc = _.clone(fsrc);
 
+    if(_.isFunction(options.draw)) {
+        this.draw = options.draw;
+    }
     this.copyOnSwap = options.copyOnSwap;
     this.varyingPos = options.varyingPos;
     this.swapFrame = options.swapFrame;
@@ -47,27 +50,6 @@ function ShaderProgram(options) {
         this.glBlendMode = true;
     }
 
-    // color blend macro/function
-    if(this.dynamicBlend) {
-        fsrc.push(
-            "uniform int u_blendMode;",
-            "void setFragColor(vec3 color) {",
-            "   switch(u_blendMode) {"
-        );
-        _.each(this.blendEqs, function(eq, mode) {
-            fsrc.push("case " + mode + ":gl_FragColor = ("+blendEq+"); break;");
-        });
-        fsrc.push(
-            "   }",
-            "}"
-        );
-    } else {
-        var blendEq = this.blendEqs[this.outputBlendMode];
-        if(_.isUndefined(blendEq)) {
-            throw new Error("Blend Mode " + this.outputBlendMode + " not supported");
-        }
-        fsrc.push("#define setFragColor(color) (gl_FragColor = ("+blendEq+"))");
-    }
 
     // varying position and macros
     if(this.varyingPos) {
@@ -92,6 +74,30 @@ function ShaderProgram(options) {
             "#define getSrcColor() (texture2D(u_srcTexture, v_position))",
             "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))"
         );
+    }
+
+    // color blend macro/function
+    if(this.dynamicBlend) {
+        fsrc.push(
+            "uniform int u_blendMode;",
+            "void setFragColor(vec4 color) {"
+        );
+        _.each(this.blendEqs, function(eq, mode) {
+            fsrc.push(
+                "   if(u_blendMode == "+mode+") {",
+                "       gl_FragColor = ("+eq+");",
+                "   }"
+            );
+        });
+        fsrc.push(
+            "}"
+        );
+    } else {
+        var blendEq = this.blendEqs[this.glBlendMode?Webvs.REPLACE:this.outputBlendMode];
+        if(_.isUndefined(blendEq)) {
+            throw new Error("Blend Mode " + this.outputBlendMode + " not supported");
+        }
+        fsrc.push("#define setFragColor(color) (gl_FragColor = ("+blendEq+"))");
     }
 
     this.fragmentSrc = fsrc.join("\n") + "\n" + options.fragmentShader.join("\n");
@@ -133,20 +139,33 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
 	},
 
+    /**
+     * Sets the output blend mode for this shader
+     */
     setOutputBlendMode: function(mode) {
         this.outputBlendMode = mode;
     },
 
+    /**
+     * Runs this shader program
+     * mode,first,count - parameters for gl.drawArrays
+     * fm - frame manager (optional)
+     * outputBlendMode - overrides the blendmode
+     */
     run: function(fm, outputBlendMode) {
         var gl = this.gl;
+        var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
+        gl.useProgram(this.program);
 
-        this.setUniform("u_resolution", "2f", fm.width, fm.height);
-        if(this.swapFrame) {
-            this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
-            if(this.copyOnSwap) {
-                fm.copyCurrentTexture();
+        if(fm) {
+            this.setUniform("u_resolution", "2f", fm.width, fm.height);
+            if(this.swapFrame) {
+                this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
+                fm.swapAttachment();
+                if(this.copyOnSwap) {
+                    fm.copyOver();
+                }
             }
-            fm.swapAttachment();
         }
 
         outputBlendMode = outputBlendMode || this.outputBlendMode;
@@ -161,12 +180,13 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             gl.disable(gl.BLEND);
         }
 
-        var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
-        gl.useProgram(this.program);
-        gl.drawArrays.apply(gl, _.drop(arguments, 2));
+        this.draw.apply(this, _.drop(arguments, 2));
+
         gl.disable(gl.BLEND);
         gl.useProgram(oldProgram);
     },
+
+    draw: function() {},
 
     _compileProgram: function(vertexSrc, fragmentSrc) {
         var gl = this.gl;
@@ -195,6 +215,29 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
         }
         return shader;
+    },
+
+    _setGlBlendMode: function(gl, mode) {
+        switch(mode) {
+            case Webvs.ADDITIVE:
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
+            case Webvs.SUBTRACTIVE1:
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+                break;
+            case Webvs.SUBTRACTIVE2:
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.blendEquation(gl.FUNC_SUBTRACT);
+                break;
+            case Webvs.AVERAGE:
+                gl.blendColor(0.5, 0.5, 0.5, 1);
+                gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
+            default: throw new Error("Invalid blend mode");
+        }
     },
 
     getLocation: function(name, attrib) {
@@ -236,7 +279,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 break;
             case "1fv": case "2fv": case "3fv": case "4fv":
             case "1iv": case "2iv": case "3iv": case "4iv":
-                gl["uniform" + type].apply(gl, value);
+                gl["uniform" + type].apply(gl, location, value);
                 break;
         }
     },

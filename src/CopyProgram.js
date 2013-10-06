@@ -6,7 +6,7 @@
 (function(Webvs) {
 
 function CopyProgram(options) {
-    options = _.defautls(options, {
+    options = _.defaults(options||{}, {
         fragmentShader: [
             "uniform sampler2D u_copySource;",
             "void main() {",
@@ -17,10 +17,13 @@ function CopyProgram(options) {
     CopyProgram.super.constructor.call(this, options);
 }
 Webvs.CopyProgram = Webvs.defineClass(CopyProgram, Webvs.QuadBoxProgram, {
-    run: function(srcTexture) {
+    draw: function(srcTexture) {
         this.setUniform("u_copySource", "texture2D", srcTexture);
-        CopyProgram.super.run.apply(this, _.drop(arguments, 1));
+        CopyProgram.super.draw.call(this);
     }
 });
+
+// an instance of the copy for general use
+//Webvs.copier = new CopyProgram({dynamicBlend: true});
 
 })(Webvs);
