@@ -36,8 +36,6 @@ function EffectList(options) {
 Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     componentName: "EffectList",
 
-    swapFrame: false,
-
     _constructComponent: function(optList) {
         var components = [];
         var that = this;
@@ -58,8 +56,8 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         this.components = components;
     },
 
-    initComponent: function(gl, main, parent) {
-        EffectList.super.initComponent.apply(this, arguments);
+    init: function(gl, main, parent) {
+        EffectList.super.init.apply(this, arguments);
 
         // create a framebuffer manager for this effect list
         this.fm = new Webvs.FrameBufferManager(main.width, main.height, gl, main.copier);
@@ -77,8 +75,8 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         return D.all(initPromises);
     },
 
-    updateComponent: function() {
-        EffectList.super.updateComponent.call(this);
+    update: function() {
+        EffectList.super.update.call(this);
         var gl = this.gl;
 
         if(this.enableOnBeat) {
@@ -123,8 +121,8 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
     },
 
-    destroyComponent: function() {
-        EffectList.super.destroyComponent.call(this);
+    destroy: function() {
+        EffectList.super.destroy.call(this);
 
         // destory all the sub-components
         for(i = 0;i < this.components.length;i++) {

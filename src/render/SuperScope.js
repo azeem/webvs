@@ -5,6 +5,49 @@
 
 (function(Webvs) {
 
+function SuperScopeShader() {
+    SuperScopeShader.super.constructor.call(this, {
+        vertexShader: [
+            "attribute vec2 a_position;",
+            "attribute vec3 a_color;",
+            "varying vec3 v_color;",
+            "uniform float u_pointSize;",
+            "void main() {",
+            "   gl_PointSize = u_pointSize;",
+            "   setPosition(clamp(a_position, vec2(-1,-1), vec2(1,1)));",
+            "   v_color = a_color;",
+            "}"
+        ],
+        fragmentShader: [
+            "varying vec3 v_color;",
+            "void main() {",
+            "   setFragColor(vec4(v_color, 1));",
+            "}"
+        ]
+    });
+}
+SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
+    draw: function(points, colors, dots, thickness) {
+        var gl = this.gl;
+
+        this.setUniform("u_pointSize", "1f", thickness);
+        this.setVertexAttribArray("a_position", points, 2, gl.FLOAT, false, 0, 0);
+        this.setVertexAttribArray("a_color", colors, 3, gl.FLOAT, false, 0, 0);
+
+        var prevLineWidth;
+        if(!dots) {
+            prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
+            gl.lineWidth(thickness);
+        }
+
+        gl.drawArrays(dots?gl.POINTS:gl.LINES, 0, pbi/2);
+
+        if(!dots) {
+            gl.lineWidth(prevLineWidth);
+        }
+    }
+});
+
 /**
  * The-Superscope component
  * @param options
@@ -46,45 +89,17 @@ function SuperScope(options) {
 
     this.inited = false;
 
-    var vertexSrc = [
-        "attribute vec2 a_position;",
-        "attribute vec3 a_color;",
-        "varying vec3 v_color;",
-        "uniform float u_pointSize;",
-        "void main() {",
-        "   gl_PointSize = u_pointSize;",
-        "   setPosition(clamp(a_position, vec2(-1,-1), vec2(1,1)));",
-        "   v_color = a_color;",
-        "}"
-    ].join("\n");
-
-    var fragmentSrc = [
-        "varying vec3 v_color;",
-        "void main() {",
-        "   setFragColor(vec4(v_color, 1));",
-        "}"
-    ].join("\n");
+    this.program = new SuperScopeShader();
 
     SuperScope.super.constructor.call(this, vertexSrc, fragmentSrc);
 }
-Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.ShaderComponent, {
+Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     componentName: "SuperScope",
 
-    copyOnSwap: true,
-
-    init: function() {
-        var gl = this.gl;
-
-        this.code.setup(this.registerBank, this.bootTime, this.analyser);
-        this.code.w = this.resolution.width;
-        this.code.h = this.resolution.height;
-        this.code.cid = this.cloneId;
-
-        this.pointBuffer = gl.createBuffer();
-        this.colorBuffer = gl.createBuffer();
-        this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
-        this.vertexColorLocation = gl.getAttribLocation(this.program, "a_color");
-        this.pointSizeLocation = gl.getUniformLocation(this.program, "u_pointSize");
+    init: function(gl, main, parent) {
+        Superscope.super.init.call(this, gl, main, parent);
+        this.program.init(gl);
+        this.code.setup(main, parent);
     },
 
     update: function() {
@@ -101,7 +116,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.ShaderComponent, {
             this.inited = true;
         }
 
-        var beat = this.analyser.beat;
+        var beat = this.main.analyser.beat;
         code.b = beat?1:0;
         code.perFrame();
         if(beat) {
@@ -109,7 +124,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.ShaderComponent, {
         }
 
         var nPoints = Math.floor(code.n);
-        var data = this.spectrum ? this.analyser.getSpectrum() : this.analyser.getWaveform();
+        var data = this.spectrum ? this.main.analyser.getSpectrum() : this.main.analyser.getWaveform();
         var bucketSize = data.length/nPoints;
         var pbi = 0;
         var cdi = 0;
@@ -148,37 +163,12 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.ShaderComponent, {
             }
         }
 
-        gl.uniform1f(this.pointSizeLocation, this.thickness);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
-        gl.enableVertexAttribArray(this.vertexPositionLocation);
-        gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW);
-        gl.enableVertexAttribArray(this.vertexColorLocation);
-        gl.vertexAttribPointer(this.vertexColorLocation, 3, gl.FLOAT, false, 0, 0);
-
-        var prevLineWidth;
-        if(!this.dots) {
-            prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
-            gl.lineWidth(this.thickness);
-        }
-
-        gl.drawArrays(this.dots?gl.POINTS:gl.LINES, 0, pbi/2);
-
-        if(!this.dots) {
-            gl.lineWidth(prevLineWidth);
-        }
+        this.program.run(this.parent.fm, null, pointBufferData, colorData, this.dots, this.thickness);
     },
 
-    destroyComponent: function() {
+    destroy: function() {
         SuperScope.super.destroyComponent.call(this);
-        var gl = this.gl;
-
-        gl.deleteBuffer(this.vertexBuffer);
-        gl.deleteBuffer(this.colorBuffer);
+        this.program.destroy();
     },
 
     _stepColor: function() {

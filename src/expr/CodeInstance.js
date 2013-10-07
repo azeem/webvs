@@ -99,15 +99,19 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         });
     },
 
-    setup: function(registerBank, bootTime, analyser) {
-        this._registerBank = registerBank;
-        this._bootTime = bootTime;
-        this._analyser = analyser;
+    setup: function(main, parent) {
+        this._registerBank = main.registerBank;
+        this._bootTime = main.bootTime;
+        this._analyser = main.analyser;
+
+        this.w = main.width;
+        this.h = main.height;
+        this.cid = parent.cloneId;
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {
-            if(!_.has(registerBank, name)) {
-                registerBank[name] = 0;
+            if(!_.has(main.registerBank, name)) {
+                main.registerBank[name] = 0;
             }
         });
     }

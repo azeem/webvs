@@ -17,7 +17,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * @param resolution
      * @param analyser
      */
-    initComponent: function(gl, main, parent) {
+    init: function(gl, main, parent) {
         this.gl = gl;
         this.main = main;
         this.parent = parent;
@@ -26,13 +26,13 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
      * Render a frame. Called once for every frame
      */
-    updateComponent: function() {},
+    update: function() {},
 
     /**
      * Release any Webgl resources. Called during
      * reinitialization
      */
-    destroyComponent: function() {},
+    destroy: function() {},
 
     getIdString: function() {
         if(!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
