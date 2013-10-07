@@ -7,6 +7,7 @@
 
 function SuperScopeShader() {
     SuperScopeShader.super.constructor.call(this, {
+        copyOnSwap: true,
         vertexShader: [
             "attribute vec2 a_position;",
             "attribute vec3 a_color;",
@@ -26,7 +27,7 @@ function SuperScopeShader() {
         ]
     });
 }
-SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
+Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
     draw: function(points, colors, dots, thickness) {
         var gl = this.gl;
 
@@ -40,7 +41,7 @@ SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
             gl.lineWidth(thickness);
         }
 
-        gl.drawArrays(dots?gl.POINTS:gl.LINES, 0, pbi/2);
+        gl.drawArrays(dots?gl.POINTS:gl.LINES, 0, points.length/2);
 
         if(!dots) {
             gl.lineWidth(prevLineWidth);

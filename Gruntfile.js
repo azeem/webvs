@@ -26,9 +26,10 @@ module.exports = function(grunt) {
         "src/expr/CodeInstance.js",
         "src/expr/ExprCodeGenerator.js",
 
-        "src/misc/*.js",
-        "src/render/*.js",
-        "src/trans/*.js"
+        //"src/misc/*.js",
+        //"src/render/*.js",
+        //"src/trans/*.js"
+        "src/render/SuperScope.js"
     ];
 
     var libFiles = [
