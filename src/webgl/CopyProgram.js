@@ -23,7 +23,4 @@ Webvs.CopyProgram = Webvs.defineClass(CopyProgram, Webvs.QuadBoxProgram, {
     }
 });
 
-// an instance of the copy for general use
-//Webvs.copier = new CopyProgram({dynamicBlend: true});
-
 })(Webvs);

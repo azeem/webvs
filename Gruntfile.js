@@ -9,23 +9,23 @@
 module.exports = function(grunt) {
     var jsFiles = [
         "src/Base.js",
+
         "src/analyser/*.js",
 
         "src/Main.js",
         "src/Component.js",
-        "src/ShaderComponent.js",
-        "src/QuadBoxComponent.js",
-        "src/ShaderProgram.js",
-        "src/QuadBoxProgram.js",
-        "src/CopyProgram.js",
-        "src/FrameBufferManager.js",
-
-        "src/Ast.js",
-        "build/pegs_expr_parser.js",
-        "src/CodeInstance.js",
-        "src/ExprCodeGenerator.js",
-
         "src/EffectList.js",
+
+        "src/webgl/ShaderProgram.js",
+        "src/webgl/QuadBoxProgram.js",
+        "src/webgl/CopyProgram.js",
+        "src/webgl/FrameBufferManager.js",
+
+        "src/expr/Ast.js",
+        "build/pegs_expr_parser.js",
+        "src/expr/CodeInstance.js",
+        "src/expr/ExprCodeGenerator.js",
+
         "src/misc/*.js",
         "src/render/*.js",
         "src/trans/*.js"
@@ -52,7 +52,7 @@ module.exports = function(grunt) {
 
         peg: {
             expr_lang: {
-                grammar: "src/ExprGrammar.pegjs",
+                grammar: "src/expr/ExprGrammar.pegjs",
                 outputFile: "build/pegs_expr_parser.js",
                 exportVar: "Webvs.PegExprParser",
                 options: {

@@ -12,25 +12,15 @@
 function Component() {}
 Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
-     * this determines whether current render target should be swapped out
-     * before updating this component. if set to true then the updateComponent
-     * call will receive swapped out texture. Used when current rendering
-     * depends on what has been rendered so far
-     */
-    swapFrame: false,
-
-    /**
      * Initialize component. Called once before animation starts
      * @param gl
      * @param resolution
      * @param analyser
      */
-    initComponent: function(gl, resolution, analyser, registerBank, bootTime) {
+    initComponent: function(gl, main, parent) {
         this.gl = gl;
-        this.resolution = resolution;
-        this.analyser = analyser;
-        this.registerBank = registerBank;
-        this.bootTime = bootTime;
+        this.main = main;
+        this.parent = parent;
     },
 
     /**

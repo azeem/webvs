@@ -6,14 +6,33 @@
 (function(Webvs) {
 
 /**
- * Webgl Shader program abstraction
- * with support for blended output and stuff
+ * Base class for Webgl Shaders. It provides an abstraction
+ * with support for blended output, easier variable bindings
+ * and stuff.
+ *
+ * For outputblending, we try to use GL blendEq and blendFunc
+ * if possible, otherwise we fallback to shader based blending,
+ * where we swap the frame, sample the previous texture, and blend
+ * the colors in the shader itself. To do this seamlessly, subclasses
+ * should use a series of macros. eg: setFragColor instead of
+ * setting gl_FragColor directly. The proper macro implementation
+ * is inserted based on the blending modes.
  *
  * options
  *   vertexSrc - the source for the vertex shader
  *   fragmentSrc - the source for the fragment shader
  *   forceShaderBlend - force the use of shader based blending mode
- *   oututBlendMode - the output blending mode
+ *   oututBlendMode - the output blending mode. default is REPLACE
+ *   dynamicBlend - when set to true, blending mode can be changed
+ *                  at runtime even after shader compilation
+ *   swapFrame - if set then a render target swap is done on the 
+ *               framebuffermanager, before rendering. This is used
+ *               by programs where the previous rendering need to be
+ *               sampled
+ *   copyOnSwap - if set to true then on swap, a copyOver is done on
+ *                the framebuffermanager. This is used to maintain
+ *                consistency during shader based blending in shaders
+ *                that do not touch all the pixels
  *   varyingPos - if true then a varying called v_position is added
  *                automatically
  */
@@ -49,7 +68,6 @@ function ShaderProgram(options) {
     } else {
         this.glBlendMode = true;
     }
-
 
     // varying position and macros
     if(this.varyingPos) {
@@ -118,6 +136,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         Webvs.SUBTRACTIVE2
     ],
 
+    // the blending formulas to be used inside shaders
     blendEqs: _.object([
         [Webvs.REPLACE, "color"],
         [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"],
@@ -127,6 +146,9 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"]
     ]),
 
+    /**
+     * initializes and compiles the shaders
+     */
 	init: function(gl) {
 		this.gl = gl;
         try {
@@ -148,9 +170,9 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
     /**
      * Runs this shader program
-     * mode,first,count - parameters for gl.drawArrays
      * fm - frame manager (optional)
      * outputBlendMode - overrides the blendmode
+     * ... - remaining parameters are passed to the draw function
      */
     run: function(fm, outputBlendMode) {
         var gl = this.gl;
@@ -186,6 +208,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.useProgram(oldProgram);
     },
 
+    /**
+     * To be implemented by subclasses. should perform the actual
+     * drawing and any further bindings and calculations if required.
+     */
     draw: function() {},
 
     _compileProgram: function(vertexSrc, fragmentSrc) {

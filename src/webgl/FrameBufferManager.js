@@ -5,6 +5,17 @@
 
 (function(Webvs) {
 
+/**
+ * FrameBufferManager maintains a pair of render targets
+ * alternating between when requested by different
+ * shader programs. Used in EffectLists to compose the different
+ * Components
+ *
+ * width, height - the resolution of the textures to be initialized
+ * gl - the webgl context to be used
+ * copier - an instance of a CopyProgram that should be used
+ *          when a frame copyOver is required
+ */
 function FrameBufferManager(width, height, gl, copier) {
     this.gl = gl;
     this.width = width;
@@ -44,6 +55,10 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         this.currAttachment = 0;
     },
 
+    /**
+     * Saves the current render target and sets this
+     * as the render target
+     */
     setRenderTarget: function() {
         var gl = this.gl;
         this.inputFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
@@ -53,20 +68,49 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         this._setFBAttachment();
     },
 
+    /**
+     * Restores the render target previously saved with
+     * a saveRenderTarget call
+     */
     restoreRenderTarget: function() {
         var gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.inputFrameBuffer);
         gl.viewport(0, 0, this.width, this.height);
     },
 
+    /**
+     * Returns the texture that is currently being
+     * used
+     */
     getCurrentTexture: function() {
         return this.frameAttachments[this.currAttachment].texture;
     },
 
+    /**
+     * Copies the previous texture into the current
+     * texture
+     */
     copyOver: function() {
         var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%2].texture;
         this.copier.run(null, null, prevTexture);
     },
+
+    /**
+     * Swaps the current texture
+     */
+    swapAttachment : function() {
+        this.currAttachment = (this.currAttachment + 1) % 2;
+        this._setFBAttachment();
+    },
+
+    destroy: function() {
+        for(var i = 0;i < 2;i++) {
+            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
+            gl.deleteTexture(this.frameAttachments[i].texture);
+        }
+        gl.deleteFramebuffer(this.framebuffer);
+    },
+
 
     _setFBAttachment: function() {
         var attachment = this.frameAttachments[this.currAttachment];
@@ -74,11 +118,6 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
         gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
     },
-
-    swapAttachment : function() {
-        this.currAttachment = (this.currAttachment + 1) % 2;
-        this._setFBAttachment();
-    }
 });
 
 })(Webvs);

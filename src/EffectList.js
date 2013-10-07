@@ -4,42 +4,6 @@
  */
 
 (function(Webvs) {
-/**
- * Special component that copies texture to target.
- * Also blends in additional texture if provided
- * @constructor
- */
-function Copy(blendMode, forceShaderBlend) {
-    var fragmentSrc = [
-        "uniform sampler2D u_copySource;",
-        "void main() {",
-        "   setFragColor(texture2D(u_copySource, v_position));",
-        "}"
-    ].join("\n");
-    this.outputBlendMode = blendMode || Webvs.blendModes.REPLACE;
-    this.forceShaderBlend = forceShaderBlend?true:false;
-    Copy.super.constructor.call(this, fragmentSrc);
-}
-Webvs.Copy = Webvs.defineClass(Copy, Webvs.QuadBoxComponent, {
-    componentName: "Copy",
-
-    setCopy: function(copySource) {
-        this.copySource = copySource;
-    },
-
-    init: function() {
-        var gl = this.gl;
-        this.texToBeCopiedLocation = gl.getUniformLocation(this.program, "u_copySource");
-        Copy.super.init.apply(this, arguments);
-    },
-    update: function(srcTexture) {
-        var gl = this.gl;
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.copySource);
-        gl.uniform1i(this.texToBeCopiedLocation, 1);
-        Copy.super.update.call(this, srcTexture);
-    }
-});
 
 /**
  * EffectList component. Effectlist
@@ -88,18 +52,19 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
                 var component = new Webvs[type](componentOptions);
                 component.id = i;
                 component.cloneId = cloneId;
-                component.parent = that;
                 components.push(component);
             });
         });
         this.components = components;
     },
 
-    initComponent: function(gl, resolution, analyser, registerBank, bootTime) {
+    initComponent: function(gl, main, parent) {
         EffectList.super.initComponent.apply(this, arguments);
-        this._initFrameBuffer();
 
-        // initialize all the components
+        // create a framebuffer manager for this effect list
+        this.fm = new Webvs.FrameBufferManager(main.width, main.height, gl, main.copier);
+
+        // initialize all the sub components
         var components = this.components;
         var initPromises = [];
         for(var i = 0;i < components.length;i++) {
@@ -109,44 +74,11 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
             }
         }
 
-        // intialize some copy components
-
-        // copies input texture onto internal texutre
-        if(this.input !== -1) {
-            this.inCopyComponent = new Copy(this.input);
-            this.inCopyComponent.initComponent.apply(this.inCopyComponent, arguments);
-        }
-
-        // simple copier without any blending, for copyOnSwap
-        this.copyComponent = new Copy();
-        this.copyComponent.initComponent.apply(this.copyComponent, arguments);
-
-        // copies output to parent's buffer
-        // forceShaderBlend here becuase effectlist is swapFrame and 
-        // output texture has different content than inputtexture 
-        // hence gl blend modes wont work
-        this.outCopyComponent = new Copy(this.output); 
-        this.outCopyComponent.initComponent.apply(this.outCopyComponent, arguments);
-
         return D.all(initPromises);
     },
 
-    _updateSubComponent: function(component) {
-        var inputTexture = this._getCurrentTextrue();
-        if(component.swapFrame) {
-            this._swapFBAttachment();
-            if(component.copyOnSwap) {
-                this.copyComponent.setCopy(inputTexture);
-                this._updateSubComponent(this.copyComponent);
-            }
-            component.updateComponent(inputTexture);
-        } else {
-            component.updateComponent(inputTexture);
-        }
-    },
-
-    updateComponent: function(inputTexture) {
-        EffectList.super.updateComponent.call(this, inputTexture);
+    updateComponent: function() {
+        EffectList.super.updateComponent.call(this);
         var gl = this.gl;
 
         if(this.enableOnBeat) {
@@ -162,13 +94,8 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
             }
         }
 
-        // save the current framebuffer
-        var targetFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-
-        // switch to internal framebuffer
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        gl.viewport(0, 0, this.resolution.width, this.resolution.height);
-        this._setFBAttachment();
+        // set rendertarget to internal framebuffer
+        this.fm.setRenderTarget();
 
         // clear frame
         if(this.clearFrame || this.first) {
@@ -179,90 +106,34 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
         // blend input texture onto internal texture
         if(this.input !== -1) {
-            this.inCopyComponent.setCopy(inputTexture);
-            this._updateSubComponent(this.inCopyComponent);
+            var inputTexture = this.parent.fm.getCurrentTexture();
+            this.main.copier.run(this.fm, this.input, inputTexture);
         }
 
         // render all the components
         var components = this.components;
         for(var i = 0;i < components.length;i++) {
-            this._updateSubComponent(components[i]);
+            component[i].updateComponent();
         }
 
         // switch to old framebuffer
-        gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
-        gl.viewport(0, 0, this.resolution.width, this.resolution.height);
+        this.fm.restoreRenderTarget();
 
-        // blend current texture to the output framebuffer using the copyComponent
-        this.outCopyComponent.setCopy(this._getCurrentTextrue());
-        this.outCopyComponent.updateComponent(inputTexture);
+        // blend current texture to the output framebuffer
+        this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
     },
 
     destroyComponent: function() {
         EffectList.super.destroyComponent.call(this);
-        var gl = this.gl;
-        var i;
 
         // destory all the sub-components
         for(i = 0;i < this.components.length;i++) {
             this.components[i].destroyComponent();
         }
-        this.copyComponent.destroyComponent();
 
-        // delete the framebuffer
-        for(i = 0;i < 2;i++) {
-            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
-            gl.deleteTexture(this.frameAttachments[i].texture);
-        }
-        gl.deleteFramebuffer(this.framebuffer);
-    },
-
-    _initFrameBuffer: function() {
-        var gl = this.gl;
-
-        var framebuffer = gl.createFramebuffer();
-        var attachments = [];
-        for(var i = 0;i < 2;i++) {
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.resolution.width, this.resolution.height,
-                0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-            var renderbuffer = gl.createRenderbuffer();
-            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.resolution.width, this.resolution.height);
-
-            attachments[i] = {
-                texture: texture,
-                renderbuffer: renderbuffer
-            };
-        }
-
-        this.framebuffer = framebuffer;
-        this.frameAttachments = attachments;
-        this.currAttachment = 0;
-    },
-
-    _setFBAttachment: function() {
-        var attachment = this.frameAttachments[this.currAttachment];
-        var gl = this.gl;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
-    },
-
-    _getCurrentTextrue: function() {
-        return this.frameAttachments[this.currAttachment].texture;
-    },
-
-    _swapFBAttachment: function() {
-        this.currAttachment = (this.currAttachment + 1) % 2;
-        this._setFBAttachment();
-    },
+        // destroy the framebuffer manager
+        this.fm.destroy();
+    }
 });
 
 EffectList.ui = {
