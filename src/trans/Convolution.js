@@ -31,11 +31,21 @@ function Convolution(options) {
         throw new Error("Invalid convolution kernel");
     }
 
+    this.program = new Webvs.ConvolutionProgram(kernel, kernelSize, 
+                                                options.edgeMode, options.scale,
+                                                options.bias);
 
     Convolution.super.constructor.call(this);
 }
 Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     componentName: "Convolution",
+    init: function(gl, main, parent) {
+        Convolution.super.init.call(this, gl, main, parent);
+        this.program.init(gl);
+    },
+    update: function() {
+        this.program.run(this.parent.fm, null);
+    }
 });
 
 Convolution.kernels = {
@@ -66,7 +76,7 @@ Convolution.kernels = {
     ]
 };
 
-function ConvolutionProgram(kernal, kernalSize, edgeMode) {
+function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
     // generate edge correction function
     var edgeFunc = "";
     switch(edgeMode) {
@@ -98,7 +108,6 @@ function ConvolutionProgram(kernal, kernalSize, edgeMode) {
     }
 
     // compute kernel scaling factor
-    var scale = options.scale;
     if(_.isUndefined(scale)) {
         scale = _.reduce(kernel, function(memo, num){ return memo + num; }, 0);
     }
@@ -111,11 +120,11 @@ function ConvolutionProgram(kernal, kernalSize, edgeMode) {
             "   vec2 pos;",
             "   vec4 colorSum = vec4(0,0,0,0);",
             colorSumEq.join("\n"),
-            "   setFragColor(vec4(((colorSum+"+Webvs.glslFloatRepr(options.bias)+") / "+Webvs.glslFloatRepr(scale)+").rgb, 1.0));",
+            "   setFragColor(vec4(((colorSum+"+Webvs.glslFloatRepr(bias)+") / "+Webvs.glslFloatRepr(scale)+").rgb, 1.0));",
             "}"
         ]
     });
 }
-Webvs.ConvolutionProgram = Webvs.defineClass(ConvolutionProgram, Webvs.ShaderProgram);
+Webvs.ConvolutionProgram = Webvs.defineClass(ConvolutionProgram, Webvs.QuadBoxProgram);
 
 })(Webvs);
