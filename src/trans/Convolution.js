@@ -31,9 +31,45 @@ function Convolution(options) {
         throw new Error("Invalid convolution kernel");
     }
 
+
+    Convolution.super.constructor.call(this);
+}
+Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
+    componentName: "Convolution",
+});
+
+Convolution.kernels = {
+    normal: [
+        0, 0, 0,
+        0, 1, 0,
+        0, 0, 0
+    ],
+    gaussianBlur: [
+        0.045, 0.122, 0.045,
+        0.122, 0.332, 0.122,
+        0.045, 0.122, 0.045
+    ],
+    unsharpen: [
+        -1, -1, -1,
+        -1,  9, -1,
+        -1, -1, -1
+    ],
+    emboss: [
+        -2, -1,  0,
+        -1,  1,  1,
+        0,  1,  2
+    ],
+    blur: [
+        1, 1, 1,
+        1, 1, 1,
+        1, 1, 1
+    ]
+};
+
+function ConvolutionProgram(kernal, kernalSize, edgeMode) {
     // generate edge correction function
     var edgeFunc = "";
-    switch(options.edgeMode) {
+    switch(edgeMode) {
         case "WRAP":
             edgeFunc = "pos = vec2(pos.x<0?pos.x+1.0:pos.x%1, pos.y<0?pos.y+1.0:pos.y%1);";
             break;
@@ -67,49 +103,19 @@ function Convolution(options) {
         scale = _.reduce(kernel, function(memo, num){ return memo + num; }, 0);
     }
 
-    var fragmentSrc = [
-        "void main() {",
-        "   vec2 onePixel = vec2(1.0, 1.0)/u_resolution;",
-        "   vec2 pos;",
-        "   vec4 colorSum = vec4(0,0,0,0);",
-        colorSumEq.join("\n"),
-        "   setFragColor(vec4(((colorSum+"+Webvs.glslFloatRepr(options.bias)+") / "+Webvs.glslFloatRepr(scale)+").rgb, 1.0));",
-        "}"
-    ].join("\n");
-
-    Convolution.super.constructor.call(this, fragmentSrc);
+    ConvolutionProgram.super.constructor.call(this, {
+        swapFrame: true,
+        fragmentShader: [
+            "void main() {",
+            "   vec2 onePixel = vec2(1.0, 1.0)/u_resolution;",
+            "   vec2 pos;",
+            "   vec4 colorSum = vec4(0,0,0,0);",
+            colorSumEq.join("\n"),
+            "   setFragColor(vec4(((colorSum+"+Webvs.glslFloatRepr(options.bias)+") / "+Webvs.glslFloatRepr(scale)+").rgb, 1.0));",
+            "}"
+        ]
+    });
 }
-Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.QuadBoxComponent, {
-    componentName: "Convolution",
-    swapFrame: true
-});
-
-Convolution.kernels = {
-    normal: [
-        0, 0, 0,
-        0, 1, 0,
-        0, 0, 0
-    ],
-    gaussianBlur: [
-        0.045, 0.122, 0.045,
-        0.122, 0.332, 0.122,
-        0.045, 0.122, 0.045
-    ],
-    unsharpen: [
-        -1, -1, -1,
-        -1,  9, -1,
-        -1, -1, -1
-    ],
-    emboss: [
-        -2, -1,  0,
-        -1,  1,  1,
-        0,  1,  2
-    ],
-    blur: [
-        1, 1, 1,
-        1, 1, 1,
-        1, 1, 1
-    ]
-};
+Webvs.ConvolutionProgram = Webvs.defineClass(ConvolutionProgram, Webvs.ShaderProgram);
 
 })(Webvs);

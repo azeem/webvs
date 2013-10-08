@@ -104,8 +104,8 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
 
-        this.w = main.width;
-        this.h = main.height;
+        this.w = main.canvas.width;
+        this.h = main.canvas.height;
         this.cid = parent.cloneId;
 
         // clear all used registers

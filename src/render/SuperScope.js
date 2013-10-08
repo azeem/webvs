@@ -5,50 +5,6 @@
 
 (function(Webvs) {
 
-function SuperScopeShader() {
-    SuperScopeShader.super.constructor.call(this, {
-        copyOnSwap: true,
-        vertexShader: [
-            "attribute vec2 a_position;",
-            "attribute vec3 a_color;",
-            "varying vec3 v_color;",
-            "uniform float u_pointSize;",
-            "void main() {",
-            "   gl_PointSize = u_pointSize;",
-            "   setPosition(clamp(a_position, vec2(-1,-1), vec2(1,1)));",
-            "   v_color = a_color;",
-            "}"
-        ],
-        fragmentShader: [
-            "varying vec3 v_color;",
-            "void main() {",
-            "   setFragColor(vec4(v_color, 1));",
-            "}"
-        ]
-    });
-}
-Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
-    draw: function(points, colors, dots, thickness) {
-        var gl = this.gl;
-
-        this.setUniform("u_pointSize", "1f", thickness);
-        this.setVertexAttribArray("a_position", points, 2, gl.FLOAT, false, 0, 0);
-        this.setVertexAttribArray("a_color", colors, 3, gl.FLOAT, false, 0, 0);
-
-        var prevLineWidth;
-        if(!dots) {
-            prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
-            gl.lineWidth(thickness);
-        }
-
-        gl.drawArrays(dots?gl.POINTS:gl.LINES, 0, points.length/2);
-
-        if(!dots) {
-            gl.lineWidth(prevLineWidth);
-        }
-    }
-});
-
 /**
  * The-Superscope component
  * @param options
@@ -92,13 +48,13 @@ function SuperScope(options) {
 
     this.program = new SuperScopeShader();
 
-    SuperScope.super.constructor.call(this, vertexSrc, fragmentSrc);
+    SuperScope.super.constructor.call(this);
 }
 Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     componentName: "SuperScope",
 
     init: function(gl, main, parent) {
-        Superscope.super.init.call(this, gl, main, parent);
+        SuperScope.super.init.call(this, gl, main, parent);
         this.program.init(gl);
         this.code.setup(main, parent);
     },
@@ -329,5 +285,50 @@ SuperScope.examples = {
 //        };
 //    }
 };
+
+function SuperScopeShader() {
+    SuperScopeShader.super.constructor.call(this, {
+        copyOnSwap: true,
+        vertexShader: [
+            "attribute vec2 a_position;",
+            "attribute vec3 a_color;",
+            "varying vec3 v_color;",
+            "uniform float u_pointSize;",
+            "void main() {",
+            "   gl_PointSize = u_pointSize;",
+            "   setPosition(clamp(a_position, vec2(-1,-1), vec2(1,1)));",
+            "   v_color = a_color;",
+            "}"
+        ],
+        fragmentShader: [
+            "varying vec3 v_color;",
+            "void main() {",
+            "   setFragColor(vec4(v_color, 1));",
+            "}"
+        ]
+    });
+}
+Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
+    draw: function(points, colors, dots, thickness) {
+        var gl = this.gl;
+
+        this.setUniform("u_pointSize", "1f", thickness);
+        this.setVertexAttribArray("a_position", points, 2, gl.FLOAT, false, 0, 0);
+        this.setVertexAttribArray("a_color", colors, 3, gl.FLOAT, false, 0, 0);
+
+        var prevLineWidth;
+        if(!dots) {
+            prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
+            gl.lineWidth(thickness);
+        }
+
+        gl.drawArrays(dots?gl.POINTS:gl.LINES, 0, points.length/2);
+
+        if(!dots) {
+            gl.lineWidth(prevLineWidth);
+        }
+    }
+});
+
 
 })(Webvs);

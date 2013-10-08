@@ -57,16 +57,16 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     },
 
     init: function(gl, main, parent) {
-        EffectList.super.init.apply(this, arguments);
+        EffectList.super.init.call(this, gl, main, parent);
 
         // create a framebuffer manager for this effect list
-        this.fm = new Webvs.FrameBufferManager(main.width, main.height, gl, main.copier);
+        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier);
 
         // initialize all the sub components
         var components = this.components;
         var initPromises = [];
         for(var i = 0;i < components.length;i++) {
-            var res = components[i].initComponent.apply(components[i], arguments);
+            var res = components[i].init(gl, main, this);
             if(res) {
                 initPromises.push(res);
             }
@@ -111,14 +111,18 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         // render all the components
         var components = this.components;
         for(var i = 0;i < components.length;i++) {
-            component[i].updateComponent();
+            components[i].update();
         }
 
         // switch to old framebuffer
         this.fm.restoreRenderTarget();
 
         // blend current texture to the output framebuffer
-        this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
+        if(this.parent) {
+            this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
+        } else {
+            this.main.copier.run(null, null, this.fm.getCurrentTexture());
+        }
     },
 
     destroy: function() {

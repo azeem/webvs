@@ -17,49 +17,41 @@ function ClearScreen(options) {
     });
     this.n = options.n;
     this.color = Webvs.parseColorNorm(options.color);
+
     this.outputBlendMode = Webvs.blendModes[options.blendMode];
 
     this.prevBeat = false;
     this.beatCount = 0;
 
-    var fragmentSrc = [
-        "uniform vec3 u_color;",
-        "void main() {",
-        "   setFragColor(vec4(u_color, 1));",
-        "}"
-    ].join("\n");
+    this.program = new Webvs.ClearScreenProgram(this.outputBlendMode);
 
-    ClearScreen.super.constructor.call(this, fragmentSrc);
+    ClearScreen.super.constructor.call(this);
 }
-Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.QuadBoxComponent, {
+Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     componentName: "ClearScreen",
 
-    init: function() {
-        var gl = this.gl;
-        this.colorLocation = gl.getUniformLocation(this.program, "u_color");
-        ClearScreen.super.init.apply(this, arguments);
+    init: function(gl, main, parent) {
+        ClearScreen.super.init.call(this, gl, main, parent);
+        this.program.init(gl);
     },
 
     update: function() {
-        var gl = this.gl;
-
         var clear = false;
         if(this.n === 0) {
             clear = true;
         } else {
-            if(this.analyser.beat && !this.prevBeat) {
+            if(this.main.analyser.beat && !this.prevBeat) {
                 this.beatCount++;
                 if(this.beatCount == this.n) {
                     clear = true;
                     this.beatCount = 0;
                 }
             }
-            this.prevBeat = this.analyser.beat;
+            this.prevBeat = this.main.analyser.beat;
         }
 
         if(clear) {
-            gl.uniform3fv(this.colorLocation, this.color);
-            ClearScreen.super.update.apply(this, arguments);
+            this.program.run(this.parent.fm, null, this.color);
         }
     }
 });

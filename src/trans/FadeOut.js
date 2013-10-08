@@ -14,25 +14,16 @@ function FadeOut(options) {
 
     this.frameCount = 0;
     this.maxFrameCount = Math.floor(1/options.speed);
-    console.log("MAx Frame Count = " + this.maxFrameCount);
+    this.program = new Webvs.ClearScreenProgram(Webvs.AVERAGE);
 
-    var fragmentSrc = [
-        "uniform vec3 u_color;",
-        "void main() {",
-        "   setFragColor(vec4(u_color, 1));",
-        "}"
-    ].join("\n");
-
-    FadeOut.super.constructor.call(this, fragmentSrc);
+    FadeOut.super.constructor.call(this);
 }
-Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.QuadBoxComponent, {
+Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
     componentName: "FadeOut",
-    outputBlendMode: Webvs.AVERAGE,
 
-    init: function() {
-        var gl = this.gl;
-        this.colorLocation = gl.getUniformLocation(this.program, "u_color");
-        FadeOut.super.init.apply(this, arguments);
+    init: function(gl, main, parent) {
+        FadeOut.super.init.call(this, gl, main, parent);
+        this.program.init(gl);
     },
 
     update: function() {
@@ -40,9 +31,9 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.QuadBoxComponent, {
         this.frameCount++;
         if(this.frameCount == this.maxFrameCount) {
             this.frameCount = 0;
-            FadeOut.super.update.apply(this, arguments);
+            this.program.run(this.parent.fm, null, this.color);
         }
-    },
+    }
 });
 FadeOut.ui = {
     type: "FadeOut",

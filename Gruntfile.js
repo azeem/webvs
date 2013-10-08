@@ -20,6 +20,7 @@ module.exports = function(grunt) {
         "src/webgl/QuadBoxProgram.js",
         "src/webgl/CopyProgram.js",
         "src/webgl/FrameBufferManager.js",
+        "src/webgl/ClearScreenProgram.js",
 
         "src/expr/Ast.js",
         "build/pegs_expr_parser.js",
@@ -29,7 +30,11 @@ module.exports = function(grunt) {
         //"src/misc/*.js",
         //"src/render/*.js",
         //"src/trans/*.js"
-        "src/render/SuperScope.js"
+        "src/trans/FadeOut.js",
+        "src/trans/Convolution.js",
+
+        "src/render/SuperScope.js",
+        "src/render/ClearScreen.js"
     ];
 
     var libFiles = [

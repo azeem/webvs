@@ -32,6 +32,10 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     _initGl: function() {
         try {
             this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
+
+            this.copier = new Webvs.CopyProgram({dynamicBlend: true});
+            this.copier.init(this.gl);
+
             this.resolution = {
                 width: this.canvas.width,
                 height: this.canvas.height
@@ -50,7 +54,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.stop();
         this.preset = preset;
         if(this.rootComponent) {
-            this.rootComponent.destroyComponent();
+            this.rootComponent.destroy();
         }
         this.rootComponent = newRoot;
     },
@@ -62,7 +66,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     resetCanvas: function() {
         this.stop();
         if(this.rootComponent) {
-            this.rootComponent.destroyComponent();
+            this.rootComponent.destroy();
             this.rootComponent = null;
         }
         this._initGl();
@@ -80,31 +84,31 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         }
 
         this.registerBank = {};
+        this.bootTime = (new Date()).getTime();
         var rootComponent = this.rootComponent;
-        var bootTime = (new Date()).getTime();
-        var promise = rootComponent.initComponent(this.gl, this.resolution, this.analyser, this.registerBank, bootTime);
+        var promise = rootComponent.init(this.gl, this);
 
-        var _this = this;
+        var that = this;
         var drawFrame = function() {
-            if(_this.analyser.isPlaying()) {
-                rootComponent.updateComponent();
+            if(that.analyser.isPlaying()) {
+                rootComponent.update();
             }
-            _this.animReqId = requestAnimationFrame(drawFrame);
+            that.animReqId = requestAnimationFrame(drawFrame);
         };
 
         // wrap drawframe in stats collection if required
         if(this.stats) {
             var oldDrawFrame = drawFrame;
             drawFrame = function() {
-                _this.stats.begin();
+                that.stats.begin();
                 oldDrawFrame.call(this, arguments);
-                _this.stats.end();
+                that.stats.end();
             };
         }
 
         // start rendering when the promise is  done
         promise.then(function() {
-            _this.animReqId = requestAnimationFrame(drawFrame);
+            that.animReqId = requestAnimationFrame(drawFrame);
         });
     },
 
