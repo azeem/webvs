@@ -25,51 +25,30 @@ function ColorMap(options) {
         throw new Error("Unknown mapCycleMode " + options.mapCycleMode);
     }
 
-    var keyEq = "";
-    switch(options.key) {
-        case "RED": keyEq = "srcColor.r"; break;
-        case "GREEN": keyEq = "srcColor.g"; break;
-        case "BLUE": keyEq = "srcColor.b"; break;
-        case "(R+G+B)/2": keyEq = "mod((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
-        case "(R+G+B)/3": keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
-        case "MAX": keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
-        default: throw new Error("Unknown colormap key function " + options.key);
-    }
+    this.program = new Webvs.ColorMapProgram(options.key, Webvs.blendModes[options.output]);
 
-    var fragmentSrc = [
-        "uniform sampler2D u_colorMap;",
-        "void main() {",
-        "   vec4 srcColor = getSrcColor();",
-        "   setFragColor(texture2D(u_colorMap, vec2(("+keyEq+"), 0)));",
-        "}"
-    ].join("\n");
-
-    this.outputBlendMode = Webvs.blendModes[options.output];
-
-    ColorMap.super.constructor.call(this, fragmentSrc);
+    ColorMap.super.constructor.call(this);
 }
-Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.QuadBoxComponent, {
-    swapFrame: true,
+Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     mapCycleModes: {
         SINGLE: 1,
         ONBEATRANDOM: 2,
         ONBEATSEQUENTIAL: 3
     },
 
-    init: function() {
-        var gl = this.gl;
-        var that = this;
+    init: function(gl, main, parent) {
+        ColorMap.super.init.call(this, gl, main, parent);
+
         this.colorMaps = _.map(this.maps, function(map) {
-            return that._buildColorMap(map);
-        });
+            return this._buildColorMap(map);
+        }, this);
         this.currentMap = 0;
-        this.colorMapLocation = gl.getUniformLocation(this.program, "u_colorMap");
-        ColorMap.super.init.apply(this, arguments);
+
+        this.program.init(gl);
     },
 
     update: function() {
-        var gl = this.gl;
-        if(this.analyser.beat) {
+        if(this.main.analyser.beat) {
             switch(this.mapCycleMode) {
                 case this.mapCycleModes.ONBEATRANDOM:
                     this.currentMap = Math.floor(Math.random()*this.colorMaps.length);
@@ -79,11 +58,8 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.QuadBoxComponent, {
                     break;
             }
         }
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.colorMaps[this.currentMap]);
-        gl.uniform1i(this.colorMapLocation, 1);
 
-        ColorMap.super.update.apply(this, arguments);
+        this.program.run(this.parent.fm, null, this.colorMaps[this.currentMap]);
     },
 
     _buildColorMap: function(map) {
@@ -193,5 +169,36 @@ ColorMap.ui = {
         }
     }
 };
+
+function ColorMapProgram(key, blendMode) {
+    var keyEq = "";
+    switch(key) {
+        case "RED": keyEq = "srcColor.r"; break;
+        case "GREEN": keyEq = "srcColor.g"; break;
+        case "BLUE": keyEq = "srcColor.b"; break;
+        case "(R+G+B)/2": keyEq = "mod((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
+        case "(R+G+B)/3": keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
+        case "MAX": keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
+        default: throw new Error("Unknown colormap key function " + options.key);
+    }
+
+    ColorMapProgram.super.constructor.call(this, {
+        outputBlendMode: blendMode,
+        swapFrame: true,
+        fragmentShader: [
+            "uniform sampler2D u_colorMap;",
+            "void main() {",
+            "   vec4 srcColor = getSrcColor();",
+            "   setFragColor(texture2D(u_colorMap, vec2(("+keyEq+"), 0)));",
+            "}"
+        ]
+    });
+}
+Webvs.ColorMapProgram = Webvs.defineClass(ColorMapProgram, Webvs.QuadBoxProgram, {
+    draw: function(colorMap) {
+        this.setUniform("u_colorMap", "texture2D", colorMap);
+        ColorMapProgram.super.draw.call(this);
+    }
+});
 
 })(Webvs);

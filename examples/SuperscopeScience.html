@@ -65,11 +65,20 @@ See the file license.txt for copying permission.
             webvs.start();
 
             // load and play the track
-            var stream_url = "https://api.soundcloud.com/tracks/78068427/stream";
-            dancer.load({
-                src: stream_url + "?client_id=" + clientId
-            });
-            dancer.play();
+            var trackUrl = "https://soundcloud.com/kartell/atwater";
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    var json = JSON.parse(xhr.responseText);
+                    dancer.load({
+                        src: json.stream_url + "?client_id=" + clientId
+                    });
+                    dancer.play();
+                }
+            };
+            var apiUrl = "http://api.soundcloud.com/resolve.json?url="+encodeURI(trackUrl)+"&client_id="+clientId
+            xhr.open("GET", apiUrl, true);
+            xhr.send();
         };
     </script>
 </body>

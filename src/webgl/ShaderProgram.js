@@ -56,16 +56,16 @@ function ShaderProgram(options) {
     }
     this.copyOnSwap = options.copyOnSwap;
     this.varyingPos = options.varyingPos;
-    this.swapFrame = options.swapFrame;
     this.dynamicBlend = options.dynamicBlend;
 
     // select the blend equation
     this.outputBlendMode = options.outputBlendMode;
-    if(this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
+    if(options.swapFrame || this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
         this.swapFrame = true;
         this.glBlendMode = false;
         this.varyingPos = true;
     } else {
+        this.swapFrame = false;
         this.glBlendMode = true;
     }
 

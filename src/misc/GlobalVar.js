@@ -18,24 +18,22 @@ function GlobalVar(options) {
     GlobalVar.super.constructor.call(this);
 }
 Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
-	initComponent: function() {
-		GlobalVar.super.initComponent.apply(this, arguments);
+	init: function(gl, main, parent) {
+		GlobalVar.super.init.call(this, gl, main, parent);
 
-        this.code.setup(this.registerBank, this.bootTime, this.analyser);
-        this.code.w = this.resolution.width;
-        this.code.h = this.resolution.height;
+        this.code.setup(main, this);
 	},
 
-	updateComponent: function() {
+	update: function() {
 		var code = this.code;
-		code.b = this.analyser.beat?1:0;
+		code.b = this.main.analyser.beat?1:0;
 
 		if(!this.inited) {
 			code.init();
 			this.inited = true;
 		}
 
-		if(this.analyser.beat) {
+		if(this.main.analyser.beat) {
 			code.onBeat();
 		}
 
