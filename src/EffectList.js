@@ -80,7 +80,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         var gl = this.gl;
 
         if(this.enableOnBeat) {
-            if(this.analyser.beat) {
+            if(this.main.analyser.beat) {
                 this._frameCounter = this.enableOnBeatFor;
             } else if(this._frameCounter > 0) {
                 this._frameCounter--;

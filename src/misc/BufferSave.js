@@ -17,10 +17,13 @@ function BufferSave(options) {
         throw new Error("Unknown BufferSave action " + options.action);
     }
 
-    if(this.action == this.actions.SAVERESTORE || this.action == this.RESTORESAVE) {
-        this._nextAction = this.action == this.actions.RESTORESAVE?this.actions.RESTORE:this.actions.SAVE;
+    if(this.action == this.actions.SAVERESTORE) {
+        this._nextAction = this.actions.SAVE;
+    } else if(this.action == this.actions.RESTORESAVE) {
+        this._nextAction = this.actions.RESTORE;
     }
     this._bufferId = "__BUFFERSAVE_" + options.bufferId;
+    BufferSave.super.constructor.call(this);
 }
 Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
     actions: {
@@ -29,57 +32,18 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
         SAVERESTORE: 3,
         RESTORESAVE: 4
     },
-    initComponent: function(gl, resolution, analyser, registerBank, bootTime) {
-        BufferSave.super.initComponent.apply(this, arguments);
+    init: function(gl, main, parent) {
+        BufferSave.super.init.call(this, gl, main, parent);
 
-        // create copy components
-        if(this.action != this.actions.RESTORE) {
-            var saveCopyComponent = new Copy();
-            saveCopyComponent.initComponent.apply(saveCopyComponent, arguments);
-            this.saveCopyComponent = saveCopyComponent;
-        }
-        if(this.action != this.action.SAVE) {
-            var restoreCopyComponent = new Copy(this.blendMode);
-            restoreCopyComponent.initComponent.apply(restoreCopyComponent, arguments);
-            this.restoreCopyComponent = restoreCopyComponent;
-            // set swapFrame based on restoreCopyComponent's behaviour
-            if(this.action == this.actions.RESTORE || 
-               this._nextAction == this.actions.RESTORE
-              ) {
-                this.swapFrame = restoreCopyComponent.swapFrame;
-            } else {
-                this.swapFrame = false;
-            }
-        }
-
-        // create frame buffer
-        if(!registerBank[this._bufferId]) {
-            var framebuffer = gl.createFramebuffer();
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution.width, resolution.height,
-                          0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-            var renderbuffer = gl.createRenderbuffer();
-            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, resolution.width, resolution.height);
-
-            registerBank[this._bufferId] = {
-                framebuffer: framebuffer,
-                texture: texture,
-                renderbuffer: renderbuffer
-            };
+        // create frame buffer manager
+        if(!main.registerBank[this._bufferId]) {
+            var fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, 1);
+            main.registerBank[this._bufferId] = fm;
         }
     },
-    updateComponent: function(texture) {
-        BufferSave.super.updateComponent.apply(this, arguments);
+    update: function() {
         var gl = this.gl;
-        var buffer = this.registerBank[this._bufferId];
+        var fm = this.main.registerBank[this._bufferId];
 
         // find the current action
         var currentAction;
@@ -88,10 +52,8 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
             // set the next action
             if(this._nextAction == this.actions.SAVE) {
                 this._nextAction = this.actions.RESTORE;
-                this.swapFrame = this.restoreCopyComponent.swapFrame;
             } else {
                 this._nextAction = this.actions.SAVE;
-                this.swapFrame = false;
             }
         } else {
             currentAction = this.action;
@@ -99,28 +61,19 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
 
         switch(currentAction) {
             case this.actions.SAVE:
-                // save the current framebuffer
-                var targetFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-
-                // switch to the framebuffer
-                gl.bindFramebuffer(gl.FRAMEBUFFER, buffer.framebuffer);
-                gl.viewport(0, 0, this.resolution.width, this.resolution.height);
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, buffer.texture, 0);
-                gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, buffer.renderbuffer);
-
-                // save the current texture onto the buffer
-                this.saveCopyComponent.setCopy(texture);
-                this.saveCopyComponent.updateComponent();
-
-                // switch to old framebuffer
-                gl.bindFramebuffer(gl.FRAMEBUFFER, targetFrameBuffer);
-                gl.viewport(0, 0, this.resolution.width, this.resolution.height);
+                fm.setRenderTarget();
+                this.main.copier.run(null, null, this.parent.fm.getCurrentTexture());
+                fm.restoreRenderTarget();
                 break;
             case this.actions.RESTORE:
-                this.restoreCopyComponent.setCopy(buffer.texture);
-                this.restoreCopyComponent.updateComponent(texture);
+                this.main.copier.run(this.parent.fm, null, fm.getCurrentTexture());
                 break;
         }
+    },
+    destroy: function() {
+        BufferSave.super.destroy.call(this);
+        // destroy the framebuffermanager
+        this.main.registerBank[this._bufferId].destroy();
     }
 });
 BufferSave.ui = {

@@ -36,68 +36,26 @@ function DynamicMovement(options) {
 
     this.coordMode = options.coord;
 
-    var rectToPolar = "";
-    if(this.coordMode === "POLAR") {
-        rectToPolar = [
-            "d = distance(a_position, vec2(0,0));",
-            "r = atan(a_position.x, a_position.y);"
-        ].join("\n");
-    }
-    var polarToRect = "";
-    if(this.coordMode === "POLAR") {
-        polarToRect = [
-            "x = d*sin(r);",
-            "y = -d*cos(r);"
-        ].join("\n");
-    }
+    this.program = new Webvs.DynamicMovementProgram(this.coordMode, this.code.hasRandom, genResult[1]);
 
-    var vertexSrc = [
-        "attribute vec2 a_position;",
-        "varying vec2 v_newPoint;",
-        "uniform int u_coordMode;",
-        genResult[1],
-        "void main() {",
-        (this.code.hasRandom?"__randSeed = a_position;":""),
-        "   x = a_position.x;",
-        "   y = -a_position.y;",
-        rectToPolar,
-        "   perPixel();",
-        polarToRect,
-        "   v_newPoint = vec2(x,-y);",
-        "   setPosition(a_position);",
-        "}"
-    ].join("\n");
-
-    var fragmentSrc = [
-        "varying vec2 v_newPoint;",
-        "void main() {",
-        "   setFragColor(vec4(getSrcColorAtPos(mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1));",
-        "}"
-    ].join("\n");
-
-    DynamicMovement.super.constructor.call(this, vertexSrc, fragmentSrc);
+    DynamicMovement.super.constructor.call(this);
 }
-Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.ShaderComponent, {
+Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     componentName: "DynamicMovement",
 
-    swapFrame: true,
+    init: function(gl, main, parent) {
+        DynamicMovement.super.init.call(this, gl, main, parent);
 
-    init: function() {
-        var gl = this.gl;
+        this.program.init(gl);
 
-        this.code.setup(this.registerBank, this.bootTime, this.analyser);
-        this.code.w = this.resolution.width;
-        this.code.h = this.resolution.height;
-
-        this.pointBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
+        this.code.setup(main, parent);
 
         // calculate grid vertices
-        var nGridW = (this.gridW/this.resolution.width)*2;
-        var nGridH = (this.gridH/this.resolution.height)*2;
-        var gridCountAcross = Math.ceil(this.resolution.width/this.gridW);
-        var gridCountDown = Math.ceil(this.resolution.height/this.gridH);
-        var pointBufferData = new Float32Array(gridCountAcross*gridCountDown*6*2);
+        var nGridW = (this.gridW/this.main.canvas.width)*2;
+        var nGridH = (this.gridH/this.main.canvas.height)*2;
+        var gridCountAcross = Math.ceil(this.main.canvas.width/this.gridW);
+        var gridCountDown = Math.ceil(this.main.canvas.height/this.gridH);
+        var gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
         var pbi = 0;
         var curx = -1;
         var cury = -1;
@@ -106,65 +64,53 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.ShaderComponent
                 var cornx = Math.min(curx+nGridW, 1);
                 var corny = Math.min(cury+nGridH, 1);
 
-                pointBufferData[pbi++] = curx;
-                pointBufferData[pbi++] = cury;
-                pointBufferData[pbi++] = cornx;
-                pointBufferData[pbi++] = cury;
-                pointBufferData[pbi++] = curx;
-                pointBufferData[pbi++] = corny;
+                gridVertices[pbi++] = curx;
+                gridVertices[pbi++] = cury;
+                gridVertices[pbi++] = cornx;
+                gridVertices[pbi++] = cury;
+                gridVertices[pbi++] = curx;
+                gridVertices[pbi++] = corny;
 
-                pointBufferData[pbi++] = cornx;
-                pointBufferData[pbi++] = cury;
-                pointBufferData[pbi++] = cornx;
-                pointBufferData[pbi++] = corny;
-                pointBufferData[pbi++] = curx;
-                pointBufferData[pbi++] = corny;
+                gridVertices[pbi++] = cornx;
+                gridVertices[pbi++] = cury;
+                gridVertices[pbi++] = cornx;
+                gridVertices[pbi++] = corny;
+                gridVertices[pbi++] = curx;
+                gridVertices[pbi++] = corny;
 
                 curx += nGridW;
             }
             curx = -1;
             cury += nGridH;
         }
-        gl.bufferData(gl.ARRAY_BUFFER, pointBufferData, gl.STATIC_DRAW);
-        this.pointBufferSize = pbi/2;
-
-        this.vertexPositionLocation = gl.getAttribLocation(this.program, "a_position");
-        this.curRenderLocation = gl.getUniformLocation(this.program, "u_curRender");
+        this.gridVertices = gridVertices;
+        this.gridVerticesSize = pbi/2;
     },
 
-    update: function(texture) {
-        var gl = this.gl;
-
+    update: function() {
         var code = this.code;
+
+        // run init, if required
         if(!this.inited) {
             code.init();
             this.inited = true;
         }
 
-        var beat = this.analyser.beat;
+        // run on beat
+        var beat = this.main.analyser.beat;
         code.b = beat?1:0;
-
         code.perFrame();
         if(beat) {
             code.onBeat();
         }
 
-        this.code.bindUniforms(gl, this.program, ["x", "y", "d", "r"]);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(this.curRenderLocation, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
-        gl.enableVertexAttribArray(this.vertexPositionLocation);
-        gl.vertexAttribPointer(this.vertexPositionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        gl.drawArrays(gl.TRIANGLES, 0, this.pointBufferSize);
+        this.code.bindUniforms(this.program);
+        this.program.run(this.parent.fm, null, this.gridVertices, this.gridVerticesSize);
     },
 
     destroyComponent: function() {
         DynamicMovement.super.destroyComponent.call(this);
-        this.gl.deleteBuffer(this.pointBuffer);
+        this.program.destroy();
     }
 });
 DynamicMovement.ui = {
@@ -258,5 +204,58 @@ DynamicMovement.examples = {
         perPixel: "x=x+(sin(y*dx)*.03); y=y-(cos(x*dy)*.03);"
     }
 };
+
+function DynamicMovementProgram(coordMode, randSeed, exprCode) {
+    var rectToPolar = "";
+    if(coordMode === "POLAR") {
+        rectToPolar = [
+            "d = distance(a_position, vec2(0,0));",
+            "r = atan(a_position.x, a_position.y);"
+        ].join("\n");
+    }
+    var polarToRect = "";
+    if(coordMode === "POLAR") {
+        polarToRect = [
+            "x = d*sin(r);",
+            "y = -d*cos(r);"
+        ].join("\n");
+    }
+
+    var vertexShader = [
+        "attribute vec2 a_position;",
+        "varying vec2 v_newPoint;",
+        "uniform int u_coordMode;",
+        exprCode,
+        "void main() {",
+        (randSeed?"__randSeed = a_position;":""),
+        "   x = a_position.x;",
+        "   y = -a_position.y;",
+        rectToPolar,
+        "   perPixel();",
+        polarToRect,
+        "   v_newPoint = vec2(x,-y);",
+        "   setPosition(a_position);",
+        "}"
+    ];
+
+    var fragmentShader = [
+        "varying vec2 v_newPoint;",
+        "void main() {",
+        "   setFragColor(vec4(getSrcColorAtPos(mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1));",
+        "}"
+    ];
+
+    DynamicMovementProgram.super.constructor.call(this, {
+        fragmentShader: fragmentShader,
+        vertexShader: vertexShader,
+        swapFrame: true
+    });
+}
+Webvs.DynamicMovementProgram = Webvs.defineClass(DynamicMovementProgram, Webvs.ShaderProgram, {
+    draw: function(gridVertices, gridVerticesSize) {
+        this.setVertexAttribArray("a_position", gridVertices, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, gridVerticesSize);
+    }
+});
 
 })(Webvs);

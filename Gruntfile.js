@@ -31,10 +31,12 @@ module.exports = function(grunt) {
         //"src/render/*.js",
         //"src/trans/*.js"
         "src/misc/GlobalVar.js",
+        "src/misc/BufferSave.js",
 
         "src/trans/FadeOut.js",
         "src/trans/Convolution.js",
         "src/trans/ColorMap.js",
+        "src/trans/DynamicMovement.js",
 
         "src/render/SuperScope.js",
         "src/render/ClearScreen.js"

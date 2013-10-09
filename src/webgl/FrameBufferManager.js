@@ -16,11 +16,12 @@
  * copier - an instance of a CopyProgram that should be used
  *          when a frame copyOver is required
  */
-function FrameBufferManager(width, height, gl, copier) {
+function FrameBufferManager(width, height, gl, copier, texCount) {
     this.gl = gl;
     this.width = width;
     this.height = height;
     this.copier = copier;
+    this.texCount = texCount || 2;
     this._initFrameBuffers();
 }
 Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
@@ -29,7 +30,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
         var framebuffer = gl.createFramebuffer();
         var attachments = [];
-        for(var i = 0;i < 2;i++) {
+        for(var i = 0;i < this.texCount;i++) {
             var texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -91,7 +92,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * texture
      */
     copyOver: function() {
-        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%2].texture;
+        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount].texture;
         this.copier.run(null, null, prevTexture);
     },
 
@@ -99,12 +100,12 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * Swaps the current texture
      */
     swapAttachment : function() {
-        this.currAttachment = (this.currAttachment + 1) % 2;
+        this.currAttachment = (this.currAttachment + 1) % this.texCount;
         this._setFBAttachment();
     },
 
     destroy: function() {
-        for(var i = 0;i < 2;i++) {
+        for(var i = 0;i < this.texCount;i++) {
             gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
             gl.deleteTexture(this.frameAttachments[i].texture);
         }

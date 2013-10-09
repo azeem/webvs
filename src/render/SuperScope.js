@@ -56,7 +56,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     init: function(gl, main, parent) {
         SuperScope.super.init.call(this, gl, main, parent);
         this.program.init(gl);
-        this.code.setup(main, parent);
+        this.code.setup(main, this);
     },
 
     update: function() {
