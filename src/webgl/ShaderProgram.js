@@ -47,7 +47,8 @@ function ShaderProgram(options) {
     });
     var fsrc = [
         "precision mediump float;",
-        "uniform vec2 u_resolution;"
+        "uniform vec2 u_resolution;",
+        "#define PI "+Math.PI
     ];
     var vsrc = _.clone(fsrc);
 

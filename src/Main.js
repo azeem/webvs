@@ -93,7 +93,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             if(that.analyser.isPlaying()) {
                 rootComponent.update();
             }
-            that.animReqId = requestAnimationFrame(drawFrame);
+            that.animReqId = Webvs.requestAnimationFrame.call(window,drawFrame);
         };
 
         // wrap drawframe in stats collection if required

@@ -8,22 +8,69 @@ See the file license.txt for copying permission.
     <title>Webvs|Jello Cube</title>
 </head>
 <body>
-    <canvas style="border: 1px solid black;" width="866" height="650" id="canvas"></canvas>
+    <canvas style="border: 1px solid black;" width="433" height="325" id="canvas"></canvas>
     <script src="../build/libs.js"></script>
     <script src="../build/webvs.js"></script>
     <script type="text/javascript">
-        var samplePreset = {
+        /*var samplePreset = {
+            name : "Jello Cube",
+            author : "Steven Wittens / UnConeD (http://acko.net)",
+            clearFrame : false,
+            components: [
+                {
+                    type: "SuperScope",
+                    colors: ["#ff0000"],
+                    code: {
+                        "perPoint": "x=0;y=i;"
+                    }
+                },
+                {
+                    type: "SuperScope",
+                    colors: ["#00ff00"],
+                    code: {
+                        "perPoint": "x=0;y=-i;"
+                    }
+                },
+                {
+                    type: "SuperScope",
+                    colors: ["#0000ff"],
+                    code: {
+                        "perPoint": "x=i;y=0;"
+                    }
+                },
+                {
+                    type: "SuperScope",
+                    colors: ["#ffffff"],
+                    code: {
+                        "perPoint": "x=-i;y=0;"
+                    }
+                },
+                {
+                    type: "DynamicMovement",
+                    noGrid: true,
+                    //gridW: 5,
+                    //gridH: 5,
+                    code: {
+                        perPixel: "r=$PI*1.5;"
+                        //perPixel: "d=sin(d*(1+d*sin(r*150)*.15))*.5+d*.5;r=r+.01;"
+                        //perPixel: "r=r+(0.1 - (0.2 * d));d = d * 0.96;"
+                    }
+                }
+            ]
+        }
+        */var samplePreset = {
             name : "Jello Cube",
             author : "Steven Wittens / UnConeD (http://acko.net)",
             clearFrame : false,
             components: [
                 {
                     type: "EffectList",
-                    enabled: false,
+                    enabled: true,
                     clearFrame: false,
                     components: [
                         {
                             type: "DynamicMovement",
+                            noGrid: true,
                             code: {
                                 perPixel: "d=sin(d*(1+d*sin(r*150)*.15))*.5+d*.5;r=r+.01;"
                             }
@@ -45,6 +92,7 @@ See the file license.txt for copying permission.
                 {
                     "type": "ColorMap",
                     "output": "REPLACE",
+                    "key": "RED",
                     "maps": [
                         [
                             {color: "#FFFFFF", index:52},
@@ -56,6 +104,7 @@ See the file license.txt for copying permission.
                 {
                     type: "EffectList",
                     clearFrame: true,
+                    input: "IGNORE",
                     output: "SUBTRACTIVE1",
                     components: [
                         {
@@ -145,7 +194,12 @@ See the file license.txt for copying permission.
                             }
                         },
                         {
+                            type: "BufferSave",
+                            action: "SAVE"
+                        },
+                        {
                             "type": "Convolution",
+                            "enabled": false,
                             "scale": 8,
                             "kernel": [
                                 0, 0, 1, 0, 0,
@@ -155,10 +209,6 @@ See the file license.txt for copying permission.
                                 0, 0, 1, 0, 0
                             ]
                         },
-                        {
-                            type: "BufferSave",
-                            action: "SAVE"
-                        }
                     ]
                 }
             ]
@@ -177,6 +227,10 @@ See the file license.txt for copying permission.
             webvs.start();
 
             // load and play the track
+            /*dancer.load({
+                src: "music.m4a"
+            });
+            dancer.play();*/
             var trackUrl = "https://soundcloud.com/kartell/atwater";
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {

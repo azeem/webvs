@@ -15,6 +15,7 @@ function DynamicMovement(options) {
     options = _.defaults(options, {
         gridW: 16,
         gridH: 16,
+        noGrid: false,
         coord: "POLAR"
     });
 
@@ -31,12 +32,17 @@ function DynamicMovement(options) {
     this.code = genResult[0];
     this.inited = false;
 
+    this.noGrid = options.noGrid;
     this.gridW = options.gridW;
     this.gridH = options.gridH;
 
     this.coordMode = options.coord;
 
-    this.program = new Webvs.DynamicMovementProgram(this.coordMode, this.code.hasRandom, genResult[1]);
+    if(this.noGrid) {
+        this.program = new Webvs.DMovNoGrid(this.coordMode, this.code.hasRandom, genResult[1]);
+    } else {
+        this.program = new Webvs.DynamicMovementProgram(this.coordMode, this.code.hasRandom, genResult[1]);
+    }
 
     DynamicMovement.super.constructor.call(this);
 }
@@ -51,40 +57,42 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
         this.code.setup(main, parent);
 
         // calculate grid vertices
-        var nGridW = (this.gridW/this.main.canvas.width)*2;
-        var nGridH = (this.gridH/this.main.canvas.height)*2;
-        var gridCountAcross = Math.ceil(this.main.canvas.width/this.gridW);
-        var gridCountDown = Math.ceil(this.main.canvas.height/this.gridH);
-        var gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
-        var pbi = 0;
-        var curx = -1;
-        var cury = -1;
-        for(var i = 0;i < gridCountDown;i++) {
-            for(var j = 0;j < gridCountAcross;j++) {
-                var cornx = Math.min(curx+nGridW, 1);
-                var corny = Math.min(cury+nGridH, 1);
+        if(!this.noGrid) {
+            var nGridW = (this.gridW/this.main.canvas.width)*2;
+            var nGridH = (this.gridH/this.main.canvas.height)*2;
+            var gridCountAcross = Math.ceil(this.main.canvas.width/this.gridW);
+            var gridCountDown = Math.ceil(this.main.canvas.height/this.gridH);
+            var gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
+            var pbi = 0;
+            var curx = -1;
+            var cury = -1;
+            for(var i = 0;i < gridCountDown;i++) {
+                for(var j = 0;j < gridCountAcross;j++) {
+                    var cornx = Math.min(curx+nGridW, 1);
+                    var corny = Math.min(cury+nGridH, 1);
 
-                gridVertices[pbi++] = curx;
-                gridVertices[pbi++] = cury;
-                gridVertices[pbi++] = cornx;
-                gridVertices[pbi++] = cury;
-                gridVertices[pbi++] = curx;
-                gridVertices[pbi++] = corny;
+                    gridVertices[pbi++] = curx;
+                    gridVertices[pbi++] = cury;
+                    gridVertices[pbi++] = cornx;
+                    gridVertices[pbi++] = cury;
+                    gridVertices[pbi++] = curx;
+                    gridVertices[pbi++] = corny;
 
-                gridVertices[pbi++] = cornx;
-                gridVertices[pbi++] = cury;
-                gridVertices[pbi++] = cornx;
-                gridVertices[pbi++] = corny;
-                gridVertices[pbi++] = curx;
-                gridVertices[pbi++] = corny;
+                    gridVertices[pbi++] = cornx;
+                    gridVertices[pbi++] = cury;
+                    gridVertices[pbi++] = cornx;
+                    gridVertices[pbi++] = corny;
+                    gridVertices[pbi++] = curx;
+                    gridVertices[pbi++] = corny;
 
-                curx += nGridW;
+                    curx += nGridW;
+                }
+                curx = -1;
+                cury += nGridH;
             }
-            curx = -1;
-            cury += nGridH;
+            this.gridVertices = gridVertices;
+            this.gridVerticesSize = pbi/2;
         }
-        this.gridVertices = gridVertices;
-        this.gridVerticesSize = pbi/2;
     },
 
     update: function() {
@@ -96,16 +104,20 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
             this.inited = true;
         }
 
-        // run on beat
         var beat = this.main.analyser.beat;
         code.b = beat?1:0;
+        // run per frame
         code.perFrame();
+        // run on beat
         if(beat) {
             code.onBeat();
         }
 
-        this.code.bindUniforms(this.program);
-        this.program.run(this.parent.fm, null, this.gridVertices, this.gridVerticesSize);
+        if(this.noGrid) {
+            this.program.run(this.parent.fm, null, this.code);
+        } else {
+            this.program.run(this.parent.fm, null, this.code, this.gridVertices, this.gridVerticesSize);
+        }
     },
 
     destroyComponent: function() {
@@ -205,12 +217,73 @@ DynamicMovement.examples = {
     }
 };
 
+function DMovNoGrid(coordMode, randSeed, exprCode) {
+    var rectToPolar = "";
+    if(coordMode === "POLAR") {
+        rectToPolar = [
+            "d = distance(vec2(x, y), vec2(0,0))/sqrt(2.0);",
+            "r = mod(atan(y, x)+PI*0.5, 2.0*PI);"
+        ].join("\n");
+    }
+    var polarToRect = "";
+    if(coordMode === "POLAR") {
+        polarToRect = [
+            //"r = mod(r-PI*0.5, 2.0*PI);",
+            "x = d*sin(r);",
+            "y = -d*cos(r);"
+        ].join("\n");
+    }
+
+    var fragmentShader = [
+        exprCode,
+
+        "vec4 bFilter(vec2 coord) {",
+        "   vec2 texelSize = (1.0/u_resolution);",
+        "   vec4 q12 = getSrcColorAtPos(coord);",
+        "   vec4 q22 = getSrcColorAtPos(coord + vec2(texelSize.x, 0));",
+        "   vec4 q11 = getSrcColorAtPos(coord + vec2(0, texelSize.y));",
+        "   vec4 q21 = getSrcColorAtPos(coord + texelSize);",
+
+        "   float h = fract(coord.x * u_resolution.x);",
+        "   vec4 r2 = mix(q12, q22, h);",
+        "   vec4 r1 = mix(q11, q21, h);",
+
+        "   float v = fract(coord.y * u_resolution.y);",
+        "   return mix(r2, r1, v);",
+        "}",
+
+        "void main() {",
+        (randSeed?"__randSeed = v_position;":""),
+        "   x = v_position.x*2.0-1.0;",
+        "   y = -(v_position.y*2.0-1.0);",
+        rectToPolar,
+        "   perPixel();",
+        polarToRect,
+        "   vec2 newPoint = mod((vec2(x,-y)+1.0)/2.0, 1.0);",
+        //"   float g = r/(2.0*PI);",
+        //"   setFragColor(vec4(g,g,g,1));",
+        "   setFragColor(vec4(bFilter(newPoint).rgb, 1));",
+        "}"
+    ];
+
+    DMovNoGrid.super.constructor.call(this, {
+        fragmentShader: fragmentShader,
+        swapFrame: true
+    });
+}
+Webvs.DMovNoGrid = Webvs.defineClass(DMovNoGrid, Webvs.QuadBoxProgram, {
+    draw: function(code) {
+        code.bindUniforms(this);
+        DMovNoGrid.super.draw.call(this);
+    }
+});
+
 function DynamicMovementProgram(coordMode, randSeed, exprCode) {
     var rectToPolar = "";
     if(coordMode === "POLAR") {
         rectToPolar = [
-            "d = distance(a_position, vec2(0,0));",
-            "r = atan(a_position.x, a_position.y);"
+            "d = distance(vec2(x, y), vec2(0,0));",
+            "r = mod(atan(x, -y), 2.0*PI);"
         ].join("\n");
     }
     var polarToRect = "";
@@ -240,8 +313,24 @@ function DynamicMovementProgram(coordMode, randSeed, exprCode) {
 
     var fragmentShader = [
         "varying vec2 v_newPoint;",
+
+        "vec4 bFilter(vec2 coord) {",
+        "   vec2 texelSize = (1.0/u_resolution);",
+        "   vec4 q12 = getSrcColorAtPos(coord);",
+        "   vec4 q22 = getSrcColorAtPos(coord + vec2(texelSize.x, 0));",
+        "   vec4 q11 = getSrcColorAtPos(coord + vec2(0, texelSize.y));",
+        "   vec4 q21 = getSrcColorAtPos(coord + texelSize);",
+
+        "   float h = fract(coord.x * u_resolution.x);",
+        "   vec4 r2 = mix(q12, q22, h);",
+        "   vec4 r1 = mix(q11, q21, h);",
+
+        "   float v = fract(coord.y * u_resolution.y);",
+        "   return mix(r2, r1, v);",
+        "}",
+
         "void main() {",
-        "   setFragColor(vec4(getSrcColorAtPos(mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1));",
+        "   setFragColor(vec4(bFilter(mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1));",
         "}"
     ];
 
@@ -252,7 +341,8 @@ function DynamicMovementProgram(coordMode, randSeed, exprCode) {
     });
 }
 Webvs.DynamicMovementProgram = Webvs.defineClass(DynamicMovementProgram, Webvs.ShaderProgram, {
-    draw: function(gridVertices, gridVerticesSize) {
+    draw: function(code, gridVertices, gridVerticesSize) {
+        code.bindUniforms(this);
         this.setVertexAttribArray("a_position", gridVertices, 2, this.gl.FLOAT, false, 0, 0);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, gridVerticesSize);
     }

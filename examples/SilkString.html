@@ -117,7 +117,7 @@ See the file license.txt for copying permission.
                             "cv=band(dt,ldt)*(.5+cv*5);",
                             "red=(1-sqr(i))*cv;",
                             "green=if(above(cid, 15), red, red*.5);",
-                            "blue=if(above(cid, 15), red, red*.5);"
+                            "blue=if(above(cid, 15), red, red*.3);"
                         ]
                     }
                 },
@@ -177,6 +177,10 @@ See the file license.txt for copying permission.
             webvs.start();
 
             // load and play the track
+            /*dancer.load({
+                src: "music.m4a"
+            });
+            dancer.play();*/
             var trackUrl = "https://soundcloud.com/kartell/pantera";
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {

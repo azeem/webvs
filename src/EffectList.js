@@ -23,7 +23,7 @@ function EffectList(options) {
     });
 
     this._constructComponent(options.components);
-    this.output = Webvs.blendModes[options.output];
+    this.output = options.output=="IGNORE"?-1:Webvs.blendModes[options.output];
     this.input = options.input=="IGNORE"?-1:Webvs.blendModes[options.input];
     this.clearFrame = options.clearFrame;
     this.enableOnBeat = options.enableOnBeat;
@@ -118,10 +118,12 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         this.fm.restoreRenderTarget();
 
         // blend current texture to the output framebuffer
-        if(this.parent) {
-            this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
-        } else {
-            this.main.copier.run(null, null, this.fm.getCurrentTexture());
+        if(this.output != -1) {
+            if(this.parent) {
+                this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
+            } else {
+                this.main.copier.run(null, null, this.fm.getCurrentTexture());
+            }
         }
     },
 
