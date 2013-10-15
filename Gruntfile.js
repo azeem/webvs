@@ -36,6 +36,7 @@ module.exports = function(grunt) {
         "src/trans/FadeOut.js",
         "src/trans/Convolution.js",
         "src/trans/ColorMap.js",
+        "src/trans/ColorClip.js",
         "src/trans/DynamicMovement.js",
 
         "src/render/SuperScope.js",

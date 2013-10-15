@@ -17,7 +17,10 @@ function ColorClip(options) {
         level: 0
     });
 
-    this.mode = options.mode;
+    this.mode = _.indexOf(this.modes, options.mode);
+    if(this.mode == -1) {
+        throw new Error("ColorClip: invalid mode");
+    }
     this.color = Webvs.parseColorNorm(options.color);
     this.outColor = Webvs.parseColorNorm(options.outColor);
     this.level = options.level;
@@ -25,6 +28,8 @@ function ColorClip(options) {
     this.program = new Webvs.ColorClipProgram();
 }
 Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
+    modes: ["BELOW", "ABOVE", "NEAR"],
+
     init: function(gl, main, parent) {
         ColorClip.super.init.call(this, gl, main, parent);
 
@@ -38,6 +43,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
 
 function ColorClipProgram() {
     ColorClipProgram.super.constructor({
+        swapFrame: true,
         fragmentShader: [
             "uniform int u_mode;",
             "uniform vec3 u_color;",
@@ -48,16 +54,14 @@ function ColorClipProgram() {
             "   vec4 inColor4 = getSrcColor();",
             "   vec3 inColor = inColor4.rgb;",
             "   bool clip = false;",
-            "   switch(u_mode) {",
-            "       case 0:",
+            "   if(u_mode == 0) {",
             "           clip = all(lessThanEqual(inColor, u_color));",
-            "           break;",
-            "       case 1:",
-            "           clip = all(greaterThanEqual(inColor, u_color))",
-            "           break;",
-            "       case 2:",
-            "           clip = (distance(inColor, u_color)/sqrt(3) <= u_level)",
-            "           break;",
+            "   }",
+            "   if(u_mode == 1) {",
+            "           clip = all(greaterThanEqual(inColor, u_color));",
+            "   }",
+            "   if(u_mode == 2) {",
+            "           clip = (distance(inColor, u_color)/sqrt(3.0) <= u_level);",
             "   }",
             "   if(clip) {",
             "       setFragColor(vec4(u_outColor, inColor4.a));",
@@ -68,7 +72,7 @@ function ColorClipProgram() {
         ]
     });
 }
-Webvs.ColorClipProgram = Webvs.defineClass(ColorClipProgram, QuadBoxProgram, {
+Webvs.ColorClipProgram = Webvs.defineClass(ColorClipProgram, Webvs.QuadBoxProgram, {
     draw: function(mode, color, outColor, level) {
         this.setUniform("u_mode", "1i", mode);
         this.setUniform.apply(this, ["u_color", "3f"].concat(color));
