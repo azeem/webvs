@@ -61,7 +61,7 @@ function ColorClipProgram() {
             "           clip = all(greaterThanEqual(inColor, u_color));",
             "   }",
             "   if(u_mode == 2) {",
-            "           clip = (distance(inColor, u_color)/sqrt(3.0) <= u_level);",
+            "           clip = (distance(inColor, u_color) <= u_level*0.5);",
             "   }",
             "   if(clip) {",
             "       setFragColor(vec4(u_outColor, inColor4.a));",

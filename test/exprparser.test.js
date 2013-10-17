@@ -54,9 +54,15 @@ test("ExprParser register support", function() {
     var js1 = codeGen1.generateCode(["test"], [], [])[0];
     var js2 = codeGen2.generateCode(["test"], [], [])[0];
 
-    var bank = {};
-    js1.setup({registerBank: bank}, {});
-    js2.setup({registerBank: bank}, {});
+    var dummyMain = {
+        registerBank: {},
+        canvas: {
+            width: 100,
+            height: 100
+        }
+    }
+    js1.setup(dummyMain, {});
+    js2.setup(dummyMain, {});
 
     js1.a = 10;
     js1.test();

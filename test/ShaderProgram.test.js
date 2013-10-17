@@ -4,37 +4,6 @@
  */
 
 
-function TriangleProgram(options) {
-    TriangleProgram.super.constructor.call(this, _.defaults(options||{}, {
-        copyOnSwap: true,
-        vertexShader: [
-            "attribute vec2 a_position;",
-            "void main() {",
-            "   setPosition(a_position);",
-            "}"
-        ],
-        fragmentShader: [
-            "uniform vec3 u_color;",
-            "void main() {",
-            "   setFragColor(vec4(u_color, 1.0));",
-            "}"
-        ]
-    }));
-}
-TriangleProgram = Webvs.defineClass(TriangleProgram, Webvs.ShaderProgram, {
-    draw: function(color, x, y) {
-        this.setUniform.apply(this, ["u_color", "3f"].concat(Webvs.parseColorNorm(color)));
-        this.setVertexAttribArray(
-            "a_position", 
-            new Float32Array([
-                -0.8+x, -0.6+y,
-                0.46+x, -0.5+y,
-                -0.7+x, 0.7+y
-            ])
-        );
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
-    }
-});
 
 CanvasTest("ShaderProgram BasicTest", 1, function(canvas, gl) {
     var program = new TriangleProgram();

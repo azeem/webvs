@@ -239,10 +239,11 @@ function DMovNoGrid(coordMode, randSeed, exprCode) {
 
         "vec4 bFilter(vec2 coord) {",
         "   vec2 texelSize = (1.0/u_resolution);",
-        "   vec4 q12 = getSrcColorAtPos(coord);",
-        "   vec4 q22 = getSrcColorAtPos(coord + vec2(texelSize.x, 0));",
-        "   vec4 q11 = getSrcColorAtPos(coord + vec2(0, texelSize.y));",
-        "   vec4 q21 = getSrcColorAtPos(coord + texelSize);",
+        "   vec2 corn = floor(coord*u_resolution)*texelSize;",
+        "   vec4 q12 = getSrcColorAtPos(corn);",
+        "   vec4 q22 = getSrcColorAtPos(corn + vec2(texelSize.x, 0));",
+        "   vec4 q11 = getSrcColorAtPos(corn + vec2(0, texelSize.y));",
+        "   vec4 q21 = getSrcColorAtPos(corn + texelSize);",
 
         "   float h = fract(coord.x * u_resolution.x);",
         "   vec4 r2 = mix(q12, q22, h);",
