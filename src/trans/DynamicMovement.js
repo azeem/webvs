@@ -16,6 +16,8 @@ function DynamicMovement(options) {
         gridW: 16,
         gridH: 16,
         noGrid: false,
+        bFilter: true,
+        compat: false,
         coord: "POLAR"
     });
 
@@ -37,11 +39,17 @@ function DynamicMovement(options) {
     this.gridH = options.gridH;
 
     this.coordMode = options.coord;
+    this.bFilter = options.bFilter;
+    this.compat = options.compat;
 
     if(this.noGrid) {
-        this.program = new Webvs.DMovNoGrid(this.coordMode, this.code.hasRandom, genResult[1]);
+        this.program = new Webvs.DMovProgramNG(this.coordMode, this.bFilter,
+                                               this.compat, this.code.hasRandom,
+                                               genResult[1]);
     } else {
-        this.program = new Webvs.DynamicMovementProgram(this.coordMode, this.code.hasRandom, genResult[1]);
+        this.program = new Webvs.DMovProgram(this.coordMode, this.bFilter,
+                                             this.compat, this.code.hasRandom,
+                                             genResult[1]);
     }
 
     DynamicMovement.super.constructor.call(this);
@@ -217,106 +225,115 @@ DynamicMovement.examples = {
     }
 };
 
-function DMovNoGrid(coordMode, randSeed, exprCode) {
-    var rectToPolar = "";
-    if(coordMode === "POLAR") {
-        rectToPolar = [
-            "d = distance(vec2(x, y), vec2(0,0))/sqrt(2.0);",
-            "r = mod(atan(y, x)+PI*0.5, 2.0*PI);"
-        ].join("\n");
-    }
-    var polarToRect = "";
-    if(coordMode === "POLAR") {
-        polarToRect = [
-            "d = d*sqrt(2.0);",
-            "x = d*sin(r);",
-            "y = -d*cos(r);"
-        ].join("\n");
-    }
+var GlslHelpers = {
+    glslRectToPolar: function(coordMode) {
+        if(coordMode === "POLAR") {
+            return [
+                "d = distance(vec2(x, y), vec2(0,0))/sqrt(2.0);",
+                "r = mod(atan(y, x)+PI*0.5, 2.0*PI);"
+            ].join("\n");
+        } else {
+            return "";
+        }
+    },
 
+    glslPolarToRect: function(coordMode) {
+        if(coordMode === "POLAR") {
+            return [
+                "d = d*sqrt(2.0);",
+                "x = d*sin(r);",
+                "y = -d*cos(r);"
+            ].join("\n");
+        } else {
+            return "";
+        }
+    },
+
+    glslFilter: function(bFilter, compat) {
+        if(bFilter && !compat) {
+            return [
+                "vec3 filter(vec2 point) {",
+                "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
+                "   vec2 coord = (point+1.0)/2.0;",
+                "   vec2 cornoff = fract(coord/texel);",
+                "   vec2 corn = floor(coord/texel)*texel;",
+
+                "   vec3 tl = getSrcColorAtPos(corn).rgb;",
+                "   vec3 tr = getSrcColorAtPos(corn + vec2(texel.x, 0)).rgb;",
+                "   vec3 bl = getSrcColorAtPos(corn + vec2(0, texel.y)).rgb;",
+                "   vec3 br = getSrcColorAtPos(corn + texel).rgb;",
+
+                "   vec3 pt = mix(tl, tr, cornoff.x);",
+                "   vec3 pb = mix(bl, br, cornoff.x);",
+                "   return mix(pt, pb, cornoff.y);",
+                "}"
+            ].join("\n");
+        } else if(bFilter && compat) {
+            return [
+                "vec3 filter(vec2 point) {",
+                "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
+                "   vec2 coord = (point+1.0)/2.0;",
+                "   vec2 corn = floor(coord/texel)*texel;",
+
+                "   vec4 tl = getSrcColorAtPos(corn);",
+                "   vec4 tr = getSrcColorAtPos(corn + vec2(texel.x, 0));",
+                "   vec4 bl = getSrcColorAtPos(corn + vec2(0, texel.y));",
+                "   vec4 br = getSrcColorAtPos(corn + texel);",
+
+                "   float xp = floor(fract(coord.x/texel.x)*255.0);",
+                "   float yp = floor(fract(coord.y/texel.y)*255.0);",
+
+                "   #define g_blendtable(i, j) floor(((i)/255.0)*(j))",
+
+                "   float a1 = g_blendtable(255.0-xp, 255.0-yp);",
+                "   float a2 = g_blendtable(xp,       255.0-yp);",
+                "   float a3 = g_blendtable(255.0-xp, yp);",
+                "   float a4 = g_blendtable(xp,       yp);",
+
+                "   float r = (floor(a1*tl.r) + floor(a2*tr.r) + floor(a3*bl.r) + floor(a4*br.r))/255.0;",
+                "   float g = (floor(a1*tl.g) + floor(a2*tr.g) + floor(a3*bl.g) + floor(a4*br.g))/255.0;",
+                "   float b = (floor(a1*tl.b) + floor(a2*tr.b) + floor(a3*bl.b) + floor(a4*br.b))/255.0;",
+                "   return vec3(r, g, b);",
+                "}"
+            ].join("\n");
+        } else {
+            return [
+                "vec3 filter(vec2 point) {",
+                "   return getSrcColorAtPos((point+1.0)/2.0).rgb;",
+                "}"
+            ].join("\n");
+        }
+    }
+};
+
+function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode) {
     var fragmentShader = [
         exprCode,
-
-        "vec3 bFilter(vec2 coord) {",
-        "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
-        "   vec2 corn = floor(coord/texel)*texel;",
-
-        "   vec4 tl = getSrcColorAtPos(corn);",
-        "   vec4 tr = getSrcColorAtPos(corn + vec2(texel.x, 0));",
-        "   vec4 bl = getSrcColorAtPos(corn + vec2(0, texel.y));",
-        "   vec4 br = getSrcColorAtPos(corn + texel);",
-
-
-        "   float xp = floor(fract(coord.x/texel.x)*255.0);",
-        "   float yp = floor(fract(coord.y/texel.y)*255.0);",
-
-        "   vec4 a = floor((vec4(255.0-xp, xp, 255.0-xp, xp)/255.0)*vec4(255.0-yp, 255.0-yp, yp, yp));",
-
-        "   float r = dot(floor(a*vec4(tl.r, tr.r, bl.r, br.r)), vec4(1,1,1,1))/255.0;",
-        "   float g = dot(floor(a*vec4(tl.g, tr.g, bl.g, br.g)), vec4(1,1,1,1))/255.0;",
-        "   float b = dot(floor(a*vec4(tl.b, tr.b, bl.b, br.b)), vec4(1,1,1,1))/255.0;",
-        "   return vec3(r, g, b);",
-        "}",
-
-        /*"vec4 bFilter(vec2 coord) {",
-        "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
-        "   vec2 cornoff = fract(coord/texel);",
-        "   vec2 corn = floor(coord/texel)*texel;",
-
-        "   vec4 tl = getSrcColorAtPos(corn);",
-        "   vec4 tr = getSrcColorAtPos(corn + vec2(texel.x, 0));",
-        "   vec4 bl = getSrcColorAtPos(corn + vec2(0, texel.y));",
-        "   vec4 br = getSrcColorAtPos(corn + texel);",
-
-        "   vec4 pt = mix(tl, tr, cornoff.x);",
-        "   vec4 pb = mix(bl, br, cornoff.x);",
-        "   return mix(pt, pb, cornoff.y);",
-        "}",*/
-
+        this.glslFilter(bFilter, compat),
         "void main() {",
         (randSeed?"__randSeed = v_position;":""),
         "   x = v_position.x*2.0-1.0;",
         "   y = -(v_position.y*2.0-1.0);",
-        rectToPolar,
+        this.glslRectToPolar(coordMode),
         "   perPixel();",
-        polarToRect,
-        "   vec2 newPoint = (vec2(x,-y)+1.0)/2.0;",
-        //"   float g = r/(2.0*PI);",
-        //"   setFragColor(vec4(g,g,g,1));",
-        "   setFragColor(vec4(bFilter(newPoint).rgb, 1));",
-        //"   setFragColor(vec4(vec2(d, mod(r, 2.0*PI)/(2.0*PI)), 1, 1));",
+        this.glslPolarToRect(coordMode),
+        "   setFragColor(vec4(filter(vec2(x, -y)), 1));",
         "}"
     ];
 
-    DMovNoGrid.super.constructor.call(this, {
+    DMovProgramNG.super.constructor.call(this, {
         fragmentShader: fragmentShader,
         swapFrame: true
     });
 }
-Webvs.DMovNoGrid = Webvs.defineClass(DMovNoGrid, Webvs.QuadBoxProgram, {
-    setNear: true,
+Webvs.DMovProgramNG = Webvs.defineClass(DMovProgramNG, Webvs.QuadBoxProgram, GlslHelpers, {
     draw: function(code) {
         code.bindUniforms(this);
-        DMovNoGrid.super.draw.call(this);
+        DMovProgramNG.super.draw.call(this);
     }
 });
 
-function DynamicMovementProgram(coordMode, randSeed, exprCode) {
-    var rectToPolar = "";
-    if(coordMode === "POLAR") {
-        rectToPolar = [
-            "d = distance(vec2(x, y), vec2(0,0));",
-            "r = mod(atan(x, -y), 2.0*PI);"
-        ].join("\n");
-    }
-    var polarToRect = "";
-    if(coordMode === "POLAR") {
-        polarToRect = [
-            "x = d*sin(r);",
-            "y = -d*cos(r);"
-        ].join("\n");
-    }
-
+function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode) {
     var vertexShader = [
         "attribute vec2 a_position;",
         "varying vec2 v_newPoint;",
@@ -326,9 +343,9 @@ function DynamicMovementProgram(coordMode, randSeed, exprCode) {
         (randSeed?"__randSeed = a_position;":""),
         "   x = a_position.x;",
         "   y = -a_position.y;",
-        rectToPolar,
+        this.glslRectToPolar(coordMode),
         "   perPixel();",
-        polarToRect,
+        this.glslPolarToRect(coordMode),
         "   v_newPoint = vec2(x,-y);",
         "   setPosition(a_position);",
         "}"
@@ -336,34 +353,19 @@ function DynamicMovementProgram(coordMode, randSeed, exprCode) {
 
     var fragmentShader = [
         "varying vec2 v_newPoint;",
-
-        "vec4 bFilter(vec2 coord) {",
-        "   vec2 texelSize = (1.0/u_resolution);",
-        "   vec4 q12 = getSrcColorAtPos(coord);",
-        "   vec4 q22 = getSrcColorAtPos(coord + vec2(texelSize.x, 0));",
-        "   vec4 q11 = getSrcColorAtPos(coord + vec2(0, texelSize.y));",
-        "   vec4 q21 = getSrcColorAtPos(coord + texelSize);",
-
-        "   float h = fract(coord.x * u_resolution.x);",
-        "   vec4 r2 = mix(q12, q22, h);",
-        "   vec4 r1 = mix(q11, q21, h);",
-
-        "   float v = fract(coord.y * u_resolution.y);",
-        "   return mix(r2, r1, v);",
-        "}",
-
+        this.glslFilter(bFilter, compat),
         "void main() {",
-        "   setFragColor(vec4(bFilter(mod((v_newPoint+1.0)/2.0, 1.0)).rgb, 1));",
+        "   setFragColor(vec4(filter(v_newPoint), 1));",
         "}"
     ];
 
-    DynamicMovementProgram.super.constructor.call(this, {
+    DMovProgram.super.constructor.call(this, {
         fragmentShader: fragmentShader,
         vertexShader: vertexShader,
         swapFrame: true
     });
 }
-Webvs.DynamicMovementProgram = Webvs.defineClass(DynamicMovementProgram, Webvs.ShaderProgram, {
+Webvs.DMovProgram = Webvs.defineClass(DMovProgram, Webvs.ShaderProgram, GlslHelpers, {
     draw: function(code, gridVertices, gridVerticesSize) {
         code.bindUniforms(this);
         this.setVertexAttribArray("a_position", gridVertices, 2, this.gl.FLOAT, false, 0, 0);

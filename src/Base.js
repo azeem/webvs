@@ -8,13 +8,16 @@
 var Webvs = {};
 window.Webvs = Webvs;
 
-Webvs.defineClass = function(constructor, baseConstructor, properties) {
+Webvs.defineClass = function(constructor, baseConstructor) {
     constructor.prototype = Object.create(baseConstructor.prototype);
     constructor.prototype.constructor = constructor; // fix the constructor reference
     constructor.super = baseConstructor.prototype; // add a superclass reference
-    if(properties) {
+
+    // extend mixins and properties
+    _.chain(arguments).drop(2).each(function(properties) {
         _.extend(constructor.prototype, properties);
-    }
+    });
+
     return constructor;
 };
 
