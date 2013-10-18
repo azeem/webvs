@@ -155,9 +155,6 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         try {
             this._compileProgram(this.vertexSrc, this.fragmentSrc);
         } catch(e) {
-            console.log("Shader Compilation error:");
-            console.log("Vertex Shader:\n"+this.vertexSrc);
-            console.log("Fragment Shader:\n"+this.fragmentSrc);
             throw e;
         }
 	},
@@ -239,6 +236,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.shaderSource(shader, shaderSrc);
         gl.compileShader(shader);
         if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            Webvs.logShaderError(this.fragmentSrc, gl.getShaderInfoLog(shader));
             throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
         }
         return shader;

@@ -228,7 +228,7 @@ function DMovNoGrid(coordMode, randSeed, exprCode) {
     var polarToRect = "";
     if(coordMode === "POLAR") {
         polarToRect = [
-            //"r = mod(r-PI*0.5, 2.0*PI);",
+            "d = d*sqrt(2.0);",
             "x = d*sin(r);",
             "y = -d*cos(r);"
         ].join("\n");
@@ -237,21 +237,41 @@ function DMovNoGrid(coordMode, randSeed, exprCode) {
     var fragmentShader = [
         exprCode,
 
-        "vec4 bFilter(vec2 coord) {",
-        "   vec2 texelSize = (1.0/u_resolution);",
-        "   vec2 corn = floor(coord*u_resolution)*texelSize;",
-        "   vec4 q12 = getSrcColorAtPos(corn);",
-        "   vec4 q22 = getSrcColorAtPos(corn + vec2(texelSize.x, 0));",
-        "   vec4 q11 = getSrcColorAtPos(corn + vec2(0, texelSize.y));",
-        "   vec4 q21 = getSrcColorAtPos(corn + texelSize);",
+        "vec3 bFilter(vec2 coord) {",
+        "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
+        "   vec2 corn = floor(coord/texel)*texel;",
 
-        "   float h = fract(coord.x * u_resolution.x);",
-        "   vec4 r2 = mix(q12, q22, h);",
-        "   vec4 r1 = mix(q11, q21, h);",
+        "   vec4 tl = getSrcColorAtPos(corn);",
+        "   vec4 tr = getSrcColorAtPos(corn + vec2(texel.x, 0));",
+        "   vec4 bl = getSrcColorAtPos(corn + vec2(0, texel.y));",
+        "   vec4 br = getSrcColorAtPos(corn + texel);",
 
-        "   float v = fract(coord.y * u_resolution.y);",
-        "   return mix(r2, r1, v);",
+
+        "   float xp = floor(fract(coord.x/texel.x)*255.0);",
+        "   float yp = floor(fract(coord.y/texel.y)*255.0);",
+
+        "   vec4 a = floor((vec4(255.0-xp, xp, 255.0-xp, xp)/255.0)*vec4(255.0-yp, 255.0-yp, yp, yp));",
+
+        "   float r = dot(floor(a*vec4(tl.r, tr.r, bl.r, br.r)), vec4(1,1,1,1))/255.0;",
+        "   float g = dot(floor(a*vec4(tl.g, tr.g, bl.g, br.g)), vec4(1,1,1,1))/255.0;",
+        "   float b = dot(floor(a*vec4(tl.b, tr.b, bl.b, br.b)), vec4(1,1,1,1))/255.0;",
+        "   return vec3(r, g, b);",
         "}",
+
+        /*"vec4 bFilter(vec2 coord) {",
+        "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
+        "   vec2 cornoff = fract(coord/texel);",
+        "   vec2 corn = floor(coord/texel)*texel;",
+
+        "   vec4 tl = getSrcColorAtPos(corn);",
+        "   vec4 tr = getSrcColorAtPos(corn + vec2(texel.x, 0));",
+        "   vec4 bl = getSrcColorAtPos(corn + vec2(0, texel.y));",
+        "   vec4 br = getSrcColorAtPos(corn + texel);",
+
+        "   vec4 pt = mix(tl, tr, cornoff.x);",
+        "   vec4 pb = mix(bl, br, cornoff.x);",
+        "   return mix(pt, pb, cornoff.y);",
+        "}",*/
 
         "void main() {",
         (randSeed?"__randSeed = v_position;":""),
@@ -260,10 +280,11 @@ function DMovNoGrid(coordMode, randSeed, exprCode) {
         rectToPolar,
         "   perPixel();",
         polarToRect,
-        "   vec2 newPoint = mod((vec2(x,-y)+1.0)/2.0, 1.0);",
+        "   vec2 newPoint = (vec2(x,-y)+1.0)/2.0;",
         //"   float g = r/(2.0*PI);",
         //"   setFragColor(vec4(g,g,g,1));",
         "   setFragColor(vec4(bFilter(newPoint).rgb, 1));",
+        //"   setFragColor(vec4(vec2(d, mod(r, 2.0*PI)/(2.0*PI)), 1, 1));",
         "}"
     ];
 
@@ -273,6 +294,7 @@ function DMovNoGrid(coordMode, randSeed, exprCode) {
     });
 }
 Webvs.DMovNoGrid = Webvs.defineClass(DMovNoGrid, Webvs.QuadBoxProgram, {
+    setNear: true,
     draw: function(code) {
         code.bindUniforms(this);
         DMovNoGrid.super.draw.call(this);

@@ -8,13 +8,18 @@ function LineProgram() {
         copyOnSwap: true,
         vertexShader: [
             "attribute vec2 a_position;",
+            "attribute vec3 a_color;",
+            "varying vec3 v_color;",
+
             "void main() {",
+            "   v_color = a_color;",
             "   setPosition(a_position);",
             "}"
         ],
         fragmentShader: [
+            "varying vec3 v_color;",
             "void main() {",
-            "   setFragColor(vec4(1,1,1,1));",
+            "   setFragColor(vec4(v_color,1));",
             "}"
         ]
     });
@@ -25,15 +30,41 @@ LineProgram = Webvs.defineClass(LineProgram, Webvs.ShaderProgram, {
             "a_position", 
             new Float32Array([
                 0,  0,
-                0.5,  -0.5
+                0, -0.5,
+
+                0,  0,
+                0, 0.5,
+
+                0,  0,
+                0.5, 0,
+
+                0,  0,
+                -0.5, 0,
             ])
         );
-        this.gl.drawArrays(this.gl.LINES, 0, 2);
+        this.setVertexAttribArray(
+            "a_color",
+            new Float32Array([
+                1,  0, 0,
+                1,  0, 0,
+
+                0,  1, 0,
+                0,  1, 0,
+
+                0,  0, 1,
+                0,  0, 1,
+
+                1,  1, 0,
+                1,  1, 0,
+            ]), 
+            3
+        );
+        this.gl.drawArrays(this.gl.LINES, 0, 8);
     }
 });
 
 CanvasTestWithFM("DynamicMovement", 1,
-    [500, 500],
+    [322, 285],
     function(canvas, gl, fm, copier) {
         var lineProgram = new LineProgram();
         lineProgram.init(gl);
@@ -48,7 +79,7 @@ CanvasTestWithFM("DynamicMovement", 1,
 
 
         fm.setRenderTarget();
-        _.times(10, function() {
+        _.times(500, function() {
             lineProgram.run(fm, null);
             dm.update();
         });

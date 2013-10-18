@@ -89,6 +89,36 @@ Webvs.parseColorNorm = function(color) {
     return _.map(Webvs.parseColor(color), function(value) { return value/255; });
 };
 
+Webvs.logShaderError = function(src, error) {
+    var lines = src.split("\n");
+    var ndigits = lines.length.toString().length;
+
+    var errorPos = error.match(/(\d+):(\d+)/);
+    if(errorPos) {
+        errorPos = [parseInt(errorPos[1], 10), parseInt(errorPos[2], 10)];
+    }
+
+    var numberedLines = _.map(lines, function(line, index) {
+        var i;
+        var number = (index+1) + "";
+        for(i = 0;i < (ndigits-number.length);i++) {
+            number = "0" + number;
+        }
+
+        var errorIndicator = "";
+        if(errorPos && errorPos[1] == index+1) {
+            var indent = "";
+            for(i = 0;i < errorPos[0]+ndigits+2;i++) {
+                indent += " ";
+            }
+            errorIndicator = "\n" + indent + "^\n" + indent + error;
+        }
+        return number + ": " + line + errorIndicator;
+    }).join("\n");
+
+    console.log("Shader Error : \n" + numberedLines);
+};
+
 Webvs.requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
