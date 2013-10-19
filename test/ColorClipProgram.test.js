@@ -3,17 +3,6 @@
  * See the file license.txt for copying permission.
  */
 
-function GradientProgram() {
-    GradientProgram.super.constructor.call(this, {
-        fragmentShader: [
-            "void main() {",
-            "   setFragColor(vec4(v_position, 1, 1));",
-            "}"
-        ]
-    });
-}
-GradientProgram = Webvs.defineClass(GradientProgram, Webvs.QuadBoxProgram);
-
 CanvasTest("ColorClipProgram", 4, function(canvas, gl) {
     var gprogram = new GradientProgram();
     var ccprogram = new Webvs.ColorClipProgram();

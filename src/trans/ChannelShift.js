@@ -5,6 +5,8 @@
 
 (function(Webvs) {
 
+var channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
+
 /**
  * ChannelShift component
  * @param options
@@ -16,49 +18,57 @@ function ChannelShift(options) {
         onBeatRandom: false
     });
 
-    this.channel = this.channels.indexOf(options.channel);
+    this.channel = channels.indexOf(options.channel);
     if(this.channel == -1) {
         throw new Error("Invalid Channel");
     }
     this.onBeatRandom = options.onBeatRandom;
 
-    var fragmentSrc = [
-        "uniform int u_channel;",
-        "void main() {",
-        "   vec3 color = getSrcColor().rgb;",
+    this.program = new ChannelShiftProgram();
 
-        _.flatMap(this.channels, function(channel, index) {
-            return [
-                "if(u_channel == "+index+") {",
-                "   setFragColor(vec4(color." + channel.toLowerCase() + ",1));",
-                "}"
-            ];
-        }).join("\n"),
-
-        "}"
-    ].join("\n");
-
-    ChannelShift.super.constructor.call(this, fragmentSrc);
+    ChannelShift.super.constructor.call(this);
 }
-Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.QuadBoxComponent, {
+Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     componentName: "ChannelShift",
     swapFrame: true,
 
-    channels: ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"],
+    init: function(gl, main, parent) {
+        ChannelShift.super.init.call(this, gl, main, parent);
 
-    init: function() {
-        var gl = this.gl;
-        this.channelLocation = gl.getUniformLocation(this.program, "u_channel");
-        ChannelShift.super.init.call(this);
+        this.program.init(gl);
     },
 
-    update: function(texture) {
-        var gl = this.gl;
-        if(this.onBeatRandom && this.analyser.beat) {
-            this.channel = Math.floor(Math.random() * this.channels.length);
+    update: function() {
+        if(this.onBeatRandom && this.main.analyser.beat) {
+            this.channel = Math.floor(Math.random() * channels.length);
         }
-        gl.uniform1i(this.channelLocation, this.channel);
-        ChannelShift.super.update.call(this, texture);
+        this.program.run(this.parent.fm, null, this.channel);
+    }
+});
+
+function ChannelShiftProgram() {
+    ChannelShiftProgram.super.constructor.call(this, {
+        swapFrame: true,
+        fragmentShader: [
+            "uniform int u_channel;",
+            "void main() {",
+            "   vec3 color = getSrcColor().rgb;",
+
+            _.flatMap(channels, function(channel, index) {
+                return [
+                    "if(u_channel == "+index+") {",
+                    "   setFragColor(vec4(color." + channel.toLowerCase() + ",1));",
+                    "}"
+                ];
+            }).join("\n"),
+        "}"
+        ]
+    });
+}
+Webvs.ChannelShiftProgram = Webvs.defineClass(ChannelShiftProgram, Webvs.QuadBoxProgram, {
+    draw: function(channel) {
+        this.setUniform("u_channel", "1i", channel);
+        ChannelShiftProgram.super.draw.call(this);
     }
 });
 
@@ -69,7 +79,7 @@ ChannelShift.ui = {
         channel: {
             type: "string",
             title: "Channel",
-            enum: ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"]
+            enum: channels
         },
         onBeatRandom: {
             type: "boolean",

@@ -92,6 +92,17 @@ TriangleProgram = Webvs.defineClass(TriangleProgram, Webvs.ShaderProgram, {
     }
 });
 
+function GradientProgram() {
+    GradientProgram.super.constructor.call(this, {
+        fragmentShader: [
+            "void main() {",
+            "   setFragColor(vec4(v_position, 1, 1));",
+            "}"
+        ]
+    });
+}
+GradientProgram = Webvs.defineClass(GradientProgram, Webvs.QuadBoxProgram);
+
 function DummyAnalyser() {
     DummyAnalyser.super.constructor.call(this);
 }
