@@ -11,17 +11,21 @@
  */
 function CanvasTest() {
     var testFunc = arguments[arguments.length-1];
-    var canvasSize = arguments[arguments.length-2];
-    var hasCanvasSizeArg = true;
-    if(!_.isArray(canvasSize)) {
-        canvasSize = [100, 100];
-        hasCanvasSizeArg = false;
+    var extraOptions = arguments[arguments.length-2];
+    var hasExtraOptions = true;
+    if(!_.isObject(extraOptions)) {
+        extraOptions = {};
+        hasExtraOptions = false;
     }
+    extraOptions = _.defaults(extraOptions, {
+        canvasSize: [100, 100],
+        async: false
+    });
     var wrapper = function() {
         var canvas = document.createElement("canvas");
         document.body.appendChild(canvas);
-        canvas.width = canvasSize[0];
-        canvas.height = canvasSize[1];
+        canvas.width = extraOptions.canvasSize[0];
+        canvas.height = extraOptions.canvasSize[1];
         var gl = canvas.getContext("webgl", {
             alpha: false,
             preserveDrawingBuffer: true
@@ -30,13 +34,17 @@ function CanvasTest() {
         document.body.removeChild(canvas);
     }
     var testArgs
-    if(hasCanvasSizeArg) {
+    if(hasExtraOptions) {
         testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-2);
     } else {
         testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-1);
     }
     testArgs.push(wrapper);
-    test.apply(window, testArgs);
+    if(extraOptions.async) {
+        asyncTest.apply(window, testArgs);
+    } else {
+        test.apply(window, testArgs);
+    }
 }
 
 function CanvasTestWithFM() {

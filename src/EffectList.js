@@ -72,7 +72,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
             }
         }
 
-        return D.all(initPromises);
+        return Webvs.joinPromises(initPromises);
     },
 
     update: function() {

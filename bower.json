@@ -10,7 +10,6 @@
   ],
   "devDependencies": {
     "dancer.js": "jsantell/dancer.js#~0.3.1",
-    "D.js": "malko/D.js",
     "underscore": "~1.5.1",
     "stats.js": "*"
   }

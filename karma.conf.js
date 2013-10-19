@@ -15,6 +15,9 @@ module.exports = function(config) {
             "test/base.js",
             "test/*.test.js"
         ],
+        proxies: {
+            "/images": "http://localhost:8000/test/images/"
+        },
         reporters: ['progress'],
         port: 9876,
         runnerPort: 9100,

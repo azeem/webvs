@@ -40,12 +40,12 @@ module.exports = function(grunt) {
         "src/trans/DynamicMovement.js",
 
         "src/render/SuperScope.js",
-        "src/render/ClearScreen.js"
+        "src/render/ClearScreen.js",
+        "src/render/Picture.js"
     ];
 
     var libFiles = [
         "bower_components/underscore/underscore.js",
-        "bower_components/D.js/lib/D.js",
         "bower_components/dancer.js/lib/fft.js",
         "bower_components/dancer.js/dancer.js",
         "bower_components/stats.js/src/Stats.js"

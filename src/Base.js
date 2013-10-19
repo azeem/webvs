@@ -122,6 +122,44 @@ Webvs.logShaderError = function(src, error) {
     console.log("Shader Error : \n" + numberedLines);
 };
 
+
+var Promise = function() {
+    this.resolved = false;
+    this.listeners = [];
+};
+Webvs.Promise = Webvs.defineClass(Promise, Object, {
+    resolve: function() {
+        if(!this.resolved) {
+            this.resolved = true;
+            _.each(this.listeners, function(cb) {
+                cb();
+            });
+        }
+    },
+    onResolve: function(cb) {
+        if(this.resolved) {
+            cb();
+        } else {
+            this.listeners.push(cb);
+        }
+    }
+});
+Webvs.joinPromises = function(promises) {
+    var joinedPromise = new Promise();
+
+    var counter = promises.length;
+    _.each(promises, function(promise) {
+        promise.onResolve(function() {
+            counter--;
+            if(counter === 0) {
+                joinedPromise.resolve();
+            }
+        });
+    });
+
+    return joinedPromise;
+};
+
 Webvs.requestAnimationFrame = (
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||

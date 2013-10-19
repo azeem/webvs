@@ -107,7 +107,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         }
 
         // start rendering when the promise is  done
-        promise.then(function() {
+        promise.onResolve(function() {
             that.animReqId = requestAnimationFrame(drawFrame);
         });
     },
