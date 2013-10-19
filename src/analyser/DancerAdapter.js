@@ -6,9 +6,11 @@
 (function(Webvs) {
 
 /**
- * Analyser adapter to use Dance library with webvs
+ * @class
+ * Analyser adapter that adapts the Dancer library.
  * @param dancer
  * @constructor
+ * @memberof Webvs
  */
 function DancerAdapter(dancer) {
     this.dancer = dancer;

@@ -6,15 +6,19 @@
 (function(Webvs) {
 
 /**
- * FrameBufferManager maintains a pair of render targets
- * alternating between when requested by different
- * shader programs. Used in EffectLists to compose the different
- * Components
+ * @class
+ * FrameBufferManager maintains a set of render targets
+ * and switches between them, when requested by different
+ * shader programs. Its used in EffectLists to compose rendering
+ * of the different {@link Webvs.Component}
  *
- * width, height - the resolution of the textures to be initialized
- * gl - the webgl context to be used
- * copier - an instance of a CopyProgram that should be used
- *          when a frame copyOver is required
+ * @param {number} width - the width of the textures to be initialized
+ * @param {number} height - the height of the textures to be initialized
+ * @param {WebGLRenderingContext} gl - the webgl context to be used
+ * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
+ *                                     when a frame copyOver is required
+ * @constructor
+ * @memberof Webvs
  */
 function FrameBufferManager(width, height, gl, copier, texCount) {
     this.gl = gl;
@@ -59,6 +63,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     /**
      * Saves the current render target and sets this
      * as the render target
+     * @memberof Webvs.FrameBufferManager
      */
     setRenderTarget: function() {
         var gl = this.gl;
@@ -71,7 +76,8 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
     /**
      * Restores the render target previously saved with
-     * a saveRenderTarget call
+     * a {@link Webvs.FrameBufferManager.setRenderTarget} call
+     * @memberof Webvs.FrameBufferManager
      */
     restoreRenderTarget: function() {
         var gl = this.gl;
@@ -80,16 +86,17 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     },
 
     /**
-     * Returns the texture that is currently being
-     * used
+     * Returns the texture that is currently being used
+     * @returns {WebGLTexture}
+     * @memberof Webvs.FrameBufferManager
      */
     getCurrentTexture: function() {
         return this.frameAttachments[this.currAttachment].texture;
     },
 
     /**
-     * Copies the previous texture into the current
-     * texture
+     * Copies the previous texture into the current texture
+     * @memberof Webvs.FrameBufferManager
      */
     copyOver: function() {
         var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount].texture;
@@ -98,12 +105,17 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
     /**
      * Swaps the current texture
+     * @memberof Webvs.FrameBufferManager
      */
     swapAttachment : function() {
         this.currAttachment = (this.currAttachment + 1) % this.texCount;
         this._setFBAttachment();
     },
 
+    /**
+     * cleans up all webgl resources
+     * @memberof Webvs.FrameBufferManager
+     */
     destroy: function() {
         for(var i = 0;i < this.texCount;i++) {
             gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);

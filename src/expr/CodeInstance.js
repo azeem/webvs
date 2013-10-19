@@ -6,17 +6,27 @@
 (function(Webvs) {
 
 /**
- * An object that encapsulated, Generated executable code
+ * @class
+ * An object that encapsulates the generated executable code
  * and its state values. Also contains implementations of
  * functions callable from expressions
  * @constructor
+ * @memberof Webvs
  */
 function CodeInstance() {}
 Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
+    /**
+     * avs expression rand function
+     * @memberof Webvs.CodeInstance
+     */
     rand: function(max) { 
         return Math.floor(Math.random() * max) + 1;
     },
 
+    /**
+     * avs expression gettime function
+     * @memberof Webvs.CodeInstance
+     */
     gettime: function(startTime) {
         switch(startTime) {
             case 0:
@@ -26,6 +36,10 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         }
     },
 
+    /**
+     * avs expression getosc function
+     * @memberof Webvs.CodeInstance
+     */
     getosc: function(band, width, channel) {
         var osc = this._analyser.getWaveform();
         var pos = Math.floor((band - width/2)*osc.length);
@@ -40,9 +54,9 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
 
     /**
      * bind state values to uniforms
-     * @param gl
-     * @param program
-     * @param exclude
+     * @param {Webvs.ShaderProgram} program - program to which the state values 
+     *                                        should be bound
+     * @memberof Webvs.CodeInstance
      */
     bindUniforms: function(program) {
         var that = this;
@@ -89,6 +103,12 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         });
     },
 
+    /**
+     * initializes this codeinstance
+     * @param {Webvs.Main} main - webvs main instance
+     * @param {Webvs.Component} parent - the component thats using this codeinstance
+     * @memberof Webvs.CodeInstance
+     */
     setup: function(main, parent) {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
