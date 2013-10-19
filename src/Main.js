@@ -6,8 +6,10 @@
 (function(Webvs) {
 
 /**
- * Main Webvs class
- * @param options
+ * @class
+ * Main Webvs object, that represents a running webvs instance.
+ * @memberof Webvs
+ * @param {object} options - options object
  * @constructor
  */
 function Main(options) {
@@ -46,8 +48,10 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     },
 
     /**
-     * Loads a preset JSON
-     * @param preset JSON representation of the preset
+     * Loads a preset JSON. If a preset is already loaded and running, then
+     * the animation is stopped, and the new preset is loaded.
+     * @param {object} preset - JSON representation of the preset
+     * @memberof Webvs.Main
      */
     loadPreset: function(preset) {
         var newRoot = new Webvs.EffectList(preset);
@@ -60,8 +64,8 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     },
 
     /**
-     * Reset all the components, call this when canvas
-     * dimensions changes
+     * Reset all the components. Call this when canvas dimensions changes
+     * @memberof Webvs.Main
      */
     resetCanvas: function() {
         this.stop();
@@ -77,6 +81,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
     /**
      * Starts the animation
+     * @memberof Webvs.Main
      */
     start: function() {
         if(!this.rootComponent) {
@@ -93,7 +98,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             if(that.analyser.isPlaying()) {
                 rootComponent.update();
             }
-            that.animReqId = Webvs.requestAnimationFrame.call(window,drawFrame);
+            that.animReqId = requestAnimationFrame(drawFrame);
         };
 
         // wrap drawframe in stats collection if required
@@ -114,6 +119,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
     /**
      * Stops the animation
+     * @memberof Webvs.Main
      */
     stop: function() {
         if(typeof this.animReqId !== "undefined") {

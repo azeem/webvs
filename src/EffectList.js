@@ -6,10 +6,11 @@
 (function(Webvs) {
 
 /**
- * EffectList component. Effectlist
- * is the core component that doesnt lot of the rendering
- * work
- * @param options
+ * @class
+ * Effectlist is the core component that can contain other components.
+ * @param {object} options - options object
+ * @augments Webvs.Component
+ * @memberof Webvs
  * @constructor
  */
 function EffectList(options) {
@@ -140,6 +141,12 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     }
 });
 
+/**
+ * Effectlist schema
+ * @static
+ * @name Webvs.Effectlist.ui
+ * @memberof Webvs.Effectlist
+ */
 EffectList.ui = {
     disp: "Effect List",
     type: "EffectList",

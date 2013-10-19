@@ -87,10 +87,25 @@ module.exports = function(grunt) {
             }
         },
 
+        jsdoc : {
+            dist : {
+                src: ["src/**/*.js", "README.md"], 
+                options: {
+                    destination: 'doc',
+                    configure: "jsdoc.conf.js"
+                }
+            }
+        },
+
         watch: {
             scripts: {
                 files: ["src/**/*.js"],
                 tasks: ["default"]
+            },
+
+            doc: {
+                files: ["src/**/*.js"],
+                tasks: ["doc"]
             }
         },
 
@@ -115,7 +130,8 @@ module.exports = function(grunt) {
 
         clean: {
             dev: ["build/*"],
-            dist: ["dist/*"]
+            dist: ["dist/*"],
+            doc: ["doc/*"]
         }
     });
 
@@ -126,9 +142,13 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-peg");
     grunt.loadNpmTasks("grunt-karma");
+    grunt.loadNpmTasks("grunt-jsdoc");
 
     grunt.registerTask('default', ['clean:dev', 'jshint', 'peg', 'concat:dev']);
-    grunt.registerTask("w", ["default", "watch"]);
+    grunt.registerTask("w", ["default", "watch:scripts"]);
+    grunt.registerTask("wdoc", ["doc", "watch:doc"]);
+
+    grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
     grunt.registerTask('dist', ['clean:dist', 'jshint', 'peg', 'uglify:dist']);
     grunt.registerTask('test', ['default', 'karma:test']);
 };

@@ -5,9 +5,22 @@
 
 (function(window) {
 
+/**
+ * Webvs namespace that contains all classes
+ * @alias Webvs
+ * @namespace
+ */
 var Webvs = {};
+
 window.Webvs = Webvs;
 
+/**
+ * A wrapper around Object.create to help with class definition
+ * @param {function} constructor - constructor function for which the prototype is to be defined
+ * @param {function} baseConstructor - base constructor whose prototype will be extended
+ * @param {...object} [properties] - additional properties to be added to the prototype
+ * @returns {function} the constructor
+ */
 Webvs.defineClass = function(constructor, baseConstructor) {
     constructor.prototype = Object.create(baseConstructor.prototype);
     constructor.prototype.constructor = constructor; // fix the constructor reference
@@ -22,14 +35,14 @@ Webvs.defineClass = function(constructor, baseConstructor) {
 };
 
 /**
- * no operation function
+ * An empty function
  */
 Webvs.noop = function() {};
 
 /**
- * checks if an object contains the required properties
- * @param options
- * @param requiredOptions
+ * Checks if an object contains the required properties
+ * @param {object} options - object to be checked
+ * @param {Array.<string>} - properties to be checked
  */
 Webvs.checkRequiredOptions = function(options, requiredOptions) {
     for(var i in requiredOptions) {
@@ -41,29 +54,20 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
 };
 
 /**
- * Simple assert mechanism
- * @param outcome
- * @param message
+ * Returns a floating point value representation of a number
+ * embeddable in glsl shader code
+ * @param {number} val - value to be converted
+ * @returns {string} float represntation
  */
-Webvs.assert = function(outcome, message) {
-    if(!assert) {
-        throw new Error("Assertion Failed: " + message);
-    }
-};
-
-/**
- * Checks if given string contains only whitespace
- * @param str
- * @returns {boolean}
- */
-Webvs.isWhitespace = function(str) {
-    return (typeof str === "string" && str.match(/^(\s*)$/) !== null);
-};
-
 Webvs.glslFloatRepr = function(val) {
     return val + (val%1 === 0?".0":"");
 };
 
+/**
+ * Parse css color string #RRGGBB or rgb(r, g, b)
+ * @param {string} color - color to be parsed
+ * @returns {Array.<number>} triple of color values in 0-255 range
+ */
 Webvs.parseColor = function(color) {
     if(_.isArray(color) && color.length == 3) {
         return color;
@@ -88,10 +92,18 @@ Webvs.parseColor = function(color) {
     throw new Error("Invalid Color Format");
 };
 
+/**
+ * 0-1 normalized version of {@link Webvs.parseColor}
+ */
 Webvs.parseColorNorm = function(color) {
     return _.map(Webvs.parseColor(color), function(value) { return value/255; });
 };
 
+/**
+ * Pretty prints a shader compilation error
+ * @param {string} - shader source code
+ * @param {string} - error message from gl.getShaderInfoLog
+ */
 Webvs.logShaderError = function(src, error) {
     var lines = src.split("\n");
     var ndigits = lines.length.toString().length;
@@ -123,11 +135,23 @@ Webvs.logShaderError = function(src, error) {
 };
 
 
+/**
+ * @class
+ * A simple promise object to notify async init of
+ * components
+ * @memberof Webvs
+ * @constructor
+ */
 var Promise = function() {
     this.resolved = false;
     this.listeners = [];
 };
 Webvs.Promise = Webvs.defineClass(Promise, Object, {
+    /**
+     * resolves the promise object and runs all
+     * the callbacks
+     * @memberof Webvs.Promise
+     */
     resolve: function() {
         if(!this.resolved) {
             this.resolved = true;
@@ -136,7 +160,14 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
             });
         }
     },
-    onResolve: function(cb) {
+
+    /**
+     * register a callback which should be called
+     * when the promise resolves
+     * @param {function} cb - callback
+     * @memberof Webvs.Promise
+     */
+    onResolve : function(cb) {
         if(this.resolved) {
             cb();
         } else {
@@ -144,6 +175,12 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
         }
     }
 });
+
+/**
+ * Combines several promises into one promise
+ * @param {Array.<Webvs.Promise>} promises - promises to be combined
+ * @returns {Webvs.Promise}
+ */
 Webvs.joinPromises = function(promises) {
     var joinedPromise = new Promise();
 
@@ -160,28 +197,11 @@ Webvs.joinPromises = function(promises) {
     return joinedPromise;
 };
 
-Webvs.requestAnimationFrame = (
-    window.requestAnimationFrame       ||
-    window.webkitRequestAnimationFrame ||
-    window.mozRequestAnimationFrame    ||
-    function( callback ){
-        return window.setTimeout(callback, 1000 / 60);
-    }
-);
-
-Webvs.cancelAnimationFrame = (
-    window.cancelAnimationFrame ||
-    window.webkitCancelAnimationFrame ||
-    window.mozCancelAnimationFrame ||
-    function(requestId) {
-        return window.clearTimeout(requestId);
-    }
-);
-
 _.flatMap = _.compose(_.flatten, _.map);
 
-/** Webvs constants **/
-
+/**
+ * Blend mode constants
+ */
 Webvs.blendModes = {
     REPLACE: 1,
     MAXIMUM: 2,

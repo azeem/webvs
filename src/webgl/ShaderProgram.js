@@ -6,35 +6,56 @@
 (function(Webvs) {
 
 /**
- * Base class for Webgl Shaders. It provides an abstraction
+ * @class 
+ * Base class for Webgl Shaders. This provides an abstraction
  * with support for blended output, easier variable bindings
- * and stuff.
+ * etc.
  *
  * For outputblending, we try to use GL blendEq and blendFunc
  * if possible, otherwise we fallback to shader based blending,
  * where we swap the frame, sample the previous texture, and blend
- * the colors in the shader itself. To do this seamlessly, subclasses
- * should use a series of macros. eg: setFragColor instead of
+ * the colors in the shader itself. To do this seamlessly, shader code in subclasses
+ * should use a set of macros. eg: setFragColor instead of
  * setting gl_FragColor directly. The proper macro implementation
  * is inserted based on the blending modes.
  *
- * options
- *   vertexSrc - the source for the vertex shader
- *   fragmentSrc - the source for the fragment shader
- *   forceShaderBlend - force the use of shader based blending mode
- *   oututBlendMode - the output blending mode. default is REPLACE
- *   dynamicBlend - when set to true, blending mode can be changed
- *                  at runtime even after shader compilation
- *   swapFrame - if set then a render target swap is done on the 
- *               framebuffermanager, before rendering. This is used
- *               by programs where the previous rendering need to be
- *               sampled
- *   copyOnSwap - if set to true then on swap, a copyOver is done on
- *                the framebuffermanager. This is used to maintain
- *                consistency during shader based blending in shaders
- *                that do not touch all the pixels
- *   varyingPos - if true then a varying called v_position is added
- *                automatically
+ * #### Options
+ * + vertexShader {string} - the source for the vertex shader
+ * + fragmentShader {string} - the source for the fragment shader
+ * + forceShaderBlend {boolean} (default: false) - force the use of shader based blending mode
+ * + oututBlendMode {string} (default: "REPLACE")- the output blending mode.
+ * + dynamicBlend {boolean} (default: false) - when set to true, blending mode can be changed
+ *     at runtime even after shader compilation
+ * + swapFrame {boolean} (default: false) - if set then a render target swap is done on the 
+ *     framebuffermanager, before rendering. This is used
+ *     by programs where the previous rendering need to be
+ *     sampled
+ * + copyOnSwap {boolean} (default: false) - if set to true then on swap, a copyOver is done on
+ *     the framebuffermanager. This is used to maintain
+ *     consistency during shader based blending in shaders
+ *     that do not touch all the pixels
+ * + varyingPos {boolean} (default: false) - if true then a varying called v_position is added
+ *     automatically
+ * + draw {function} (optional) - override the draw function
+ *
+ * #### glsl utilities
+ *
+ * The following utilities are usable inside the shader code in base classes
+ *
+ * + setPosition(vec2 pos) - sets gl_Position
+ * + getSrcColorAtPos(vec2 pos) - pixel value at pos in u_srcTexture
+ * + getSrcColor(vec2 pos) - same as above, but uses v_position
+ * + setFragColor(vec4 color) - sets the correctly blended fragment color
+ * + sampler2D u_srcTexture - the source texture from previous frame. enabled
+       when swapFrame is set to true
+ * + vec2 u_resolution - the screen resolution. enabled only if fm is 
+ *     passed to {@link Webvs.ShaderProgram.run} call
+ * + vec2 v_position - a 0-1, 0-1 normalized varying of the vertex. enabled
+ *     when varyingPos options is used
+ *
+ * @param {object} options - refer class description
+ * @memberof Webvs
+ * @constructor
  */
 function ShaderProgram(options) { 
     options = _.defaults(options, {
@@ -149,6 +170,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
     /**
      * initializes and compiles the shaders
+     * @memberof Webvs.ShaderProgram
      */
 	init: function(gl) {
 		this.gl = gl;
@@ -161,6 +183,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
     /**
      * Sets the output blend mode for this shader
+     * @param {Webvs.blendModes} mode - the blending mode
+     * @memberof Webvs.ShaderProgram
      */
     setOutputBlendMode: function(mode) {
         this.outputBlendMode = mode;
@@ -168,9 +192,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
     /**
      * Runs this shader program
-     * fm - frame manager (optional)
-     * outputBlendMode - overrides the blendmode
-     * ... - remaining parameters are passed to the draw function
+     * @param {Webvs.FrameBufferManager} fm - frame manager. pass null, if no fm is required
+     * @param {Webvs.blendModes} outputBlendMode - overrides the blendmode. pass null to use default
+     * @param {...any} extraParams - remaining parameters are passed to the draw function
+     * @memberof Webvs.ShaderProgram
      */
     run: function(fm, outputBlendMode) {
         var gl = this.gl;
@@ -207,8 +232,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
     },
 
     /**
-     * To be implemented by subclasses. should perform the actual
-     * drawing and any further bindings and calculations if required.
+     * Performs the actual drawing and any further bindings and calculations if required.
+     * @param {...any} extraParams - the extra parameters passed to {@link Webvs.ShaderProgram.run}
+     * @abstract
+     * @memberof Webvs.ShaderProgram
      */
     draw: function() {},
 
@@ -265,6 +292,13 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
     },
 
+    /**
+     * returns the location of a uniform or attribute. locations are cached.
+     * @param {string} name - name of the variable
+     * @param {boolean} [attrib] - pass true if variable is attribute
+     * @returns {location}
+     * @memberof Webvs.ShaderProgram
+     */
     getLocation: function(name, attrib) {
         var location = this._locations[name];
         if(_.isUndefined(location)) {
@@ -278,6 +312,12 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return location;
     },
 
+    /**
+     * returns the index of a texture. assigns id if not already assigned.
+     * @param {string} name - name of the varaible
+     * @returns {number} index of the texture
+     * @memberof Webvs.ShaderProgram
+     */
     getTextureId: function(name) {
         var id = _.indexOf(this._textureVars, name);
         if(id === -1) {
@@ -287,6 +327,13 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return id;
     },
 
+    /**
+     * binds value of a uniform variable in this program
+     * @param {string} name - name of the variable
+     * @param {string} type - type of the variable (texture2D, [1234]f, [1234]i, [1234]fv, [1234]iv)
+     * @param {...any} values - values to be assigned
+     * @memberof Webvs.ShaderProgram
+     */
     setUniform: function(name, type, value) {
         var location = this.getLocation(name);
         var gl = this.gl;
@@ -309,6 +356,17 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
     },
 
+    /**
+     * binds the vertex attribute array
+     * @param {string} name - name of the variable
+     * @param {Array} array - array of vertex data
+     * @param {number} [size=2] - size of each item
+     * @param [type=gl.FLOAT]
+     * @param [normalized=false]
+     * @param [stride=0]
+     * @param [offset=0]
+     * @memberof Webvs.ShaderProgram
+     */
     setVertexAttribArray: function(name, array, size, type, normalized, stride, offset) {
         var gl = this.gl;
         size = size || 2;
@@ -330,6 +388,11 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
     },
 
+    /**
+     * destroys webgl resources consumed by this program.
+     * call in component destroy
+     * @memberof Webvs.ShaderProgram
+     */
     cleanup: function() {
         var gl = this.gl;
         _.each(this._buffers, function(buffer) {
