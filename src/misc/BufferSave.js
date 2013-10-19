@@ -76,6 +76,7 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
         this.main.registerBank[this._bufferId].destroy();
     }
 });
+
 BufferSave.ui = {
     disp: "Buffer Save",
     type: "BufferSave",

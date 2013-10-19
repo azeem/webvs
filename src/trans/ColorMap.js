@@ -121,6 +121,38 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
         return texture;
     }
 });
+
+function ColorMapProgram(key, blendMode) {
+    var keyEq = "";
+    switch(key) {
+        case "RED": keyEq = "srcColor.r"; break;
+        case "GREEN": keyEq = "srcColor.g"; break;
+        case "BLUE": keyEq = "srcColor.b"; break;
+        case "(R+G+B)/2": keyEq = "mod((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
+        case "(R+G+B)/3": keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
+        case "MAX": keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
+        default: throw new Error("Unknown colormap key function " + options.key);
+    }
+
+    ColorMapProgram.super.constructor.call(this, {
+        outputBlendMode: blendMode,
+        swapFrame: true,
+        fragmentShader: [
+            "uniform sampler2D u_colorMap;",
+            "void main() {",
+            "   vec4 srcColor = getSrcColor();",
+            "   setFragColor(texture2D(u_colorMap, vec2(("+keyEq+"), 0)));",
+            "}"
+        ]
+    });
+}
+Webvs.ColorMapProgram = Webvs.defineClass(ColorMapProgram, Webvs.QuadBoxProgram, {
+    draw: function(colorMap) {
+        this.setUniform("u_colorMap", "texture2D", colorMap);
+        ColorMapProgram.super.draw.call(this);
+    }
+});
+
 ColorMap.ui = {
     disp: "Color Map",
     type: "ColorMap",
@@ -169,36 +201,5 @@ ColorMap.ui = {
         }
     }
 };
-
-function ColorMapProgram(key, blendMode) {
-    var keyEq = "";
-    switch(key) {
-        case "RED": keyEq = "srcColor.r"; break;
-        case "GREEN": keyEq = "srcColor.g"; break;
-        case "BLUE": keyEq = "srcColor.b"; break;
-        case "(R+G+B)/2": keyEq = "mod((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
-        case "(R+G+B)/3": keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
-        case "MAX": keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
-        default: throw new Error("Unknown colormap key function " + options.key);
-    }
-
-    ColorMapProgram.super.constructor.call(this, {
-        outputBlendMode: blendMode,
-        swapFrame: true,
-        fragmentShader: [
-            "uniform sampler2D u_colorMap;",
-            "void main() {",
-            "   vec4 srcColor = getSrcColor();",
-            "   setFragColor(texture2D(u_colorMap, vec2(("+keyEq+"), 0)));",
-            "}"
-        ]
-    });
-}
-Webvs.ColorMapProgram = Webvs.defineClass(ColorMapProgram, Webvs.QuadBoxProgram, {
-    draw: function(colorMap) {
-        this.setUniform("u_colorMap", "texture2D", colorMap);
-        ColorMapProgram.super.draw.call(this);
-    }
-});
 
 })(Webvs);

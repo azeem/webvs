@@ -35,6 +35,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
         }
     }
 });
+
 FadeOut.ui = {
     type: "FadeOut",
     disp: "Fade Out",

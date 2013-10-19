@@ -40,6 +40,7 @@ Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
 		code.perFrame();
 	}
 });
+
 GlobalVar.ui = {
     disp: "Global Var",
     type: "GlobalVar",
@@ -63,12 +64,7 @@ GlobalVar.ui = {
                 }
             },
         }
-    },
-    form: [
-        { key: "code.init", type: "textarea" },
-        { key: "code.onBeat", type: "textarea" },
-        { key: "code.perFrame", type: "textarea" },
-    ]
+    }
 };
 
 })(Webvs);

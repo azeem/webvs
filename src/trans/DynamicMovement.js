@@ -22,9 +22,7 @@ function DynamicMovement(options) {
     });
 
     var codeSrc;
-    if(options.code in DynamicMovement.examples) {
-        codeSrc = DynamicMovement.examples[options.code];
-    } else if(typeof(options.code) === "object") {
+    if(_.isObject(options.code)) {
         codeSrc = options.code;
     } else {
         throw new Error("Invalid Dynamic movement code");
@@ -133,97 +131,6 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
         this.program.destroy();
     }
 });
-DynamicMovement.ui = {
-    type: "DynamicMovement",
-    disp: "Dynamic Movement",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                },
-                perPixel: {
-                    type: "string",
-                    title: "Per Point",
-                }
-            },
-        },
-        gridW: {
-            type: "number",
-            title: "Grid Width",
-            default: 16,
-        },
-        gridH: {
-            type: "number",
-            title: "Grid Height",
-            default: 16,
-        },
-        coord: {
-            type: "string",
-            title: "Coordinate System",
-            enum: ["POLAR", "RECT"],
-            default: "POLAR"
-        }
-    },
-    form: [
-        { key: "code.init", type: "textarea" },
-        { key: "code.onBeat", type: "textarea" },
-        { key: "code.perFrame", type: "textarea" },
-        { key: "code.perPixel", type: "textarea" },
-        "gridW",
-        "gridH",
-        "coord"
-    ]
-};
-
-DynamicMovement.examples = {
-    inAndOut: {
-        init: "speed=.2;c=0;",
-        onBeat: [
-            "c = c + ($PI/2);",
-            "dd = 1 - (sin(c) * speed);"
-        ].join("\n"),
-        perPixel: "d = d * dd;"
-    },
-
-    randomDirection: {
-        init: "speed=.05;dr = (rand(200) / 100) * $PI;",
-        perFrame: [
-            "dx = cos(dr) * speed;",
-            "dy = sin(dr) * speed;"
-        ].join("\n"),
-        onBeat: "dr = (rand(200) / 100) * $PI;",
-        perPixel: [
-            "x = x + dx;",
-            "y = y + dy;"
-        ].join("\n")
-    },
-
-    rollingGridley: {
-        init: "c=200;f=0;dt=0;dl=0;beatdiv=8",
-        perFrame: [
-            "f = f + 1;",
-            "t = ((f * $PI * 2)/c)/beatdiv;",
-            "dt = dl + t;",
-            "dx = 14+(cos(dt)*8);",
-            "dy = 10+(sin(dt*2)*4);"
-        ].join("\n"),
-        onBeat: "c=f;f=0;dl=dt",
-        perPixel: "x=x+(sin(y*dx)*.03); y=y-(cos(x*dy)*.03);"
-    }
-};
 
 var GlslHelpers = {
     glslRectToPolar: function(coordMode) {
@@ -372,5 +279,60 @@ Webvs.DMovProgram = Webvs.defineClass(DMovProgram, Webvs.ShaderProgram, GlslHelp
         this.gl.drawArrays(this.gl.TRIANGLES, 0, gridVerticesSize);
     }
 });
+
+DynamicMovement.ui = {
+    type: "DynamicMovement",
+    disp: "Dynamic Movement",
+    schema: {
+        code: {
+            type: "object",
+            title: "Code",
+            default: {},
+            properties: {
+                init: {
+                    type: "string",
+                    title: "Init",
+                },
+                onBeat: {
+                    type: "string",
+                    title: "On Beat",
+                },
+                perFrame: {
+                    type: "string",
+                    title: "Per Frame",
+                },
+                perPixel: {
+                    type: "string",
+                    title: "Per Point",
+                }
+            },
+        },
+        gridW: {
+            type: "number",
+            title: "Grid Width",
+            default: 16,
+        },
+        gridH: {
+            type: "number",
+            title: "Grid Height",
+            default: 16,
+        },
+        coord: {
+            type: "string",
+            title: "Coordinate System",
+            enum: ["POLAR", "RECT"],
+            default: "POLAR"
+        }
+    },
+    form: [
+        { key: "code.init", type: "textarea" },
+        { key: "code.onBeat", type: "textarea" },
+        { key: "code.perFrame", type: "textarea" },
+        { key: "code.perPixel", type: "textarea" },
+        "gridW",
+        "gridH",
+        "coord"
+    ]
+};
 
 })(Webvs);

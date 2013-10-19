@@ -145,12 +145,6 @@ Main.ui = {
             required: true
         }
     },
-    form: [
-        "clearFrame",
-        "name",
-        "author",
-        { key: "description", type: "textarea" }
-    ]
 };
 
 })(Webvs);

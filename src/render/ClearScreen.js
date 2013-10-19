@@ -55,6 +55,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
         }
     }
 });
+
 ClearScreen.ui = {
     type: "ClearScreen",
     disp: "Clear Screen",
