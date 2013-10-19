@@ -275,10 +275,10 @@ var GlslHelpers = {
                 "   vec2 coord = (point+1.0)/2.0;",
                 "   vec2 corn = floor(coord/texel)*texel;",
 
-                "   vec4 tl = getSrcColorAtPos(corn);",
-                "   vec4 tr = getSrcColorAtPos(corn + vec2(texel.x, 0));",
-                "   vec4 bl = getSrcColorAtPos(corn + vec2(0, texel.y));",
-                "   vec4 br = getSrcColorAtPos(corn + texel);",
+                "   vec3 tl = getSrcColorAtPos(corn).rgb;",
+                "   vec3 tr = getSrcColorAtPos(corn + vec2(texel.x, 0)).rgb;",
+                "   vec3 bl = getSrcColorAtPos(corn + vec2(0, texel.y)).rgb;",
+                "   vec3 br = getSrcColorAtPos(corn + texel).rgb;",
 
                 "   float xp = floor(fract(coord.x/texel.x)*255.0);",
                 "   float yp = floor(fract(coord.y/texel.y)*255.0);",
