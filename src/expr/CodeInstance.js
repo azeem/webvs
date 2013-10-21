@@ -42,8 +42,8 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
      */
     getosc: function(band, width, channel) {
         var osc = this._analyser.getWaveform();
-        var pos = Math.floor((band - width/2)*osc.length);
-        var end = Math.floor((band + width/2)*osc.length);
+        var pos = Math.floor((band - width/2)*(osc.length-1));
+        var end = Math.floor((band + width/2)*(osc.length-1));
 
         var sum = 0;
         for(var i = pos;i <= end;i++) {
