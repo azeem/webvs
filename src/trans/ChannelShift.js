@@ -9,8 +9,7 @@ var channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
 
 /**
  * @class
- * A component that {@link http://en.wikipedia.org/wiki/Swizzling_(computer_graphics)|swizzles}
- * the color component
+ * A component that swizzles the color component
  *
  * @param {object} options - options object
  * @param {string} [options.channel="RGB"] - the component combination 
