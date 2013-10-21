@@ -5,6 +5,18 @@
 
 (function(Webvs) {
 
+/**
+ * @class
+ * A component that renders an image onto the screen
+ *
+ * @param {object} options - options object
+ * @param {string} src - image file source
+ * @param {number} x - image x position
+ * @param {number} y - image y position
+ * @augments Webvs.Component
+ * @constructor
+ * @memberof Webvs
+ */
 function Picture(options) {
     Webvs.checkRequiredOptions(options, ["src", "x", "y"]);
 
@@ -16,6 +28,10 @@ function Picture(options) {
     Picture.super.constructor.call(this, options);
 }
 Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
+    /**
+     * initializes the ClearScreen component
+     * @memberof Webvs.Picture
+     */
     init: function(gl, main, parent) {
         Picture.super.init.call(this, gl, main, parent);
 
@@ -39,10 +55,18 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
         return promise;
     },
 
+    /**
+     * renders the image
+     * @memberof Webvs.Picture
+     */
     update: function() {
         this.program.run(this.parent.fm, null, this.x, this.y, this.texture, this.width, this.height);
     },
 
+    /**
+     * releases resources
+     * @memberof Webvs.Picture
+     */
     destroy: function() {
         this.program.cleanup();
         this.gl.deleteTexture(this.texture);

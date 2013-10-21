@@ -7,8 +7,21 @@
 
 /**
  * @class
- * Effectlist is the core component that can contain other components.
+ * Effectlist is a component that can contain other components. Its also used as the root
+ * component in Webvs.Main
+ *
  * @param {object} options - options object
+ * @param {Array.<object>} options.components - the constructor options object for each subcomponent
+ *     in this effectlist.
+ * @param {string} options.components[i].type - the component class name
+ * @param {number} [options.components[i].clone] - the number of times this component should be cloned
+ * @param {string} [options.output="REPLACE"] - the output blend mode
+ * @param {string} [options.input="IGNORE"] - the input blend mode
+ * @param {boolean} [options.clearFrame=false] - if set then the buffer is cleared for each frame
+ * @param {boolean} [options.enableOnBeat=false] - if set then the subcomponents are rendered only
+ *     for a fixed number of frames on beat
+ * @param {number} [options.enableOnBeatFor=1] - the number frames for enableOnBeat setting
+ *
  * @augments Webvs.Component
  * @memberof Webvs
  * @constructor
@@ -57,6 +70,10 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         this.components = components;
     },
 
+    /**
+     * Initializes the effect list
+     * @memberof Webvs.EffectList
+     */
     init: function(gl, main, parent) {
         EffectList.super.init.call(this, gl, main, parent);
 
@@ -76,6 +93,11 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         return Webvs.joinPromises(initPromises);
     },
 
+    /**
+     * Renders a frame of the effect list, by running
+     * all the subcomponents.
+     * @memberof Webvs.EffectList
+     */
     update: function() {
         EffectList.super.update.call(this);
         var gl = this.gl;
@@ -128,6 +150,10 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         }
     },
 
+    /**
+     * Releases resources.
+     * @memberof Webgl.EffectList
+     */
     destroy: function() {
         EffectList.super.destroy.call(this);
 
@@ -141,12 +167,6 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     }
 });
 
-/**
- * Effectlist schema
- * @static
- * @name Webvs.Effectlist.ui
- * @memberof Webvs.Effectlist
- */
 EffectList.ui = {
     disp: "Effect List",
     type: "EffectList",

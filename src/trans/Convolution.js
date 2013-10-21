@@ -6,9 +6,18 @@
 (function(Webvs) {
 
 /**
- * Applies a 3x3 convolution kernel
- * @param kernel
+ * @class
+ * A component that applies a convolution kernel
+ *
+ * @param {object} options - options object
+ * @param {Array.<Array.<number>>} options.kernel - an NxN array of numbers
+ * @param {number} [options.bias=0] - bias value to be added
+ * @param {number} [options.scale] - scale for the kernel. default is sum of kernel values
+ * @param {object} [options.edgeMode="EXTEND"] - how the frame edge cases should be handled viz. `WRAP`, `EXTEND`
+ *
  * @constructor
+ * @augments Webvs.Component
+ * @memberof Webvs
  */
 function Convolution(options) {
     Webvs.checkRequiredOptions(options, ["kernel"]);
@@ -39,12 +48,33 @@ function Convolution(options) {
 }
 Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     componentName: "Convolution",
+
+    /**
+     * initializes the Convolution component
+     * @method
+     * @memberof Webvs.Convolution
+     */
     init: function(gl, main, parent) {
         Convolution.super.init.call(this, gl, main, parent);
         this.program.init(gl);
     },
+
+    /**
+     * applies the Convolution matrix
+     * @method
+     * @memberof Webvs.Convolution
+     */
     update: function() {
         this.program.run(this.parent.fm, null);
+    },
+
+    /**
+     * releases resources
+     * @memberof Webvs.Convolution
+     */
+    destroy: function() {
+        Convolution.super.destroy.call(this);
+        this.program.cleanup();
     }
 });
 

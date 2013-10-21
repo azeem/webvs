@@ -6,7 +6,17 @@
 (function(Webvs) {
 
 /**
- * Manages global variables
+ * @class
+ * A component that simply runs some avs expressions.
+ * Useful to maintain global state
+ *
+ * @param {object} options - options object
+ * @param {string} [options.code.init] - code to be run at startup
+ * @param {string} [options.code.onBeat] - code to be run when a beat occurs
+ * @param {string} [ptions.code.perFrame]- code to be run on every frame
+ * @augments Webvs.Component
+ * @constructor
+ * @memberof Webvs
  */
 function GlobalVar(options) {
 	Webvs.checkRequiredOptions(options, ["code"]);
@@ -18,12 +28,20 @@ function GlobalVar(options) {
     GlobalVar.super.constructor.call(this);
 }
 Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
+    /**
+     * initializes the globalvar component
+     * @memberof Webvs.GlobalVar
+     */
 	init: function(gl, main, parent) {
 		GlobalVar.super.init.call(this, gl, main, parent);
 
         this.code.setup(main, this);
 	},
 
+    /**
+     * Runs the code
+     * @memberof Webvs.GlobalVar
+     */
 	update: function() {
 		var code = this.code;
 		code.b = this.main.analyser.beat?1:0;

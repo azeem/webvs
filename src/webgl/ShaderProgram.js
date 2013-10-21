@@ -19,41 +19,39 @@
  * setting gl_FragColor directly. The proper macro implementation
  * is inserted based on the blending modes.
  *
- * #### Options
- * + vertexShader {string} - the source for the vertex shader
- * + fragmentShader {string} - the source for the fragment shader
- * + forceShaderBlend {boolean} (default: false) - force the use of shader based blending mode
- * + oututBlendMode {string} (default: "REPLACE")- the output blending mode.
- * + dynamicBlend {boolean} (default: false) - when set to true, blending mode can be changed
+ * #### glsl utilities
+ *
+ * The following utilities are usable inside the shader code in subclasses
+ *
+ * + `setPosition(vec2 pos)` - sets gl_Position
+ * + `getSrcColorAtPos(vec2 pos)` - pixel value at pos in u_srcTexture
+ * + `getSrcColor(vec2 pos)` - same as above, but uses v_position
+ * + `setFragColor(vec4 color)` - sets the correctly blended fragment color
+ * + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
+       when swapFrame is set to true
+ * + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
+ *     passed to {@link Webvs.ShaderProgram.run} call
+ * + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
+ *     when varyingPos option is used
+ *
+ * @param {object} options - refer class description
+ * @param {string} options.vertexShader - the source for the vertex shader
+ * @param {string} options.fragmentShader - the source for the fragment shader
+ * @param {boolean} [options.forceShaderBlend=false] - force the use of shader based blending mode
+ * @param {string} [options.oututBlendMode="REPLACE"] - the output blending mode.
+ * @param {boolean} [options.dynamicBlend=false] - when set to true, blending mode can be changed
  *     at runtime even after shader compilation
- * + swapFrame {boolean} (default: false) - if set then a render target swap is done on the 
+ * @param {boolean} [options.swapFrame=false] - if set then a render target swap is done on the 
  *     framebuffermanager, before rendering. This is used
  *     by programs where the previous rendering need to be
  *     sampled
- * + copyOnSwap {boolean} (default: false) - if set to true then on swap, a copyOver is done on
+ * @param {boolean} [options.copyOnSwap=false] - if set to true then on swap, a copyOver is done on
  *     the framebuffermanager. This is used to maintain
  *     consistency during shader based blending in shaders
  *     that do not touch all the pixels
- * + varyingPos {boolean} (default: false) - if true then a varying called v_position is added
+ * @param {boolean} [options.varyingPos=false] - if true then a varying called v_position is added
  *     automatically
- * + draw {function} (optional) - override the draw function
- *
- * #### glsl utilities
- *
- * The following utilities are usable inside the shader code in base classes
- *
- * + setPosition(vec2 pos) - sets gl_Position
- * + getSrcColorAtPos(vec2 pos) - pixel value at pos in u_srcTexture
- * + getSrcColor(vec2 pos) - same as above, but uses v_position
- * + setFragColor(vec4 color) - sets the correctly blended fragment color
- * + sampler2D u_srcTexture - the source texture from previous frame. enabled
-       when swapFrame is set to true
- * + vec2 u_resolution - the screen resolution. enabled only if fm is 
- *     passed to {@link Webvs.ShaderProgram.run} call
- * + vec2 v_position - a 0-1, 0-1 normalized varying of the vertex. enabled
- *     when varyingPos options is used
- *
- * @param {object} options - refer class description
+ * @param {function} [options.draw ] - override the draw function
  * @memberof Webvs
  * @constructor
  */

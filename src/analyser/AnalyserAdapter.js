@@ -7,8 +7,8 @@
 
 /**
  * @class
- * AnalyserAdapters adapts analyser code so that
- * it can be plugged into Webvs
+ * AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
+ * Adapters extend this class and define the required methods.
  * @memberof Webvs
  * @constructor
  */
@@ -23,7 +23,7 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
     beat: false,
 
     /**
-     * returns whether song is being played or not
+     * returns whether song is being played or not.
      * @abstract
      * @returns {boolean}
      * @memberof Webvs.AnalyserAdapter

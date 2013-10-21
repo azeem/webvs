@@ -8,8 +8,24 @@
 /**
  * @class
  * Main Webvs object, that represents a running webvs instance.
- * @memberof Webvs
+ *
+ * @example
+ * var dancer = new Dancer();
+ * var webvs = new Webvs.Main({
+ *     canvas: document.getElementById("canvas"),
+ *     analyser: new Webvs.DancerAdapter(dancer),
+ *     showStat: true
+ * });
+ * webvs.loadPreset(samplePreset);
+ * webvs.start();
+ * dancer.load({src: "music.ogg"}); // start playing musc
+ * dancer.play();
+ *
  * @param {object} options - options object
+ * @param {HTMLCanvasElement} options.canvas - canvas element on which the visualization will be rendered
+ * @param {Webvs.AnalyserAdapter} options.analyser  - a music analyser instance
+ * @param {boolean} [options.showStat=false] - if set, then a framerate status indicator is inserted into the page
+ * @memberof Webvs
  * @constructor
  */
 function Main(options) {

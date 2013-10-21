@@ -6,7 +6,22 @@
 (function(Webvs) {
 
 /**
- * AVS Source Ref: r_contrast.cpp
+ * @class
+ * A component that clips colors to a different color depending
+ * on whether the source colors are above or below a reference color.
+ * 
+ * @see r_contrast.cpp
+ * @param {object} options - options object
+ * @param {string} [options.mode="BELOW"] - comparison mode viz. `BELOW`, `ABOVE`, `NEAR`
+ * @param {string} [options.color="#202020"] - reference color against which the
+ *     the screen colors are compared
+ * @param {string} [options.outColor="#202020"] - output color for clipped pixels
+ * @param {number} [options.level=0] - when mode is `NEAR`, this value decides the distance
+ *     between source and reference colors below which pixels would be clipped. 0-1 normalized
+ *
+ * @augments Webvs.Component
+ * @constructor
+ * @memberof Webvs
  */
 function ColorClip(options) {
     Webvs.checkRequiredOptions(options, ["mode", "color", "outColor"]);
@@ -29,15 +44,33 @@ function ColorClip(options) {
 }
 Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
     modes: ["BELOW", "ABOVE", "NEAR"],
+    componentName: "ChannelShift",
 
+    /**
+     * initializes the ColorClip component
+     * @memberof Webvs.ColorClip
+     */
     init: function(gl, main, parent) {
         ColorClip.super.init.call(this, gl, main, parent);
 
         this.program.init(gl);
     },
 
+    /**
+     * clips the colors
+     * @memberof Webvs.ColorClip
+     */
     update: function() {
         this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.level);
+    },
+
+    /**
+     * releases resources
+     * @memberof Webvs.ColorClip
+     */
+    destroy: function() {
+        ColorClip.super.destroy.call(this);
+        this.program.cleanup();
     }
 });
 

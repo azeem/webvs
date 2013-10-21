@@ -7,13 +7,19 @@
 
 /**
  * @class
- * Components base class. All Webvs effects extend from
- * this class
+ * A base class that all Webvs effects extend from.
  * @memberof Webvs
  * @constructor
  */
 function Component() {}
 Webvs.Component = Webvs.defineClass(Component, Object, {
+    /**
+     * String name of the component class. Used to generate
+     * id strings.
+     * @memberof Webgl.Component
+     */
+    componentName: "Component",
+
     /**
      * Initialize component. Called once before animation starts.
      * Override and implement initialization code

@@ -8,9 +8,18 @@
 var channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
 
 /**
- * ChannelShift component
- * @param options
+ * @class
+ * A component that {@link http://en.wikipedia.org/wiki/Swizzling_(computer_graphics)|swizzles}
+ * the color component
+ *
+ * @param {object} options - options object
+ * @param {string} [options.channel="RGB"] - the component combination 
+ *     viz. `RGB`, `RBG`, `BRG`, `BGR`, `GBR`, `GRB`
+ * @param {boolean} [options.onBeatRandom=false] - if set then the color components
+ *     combination is changed randomly on beat
+ * @augments Webvs.Component
  * @constructor
+ * @memberof Webvs
  */
 function ChannelShift(options) {
     options = _.defaults(options, {
@@ -30,20 +39,37 @@ function ChannelShift(options) {
 }
 Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     componentName: "ChannelShift",
-    swapFrame: true,
 
+    /**
+     * initializes the ChannelShift component
+     * @memberof Webvs.ChannelShift
+     */
     init: function(gl, main, parent) {
         ChannelShift.super.init.call(this, gl, main, parent);
 
         this.program.init(gl);
     },
 
+    /**
+     * shifts the colors
+     * @memberof Webvs.ChannelShift
+     */
     update: function() {
         if(this.onBeatRandom && this.main.analyser.beat) {
             this.channel = Math.floor(Math.random() * channels.length);
         }
         this.program.run(this.parent.fm, null, this.channel);
+    },
+
+    /**
+     * releases resources
+     * @memberof Webvs.ChannelShift
+     */
+    destroy: function() {
+        ChannelShift.super.destroy.call(this);
+        this.program.cleanup();
     }
+
 });
 
 function ChannelShiftProgram() {

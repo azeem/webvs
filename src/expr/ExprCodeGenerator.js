@@ -6,12 +6,12 @@
 (function(Webvs) {
 
 /**
- * AVS expression parse and code generator.
+ * @class
+ * AVS expression parser and code generator.
  * Generates JS and GLSL code from avs expressions
- * @param codeSrc
- * @param externalVars list of variables that will be supplied externally
- *                     these variables will be instance values of the generated
- *                     code instance
+ * @param {object.<string, string>} codeSrc - object containing avs expression code string
+ * @param {Array.<string>} externalVars - list of variables that will be supplied externally.
+ * @memberof Webvs
  * @constructor
  */
 function ExprCodeGenerator(codeSrc, externalVars) {
@@ -51,6 +51,15 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         this.registerUsages = _.uniq(registerUsages);
     },
 
+    /**
+     * Generates js and glsl executable code for each expression code string
+     * @param {Array.<string>} jsFuncs - functions to be generated as javascript
+     * @param {Array.<string>} jsFuncs - functions to be generated as glsl
+     * @param {Array.<string>} treatAsNonUniform - variables to be treated as 
+     *                                             uniform variables in the glsl code
+     * @returns {Array} pair containing {@link Webvs.CodeInstance} and a glsl code
+     * @memberof Webvs.ExprCodeGenerator
+     */
     generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
         var inst = new Webvs.CodeInstance();
         var that = this;

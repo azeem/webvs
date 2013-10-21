@@ -4,10 +4,19 @@
  */
 
 (function(Webvs) {
+
 /**
- * OnBeatClear - clears the screen on beat
- * @param options
+ * @class
+ * A component that clears the screen
+ *
+ * @param {object} options - options object
+ * @param {number} [options.n=0] - beat counter, screen will be cleared for every n beats.
+ *      use 0 to clear all frames.
+ * @param {string} [options.color="#000000"] - color to which screen is to be cleared
+ * @param {string} [options.blendMode="REPLACE"] - blend clearing onto previous buffer
+ * @augments Webvs.Component
  * @constructor
+ * @memberof Webvs
  */
 function ClearScreen(options) {
     options = _.defaults(options, {
@@ -30,11 +39,19 @@ function ClearScreen(options) {
 Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     componentName: "ClearScreen",
 
+    /**
+     * initializes the ClearScreen component
+     * @memberof Webvs.ClearScreen
+     */
     init: function(gl, main, parent) {
         ClearScreen.super.init.call(this, gl, main, parent);
         this.program.init(gl);
     },
 
+    /**
+     * clears the screen
+     * @memberof Webvs.ClearScreen
+     */
     update: function() {
         var clear = false;
         if(this.n === 0) {
@@ -53,6 +70,14 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
         if(clear) {
             this.program.run(this.parent.fm, null, this.color);
         }
+    },
+
+    /**
+     * releases resources
+     * @memberof Webvs.ClearScreen
+     */
+    destroy: function() {
+        this.program.cleanup();
     }
 });
 

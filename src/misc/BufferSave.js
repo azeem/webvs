@@ -5,6 +5,21 @@
 
 (function(Webvs) {
 
+/**
+ * @class
+ * A components that saves or restores a copy of the current
+ * frame buffer.
+ *
+ * @param {object} options - options object
+ * @param {string} [options.action="SAVE"] - the action to be performed. viz. "SAVE",
+ *     "RESTORE", "RESTORESAVE", "SAVERESTORE"
+ * @param {number} [options.bufferId=1] - an identifying number for the buffer. This number
+ *     is used to share buffer between different instances of BufferSave
+ * @param {string} [options.blendMode="REPLACE"] - blending mode when restoring buffers
+ * @constructor
+ * @augments Webvs.Component
+ * @memberof Webvs
+ */
 function BufferSave(options) {
     options = _.defaults(options, {
         action: "SAVE",
@@ -32,6 +47,11 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
         SAVERESTORE: 3,
         RESTORESAVE: 4
     },
+
+    /**
+     * Initializes the BufferSave component
+     * @memberof Webvs.BufferSave
+     */
     init: function(gl, main, parent) {
         BufferSave.super.init.call(this, gl, main, parent);
 
@@ -41,6 +61,11 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
             main.registerBank[this._bufferId] = fm;
         }
     },
+
+    /**
+     * Saves or Renders the current frame
+     * @memberof Webvs.BufferSave
+     */
     update: function() {
         var gl = this.gl;
         var fm = this.main.registerBank[this._bufferId];
@@ -66,10 +91,15 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
                 fm.restoreRenderTarget();
                 break;
             case this.actions.RESTORE:
-                this.main.copier.run(this.parent.fm, null, fm.getCurrentTexture());
+                this.main.copier.run(this.parent.fm, this.blendMode, fm.getCurrentTexture());
                 break;
         }
     },
+
+    /**
+     * Releases resources.
+     * @memberof Webgl.BufferSave
+     */
     destroy: function() {
         BufferSave.super.destroy.call(this);
         // destroy the framebuffermanager
