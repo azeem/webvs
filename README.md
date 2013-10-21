@@ -25,6 +25,10 @@ To build the code run `grunt` or `grunt dist`. This generates `webvs.js` and `li
 
 To run the tests, use `grunt test` command. Testing in debug mode can be started with `grunt karma:debug`. This opens up the karma test page where you can do debugging with the browser code inspector.
 
+# Documentation
+
+[Code Documentation](http://azeemarshad.in/webvs)
+
 # Usage
 
 All classes are available inside the `Webvs` global namespace. The `Webvs.Main` is the main entry point that lets you place visualizations into the page. A short example is given below.
