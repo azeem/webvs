@@ -143,7 +143,6 @@ module.exports = function(grunt) {
 
     grunt.registerTask('default', ['clean:dev', 'jshint', 'peg', 'concat:dev']);
     grunt.registerTask("w", ["default", "watch:scripts"]);
-    grunt.registerTask("wdoc", ["doc", "watch:doc"]);
 
     grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
     grunt.registerTask('dist', ['clean:dist', 'jshint', 'peg', 'uglify:dist']);
