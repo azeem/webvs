@@ -184,15 +184,24 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
 Webvs.joinPromises = function(promises) {
     var joinedPromise = new Promise();
 
-    var counter = promises.length;
-    _.each(promises, function(promise) {
-        promise.onResolve(function() {
+    if(promises.length === 0) {
+        joinedPromise.resolve();
+    } else {
+        var counter = promises.length;
+        var onResolveCb = function() {
             counter--;
             if(counter === 0) {
                 joinedPromise.resolve();
             }
+        };
+        _.each(promises, function(promise) {
+            if(promise.resolved) {
+                onResolveCb();
+            } else {
+                promise.onResolve(onResolveCb);
+            }
         });
-    });
+    }
 
     return joinedPromise;
 };
