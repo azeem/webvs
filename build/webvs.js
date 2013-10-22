@@ -743,7 +743,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
         // destory all the sub-components
         for(i = 0;i < this.components.length;i++) {
-            this.components[i].destroyComponent();
+            this.components[i].destroy();
         }
 
         // destroy the framebuffer manager
@@ -819,7 +819,7 @@ EffectList.ui = {
  * + `getSrcColor(vec2 pos)` - same as above, but uses v_position
  * + `setFragColor(vec4 color)` - sets the correctly blended fragment color
  * + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
-       when swapFrame is set to true
+ *     when swapFrame is set to true
  * + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
  *     passed to {@link Webvs.ShaderProgram.run} call
  * + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
@@ -1381,6 +1381,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager
      */
     destroy: function() {
+        var gl = this.gl;
         for(var i = 0;i < this.texCount;i++) {
             gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
             gl.deleteTexture(this.frameAttachments[i].texture);
@@ -3723,8 +3724,8 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
      */
     getosc: function(band, width, channel) {
         var osc = this._analyser.getWaveform();
-        var pos = Math.floor((band - width/2)*osc.length);
-        var end = Math.floor((band + width/2)*osc.length);
+        var pos = Math.floor((band - width/2)*(osc.length-1));
+        var end = Math.floor((band + width/2)*(osc.length-1));
 
         var sum = 0;
         for(var i = pos;i <= end;i++) {
@@ -4565,7 +4566,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
      * @memberof Webvs.FadeOut
      */
     destroy: function() {
-        FadeOut.super.destroyComponent.call(this);
+        FadeOut.super.destroy.call(this);
         this.program.cleanup();
     }
 });
