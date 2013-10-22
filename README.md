@@ -69,3 +69,9 @@ The following components are implemented currently. These components tries to ma
     + Convolution
     + DynamicMovement
     + FadeOut
+
+# See Also
+
++ [Webvs discussion](http://forums.winamp.com/showthread.php?t=364566) at Winamp AVS Forum
++ AVS to Webvs JSON decoder: [AVS-File-Decoder](https://github.com/grandchild/AVS-File-Decoder) [AVS-File-Decoder-Qt](https://github.com/grandchild/AVS-File-Decoder-Qt)
++ Webvs editor: [qios-webvseditor](https://github.com/QOAL/qios-webvseditor) [webvsed](https://github.com/azeem/webvsed)

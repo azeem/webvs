@@ -28,7 +28,7 @@
  * + `getSrcColor(vec2 pos)` - same as above, but uses v_position
  * + `setFragColor(vec4 color)` - sets the correctly blended fragment color
  * + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
-       when swapFrame is set to true
+ *     when swapFrame is set to true
  * + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
  *     passed to {@link Webvs.ShaderProgram.run} call
  * + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled

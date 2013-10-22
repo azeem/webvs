@@ -1,6 +1,6 @@
 {
   "name": "Webvs",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "a webgl experiment",
   "main": "Gruntfile.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "url": "git://github.com/azeem/webvs.git"
   },
   "author": "Azeem Arshad",
-  "license": "BSD",
+  "license": "MIT",
   "readmeFilename": "README.md",
   "gitHead": "517cf627b48067e5de484927d021fb95b3f2102c",
   "bugs": {
