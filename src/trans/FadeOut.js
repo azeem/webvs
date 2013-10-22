@@ -60,7 +60,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
      * @memberof Webvs.FadeOut
      */
     destroy: function() {
-        FadeOut.super.destroyComponent.call(this);
+        FadeOut.super.destroy.call(this);
         this.program.cleanup();
     }
 });

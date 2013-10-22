@@ -117,6 +117,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager
      */
     destroy: function() {
+        var gl = this.gl;
         for(var i = 0;i < this.texCount;i++) {
             gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
             gl.deleteTexture(this.frameAttachments[i].texture);

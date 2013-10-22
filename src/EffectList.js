@@ -159,7 +159,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
         // destory all the sub-components
         for(i = 0;i < this.components.length;i++) {
-            this.components[i].destroyComponent();
+            this.components[i].destroy();
         }
 
         // destroy the framebuffer manager
