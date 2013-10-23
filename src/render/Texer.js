@@ -52,7 +52,11 @@ function Texer(options) {
 
     this.colorFiltering = options.colorFiltering;
     this.wrapAround = options.wrapAround;
-    this.imageSrc = options.imageSrc;
+    if(_.has(Webvs.Resources.images, options.imageSrc)) {
+        this.imageSrc = Webvs.Resources.images[options.imageSrc];
+    } else {
+        this.imageSrc = options.imageSrc;
+    }
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "w", "h", "red", "green", "blue", "cid"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);

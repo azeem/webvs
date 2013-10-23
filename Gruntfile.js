@@ -9,6 +9,7 @@
 module.exports = function(grunt) {
     var jsFiles = [
         "src/Base.js",
+        "src/Resources.js",
 
         "src/analyser/*.js",
 
