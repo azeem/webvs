@@ -9,7 +9,8 @@ function Texer(options) {
     Webvs.checkRequiredOptions(options, ["code", "imageSrc"]);
     options = _.defaults(options, {
         source: "SPECTRUM",
-        wrapAround: false
+        wrapAround: false,
+        colorFiltering: false
     });
 
     this.colorFiltering = options.colorFiltering;
@@ -75,8 +76,9 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         var vertexData = [];
         var texVertexData = [];
         var vertexIndices = [];
+        var colorData = this.colorFiltering?[]:null;
         var index = 0;
-        function addRect(cornx, corny, sizex, sizey) {
+        function addRect(cornx, corny, sizex, sizey, red, green, blue) {
             if(cornx < -1-sizex || cornx > 1||
                corny < -1-sizey || corny > 1) {
                 return;
@@ -96,6 +98,18 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
                 1, 1,
                 0, 1
             );
+
+            if(colorData) {
+                // color data
+                colorData.push(
+                    red, green, blue,
+                    red, green, blue,
+                    red, green, blue,
+                    red, green, blue
+                );
+            }
+
+            // indices
             vertexIndices.push(
                 index+0, index+1, index+2,
                 index+0, index+2, index+3
@@ -119,6 +133,9 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
             code.v = value;
             code.sizex = 1;
             code.sizey = 1;
+            code.red = 1;
+            code.green = 1;
+            code.blue = 1;
             code.perPoint();
 
             var sizex = code.sizex*imageSizex;
@@ -126,7 +143,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
             var cornx = code.x-sizex/2;
             var corny = (-code.y)-sizey/2;
             
-            addRect(cornx, corny, sizex, sizey);
+            addRect(cornx, corny, sizex, sizey, code.red, code.green, code.blue);
             if(this.wrapAround) {
                 // wrapped around x value is 1-(-1-cornx) or -1-(1-cornx)
                 // depending on the edge
@@ -134,13 +151,13 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
                 var xwrap = (cornx < -1)?2:((cornx > (1-sizex))?-2:0);
                 var ywrap = (corny < -1)?2:((corny > (1-sizey))?-2:0);
                 if(xwrap) {
-                    addRect(xwrap+cornx, corny, sizex, sizey);
+                    addRect(xwrap+cornx, corny, sizex, sizey, code.red, code.green, code.blue);
                 }
                 if(ywrap) {
-                    addRect(cornx, ywrap+corny, sizex, sizey);
+                    addRect(cornx, ywrap+corny, sizex, sizey, code.red, code.green, code.blue);
                 }
                 if(xwrap && ywrap) {
-                    addRect(xwrap+cornx, ywrap+corny, sizex, sizey);
+                    addRect(xwrap+cornx, ywrap+corny, sizex, sizey, code.red, code.green, code.blue);
                 }
             }
         }
@@ -149,6 +166,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
                          new Float32Array(vertexData),
                          new Float32Array(texVertexData),
                          new Uint16Array(vertexIndices),
+                         colorData?new Float32Array(colorData):null,
                          this.texture);
     },
 
@@ -161,28 +179,47 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 function TexerProgram() {
     TexerProgram.super.constructor.call(this, {
         vertexShader: [
+            "uniform bool u_colorFilter;",
             "attribute vec2 a_texVertex;",
             "attribute vec2 a_vertex;",
+            "attribute vec3 a_color;",
             "varying vec2 v_texVertex;",
+            "varying vec3 v_color;",
             "void main() {",
+            "   if(u_colorFilter) {",
+            "       v_color = a_color;",
+            "   }",
             "   v_texVertex = a_texVertex;",
             "   setPosition(a_vertex);",
             "}"
         ],
         fragmentShader: [
+            "uniform bool u_colorFilter;",
             "uniform sampler2D u_image;",
             "varying vec2 v_texVertex;",
+            "varying vec3 v_color;",
             "void main() {",
-            "   setFragColor(texture2D(u_image, v_texVertex));",
+            "   vec3 outColor = texture2D(u_image, v_texVertex).rgb;",
+            "   if(u_colorFilter) {",
+            "       outColor = outColor*v_color;",
+            "   }",
+            "   setFragColor(vec4(outColor, 1));",
             "}"
         ]
     });
 }
 Webvs.TexerProgram = Webvs.defineClass(TexerProgram, Webvs.ShaderProgram, {
-    draw: function(vertices, texVertices, indices, image) {
+    draw: function(vertices, texVertices, indices, colors, image) {
         this.setUniform("u_image", "texture2D", image);
         this.setVertexAttribArray("a_vertex", vertices);
         this.setVertexAttribArray("a_texVertex", texVertices);
+        if(colors) {
+            this.setUniform("u_colorFilter", "1f", 1);
+            this.setVertexAttribArray("a_color", colors, 3);
+        } else {
+            this.setUniform("u_colorFilter", "1f", 0);
+        }
+
         this.setElementArray(indices);
         this.gl.drawElements(this.gl.TRIANGLES, indices.length, this.gl.UNSIGNED_SHORT, 0);
     }
