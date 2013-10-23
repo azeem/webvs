@@ -5,6 +5,43 @@
 
 (function(Webvs) {
 
+/**
+ * @class
+ * A SuperScope like component that places images at points.
+ *
+ * The following variables are available in the code
+ *
+ * + n (default: 100) - the number of points.
+ * + i - 0-1 normalized loop counter
+ * + v - the value of the superscope at current position
+ * + x - x position of the image (-1 to +1)
+ * + y - y position of the image (-1 to +1)
+ * + sizex - horizontal scale of the image. 1 = original size, 0.5 = half the size etc.
+ * + sizey - vertical scale of the image. 1 = original size, 0.5 = half the size etc.
+ * + y - y position of the image (-1 to +1)
+ * + w - width of the screen
+ * + h - height of the screen
+ * + b - 1 if a beat has occured else 0
+ * + red (default: 1) - red component of color (0-1)
+ * + green (default: 1) - green component of color (0-1)
+ * + blue (default: 1) - blue component of color (0-1)
+ * + cid - the clone id of this component. if it is a clone
+ *
+ * @param {object} options - options object
+ * @param {string} [options.code.init] - code to be run at startup
+ * @param {string} [options.code.onBeat] - code to be run when a beat occurs
+ * @param {string} [options.code.perFrame] - code to be run on every frame
+ * @param {string} [options.code.perPoint] - code that will be run once for every point. should set 
+ *       `x`, `y` variables to specify image location. set `red`, `green` or `blue` variables
+ *       to specify color filter. set `sizex` or `sizey` for horizontal and vertical scaling.
+ * @param {string} [options.source="SPECTRUM"] - the scope data source viz. `SPECTRUM`, `WAVEFORM`
+ * @param {boolean} [options.wrapAround=false] - if set then images hanging off the edge wraps around
+ *        from the other side
+ * @param {boolean} [options.colorFiltering=false] - if set then color filter is applied to image
+ * @augments Webvs.Component
+ * @constructor
+ * @memberof Webvs
+ */
 function Texer(options) {
     Webvs.checkRequiredOptions(options, ["code", "imageSrc"]);
     options = _.defaults(options, {
@@ -30,6 +67,10 @@ function Texer(options) {
 Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     componentName: "Texer",
 
+    /**
+     * initializes the Texer component
+     * @memberof Webvs.Texer
+     */
     init: function(gl, main, parent) {
         Texer.super.init.call(this, gl, main, parent);
 
@@ -56,6 +97,10 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         return promise;
     },
 
+    /**
+     * renders the scope
+     * @memberof Webvs.Texer
+     */
     update: function() {
         var code = this.code;
         if(!this._inited) {
@@ -170,8 +215,13 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
                          this.texture);
     },
 
+    /**
+     * release resource
+     * @memberof Webvs.Texer
+     */
     destroy: function() {
         Texer.super.destroy.call(this);
+        this.gl.deleteTexture(this.texture);
         this.program.cleanup();
     }
 });
