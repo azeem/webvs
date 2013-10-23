@@ -261,7 +261,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.shaderSource(shader, shaderSrc);
         gl.compileShader(shader);
         if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            Webvs.logShaderError(this.fragmentSrc, gl.getShaderInfoLog(shader));
+            Webvs.logShaderError(shaderSrc, gl.getShaderInfoLog(shader));
             throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
         }
         return shader;
@@ -384,6 +384,19 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(location);
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
+    },
+
+    setElementArray: function(array) {
+        var gl = this.gl;
+
+        var buffer = this._arrBuffers.__indexBuffer;
+        if(_.isUndefined(buffer)) {
+            buffer = gl.createBuffer();
+            this._arrBuffers.__indexBuffer = buffer;
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array, gl.STATIC_DRAW);
     },
 
     /**
