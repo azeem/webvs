@@ -46,10 +46,12 @@ function Texer(options) {
     Webvs.checkRequiredOptions(options, ["code", "imageSrc"]);
     options = _.defaults(options, {
         source: "SPECTRUM",
+        resizing: false,
         wrapAround: false,
-        colorFiltering: false
+        colorFiltering: true
     });
 
+    this.resizing = options.resizing;
     this.colorFiltering = options.colorFiltering;
     this.wrapAround = options.wrapAround;
     if(_.has(Webvs.Resources.images, options.imageSrc)) {
@@ -187,8 +189,12 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
             code.blue = 1;
             code.perPoint();
 
-            var sizex = code.sizex*imageSizex;
-            var sizey = code.sizey*imageSizey;
+            var sizex = imageSizex;
+            var sizey = imageSizey;
+            if(this.resizing) {
+                sizex *= code.sizex;
+                sizey *= code.sizey;
+            }
             var cornx = code.x-sizex/2;
             var corny = (-code.y)-sizey/2;
             

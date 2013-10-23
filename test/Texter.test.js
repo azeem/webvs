@@ -23,6 +23,7 @@ CanvasTestWithFM("Texer Simple", 1, {async: true}, function(canvas, gl, fm, copi
         "Texer Simple",
         {
             imageSrc: "circle_edgeonly_29x29",
+            resizing: true,
             wrapAround: true,
             code: {
                 init: "n=3",
