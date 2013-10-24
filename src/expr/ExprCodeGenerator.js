@@ -151,6 +151,8 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         "ceil" : 1,
         "abs": 1,
         "if": 3,
+        "min": 2,
+        "max": 2,
         "sin": 1,
         "cos": 1,
         "tan": 1,
@@ -168,7 +170,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         "select": {min: 2}
     },
 
-    jsMathFuncs: ["sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
+    jsMathFuncs: ["min", "max", "sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
 
     glslFuncCode: {
         "rand": [
