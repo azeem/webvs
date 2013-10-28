@@ -129,11 +129,12 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
     }
 });
 
-function DummyMain(canvas) {
+function DummyMain(canvas, copier) {
     this.canvas = canvas;
     this.registerBank = {};
     this.bootTime = (new Date()).getTime();
     this.analyser = new DummyAnalyser();
+    this.copier = copier;
 }
 
 function DummyParent(fm) {

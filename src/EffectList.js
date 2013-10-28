@@ -46,7 +46,7 @@ function EffectList(options) {
     this._frameCounter = 0;
     this._inited = false;
 
-    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "w", "h", "cid"]);
+    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
     var genResult = codeGen.generateCode(["init", "perFrame"], [], []);
     this.code = genResult[0];
 
@@ -124,7 +124,9 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
         this.code.beat = this.main.analyser.beat;
         this.code.enabled = 1;
+        this.code.clear = this.clearFrame;
         if(!this._inited) {
+            this._inited = true;
             this.code.init();
         }
         this.code.perFrame();
@@ -136,7 +138,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         this.fm.setRenderTarget();
 
         // clear frame
-        if(this.clearFrame || this.first) {
+        if(this.clearFrame || this.first || this.code.clear) {
             gl.clearColor(0,0,0,1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             this.first = false;
