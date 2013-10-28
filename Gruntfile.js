@@ -15,6 +15,7 @@ module.exports = function(grunt) {
 
         "src/Main.js",
         "src/Component.js",
+        "src/Container.js",
         "src/EffectList.js",
 
         "src/webgl/ShaderProgram.js",

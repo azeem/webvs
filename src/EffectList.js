@@ -27,7 +27,6 @@
  * @constructor
  */
 function EffectList(options) {
-    Webvs.checkRequiredOptions(options, ["components"]);
     options = _.defaults(options, {
         output: "REPLACE",
         input: "IGNORE",
@@ -36,7 +35,6 @@ function EffectList(options) {
         enableOnBeatFor: 1
     });
 
-    this._constructComponent(options.components);
     this.output = options.output=="IGNORE"?-1:Webvs.blendModes[options.output];
     this.input = options.input=="IGNORE"?-1:Webvs.blendModes[options.input];
     this.clearFrame = options.clearFrame;
@@ -52,51 +50,22 @@ function EffectList(options) {
 
     EffectList.super.constructor.call(this, options);
 }
-Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
+Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
     componentName: "EffectList",
-
-    _constructComponent: function(optList) {
-        var components = [];
-        var that = this;
-        // construct components from JSON
-        _.each(optList, function(componentOptions, i) {
-            if(typeof componentOptions.enabled === "boolean" && !componentOptions.enabled) {
-                return;
-            }
-            var type = componentOptions.type;
-            var cloneCount = typeof componentOptions.clone === "undefined"?1:componentOptions.clone;
-            _.times(cloneCount, function(cloneId) {
-                var component = new Webvs[type](componentOptions);
-                component.cloneId = cloneId;
-                components.push(component);
-            });
-        });
-        this.components = components;
-    },
 
     /**
      * Initializes the effect list
      * @memberof Webvs.EffectList
      */
     init: function(gl, main, parent) {
-        EffectList.super.init.call(this, gl, main, parent);
+        var promises = EffectList.super.init.call(this, gl, main, parent);
 
         this.code.setup(main, this);
 
         // create a framebuffer manager for this effect list
         this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier);
 
-        // initialize all the sub components
-        var components = this.components;
-        var initPromises = [];
-        for(var i = 0;i < components.length;i++) {
-            var res = components[i].init(gl, main, this);
-            if(res) {
-                initPromises.push(res);
-            }
-        }
-
-        return Webvs.joinPromises(initPromises);
+        return promises;
     },
 
     /**
@@ -174,12 +143,6 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
      */
     destroy: function() {
         EffectList.super.destroy.call(this);
-
-        // destory all the sub-components
-        for(i = 0;i < this.components.length;i++) {
-            this.components[i].destroy();
-        }
-
         // destroy the framebuffer manager
         this.fm.destroy();
     },

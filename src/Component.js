@@ -24,7 +24,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
      * String name of the component class. Used to generate
      * id strings.
-     * @memberof Webgl.Component
+     * @memberof Webvs.Component
      */
     componentName: "Component",
 
@@ -44,13 +44,13 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
     },
 
     /**
-     * Returns the sub components in this component. Default
-     * implementation returns empty list. Override and implement
-     * if component has sub components.
-     * @returns {Array.<Webvs.Component>} sub components in this component
+     * Called when the component is moved to a different
+     * parent. Default implementation simply resets the parent reference
+     * @param {Webvs.Component} newParent - the new parent of this component
+     * @memberof Webvs.Component
      */
-    getChildren: function() {
-        return [];
+    move: function(newParent) {
+        this.parent = newParent;
     },
 
     /**
@@ -70,11 +70,11 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
     destroy: function() {},
 
     /**
-     * Generates a printable id for this component
-     * @returns {string} printable name generated from the parent hierarchy
+     * Generates a printable path of this component
+     * @returns {string} printable path generated from the parent hierarchy
      * @memberof Webvs.Component
      */
-    getIdString: function() {
+    getPath: function() {
         if(!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
             return this.parent.getIdString() + "/" + this.componentName + "#" + this.id;
         } else {
