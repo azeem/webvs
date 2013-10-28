@@ -128,15 +128,10 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
             var first = pair[0];
             var second = pair[1];
             var steps = second.index - first.index;
-            var colorStep = [
-                (second.color[0] - first.color[0])/steps,
-                (second.color[1] - first.color[1])/steps,
-                (second.color[2] - first.color[2])/steps
-            ];
             _.times(steps, function(i) {
-                colorMap[cmi++] = (first.color[0] + colorStep[0]*i);
-                colorMap[cmi++] = (first.color[1] + colorStep[1]*i);
-                colorMap[cmi++] = (first.color[2] + colorStep[2]*i);
+                colorMap[cmi++] = Math.floor((first.color[0]*(255-i) + second.color[0]*i)/255);
+                colorMap[cmi++] = Math.floor((first.color[1]*(255-i) + second.color[1]*i)/255);
+                colorMap[cmi++] = Math.floor((first.color[2]*(255-i) + second.color[2]*i)/255);
                 colorMap[cmi++] = 255;
             });
         });
