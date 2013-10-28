@@ -44,6 +44,11 @@ function EffectList(options) {
     this.enableOnBeatFor = options.enableOnBeatFor;
     this.first = true;
     this._frameCounter = 0;
+    this._inited = false;
+
+    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "w", "h", "cid"]);
+    var genResult = codeGen.generateCode(["init", "perFrame"], [], []);
+    this.code = genResult[0];
 
     EffectList.super.constructor.call(this);
 }
@@ -76,6 +81,8 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
      */
     init: function(gl, main, parent) {
         EffectList.super.init.call(this, gl, main, parent);
+
+        this.code.setup(main, this);
 
         // create a framebuffer manager for this effect list
         this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier);
@@ -113,6 +120,16 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
             if(this._frameCounter === 0) {
                 return;
             }
+        }
+
+        this.code.beat = this.main.analyser.beat;
+        this.code.enabled = 1;
+        if(!this._inited) {
+            this.code.init();
+        }
+        this.code.perFrame();
+        if(this.code.enabled === 0) {
+            return;
         }
 
         // set rendertarget to internal framebuffer
