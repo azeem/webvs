@@ -81,7 +81,7 @@ function DynamicMovement(options) {
                                              genResult[1]);
     }
 
-    DynamicMovement.super.constructor.call(this);
+    DynamicMovement.super.constructor.call(this, options);
 }
 Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     componentName: "DynamicMovement",

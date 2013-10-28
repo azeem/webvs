@@ -236,4 +236,20 @@ Webvs.getBlendMode = function(name) {
     return mode;
 };
 
+/**
+ * Returns a random string of given length
+ * @param {number} count - the number of characters required
+ * @param {string} chars - a string containing the characters 
+ *                         from which to choose
+ * @returns {string} a random string
+ */
+Webvs.randString = function(count, chars) {
+    var string = [];
+    chars = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for(var i = 0;i < count;i++) {
+        string.push(chars.charAt(Math.floor(Math.random()*chars.length)));
+    }
+    return string.join("");
+};
+
 })(window);

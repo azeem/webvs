@@ -69,6 +69,8 @@ function Texer(options) {
     this._inited = false;
 
     this.program = new TexerProgram();
+
+    Texer.super.constructor.call(this, options);
 }
 Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     componentName: "Texer",

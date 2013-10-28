@@ -28,7 +28,7 @@ function FadeOut(options) {
     this.maxFrameCount = Math.floor(1/options.speed);
     this.program = new Webvs.ClearScreenProgram(Webvs.AVERAGE);
 
-    FadeOut.super.constructor.call(this);
+    FadeOut.super.constructor.call(this, options);
 }
 Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
     componentName: "FadeOut",

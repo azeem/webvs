@@ -50,7 +50,7 @@ function EffectList(options) {
     var genResult = codeGen.generateCode(["init", "perFrame"], [], []);
     this.code = genResult[0];
 
-    EffectList.super.constructor.call(this);
+    EffectList.super.constructor.call(this, options);
 }
 Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     componentName: "EffectList",
@@ -67,7 +67,6 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
             var cloneCount = typeof componentOptions.clone === "undefined"?1:componentOptions.clone;
             _.times(cloneCount, function(cloneId) {
                 var component = new Webvs[type](componentOptions);
-                component.id = i;
                 component.cloneId = cloneId;
                 components.push(component);
             });
@@ -171,7 +170,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
     /**
      * Releases resources.
-     * @memberof Webgl.EffectList
+     * @memberof Webvs.EffectList
      */
     destroy: function() {
         EffectList.super.destroy.call(this);
@@ -183,6 +182,14 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
         // destroy the framebuffer manager
         this.fm.destroy();
+    },
+
+    /**
+     * Returns the subcomponents in this effect list
+     * @memberof Webvs.Effectlist
+     */
+    getChildren: function() {
+        return this.components;
     }
 });
 

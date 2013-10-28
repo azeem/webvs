@@ -34,7 +34,7 @@ function ChannelShift(options) {
 
     this.program = new ChannelShiftProgram();
 
-    ChannelShift.super.constructor.call(this);
+    ChannelShift.super.constructor.call(this, options);
 }
 Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     componentName: "ChannelShift",

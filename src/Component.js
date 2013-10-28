@@ -10,8 +10,16 @@
  * A base class that all Webvs effects extend from.
  * @memberof Webvs
  * @constructor
+ * @param {object} options - options object
+ * @param {object} [options.id] - id for this component. Default is a random string.
  */
-function Component() {}
+function Component(options) {
+    if(options.id) {
+        this.id = options.id;
+    } else {
+        this.id = Webvs.randString(5);
+    }
+}
 Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
      * String name of the component class. Used to generate
@@ -33,6 +41,16 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
         this.gl = gl;
         this.main = main;
         this.parent = parent;
+    },
+
+    /**
+     * Returns the sub components in this component. Default
+     * implementation returns empty list. Override and implement
+     * if component has sub components.
+     * @returns {Array.<Webvs.Component>} sub components in this component
+     */
+    getChildren: function() {
+        return [];
     },
 
     /**

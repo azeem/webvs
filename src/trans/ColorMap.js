@@ -43,7 +43,7 @@ function ColorMap(options) {
 
     this.program = new Webvs.ColorMapProgram(options.key, Webvs.getBlendMode(options.output));
 
-    ColorMap.super.constructor.call(this);
+    ColorMap.super.constructor.call(this, options);
 }
 Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     mapCycleModes: {

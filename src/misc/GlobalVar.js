@@ -25,7 +25,7 @@ function GlobalVar(options) {
     this.code = genResult[0];
     this.inited = false;
 
-    GlobalVar.super.constructor.call(this);
+    GlobalVar.super.constructor.call(this, options);
 }
 Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
     /**
