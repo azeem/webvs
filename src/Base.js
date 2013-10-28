@@ -217,8 +217,23 @@ Webvs.blendModes = {
     AVERAGE: 3,
     ADDITIVE: 4,
     SUBTRACTIVE1: 5,
-    SUBTRACTIVE2: 6
+    SUBTRACTIVE2: 6,
+    MULTIPLY: 7
 };
 _.extend(Webvs, Webvs.blendModes);
+
+/**
+ * Returns the blendmode constant. Throws an error if its
+ * an invalid blend mode
+ * @param {string} name - the blend mode in string
+ * @returns {number} the code for the blend mode
+ */
+Webvs.getBlendMode = function(name) {
+    var mode = Webvs.blendModes[name];
+    if(!mode) {
+        throw new Error("Unknown blendMode " + name);
+    }
+    return mode;
+};
 
 })(window);

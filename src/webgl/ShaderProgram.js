@@ -80,6 +80,7 @@ function ShaderProgram(options) {
 
     // select the blend equation
     this.outputBlendMode = options.outputBlendMode;
+
     if(options.swapFrame || this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
         this.swapFrame = true;
         this.glBlendMode = false;
@@ -153,7 +154,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         Webvs.AVERAGE,
         Webvs.ADDITIVE,
         Webvs.SUBTRACTIVE1,
-        Webvs.SUBTRACTIVE2
+        Webvs.SUBTRACTIVE2,
+        Webvs.MULTIPLY
     ],
 
     // the blending formulas to be used inside shaders
@@ -163,7 +165,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         [Webvs.AVERAGE, "(color+texture2D(u_srcTexture, v_position))/2.0"],
         [Webvs.ADDITIVE, "color+texture2D(u_srcTexture, v_position)"],
         [Webvs.SUBTRACTIVE1, "texture2D(u_srcTexture, v_position)-color"],
-        [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"]
+        [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"],
+        [Webvs.MULTIPLY, "color*texture2D(u_srcTexture, v_position)"]
     ]),
 
     /**
@@ -280,6 +283,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             case Webvs.SUBTRACTIVE2:
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_SUBTRACT);
+                break;
+            case Webvs.MULTIPLY:
+                gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+                gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.AVERAGE:
                 gl.blendColor(0.5, 0.5, 0.5, 1);

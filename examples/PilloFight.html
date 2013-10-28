@@ -12,81 +12,6 @@ See the file license.txt for copying permission.
     <script src="../build/libs.js"></script>
     <script src="../build/webvs.js"></script>
     <script type="text/javascript">
-        /*var samplePreset = {
-            clearFrame: true,
-            components: [
-                {
-                    type: "SuperScope",
-                    colors: ["#ff0000"],
-                    code: {
-                        perPoint: "x=0;y=(200/h)*i;"
-                    }
-                },
-                {
-                    type: "SuperScope",
-                    colors: ["#00ff00"],
-                    code: {
-                        perPoint: "x=0;y=(-200/h)*i;"
-                    }
-                },
-                {
-                    type: "SuperScope",
-                    colors: ["#0000ff"],
-                    code: {
-                        perPoint: "y=0;x=(200/w)*i;"
-                    }
-                },
-                {
-                    colors: ["#ffff00"],
-                    type: "SuperScope",
-                    code: {
-                        perPoint: "y=0;x=(-200/w)*i;"
-                    }
-                },
-                {
-                    type: "DynamicMovement",
-                    enabled: true,
-                    code: {
-                        perPixel: "r=r+$PI*0.25;"
-                    }
-                },
-
-                {
-                    type: "SuperScope",
-                    thickness: 3,
-                    drawMode: "DOTS",
-                    code: {
-                        init: "n=2",
-                        perPoint: "x=(200/w)*i/sqrt(2);y=(200/h)*i/sqrt(2);"
-                    }
-                },
-                {
-                    type: "SuperScope",
-                    thickness: 3,
-                    drawMode: "DOTS",
-                    code: {
-                        init: "n=2",
-                        perPoint: "x=(-200/w)*i/sqrt(2);y=(200/h)*i/sqrt(2);"
-                    }
-                },
-                {
-                    type: "SuperScope",
-                    thickness: 3,
-                    drawMode: "DOTS",
-                    code: {
-                        init: "n=2",
-                        perPoint: "x=(200/w)*i/sqrt(2);y=(-200/h)*i/sqrt(2);"
-                    }
-                },
-                {
-                    type: "SuperScope",
-                    thickness: 3,
-                    drawMode: "DOTS",
-                    code: {
-                        init: "n=2",
-                        perPoint: "x=(-200/w)*i/sqrt(2);y=(-200/h)*i/sqrt(2);"
-                    }
-                },*/
         var samplePreset = {
             "name": "pillow fight (re-feathered)",
             "author": "yiA2 yathosho",
@@ -160,12 +85,11 @@ See the file license.txt for copying permission.
                     "type": "DynamicMovement",
                     "coord": "POLAR",
                     "noGrid": true,
-                    "compat": true,
                     "bFilter": true,
                     "code": {
                         "perPixel": "r=r+$PI*.25;"
                     }
-                }/*,
+                },
                 {
                     "type": "EffectList",
                     "enabled": true,
@@ -343,7 +267,7 @@ See the file license.txt for copying permission.
                             }
                         ]
                     ]
-                }/*,
+                },
                 {
                     "type": "ColorMap",
                     "key": "MAX",
@@ -386,12 +310,10 @@ See the file license.txt for copying permission.
                     "type": "DynamicMovement",
                     "coord": "RECT",
                     "noGrid": true,
-                    "compat": true,
-                    "bFilter": false,
                     "code": {
                         "perPixel": "x=x-(1/6)"
                     }
-                }*/
+                }
             ]
         };
 
@@ -412,7 +334,7 @@ See the file license.txt for copying permission.
                 src: "music.m4a"
             });
             dancer.play();*/
-            var trackUrl = "https://soundcloud.com/fantomenk/bramble-blast";
+            var trackUrl = "https://soundcloud.com/knightone/rasmus-faber-indian-summer-knight-one-remix";
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
                 if (xhr.readyState == 4 && xhr.status == 200) {
