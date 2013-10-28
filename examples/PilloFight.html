@@ -32,6 +32,26 @@ See the file license.txt for copying permission.
                     }
                 },
                 {
+                    "type": "EffectList",
+                    "clearFrame": false,
+                    "input": "REPLACE",
+                    "output": "REPLACE",
+                    "code": {
+                        "init": "u=.5;",
+                        "perFrame": "u=if(beat,-u,u);\r\nuu=.5+u;\r\nenabled=uu;",
+                    },
+                    "components": [
+                        {
+                            "type": "DynamicMovement",
+                            "noGrid": true,
+                            "coord": "RECT",
+                            "code": {
+                                "perPixel": "x=-x"
+                            }
+                        }
+                    ]
+                },
+                {
                     "type": "Texer",
                     "imageSrc": "square_sharp_72x72",
                     "resizing": false,
@@ -56,6 +76,26 @@ See the file license.txt for copying permission.
                         "onBeat": "mo=bnot(mo);rxo=getosc(0.5,0.02,0)/15;ryo=getosc(0.3,0.02,0)/15;rzo=getosc(0.7,0.02,0)/15;",
                         "perPoint": "r=i*pi*2-pi/2+t;d=2;\r\nu=(i+t*0.15)*10000%10000/10000*4;\r\nxi=if(below(u,1),u*2-1,if(below(u,2),1,if(below(u,3),(1-(u-2))*2-1,-1)));\r\nyi=if(below(u,1),-1,if(below(u,2),(u-1)*2-1,if(below(u,3),1,(1-(u-3))*2-1)));\r\nx1=xi*mi+cos(r)*d*(1-mi);y1=yi*mi+sin(r)*d*(1-mi);z1=0;\r\nx1d=x1*cz-y1*sz;y1d=x1*sz+y1*cz;\r\ny2d=y1d*cx-z1*sx;z2d=y1d*sx+z1*cx;\r\nx3d=x1d*cy-z2d*sy;z3d=x1d*sy+z2d*cy;\r\nzi=1/(z3d+3);\r\nx=if(above(z3d+3,0.1),x3d*zi,x);\r\ny=if(above(z3d+3,0.1),y2d*zi,y);\r\nalpha=if(below(z3d+2.4,0),0,1);\r\nred=alpha;\r\nblue=alpha;\r\ngreen=alpha;\r\nx=x*xasp;\r\ny=y*yasp;"
                     }
+                },
+                {
+                    "type": "EffectList",
+                    "clearFrame": false,
+                    "input": "REPLACE",
+                    "output": "REPLACE",
+                    "code": {
+                        "init": "u=.5;",
+                        "perFrame": "u=if(beat,-u,u);\r\nuu=.5+u;\r\nenabled=uu;",
+                    },
+                    "components": [
+                        {
+                            "type": "DynamicMovement",
+                            "noGrid": true,
+                            "coord": "RECT",
+                            "code": {
+                                "perPixel": "y=-y"
+                            }
+                        }
+                    ]
                 },
                 {
                     "type": "ColorMap",

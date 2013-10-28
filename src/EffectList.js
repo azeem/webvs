@@ -122,7 +122,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
             }
         }
 
-        this.code.beat = this.main.analyser.beat;
+        this.code.beat = this.main.analyser.beat?1:0;
         this.code.enabled = 1;
         this.code.clear = this.clearFrame;
         if(!this._inited) {
