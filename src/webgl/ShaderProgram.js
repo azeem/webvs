@@ -214,6 +214,9 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             }
         }
 
+        if(outputBlendMode && !this.dynamicBlend) {
+            throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
+        }
         outputBlendMode = outputBlendMode || this.outputBlendMode;
         if(this.dynamicBlend) {
             this.setUniform("u_blendMode", "1i", outputBlendMode);

@@ -141,7 +141,36 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         if(typeof this.animReqId !== "undefined") {
             cancelAnimationFrame(this.animReqId);
         }
-    }
+    },
+
+    _findChild: function(childId, component) {
+        var children = component.getChildren();
+        for(var i = 0;i < children.length;i++) {
+            if(children[i].id == childId) {
+                return children[i];
+            }
+            var subChild = this._findChild(childId, children[i]);
+            if(subChild) {
+                return subChild;
+            }
+        }
+    },
+
+    /*getComponent: function(componentId) {
+        return this._findChild(componentId, this.rootComponent);
+    },
+
+    addComponent: function(parentId, component) {
+    },
+
+    moveComponent: function(componentId, newParentId) {
+    },
+
+    removeComponent: function(componentId) {
+    },
+
+    updateComponent: function(componentId, component) {
+    }*/
 });
 
 Main.ui = {

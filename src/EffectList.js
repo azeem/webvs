@@ -7,8 +7,8 @@
 
 /**
  * @class
- * Effectlist is a component that can contain other components. Its also used as the root
- * component in Webvs.Main
+ * Effectlist is a container that renders components to a separate buffer. and blends
+ * it in with the parent buffer. Its also used as the root component in Webvs.Main
  *
  * @param {object} options - options object
  * @param {Array.<object>} options.components - the constructor options object for each subcomponent
@@ -121,6 +121,9 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         // render all the components
         var components = this.components;
         for(var i = 0;i < components.length;i++) {
+            if(!components[i].enabled) {
+                continue;
+            }
             components[i].update();
         }
 

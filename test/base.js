@@ -50,7 +50,7 @@ function CanvasTest() {
 function CanvasTestWithFM() {
     var testFunc = arguments[arguments.length-1];
     var wrapper = function(canvas, gl) {
-        var copier = new Webvs.CopyProgram();
+        var copier = new Webvs.CopyProgram({dynamicBlend: true});
         copier.init(gl);
         var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier);
         testFunc(canvas, gl, fm, copier);

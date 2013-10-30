@@ -19,6 +19,7 @@ function Component(options) {
     } else {
         this.id = Webvs.randString(5);
     }
+    this.enabled = _.isUndefined(options.enabled)?true:options.enabled;
 }
 Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
