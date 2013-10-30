@@ -46,7 +46,8 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
 
     /**
      * Called when the component is moved to a different
-     * parent. Default implementation simply resets the parent reference
+     * parent. Default implementation simply resets the parent reference.
+     * Override and implement additional logic if required
      * @param {Webvs.Component} newParent - the new parent of this component
      * @memberof Webvs.Component
      */
