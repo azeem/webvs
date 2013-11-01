@@ -14,12 +14,10 @@
  * @param {object} [options.id] - id for this component. Default is a random string.
  */
 function Component(options) {
-    if(options.id) {
-        this.id = options.id;
-    } else {
-        this.id = Webvs.randString(5);
-    }
+    this.id = options.id;
     this.enabled = _.isUndefined(options.enabled)?true:options.enabled;
+    this.componentInited = false;
+    this.options = options;
 }
 Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
@@ -42,6 +40,15 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
         this.gl = gl;
         this.main = main;
         this.parent = parent;
+        this.componentInited = true;
+    },
+
+    adoptOrInit: function(gl, main, parent) {
+        if(this.componentInited) {
+            return this.adopt(parent);
+        } else {
+            return this.init(gl, main, parent);
+        }
     },
 
     /**
@@ -51,7 +58,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * @param {Webvs.Component} newParent - the new parent of this component
      * @memberof Webvs.Component
      */
-    move: function(newParent) {
+    adopt: function(newParent) {
         this.parent = newParent;
     },
 

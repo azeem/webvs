@@ -35,6 +35,7 @@ function Main(options) {
     });
     this.canvas = options.canvas;
     this.analyser = options.analyser;
+    this.isStarted = false;
     if(options.showStat) {
         var stats = new Stats();
         stats.setMode(0);
@@ -72,7 +73,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     loadPreset: function(preset) {
         var newRoot = new Webvs.EffectList(preset);
         this.stop();
-        this.preset = preset;
         if(this.rootComponent) {
             this.rootComponent.destroy();
         }
@@ -87,7 +87,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.stop();
         if(this.rootComponent) {
             this.rootComponent.destroy();
+            this.copier.cleanup();
             this.rootComponent = null;
+            this.copier = null;
         }
         this._initGl();
         if(this.preset) {
@@ -100,14 +102,14 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main
      */
     start: function() {
-        if(!this.rootComponent) {
-            return; // no preset loaded yet. cannot start!
+        if(this.isStarted) {
+            return;
         }
 
-        this.registerBank = {};
-        this.bootTime = (new Date()).getTime();
         var rootComponent = this.rootComponent;
-        var promise = rootComponent.init(this.gl, this);
+        if(rootComponent) {
+            return; // no preset loaded yet. cannot start!
+        }
 
         var that = this;
         var drawFrame = function() {
@@ -127,10 +129,18 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             };
         }
 
-        // start rendering when the promise is  done
-        promise.onResolve(function() {
-            that.animReqId = requestAnimationFrame(drawFrame);
-        });
+        if(rootComponent.componentInited) {
+            this.animReqId = requestAnimationFrame(drawFrame);
+        } else {
+            this.registerBank = {};
+            this.bootTime = (new Date()).getTime();
+            var promise = rootComponent.init(this.gl, this);
+
+            // start rendering when the promise is  done
+            promise.onResolve(function() {
+                that.animReqId = requestAnimationFrame(drawFrame);
+            });
+        }
     },
 
     /**
@@ -138,114 +148,11 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main
      */
     stop: function() {
-        if(typeof this.animReqId !== "undefined") {
+        if(!_.isUndefined(this.animReqId)) {
             cancelAnimationFrame(this.animReqId);
+            this.isStarted = false;
         }
     },
-
-    /**
-     * Searches through the tree and returns the component
-     * with given id
-     * @memberof Webvs.Main
-     * @param {string} id - id to be searched for
-     * @returns {Webvs.Component} the component if found, undefined otherwise
-     */
-    getComponent: function(id, component) {
-        component = component || this.rootComponent;
-        if(id == component.id) {
-            return component;
-        }
-        var children = component.components;
-        for(var i = 0;i < children.length;i++) {
-            var child = children[i];
-            if(child.id == id) {
-                return child;
-            }
-            if(child instanceof Webvs.Container) {
-                // search through sub containers also
-                child = this.getComponent(id, child);
-                if(child) {
-                    return child;
-                }
-            }
-        }
-    },
-
-    /**
-     * Adds a new component in the tree under a given parent
-     * @memberof Webvs.Main
-     * @param {object} options - options object for initializing the new component
-     * @parent {string} parentId - id of the parent under which the new component
-     *                             will be inserted
-     */
-    addComponent: function(options, parentId) {
-        var parent = this.getComponent(parentId);
-        if(parent) {
-            parent.addComponent(options);
-        }
-    },
-
-    /**
-     * Moves a component from one parent to another
-     * @memberof Webvs.Main
-     * @param {string} componentId - id of component to be moved
-     * @param {string} newParentId - id of the new parent
-     * @param {number} pos - the position component under the new parent
-     */
-    moveComponent: function(componentId, newParentId, pos) {
-        var component = this.getComponent(componentId);
-        var newParent = this.getComponent(newParentId);
-        if(component && newParent) {
-            component.parent.detachComponent(component.id);
-            newParent.addComponent(component, pos);
-            component.move(newParent);
-        }
-    },
-
-    /**
-     * Removes a component and cleans up all resources
-     * @memberof Webvs.Main
-     * @param {string} componentId - id of the component to be removed
-     */
-    removeComponent: function(componentId) {
-        var component = this.getComponent(componentId);
-        if(component) {
-            component.parent.detachComponent(component.id);
-            component.destroy();
-        }
-    },
-
-    /**
-     * Updates a component with new set of options
-     * @memberof Webvs.Main
-     * @oaram {string} componentId - id of the component to be updated
-     * @param {object} options - updated options object
-     */
-    updateComponent: function(componentId, options) {
-        if(componentId == this.rootComponent.id) {
-            // since root component does not have a parent
-            // we have to manually create new root and move
-            // all its children
-            var children = this.rootComponent.detachAllComponents();
-            options = _.clone(options);
-            options.id = componentId;
-            options.components = undefined;
-
-            var newRoot = new EffectList(options);
-            _.each(children, function(component) {
-                newRoot.addComponent(component);
-                component.move(newRoot);
-            });
-            this.rootComponent.destroy();
-            this.rootComponent = newRoot;
-        } else {
-            var component = this.getComponent(componentId);
-            if(component) {
-                var parent = component.parent;
-                parent.updateComponent(component.id, options);
-            }
-        }
-    }
 });
 
 Main.ui = {

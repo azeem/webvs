@@ -119,13 +119,11 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         }
 
         // render all the components
-        var components = this.components;
-        for(var i = 0;i < components.length;i++) {
-            if(!components[i].enabled) {
-                continue;
+        this.iterChildren(function(component) {
+            if(component.enabled) {
+                component.update();
             }
-            components[i].update();
-        }
+        });
 
         // switch to old framebuffer
         this.fm.restoreRenderTarget();
@@ -149,14 +147,6 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         // destroy the framebuffer manager
         this.fm.destroy();
     },
-
-    /**
-     * Returns the subcomponents in this effect list
-     * @memberof Webvs.Effectlist
-     */
-    getChildren: function() {
-        return this.components;
-    }
 });
 
 EffectList.ui = {
