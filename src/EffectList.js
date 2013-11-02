@@ -144,8 +144,10 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
      */
     destroy: function() {
         EffectList.super.destroy.call(this);
-        // destroy the framebuffer manager
-        this.fm.destroy();
+        if(this.fm) {
+            // destroy the framebuffer manager
+            this.fm.destroy();
+        }
     },
 });
 

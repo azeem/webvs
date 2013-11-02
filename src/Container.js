@@ -47,9 +47,12 @@ ComponentFactory.makeComponent = function(options, subFactories) {
     count--;
     if(count) {
         var clones = [];
-        _.repeat(count, function() {
-            clones.push(new componentClass(options, subFactories));
+        _.times(count, function(index) {
+            var clone = new componentClass(options, subFactories);
+            clone.cloneId = index + 1;
+            clones.push(clone);
         });
+        component.cloneId = 0;
         component.__clones = clones;
     }
     
@@ -72,6 +75,8 @@ ComponentFactory.merge = function(factories) {
  * @param {Array.<object>} components - options array for all the subcomponents
  */
 function Container(options, subFactories) {
+    Container.super.constructor.call(this, options);
+
     /**
      * the list of child components
      * @memberof Webvs.Container
@@ -81,10 +86,9 @@ function Container(options, subFactories) {
 
     // add all the sub components
     _.each(subFactories || options.components || [], function(factory) {
-        this.addComponent(factory);
+        this.addComponent(this.id, factory);
     }, this);
 
-    Container.super.constructor.call(this, options);
 }
 Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     /**
@@ -98,13 +102,13 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         // initialize all the sub components
         var initPromises = [];
         _.each(this.components, function(component) {
-            doClones(components, function(clone) {
+            doClones(component, function(clone) {
                 var res = clone.adoptOrInit(gl, main, this);
                 if(res) {
                     initPromises.push(res);
                 }
             }, this);
-        });
+        }, this);
 
         return Webvs.joinPromises(initPromises);
     },
@@ -116,11 +120,13 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     destroy: function() {
         Container.super.destroy.call(this);
         _.each(this.components, function(component) {
-            component.destroy();
+            doClones(component, function(clone) {
+                clone.destroy();
+            });
         });
     },
     
-    iterChildren: function(callback, noClones) {
+    iterChildren: function(callback) {
         for(var i = 0;i < this.components.length;i++) {
             doClones(this.components[i], callback, this);
         }
