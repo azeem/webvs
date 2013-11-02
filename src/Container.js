@@ -72,8 +72,6 @@ ComponentFactory.merge = function(factories) {
  * @param {Array.<object>} components - options array for all the subcomponents
  */
 function Container(options, subFactories) {
-    Webvs.checkRequiredOptions(options, ["components"]);
-
     /**
      * the list of child components
      * @memberof Webvs.Container
@@ -82,7 +80,7 @@ function Container(options, subFactories) {
     this._containerInited = false;
 
     // add all the sub components
-    _.each(subFactories || options.components, function(factory) {
+    _.each(subFactories || options.components || [], function(factory) {
         this.addComponent(factory);
     }, this);
 
@@ -189,21 +187,26 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
                 continue;
             }
 
+            options = _.defaults(options, component.options); // use undefined properties from existing
             options.id = id;
             // create updated component. detach and move subcomponents if required
             var subFactories = component instanceof Container?component.detachAllComponents():undefined;
             var newComponent = ComponentFactory.makeComponent(options, subFactories);
-            // cleanup the detached factories. in case they have more elements
-            _.each(subFactories, function(factory) {
-                factory.destroyPool();
-            });
+            if(subFactories) {
+                // cleanup the detached factories. in case they have more elements
+                _.each(subFactories, function(factory) {
+                    factory.destroyPool();
+                });
+            }
 
             // replace and init/move the components
+            var promises = [];
             if(this.componentInited) {
                 doClones(newComponent, function(clone) {
-                    clone.adoptOrInit(this.gl, this.main, this);
+                    promises.push(clone.adoptOrInit(this.gl, this.main, this));
                 }, this);
             }
+            promises = Webvs.joinPromises(promises);
 
             // replace the components
             this.components[i] = newComponent;
@@ -213,7 +216,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
                 clone.destroy();
             });
 
-            return true;
+            return promises;
         }
 
         // if component not in this container
@@ -221,16 +224,16 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         for(var i = 0;i < this.component.length;i++) {
             var component = this.components[i];
             if(component instanceof Container) {
-                var success = component.updateComponent(id, options);
-                if(success) {
+                var promise = component.updateComponent(id, options);
+                if(promise) {
+                    var promise = [promise];
                     _.each(component.__clones, function(clone) {
-                        clone.updateComponent(id, options);
+                        promise.push(clone.updateComponent(id, options));
                     });
-                    return success;
+                    return Webvs.joinPromises(promise);
                 }
             }
         }
-        return false;
     },
 
     detachAllComponents: function() {
@@ -255,19 +258,33 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         for(var i = 0;i < this.components.length;i++) {
             var component = this.components[i];
             if(component instanceof Container) {
-                var detached = component.detachComponent(id);
-                if(detached) {
+                var factory = component.detachComponent(id);
+                if(factory) {
                     if(component.__clones) {
-                        detached = [detached];
+                        factory = [factory];
                         _.each(component.__clones, function(clone) {
                             detached.push(clone.detachComponent(id));
                         });
-                        detached = ComponentFactory.merge(detached);
+                        factory = ComponentFactory.merge(factory);
                     }
-                    return detached;
+                    return factory;
                 }
             }
         }
+    },
+
+    getOptions: function() {
+        var options = this.options;
+        options.components = [];
+        for(var i = 0;i < this.components.length;i++) {
+            var component = this.components[i];
+            if(component instanceof Container) {
+                options.components.push(component.getOptionTree());
+            } else {
+                options.components.push(component.options);
+            }
+        }
+        return options;
     }
 
 });

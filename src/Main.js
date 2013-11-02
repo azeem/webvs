@@ -45,9 +45,24 @@ function Main(options) {
         document.body.appendChild(stats.domElement);
         this.stats = stats;
     }
+    this.rootComponent = new Webvs.EffectList({id:"root"});
+    this._registerContextEvents();
     this._initGl();
 }
 Webvs.Main = Webvs.defineClass(Main, Object, {
+    _registerContextEvents: function() {
+        var _this = this;
+
+        this.canvas.addEventListener("webglcontextlost", function(event) {
+            event.preventDefault();
+            _this.stop();
+        });
+
+        this.canvas.addEventListener("webglcontextrestored", function(event) {
+            _this.resetCanvas();
+        });
+    },
+
     _initGl: function() {
         try {
             this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
@@ -71,11 +86,11 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main
      */
     loadPreset: function(preset) {
+        preset = _.clone(preset); // use our own copy
+        preset.id = "root";
         var newRoot = new Webvs.EffectList(preset);
         this.stop();
-        if(this.rootComponent) {
-            this.rootComponent.destroy();
-        }
+        this.rootComponent.destroy();
         this.rootComponent = newRoot;
     },
 
@@ -85,16 +100,11 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      */
     resetCanvas: function() {
         this.stop();
-        if(this.rootComponent) {
-            this.rootComponent.destroy();
-            this.copier.cleanup();
-            this.rootComponent = null;
-            this.copier = null;
-        }
+        var preset = this.rootComponent.getOptions();
+        this.rootComponent.destroy();
+        this.copier.cleanup();
         this._initGl();
-        if(this.preset) {
-            this.rootComponent = new EffectList(this.preset);
-        }
+        this.rootComponent = new Webvs.EffectList(preset);
     },
 
     /**
@@ -107,9 +117,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         }
 
         var rootComponent = this.rootComponent;
-        if(rootComponent) {
-            return; // no preset loaded yet. cannot start!
-        }
 
         var that = this;
         var drawFrame = function() {
@@ -141,6 +148,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
                 that.animReqId = requestAnimationFrame(drawFrame);
             });
         }
+        this.isStarted = true;
     },
 
     /**
@@ -153,6 +161,66 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             this.isStarted = false;
         }
     },
+
+    addComponent: function(parentId, options, pos) {
+        this.stop();
+        options = _.clone(options); // use our own copy
+        var res = this.rootComponent.addComponent(parentId, options, pos);
+        if(res) {
+            var _this = this;
+            res[1].onResolve(function() {
+                _this.start();
+            });
+            return res[0];
+        }
+    },
+
+    updateComponent: function(id, options) {
+        this.stop();
+        var _this = this;
+        options = _.clone(options); // use our own copy
+        if(id != "root") {
+            var promise = this.rootComponent.updateComponent();
+            if(promise) {
+                promises.onResolve(function() {
+                    _this.start();
+                });
+                return true;
+            }
+        } else {
+            var factories = this.rootComponent.detachAllComponents();
+            var preset = this.rootComponent.preset;
+            this.rootComponent.destroy();
+            this.rootComponent = new EffectList(preset, factories);
+            _.each(factories, function(factory) {
+                factory.destroyPool();
+            });
+            _this.start();
+            return true;
+        }
+        return false;
+    },
+
+    removeComponent: function(id) {
+        var factory = this.rootComponent.detachComponent(id);
+        if(factory) {
+            factory.destroyPool();
+            return true;
+        }
+        return false;
+    },
+
+    moveComponent: function(id, newParentId) {
+        var factory = this.rootComponent.detachComponent(id);
+        if(factory) {
+            var res = this.rootComponent.addComponent(newParentId, factory);
+            factory.destroyPool();
+            if(res) {
+                return true;
+            }
+        }
+        return false;
+    }
 });
 
 Main.ui = {

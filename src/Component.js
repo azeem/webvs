@@ -78,6 +78,10 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      */
     destroy: function() {},
 
+    getOptions: function() {
+        return this.getOptions;
+    },
+
     /**
      * Generates a printable path of this component
      * @returns {string} printable path generated from the parent hierarchy
