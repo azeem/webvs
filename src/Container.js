@@ -54,14 +54,14 @@ ComponentFactory.makeComponent = function(options, subFactories) {
     }
     
     return component;
-}
+};
 ComponentFactory.merge = function(factories) {
     var pool = [];
     _.each(factories, function(factory) {
         pool.concat(factory.pool);
     });
     return new ComponentFactory(factories[0].options, pool);
-}
+};
 
 /**
  * @class
@@ -96,16 +96,15 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         this._containerInited = true;
 
         // initialize all the sub components
-        var components = this.components;
         var initPromises = [];
-        for(var i = 0;i < components.length;i++) {
-            doClones(components[i], function(clone) {
+        _.each(this.components, function(component) {
+            doClones(components, function(clone) {
                 var res = clone.adoptOrInit(gl, main, this);
                 if(res) {
                     initPromises.push(res);
                 }
             }, this);
-        }
+        });
 
         return Webvs.joinPromises(initPromises);
     },
@@ -135,14 +134,15 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             factory = new ComponentFactory(factory);
         }
 
+        var component, promises;
         // we are at the correct parent
         if(parentId == this.id) {
-            var component = factory.get();
-            var promises = [];
+            component = factory.get();
+            promises = [];
             if(this.componentInited) {
                 doClones(component, function(clone) {
-                    var res = clone.adoptOrInit(this.gl, this.main, this);
-                    if(res) {
+                    var promise = clone.adoptOrInit(this.gl, this.main, this);
+                    if(promise) {
                         promises.push(res);
                     }
                 }, this);
@@ -159,17 +159,17 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             // try any of the subcontainers and repeat
             // on all clones if required
             for(var i = 0;i < this.components.length;i++) {
-                var component = this.components[i];
+                component = this.components[i];
                 if(component instanceof Container) {
                     var res = component.addComponent(parentId, factory, pos);
                     if(res) {
                         var id = res[0];
-                        var promises = [res[1]];
+                        promises = [res[1]];
                         if(component.__clones) {
-                            _.each(component.__clones, function(clone) {
-                                var res = clone.addComponent(parentId, factory, pos);
+                            for(var j = 0;j < component.__clones;j++) {
+                                res = component.__clones[j].addComponent(parentId, factory, pos);
                                 promises.push(res[1]);
-                            });
+                            }
                         }
                         promises = Webvs.joinPromises(promises);
                         return [id, promises];
@@ -180,13 +180,10 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     },
 
     updateComponent: function(id, options) {
+        var component, promise, j;
         // find the component in this container
-        for(var i = 0;i < this.components.length;i++) {
-            var component = this.components[i];
-            if(component.id != id) {
-                continue;
-            }
-
+        component = _.find(this.components, function(c) {return c.id == id;});
+        if(component) {
             options = _.defaults(options, component.options); // use undefined properties from existing
             options.id = id;
             // create updated component. detach and move subcomponents if required
@@ -194,9 +191,9 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             var newComponent = ComponentFactory.makeComponent(options, subFactories);
             if(subFactories) {
                 // cleanup the detached factories. in case they have more elements
-                _.each(subFactories, function(factory) {
-                    factory.destroyPool();
-                });
+                for(j = 0;j < subFactories.length;j++) {
+                    subFactories[j].destroyPool();
+                }
             }
 
             // replace and init/move the components
@@ -222,14 +219,14 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         // if component not in this container
         // then try any of the subcomponents
         for(var i = 0;i < this.component.length;i++) {
-            var component = this.components[i];
+            component = this.components[i];
             if(component instanceof Container) {
-                var promise = component.updateComponent(id, options);
+                promise = component.updateComponent(id, options);
                 if(promise) {
-                    var promise = [promise];
-                    _.each(component.__clones, function(clone) {
-                        promise.push(clone.updateComponent(id, options));
-                    });
+                    promise = [promise];
+                    for(j = 0;j < component.__clones.length;j++) {
+                        promise.push(component.__clones[j].updateComponent(id, options));
+                    }
                     return Webvs.joinPromises(promise);
                 }
             }
@@ -245,26 +242,25 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     },
 
     detachComponent: function(id) {
+        var component;
         // search for the component in this container
-        for(var i = 0;i < this.component.length;i++) {
-            var component = this.components[i];
-            if(component.id == id) {
-                return new ComponentFactory(component.options, [component]);
-            }
+        component = _.find(this.components, function(c) {return c.id == id;});
+        if(component) {
+            return new ComponentFactory(component.options, [component]);
         }
 
         // try detaching from any of the subcontainers
         // aggregating results, in case they are cloned.
         for(var i = 0;i < this.components.length;i++) {
-            var component = this.components[i];
+            component = this.components[i];
             if(component instanceof Container) {
                 var factory = component.detachComponent(id);
                 if(factory) {
                     if(component.__clones) {
                         factory = [factory];
-                        _.each(component.__clones, function(clone) {
-                            detached.push(clone.detachComponent(id));
-                        });
+                        for(var j = 0;j < component.__clones.length;j++) {
+                            detached.push(component.__clones[j].detachComponent(id));
+                        }
                         factory = ComponentFactory.merge(factory);
                     }
                     return factory;
