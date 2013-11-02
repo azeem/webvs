@@ -39,6 +39,7 @@ CanvasTestWithFM("Effectlist Code", 2, function(canvas, gl, fm, copier) {
 
 CanvasTestWithFM("Container operations", 5, function(canvas, gl, fm, copier) {
     var el = new Webvs.EffectList({
+        id: "root",
         clearFrame: true,
         components: [
             {
@@ -83,7 +84,7 @@ CanvasTestWithFM("Container operations", 5, function(canvas, gl, fm, copier) {
     );
     
     // add component 1
-    el.components[1].addComponent({
+    el.addComponent("el2", {
         id: "cs12",
         type: "ClearScreen",
         color: "#0000ff"
@@ -94,7 +95,7 @@ CanvasTestWithFM("Container operations", 5, function(canvas, gl, fm, copier) {
     );
 
     // add component 2
-    el.addComponent({
+    el.addComponent("root", {
         id: "cs123",
         type: "ClearScreen",
         color: "#0000ff"
@@ -105,7 +106,7 @@ CanvasTestWithFM("Container operations", 5, function(canvas, gl, fm, copier) {
     );
 
     // remove component
-    el.detachComponent("cs123").destroy();
+    el.detachComponent("cs123").destroyPool();
     renderFrame(
       "Container code: removing new component should work",
       images.magenta

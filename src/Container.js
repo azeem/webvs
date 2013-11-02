@@ -186,9 +186,14 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     },
 
     updateComponent: function(id, options) {
-        var component, promise, j;
+        var component, componentIndex, promise, i, j;
         // find the component in this container
-        component = _.find(this.components, function(c) {return c.id == id;});
+        for(i = 0;i < this.components.length;i++) {
+            if(this.components[i].id == id) {
+                component = this.components[i];
+                componentIndex = i;
+            }
+        }
         if(component) {
             options = _.defaults(options, component.options); // use undefined properties from existing
             options.id = id;
@@ -202,7 +207,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
                 }
             }
 
-            // replace and init/move the components
+            // replace and init the components
             var promises = [];
             if(this.componentInited) {
                 doClones(newComponent, function(clone) {
@@ -211,8 +216,8 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             }
             promises = Webvs.joinPromises(promises);
 
-            // replace the components
-            this.components[i] = newComponent;
+            // replace the component
+            this.components[componentIndex] = newComponent;
 
             // destroy the old component
             doClones(component, function(clone) {
@@ -224,7 +229,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
 
         // if component not in this container
         // then try any of the subcomponents
-        for(var i = 0;i < this.component.length;i++) {
+        for(i = 0;i < this.component.length;i++) {
             component = this.components[i];
             if(component instanceof Container) {
                 promise = component.updateComponent(id, options);
@@ -248,16 +253,19 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     },
 
     detachComponent: function(id) {
-        var component;
+        var component, i;
         // search for the component in this container
-        component = _.find(this.components, function(c) {return c.id == id;});
-        if(component) {
-            return new ComponentFactory(component.options, [component]);
+        for(i = 0;i < this.components.length;i++) {
+            component = this.components[i];
+            if(component.id == id) {
+                this.components.splice(i, 1);
+                return new ComponentFactory(component.options, [component]);
+            }
         }
 
         // try detaching from any of the subcontainers
         // aggregating results, in case they are cloned.
-        for(var i = 0;i < this.components.length;i++) {
+        for(i = 0;i < this.components.length;i++) {
             component = this.components[i];
             if(component instanceof Container) {
                 var factory = component.detachComponent(id);

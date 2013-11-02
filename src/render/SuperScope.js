@@ -77,7 +77,7 @@ function SuperScope(options) {
 
     this.program = new SuperScopeShader();
 
-    SuperScope.super.constructor.call(this, options);
+    SuperScope.super.constructor.apply(this, arguments);
 }
 Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     componentName: "SuperScope",

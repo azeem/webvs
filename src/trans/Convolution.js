@@ -44,7 +44,7 @@ function Convolution(options) {
                                                 options.edgeMode, options.scale,
                                                 options.bias);
 
-    Convolution.super.constructor.call(this, options);
+    Convolution.super.constructor.apply(this, arguments);
 }
 Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     componentName: "Convolution",

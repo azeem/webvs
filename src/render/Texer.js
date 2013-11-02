@@ -70,7 +70,7 @@ function Texer(options) {
 
     this.program = new TexerProgram();
 
-    Texer.super.constructor.call(this, options);
+    Texer.super.constructor.apply(this, arguments);
 }
 Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     componentName: "Texer",

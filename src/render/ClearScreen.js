@@ -34,7 +34,7 @@ function ClearScreen(options) {
 
     this.program = new Webvs.ClearScreenProgram(this.outputBlendMode);
 
-    ClearScreen.super.constructor.call(this, options);
+    ClearScreen.super.constructor.apply(this, arguments);
 }
 Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     componentName: "ClearScreen",

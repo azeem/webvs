@@ -25,7 +25,7 @@ function Picture(options) {
     this.src = options.src;
 
     this.program = new Webvs.PictureProgram();
-    Picture.super.constructor.call(this, options);
+    Picture.super.constructor.apply(this, arguments);
 }
 Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
     /**

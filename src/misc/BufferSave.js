@@ -38,7 +38,7 @@ function BufferSave(options) {
         this._nextAction = this.actions.RESTORE;
     }
     this._bufferId = "__BUFFERSAVE_" + options.bufferId;
-    BufferSave.super.constructor.call(this, options);
+    BufferSave.super.constructor.apply(this, arguments);
 }
 Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
     actions: {

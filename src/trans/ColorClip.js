@@ -42,7 +42,7 @@ function ColorClip(options) {
 
     this.program = new Webvs.ColorClipProgram();
 
-    ColorClip.super.constructor.call(this, options);
+    ColorClip.super.constructor.apply(this, arguments);
 }
 Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
     modes: ["BELOW", "ABOVE", "NEAR"],

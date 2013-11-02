@@ -48,7 +48,7 @@ function EffectList(options) {
     var genResult = codeGen.generateCode(["init", "perFrame"], [], []);
     this.code = genResult[0];
 
-    EffectList.super.constructor.call(this, options);
+    EffectList.super.constructor.apply(this, arguments);
 }
 Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
     componentName: "EffectList",
