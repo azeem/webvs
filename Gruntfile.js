@@ -37,6 +37,7 @@ module.exports = function(grunt) {
         "src/trans/ColorMap.js",
         "src/trans/ColorClip.js",
         "src/trans/DynamicMovement.js",
+        "src/trans/Movement.js",
         "src/trans/ChannelShift.js",
         "src/trans/UniqueTone.js",
 
