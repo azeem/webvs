@@ -116,7 +116,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
 
         this.w = main.canvas.width;
         this.h = main.canvas.height;
-        this.cid = parent.cloneId;
+        this.cid = parent.cloneId || 0;
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {

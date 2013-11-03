@@ -162,6 +162,10 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         }
     },
 
+    getPreset: function() {
+        return this.rootComponent.getOptions();
+    },
+
     addComponent: function(parentId, options, pos) {
         this.stop();
         options = _.clone(options); // use our own copy

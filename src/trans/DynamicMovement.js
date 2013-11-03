@@ -58,7 +58,7 @@ function DynamicMovement(options) {
     } else {
         throw new Error("Invalid Dynamic movement code");
     }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b", "w", "h"]);
+    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r"]);
     this.code = genResult[0];
     this.inited = false;

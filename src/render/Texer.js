@@ -60,7 +60,7 @@ function Texer(options) {
         this.imageSrc = options.imageSrc;
     }
 
-    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "w", "h", "red", "green", "blue", "cid"]);
+    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
     this.code = genResult[0];
     this.code.n = 100;

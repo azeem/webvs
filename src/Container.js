@@ -20,8 +20,8 @@ function ComponentFactory(options, pool) {
 }
 Webvs.ComponentFactory = Webvs.defineClass(ComponentFactory, Object, {
     get: function(subFactories) {
-        if(this.pool.length > 1) {
-            return pool.pop();
+        if(this.pool.length > 0) {
+            return this.pool.pop();
         } else {
             return ComponentFactory.makeComponent(this.options, subFactories);
         }
@@ -61,7 +61,7 @@ ComponentFactory.makeComponent = function(options, subFactories) {
 ComponentFactory.merge = function(factories) {
     var pool = [];
     _.each(factories, function(factory) {
-        pool.concat(factory.pool);
+        pool = pool.concat(factory.pool);
     });
     return new ComponentFactory(factories[0].options, pool);
 };
@@ -172,7 +172,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
                         var id = res[0];
                         promises = [res[1]];
                         if(component.__clones) {
-                            for(var j = 0;j < component.__clones;j++) {
+                            for(var j = 0;j < component.__clones.length;j++) {
                                 res = component.__clones[j].addComponent(parentId, factory, pos);
                                 promises.push(res[1]);
                             }
@@ -273,7 +273,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
                     if(component.__clones) {
                         factory = [factory];
                         for(var j = 0;j < component.__clones.length;j++) {
-                            detached.push(component.__clones[j].detachComponent(id));
+                            factory.push(component.__clones[j].detachComponent(id));
                         }
                         factory = ComponentFactory.merge(factory);
                     }
@@ -289,7 +289,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         for(var i = 0;i < this.components.length;i++) {
             var component = this.components[i];
             if(component instanceof Container) {
-                options.components.push(component.getOptionTree());
+                options.components.push(component.getOptions());
             } else {
                 options.components.push(component.options);
             }

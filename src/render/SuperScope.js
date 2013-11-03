@@ -55,7 +55,7 @@ function SuperScope(options) {
     } else {
         throw new Error("Invalid superscope");
     }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "w", "h", "red", "green", "blue", "cid"]);
+    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
     this.code = genResult[0];
     this.code.n = 100;
@@ -133,7 +133,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             }
             value = value/size;
 
-            var pos = i/(nPoints-1);
+            var pos = i/((nPoints > 1)?(nPoints-1):1);
             code.i = pos;
             code.v = value;
             code.perPoint();

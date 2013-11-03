@@ -20,7 +20,7 @@
  */
 function GlobalVar(options) {
 	Webvs.checkRequiredOptions(options, ["code"]);
-	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b", "w", "h"]);
+	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], [], []);
     this.code = genResult[0];
     this.inited = false;
