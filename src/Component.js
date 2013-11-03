@@ -31,7 +31,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * Initialize component. Called once before animation starts.
      * Override and implement initialization code
      * @abstract
-     * @param {webglcontext} gl - webgl context
+     * @param {WebGLContext} gl - webgl context
      * @param {Webvs.Main} main - container main object for this component
      * @param {Webvs.Component} - parent component
      * @memberof Webvs.Component
@@ -43,6 +43,14 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
         this.componentInited = true;
     },
 
+    /**
+     * Adopts or initializes this component, depending on whether
+     * it is already initialized
+     * @param {WebGLContext} gl - webgl context
+     * @param {Webvs.Main} main - container main object for this component
+     * @param {Webvs.Component} - parent component
+     * @memberof Webvs.Component
+     */
     adoptOrInit: function(gl, main, parent) {
         if(this.componentInited) {
             return this.adopt(parent);
@@ -78,8 +86,12 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      */
     destroy: function() {},
 
+    /**
+     * Returns the component's options
+     * @memberof Webvs.Component
+     */
     getOptions: function() {
-        return this.getOptions;
+        return this.options;
     },
 
     /**

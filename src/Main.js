@@ -108,7 +108,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     },
 
     /**
-     * Starts the animation
+     * Starts the animation if not already started
      * @memberof Webvs.Main
      */
     start: function() {
@@ -162,10 +162,26 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         }
     },
 
+    /**
+     * Generates and returns the instantaneous preset JSON 
+     * representation
+     * @returns {object} preset json
+     * @memberof Webvs.Main
+     */
     getPreset: function() {
         return this.rootComponent.getOptions();
     },
 
+    /**
+     * Adds a component under the given parent. Root has the id "root".
+     * @param {string} parentId - id of the parent under which the component is
+     *     to be added
+     * @param {object} options - options for the new component
+     * @param {number} [pos] - position at which the component will be inserted.
+     *     default is the end of the list
+     * @returns {string} id of the new component
+     * @memberof Webvs.Main
+     */
     addComponent: function(parentId, options, pos) {
         this.stop();
         options = _.clone(options); // use our own copy
@@ -179,6 +195,13 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         }
     },
 
+    /**
+     * Updates a component.
+     * @param {string} id - id of the component
+     * @param {object} options - options to be updated.
+     * @returns {boolean} - success of the operation
+     * @memberof Webvs.Main
+     */
     updateComponent: function(id, options) {
         this.stop();
         var _this = this;
@@ -205,6 +228,13 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         return false;
     },
 
+
+    /**
+     * Removes a component
+     * @param {string} id - id of the component to be removed
+     * @returns {boolean} - success of the operation
+     * @memberof Webvs.Main
+     */
     removeComponent: function(id) {
         var factory = this.rootComponent.detachComponent(id);
         if(factory) {
@@ -214,6 +244,13 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         return false;
     },
 
+    /**
+     * Moves a component to a different parent
+     * @param {string} id - id of the component to be moved
+     * @param {string} newParentId - id of the new parent
+     * @returns {boolean} - success of the operation
+     * @memberof Webvs.Main
+     */
     moveComponent: function(id, newParentId) {
         var factory = this.rootComponent.detachComponent(id);
         if(factory) {
