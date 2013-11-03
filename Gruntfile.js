@@ -38,6 +38,7 @@ module.exports = function(grunt) {
         "src/trans/ColorClip.js",
         "src/trans/DynamicMovement.js",
         "src/trans/ChannelShift.js",
+        "src/trans/UniqueTone.js",
 
         "src/render/SuperScope.js",
         "src/render/Simple.js",
