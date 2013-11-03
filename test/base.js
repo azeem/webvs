@@ -111,10 +111,10 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
         return true;
     },
 
-    getWaveForm: function() {
+    getWaveform: function() {
         var data = new Float32Array(512);
-        _.times(data.length, function(i) {
-            data[i] = Math.random();
+        _.times(512, function(i) {
+            data[i] = Math.sin((i/512)*4*Math.PI)/2;
         });
         return data;
     },
@@ -122,7 +122,7 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
     getSpectrum: function() {
         var data = new Float32Array(512);
         _.times(data.length, function(i) {
-            data[i] = Math.random();
+            data[i] = Math.sin((i/512)*Math.PI)*2-1;
         });
 
         return data;
