@@ -136,6 +136,16 @@ function DummyMain(canvas, copier) {
     this.analyser = new DummyAnalyser();
     this.copier = copier;
 }
+DummyMain = Webvs.defineClass(DummyMain, Object, {
+    getResource: function(name) {
+        var resource;
+        resource = Webvs.Resources[name];
+        if(!resource) {
+            resource = name;
+        }
+        return resource;
+    }
+});
 
 function DummyParent(fm) {
     this.fm = fm;

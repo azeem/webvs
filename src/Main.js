@@ -45,6 +45,7 @@ function Main(options) {
         document.body.appendChild(stats.domElement);
         this.stats = stats;
     }
+    this.resources = {};
     this.rootComponent = new Webvs.EffectList({id:"root"});
     this._registerContextEvents();
     this._initGl();
@@ -92,6 +93,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.stop();
         this.rootComponent.destroy();
         this.rootComponent = newRoot;
+        this.resources = preset.resources || {};
     },
 
     /**
@@ -169,7 +171,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main
      */
     getPreset: function() {
-        return this.rootComponent.getOptions();
+        var preset = this.rootComponent.getOptions();
+        preset.resources = this.resources;
+        return preset;
     },
 
     /**
@@ -261,6 +265,36 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             }
         }
         return false;
+    },
+
+    /**
+     * Returns resource data. If resource is not defined
+     * at preset level, its searched in the global resources
+     * object
+     * @param {string} name - name of the resource
+     * @returns resource data. if resource is not found then name itself is returned
+     * @memberof Webvs.Main
+     */
+    getResource: function(name) {
+        var resource;
+        resource = this.resources[name];
+        if(!resource) {
+            resource = Webvs.Resources[name];
+        }
+        if(!resource) {
+            resource = name;
+        }
+        return resource;
+    },
+
+    /**
+     * Sets a preset level resource
+     * @param {string} name - name of the resource
+     * @param data - resource data
+     * @memberof Webvs.Main
+     */
+    setResource: function(name, data) {
+        this.resources[name] = data;
     }
 });
 

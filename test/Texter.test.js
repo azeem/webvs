@@ -22,7 +22,7 @@ CanvasTestWithFM("Texer Simple", 1, {async: true}, function(canvas, gl, fm, copi
     testTexer(canvas, gl, fm, copier, 
         "Texer Simple",
         {
-            imageSrc: "circle_edgeonly_29x29",
+            imageSrc: "avsres_texer_circle_edgeonly_29x29.bmp",
             resizing: true,
             wrapAround: true,
             code: {
@@ -38,7 +38,7 @@ CanvasTestWithFM("Texer Wrap", 1, {async: true}, function(canvas, gl, fm, copier
     testTexer(canvas, gl, fm, copier, 
         "Texer Wrap",
         {
-            imageSrc: "circle_edgeonly_29x29",
+            imageSrc: "avsres_texer_circle_edgeonly_29x29.bmp",
             wrapAround: true,
             code: {
                 init: "n=1",
@@ -53,7 +53,7 @@ CanvasTestWithFM("Texer ColorFilter", 1, {async: true}, function(canvas, gl, fm,
     testTexer(canvas, gl, fm, copier, 
         "Texer Wrap",
         {
-            imageSrc: "circle_slightblur_21x21",
+            imageSrc: "avsres_texer_circle_slightblur_21x21.bmp",
             colorFiltering: true,
             code: {
                 init: "n=5",

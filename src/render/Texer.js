@@ -54,11 +54,7 @@ function Texer(options) {
     this.resizing = options.resizing;
     this.colorFiltering = options.colorFiltering;
     this.wrapAround = options.wrapAround;
-    if(_.has(Webvs.Resources.images, options.imageSrc)) {
-        this.imageSrc = Webvs.Resources.images[options.imageSrc];
-    } else {
-        this.imageSrc = options.imageSrc;
-    }
+    this.imageSrc = options.imageSrc;
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
@@ -87,7 +83,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 
         var _this = this;
         var image = new Image();
-        image.src = this.imageSrc;
+        image.src = main.getResource(this.imageSrc);
         var promise = new Webvs.Promise();
         image.onload = function() {
             _this.imagewidth = image.width;

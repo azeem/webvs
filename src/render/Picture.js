@@ -39,7 +39,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
         var _this = this;
         var image = new Image();
-        image.src = this.src;
+        image.src = main.getResource(this.src);
         var promise = new Webvs.Promise();
         image.onload = function() {
             _this.width = image.width;
