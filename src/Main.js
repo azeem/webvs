@@ -295,7 +295,24 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      */
     setResource: function(name, data) {
         this.resources[name] = data;
+    },
+
+    /**
+     * Traverses a callback over the component tree
+     * @param {Webvs.Main~traverseCallback} callback - callback.
+     * @memberof Webvs.Main#
+     */
+    traverse: function(callback) {
+        this.rootComponent.traverse(callback);
     }
+
+    /**
+     * This function is called once for each component in the tree
+     * @callback Webvs.Main~traverseCallback
+     * @param {string} id - id of the component
+     * @param {string} parentId - id of the parent. Undefined for root
+     * @param {object} options - the options for this component.
+     */
 });
 
 Main.ui = {

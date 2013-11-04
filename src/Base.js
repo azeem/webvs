@@ -150,7 +150,7 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
     /**
      * resolves the promise object and runs all
      * the callbacks
-     * @memberof Webvs.Promise
+     * @memberof Webvs.Promise#
      */
     resolve: function() {
         if(!this.resolved) {
@@ -165,7 +165,7 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
      * register a callback which should be called
      * when the promise resolves
      * @param {function} cb - callback
-     * @memberof Webvs.Promise
+     * @memberof Webvs.Promise#
      */
     onResolve : function(cb) {
         if(this.resolved) {

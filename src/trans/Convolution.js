@@ -131,7 +131,7 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
             if(value === 0) {
                 continue;
             }
-            colorSumEq.push("pos = corn + texel * vec2("+(i-mid)+","+(j-mid)+");");
+            colorSumEq.push("pos = v_position + texel * vec2("+(i-mid)+","+(j-mid)+");");
             colorSumEq.push(edgeFunc);
             colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+Webvs.glslFloatRepr(value)+";");
         }
@@ -147,7 +147,6 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
         fragmentShader: [
             "void main() {",
             "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
-            "   vec2 corn = floor(v_position/texel)*texel;",
             "   vec2 pos;",
             "   vec4 colorSum = vec4(0,0,0,0);",
             colorSumEq.join("\n"),

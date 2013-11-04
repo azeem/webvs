@@ -273,8 +273,34 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             options.components.push(this.components[i].getOptions());
         }
         return options;
+    },
+
+    /**
+     * Traverses a callback over this subtree, starting with this container
+     * @param {Webvs.Container~traverseCallback} callback - callback.
+     * @memberof Webvs.Container#
+     */
+    traverse: function(callback) {
+        callback.call(this, this.id, (this.parent?this.parent.id:undefined), this.options);
+        _.each(this.components, function(component) {
+            if(component instanceof Container) {
+                component.traverse(callback);
+            } else {
+                var parentId = component.parent?component.parent.id:undefined;
+                var id = component.id;
+                var options = component.options;
+                callback.call(component, id, parentId, options);
+            }
+        });
     }
 
+    /**
+     * This function is called once for each component in the tree
+     * @callback Webvs.Container~traverseCallback
+     * @param {string} id - id of the component
+     * @param {string} parentId - id of the parent. Undefined for root
+     * @param {object} options - the options for this component.
+     */
 });
 
 /**
