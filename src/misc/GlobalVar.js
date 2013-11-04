@@ -20,17 +20,17 @@
  */
 function GlobalVar(options) {
 	Webvs.checkRequiredOptions(options, ["code"]);
-	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b", "w", "h"]);
+	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], [], []);
     this.code = genResult[0];
     this.inited = false;
 
-    GlobalVar.super.constructor.call(this);
+    GlobalVar.super.constructor.apply(this, arguments);
 }
 Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
     /**
      * initializes the globalvar component
-     * @memberof Webvs.GlobalVar
+     * @memberof Webvs.GlobalVar#
      */
 	init: function(gl, main, parent) {
 		GlobalVar.super.init.call(this, gl, main, parent);
@@ -40,7 +40,7 @@ Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
 
     /**
      * Runs the code
-     * @memberof Webvs.GlobalVar
+     * @memberof Webvs.GlobalVar#
      */
 	update: function() {
 		var code = this.code;

@@ -41,9 +41,9 @@ function ColorMap(options) {
         throw new Error("Unknown mapCycleMode " + options.mapCycleMode);
     }
 
-    this.program = new Webvs.ColorMapProgram(options.key, Webvs.blendModes[options.output]);
+    this.program = new Webvs.ColorMapProgram(options.key, Webvs.getBlendMode(options.output));
 
-    ColorMap.super.constructor.call(this);
+    ColorMap.super.constructor.apply(this, arguments);
 }
 Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     mapCycleModes: {
@@ -54,7 +54,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
 
     /**
      * initializes the ColorMap component
-     * @memberof Webvs.ColorMap
+     * @memberof Webvs.ColorMap#
      */
     init: function(gl, main, parent) {
         ColorMap.super.init.call(this, gl, main, parent);
@@ -69,7 +69,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
 
     /**
      * maps the colors
-     * @memberof Webvs.ColorMap
+     * @memberof Webvs.ColorMap#
      */
     update: function() {
         if(this.main.analyser.beat) {
@@ -88,7 +88,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.ColorMap
+     * @memberof Webvs.ColorMap#
      */
     destroy: function() {
         ColorMap.super.destroy.call(this);
@@ -105,6 +105,12 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
             throw new Error("map cannot have repeated indices");
         }
 
+        // parse all the colors
+        map = _.map(map, function(mapItem) {
+            var color = Webvs.parseColor(mapItem.color);
+            return {color:color, index:mapItem.index};
+        });
+
         // add a cap entries at the ends
         var first = _.first(map);
         if(first.index !== 0) {
@@ -115,42 +121,32 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
             map.push({color:last.color, index:255});
         }
 
-        map = _.map(map, function(mapItem) {
-            var color = Webvs.parseColor(mapItem.color);
-            return {color:color, index:mapItem.index};
-        });
-
         // lerp intermediate values
-        var colorMap = new Uint8Array(256*4);
+        var colorMap = new Uint8Array(256*3);
         var cmi = 0;
         var pairs = _.zip(_.first(map, map.length-1), _.last(map, map.length-1));
         _.each(pairs, function(pair, i) {
             var first = pair[0];
             var second = pair[1];
             var steps = second.index - first.index;
-            var colorStep = [
-                (second.color[0] - first.color[0])/steps,
-                (second.color[1] - first.color[1])/steps,
-                (second.color[2] - first.color[2])/steps
-            ];
             _.times(steps, function(i) {
-                colorMap[cmi++] = (first.color[0] + colorStep[0]*i);
-                colorMap[cmi++] = (first.color[1] + colorStep[1]*i);
-                colorMap[cmi++] = (first.color[2] + colorStep[2]*i);
-                colorMap[cmi++] = 255;
+                colorMap[cmi++] = Math.floor((first.color[0]*(255-i) + second.color[0]*i)/255);
+                colorMap[cmi++] = Math.floor((first.color[1]*(255-i) + second.color[1]*i)/255);
+                colorMap[cmi++] = Math.floor((first.color[2]*(255-i) + second.color[2]*i)/255);
             });
         });
         colorMap[cmi++] = last.color[0];
         colorMap[cmi++] = last.color[1];
         colorMap[cmi++] = last.color[2];
-        colorMap[cmi++] = 255;
 
         // put the color values into a 256x1 texture
         var texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, colorMap);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, colorMap);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         return texture;
     }
 });

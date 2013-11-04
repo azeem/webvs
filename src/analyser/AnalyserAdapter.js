@@ -18,7 +18,7 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
      * boolean value indicating whether a beat
      * is in progress or not
      * @type boolean
-     * @memberof Webvs.AnalyserAdapter
+     * @memberof Webvs.AnalyserAdapter#
      */
     beat: false,
 
@@ -26,7 +26,7 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
      * returns whether song is being played or not.
      * @abstract
      * @returns {boolean}
-     * @memberof Webvs.AnalyserAdapter
+     * @memberof Webvs.AnalyserAdapter#
      */
     isPlaying: function() {return false;},
 
@@ -34,15 +34,15 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
      * Returns array of waveform values
      * @abstract
      * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter
+     * @memberof Webvs.AnalyserAdapter#
      */
-    getWaveForm: function() {return new Float32Array(0);},
+    getWaveform: function() {return new Float32Array(0);},
 
     /**
      * Returns array of spectrum values
      * @abstract
      * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter
+     * @memberof Webvs.AnalyserAdapter#
      */
     getSpectrum: function() {return new Float32Array(0);}
 });

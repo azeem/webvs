@@ -150,7 +150,7 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
     /**
      * resolves the promise object and runs all
      * the callbacks
-     * @memberof Webvs.Promise
+     * @memberof Webvs.Promise#
      */
     resolve: function() {
         if(!this.resolved) {
@@ -165,7 +165,7 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
      * register a callback which should be called
      * when the promise resolves
      * @param {function} cb - callback
-     * @memberof Webvs.Promise
+     * @memberof Webvs.Promise#
      */
     onResolve : function(cb) {
         if(this.resolved) {
@@ -217,8 +217,49 @@ Webvs.blendModes = {
     AVERAGE: 3,
     ADDITIVE: 4,
     SUBTRACTIVE1: 5,
-    SUBTRACTIVE2: 6
+    SUBTRACTIVE2: 6,
+    MULTIPLY: 7
 };
 _.extend(Webvs, Webvs.blendModes);
+
+/**
+ * Returns the blendmode constant. Throws an error if its
+ * an invalid blend mode
+ * @param {string} name - the blend mode in string
+ * @returns {number} the code for the blend mode
+ */
+Webvs.getBlendMode = function(name) {
+    var mode = Webvs.blendModes[name];
+    if(!mode) {
+        throw new Error("Unknown blendMode " + name);
+    }
+    return mode;
+};
+
+/**
+ * Returns a random string of given length
+ * @param {number} count - the number of characters required
+ * @param {string} chars - a string containing the characters 
+ *                         from which to choose
+ * @returns {string} a random string
+ */
+Webvs.randString = function(count, chars) {
+    var string = [];
+    chars = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for(var i = 0;i < count;i++) {
+        string.push(chars.charAt(Math.floor(Math.random()*chars.length)));
+    }
+    return string.join("");
+};
+
+/**
+ * Clamps a number between two given numbers
+ * @param {number} num - number to be clamped
+ * @param {number} min - clamp min edge
+ * @returns {number} max - clamp max edge
+ */
+Webvs.clamp = function(num, min, max) {
+  return Math.min(Math.max(num, min), max);
+};
 
 })(window);

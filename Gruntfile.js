@@ -9,11 +9,13 @@
 module.exports = function(grunt) {
     var jsFiles = [
         "src/Base.js",
+        "src/Resources.js",
 
         "src/analyser/*.js",
 
         "src/Main.js",
         "src/Component.js",
+        "src/Container.js",
         "src/EffectList.js",
 
         "src/webgl/ShaderProgram.js",
@@ -35,9 +37,13 @@ module.exports = function(grunt) {
         "src/trans/ColorMap.js",
         "src/trans/ColorClip.js",
         "src/trans/DynamicMovement.js",
+        "src/trans/Movement.js",
         "src/trans/ChannelShift.js",
+        "src/trans/UniqueTone.js",
 
         "src/render/SuperScope.js",
+        "src/render/Simple.js",
+        "src/render/Texer.js",
         "src/render/ClearScreen.js",
         "src/render/Picture.js"
     ];
@@ -80,7 +86,8 @@ module.exports = function(grunt) {
                 singleRun: true
             },
             debug: {
-                singleRun: false
+                singleRun: false,
+                background: true
             }
         },
 
@@ -88,8 +95,19 @@ module.exports = function(grunt) {
             dist : {
                 src: ["src/**/*.js", "README.md"], 
                 options: {
+                    template: "node_modules/grunt-jsdoc/node_modules/ink-docstrap/template",
                     destination: 'doc',
                     configure: "jsdoc.conf.js"
+                }
+            }
+        },
+
+        connect: {
+            server: {
+                options: {
+                    port: 8000,
+                    base: ".",
+                    directory: "."
                 }
             }
         },
@@ -126,7 +144,7 @@ module.exports = function(grunt) {
         },
 
         clean: {
-            dev: ["build/*"],
+            build: ["build/*"],
             dist: ["dist/*"],
             doc: ["doc/*"]
         }
@@ -137,14 +155,16 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-uglify");
     grunt.loadNpmTasks("grunt-contrib-clean");
     grunt.loadNpmTasks("grunt-contrib-concat");
+    grunt.loadNpmTasks("grunt-contrib-connect");
     grunt.loadNpmTasks("grunt-peg");
     grunt.loadNpmTasks("grunt-karma");
     grunt.loadNpmTasks("grunt-jsdoc");
 
-    grunt.registerTask('default', ['clean:dev', 'jshint', 'peg', 'concat:dev']);
-    grunt.registerTask("w", ["default", "watch:scripts"]);
-
+    grunt.registerTask('default', ['clean:build', 'jshint', 'peg', 'concat:dev']);
     grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
-    grunt.registerTask('dist', ['clean:dist', 'jshint', 'peg', 'uglify:dist']);
-    grunt.registerTask('test', ['default', 'karma:test']);
+    grunt.registerTask('dist', ["default", 'uglify:dist']);
+    grunt.registerTask('test', ["connect", "default", 'karma:test']);
+
+    grunt.registerTask('debug', ["connect", "default", "watch:scripts"]);
+    grunt.registerTask('debug_test', ["connect", "default", "karma:debug", "watch:scripts"]);
 };

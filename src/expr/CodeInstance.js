@@ -17,7 +17,7 @@ function CodeInstance() {}
 Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
     /**
      * avs expression rand function
-     * @memberof Webvs.CodeInstance
+     * @memberof Webvs.CodeInstance#
      */
     rand: function(max) { 
         return Math.floor(Math.random() * max) + 1;
@@ -25,7 +25,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
 
     /**
      * avs expression gettime function
-     * @memberof Webvs.CodeInstance
+     * @memberof Webvs.CodeInstance#
      */
     gettime: function(startTime) {
         switch(startTime) {
@@ -38,7 +38,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
 
     /**
      * avs expression getosc function
-     * @memberof Webvs.CodeInstance
+     * @memberof Webvs.CodeInstance#
      */
     getosc: function(band, width, channel) {
         var osc = this._analyser.getWaveform();
@@ -56,7 +56,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
      * bind state values to uniforms
      * @param {Webvs.ShaderProgram} program - program to which the state values 
      *                                        should be bound
-     * @memberof Webvs.CodeInstance
+     * @memberof Webvs.CodeInstance#
      */
     bindUniforms: function(program) {
         var that = this;
@@ -107,7 +107,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
      * initializes this codeinstance
      * @param {Webvs.Main} main - webvs main instance
      * @param {Webvs.Component} parent - the component thats using this codeinstance
-     * @memberof Webvs.CodeInstance
+     * @memberof Webvs.CodeInstance#
      */
     setup: function(main, parent) {
         this._registerBank = main.registerBank;
@@ -116,7 +116,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
 
         this.w = main.canvas.width;
         this.h = main.canvas.height;
-        this.cid = parent.cloneId;
+        this.cid = parent.cloneId || 0;
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {

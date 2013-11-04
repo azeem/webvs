@@ -63,7 +63,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     /**
      * Saves the current render target and sets this
      * as the render target
-     * @memberof Webvs.FrameBufferManager
+     * @memberof Webvs.FrameBufferManager#
      */
     setRenderTarget: function() {
         var gl = this.gl;
@@ -77,7 +77,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     /**
      * Restores the render target previously saved with
      * a {@link Webvs.FrameBufferManager.setRenderTarget} call
-     * @memberof Webvs.FrameBufferManager
+     * @memberof Webvs.FrameBufferManager#
      */
     restoreRenderTarget: function() {
         var gl = this.gl;
@@ -88,7 +88,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     /**
      * Returns the texture that is currently being used
      * @returns {WebGLTexture}
-     * @memberof Webvs.FrameBufferManager
+     * @memberof Webvs.FrameBufferManager#
      */
     getCurrentTexture: function() {
         return this.frameAttachments[this.currAttachment].texture;
@@ -96,7 +96,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
     /**
      * Copies the previous texture into the current texture
-     * @memberof Webvs.FrameBufferManager
+     * @memberof Webvs.FrameBufferManager#
      */
     copyOver: function() {
         var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount].texture;
@@ -105,7 +105,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
     /**
      * Swaps the current texture
-     * @memberof Webvs.FrameBufferManager
+     * @memberof Webvs.FrameBufferManager#
      */
     swapAttachment : function() {
         this.currAttachment = (this.currAttachment + 1) % this.texCount;
@@ -114,7 +114,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
     /**
      * cleans up all webgl resources
-     * @memberof Webvs.FrameBufferManager
+     * @memberof Webvs.FrameBufferManager#
      */
     destroy: function() {
         var gl = this.gl;

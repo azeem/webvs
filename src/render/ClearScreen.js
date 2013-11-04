@@ -34,14 +34,14 @@ function ClearScreen(options) {
 
     this.program = new Webvs.ClearScreenProgram(this.outputBlendMode);
 
-    ClearScreen.super.constructor.call(this);
+    ClearScreen.super.constructor.apply(this, arguments);
 }
 Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     componentName: "ClearScreen",
 
     /**
      * initializes the ClearScreen component
-     * @memberof Webvs.ClearScreen
+     * @memberof Webvs.ClearScreen#
      */
     init: function(gl, main, parent) {
         ClearScreen.super.init.call(this, gl, main, parent);
@@ -50,7 +50,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
 
     /**
      * clears the screen
-     * @memberof Webvs.ClearScreen
+     * @memberof Webvs.ClearScreen#
      */
     update: function() {
         var clear = false;
@@ -74,7 +74,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.ClearScreen
+     * @memberof Webvs.ClearScreen#
      */
     destroy: function() {
         this.program.cleanup();

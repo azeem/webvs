@@ -16,7 +16,7 @@
  */
 function ExprCodeGenerator(codeSrc, externalVars) {
     this.codeSrc = codeSrc;
-    this.externalVars = externalVars?externalVars:[];
+    this.externalVars = _.union(externalVars || [], ["w", "h", "cid"]);
     this._parseSrc();
 }
 Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
@@ -58,7 +58,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
      * @param {Array.<string>} treatAsNonUniform - variables to be treated as 
      *                                             uniform variables in the glsl code
      * @returns {Array} pair containing {@link Webvs.CodeInstance} and a glsl code
-     * @memberof Webvs.ExprCodeGenerator
+     * @memberof Webvs.ExprCodeGenerator#
      */
     generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
         var inst = new Webvs.CodeInstance();
@@ -151,6 +151,8 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         "ceil" : 1,
         "abs": 1,
         "if": 3,
+        "min": 2,
+        "max": 2,
         "sin": 1,
         "cos": 1,
         "tan": 1,
@@ -168,7 +170,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         "select": {min: 2}
     },
 
-    jsMathFuncs: ["sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
+    jsMathFuncs: ["min", "max", "sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
 
     glslFuncCode: {
         "rand": [

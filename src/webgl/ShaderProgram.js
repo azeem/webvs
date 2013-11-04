@@ -80,6 +80,7 @@ function ShaderProgram(options) {
 
     // select the blend equation
     this.outputBlendMode = options.outputBlendMode;
+
     if(options.swapFrame || this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
         this.swapFrame = true;
         this.glBlendMode = false;
@@ -153,7 +154,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         Webvs.AVERAGE,
         Webvs.ADDITIVE,
         Webvs.SUBTRACTIVE1,
-        Webvs.SUBTRACTIVE2
+        Webvs.SUBTRACTIVE2,
+        Webvs.MULTIPLY
     ],
 
     // the blending formulas to be used inside shaders
@@ -163,12 +165,13 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         [Webvs.AVERAGE, "(color+texture2D(u_srcTexture, v_position))/2.0"],
         [Webvs.ADDITIVE, "color+texture2D(u_srcTexture, v_position)"],
         [Webvs.SUBTRACTIVE1, "texture2D(u_srcTexture, v_position)-color"],
-        [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"]
+        [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"],
+        [Webvs.MULTIPLY, "color*texture2D(u_srcTexture, v_position)"]
     ]),
 
     /**
      * initializes and compiles the shaders
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
 	init: function(gl) {
 		this.gl = gl;
@@ -182,7 +185,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
     /**
      * Sets the output blend mode for this shader
      * @param {Webvs.blendModes} mode - the blending mode
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     setOutputBlendMode: function(mode) {
         this.outputBlendMode = mode;
@@ -193,7 +196,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param {Webvs.FrameBufferManager} fm - frame manager. pass null, if no fm is required
      * @param {Webvs.blendModes} outputBlendMode - overrides the blendmode. pass null to use default
      * @param {...any} extraParams - remaining parameters are passed to the draw function
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     run: function(fm, outputBlendMode) {
         var gl = this.gl;
@@ -211,6 +214,9 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             }
         }
 
+        if(outputBlendMode && !this.dynamicBlend) {
+            throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
+        }
         outputBlendMode = outputBlendMode || this.outputBlendMode;
         if(this.dynamicBlend) {
             this.setUniform("u_blendMode", "1i", outputBlendMode);
@@ -233,7 +239,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * Performs the actual drawing and any further bindings and calculations if required.
      * @param {...any} extraParams - the extra parameters passed to {@link Webvs.ShaderProgram.run}
      * @abstract
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     draw: function() {},
 
@@ -261,7 +267,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.shaderSource(shader, shaderSrc);
         gl.compileShader(shader);
         if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            Webvs.logShaderError(this.fragmentSrc, gl.getShaderInfoLog(shader));
+            Webvs.logShaderError(shaderSrc, gl.getShaderInfoLog(shader));
             throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
         }
         return shader;
@@ -281,6 +287,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_SUBTRACT);
                 break;
+            case Webvs.MULTIPLY:
+                gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
             case Webvs.AVERAGE:
                 gl.blendColor(0.5, 0.5, 0.5, 1);
                 gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
@@ -295,7 +305,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param {string} name - name of the variable
      * @param {boolean} [attrib] - pass true if variable is attribute
      * @returns {location}
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     getLocation: function(name, attrib) {
         var location = this._locations[name];
@@ -314,7 +324,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * returns the index of a texture. assigns id if not already assigned.
      * @param {string} name - name of the varaible
      * @returns {number} index of the texture
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     getTextureId: function(name) {
         var id = _.indexOf(this._textureVars, name);
@@ -330,7 +340,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param {string} name - name of the variable
      * @param {string} type - type of the variable (texture2D, [1234]f, [1234]i, [1234]fv, [1234]iv)
      * @param {...any} values - values to be assigned
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     setUniform: function(name, type, value) {
         var location = this.getLocation(name);
@@ -363,7 +373,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param [normalized=false]
      * @param [stride=0]
      * @param [offset=0]
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     setVertexAttribArray: function(name, array, size, type, normalized, stride, offset) {
         var gl = this.gl;
@@ -386,10 +396,23 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
     },
 
+    setElementArray: function(array) {
+        var gl = this.gl;
+
+        var buffer = this._arrBuffers.__indexBuffer;
+        if(_.isUndefined(buffer)) {
+            buffer = gl.createBuffer();
+            this._arrBuffers.__indexBuffer = buffer;
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array, gl.STATIC_DRAW);
+    },
+
     /**
      * destroys webgl resources consumed by this program.
      * call in component destroy
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     cleanup: function() {
         var gl = this.gl;

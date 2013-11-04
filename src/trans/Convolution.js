@@ -44,7 +44,7 @@ function Convolution(options) {
                                                 options.edgeMode, options.scale,
                                                 options.bias);
 
-    Convolution.super.constructor.call(this);
+    Convolution.super.constructor.apply(this, arguments);
 }
 Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     componentName: "Convolution",
@@ -52,7 +52,7 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     /**
      * initializes the Convolution component
      * @method
-     * @memberof Webvs.Convolution
+     * @memberof Webvs.Convolution#
      */
     init: function(gl, main, parent) {
         Convolution.super.init.call(this, gl, main, parent);
@@ -62,7 +62,7 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     /**
      * applies the Convolution matrix
      * @method
-     * @memberof Webvs.Convolution
+     * @memberof Webvs.Convolution#
      */
     update: function() {
         this.program.run(this.parent.fm, null);
@@ -70,7 +70,7 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.Convolution
+     * @memberof Webvs.Convolution#
      */
     destroy: function() {
         Convolution.super.destroy.call(this);
@@ -131,7 +131,7 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
             if(value === 0) {
                 continue;
             }
-            colorSumEq.push("pos = v_position + onePixel * vec2("+(i-mid)+","+(j-mid)+");");
+            colorSumEq.push("pos = v_position + texel * vec2("+(i-mid)+","+(j-mid)+");");
             colorSumEq.push(edgeFunc);
             colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+Webvs.glslFloatRepr(value)+";");
         }
@@ -146,7 +146,7 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
         swapFrame: true,
         fragmentShader: [
             "void main() {",
-            "   vec2 onePixel = vec2(1.0, 1.0)/u_resolution;",
+            "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
             "   vec2 pos;",
             "   vec4 colorSum = vec4(0,0,0,0);",
             colorSumEq.join("\n"),

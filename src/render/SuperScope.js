@@ -15,7 +15,7 @@
  *
  * + n (default: 100) - the number of points.
  * + i - 0-1 normalized loop counter
- * + v - the value of the superscope at current position
+ * + v - the value of the superscope at current position (-1 to +1)
  * + x - x position of the dot (-1 to +1)
  * + y - y position of the dot (-1 to +1)
  * + w - width of the screen
@@ -55,7 +55,7 @@ function SuperScope(options) {
     } else {
         throw new Error("Invalid superscope");
     }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "w", "h", "red", "green", "blue", "cid"]);
+    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
     this.code = genResult[0];
     this.code.n = 100;
@@ -77,14 +77,14 @@ function SuperScope(options) {
 
     this.program = new SuperScopeShader();
 
-    SuperScope.super.constructor.call(this);
+    SuperScope.super.constructor.apply(this, arguments);
 }
 Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     componentName: "SuperScope",
 
     /**
      * initializes the SuperScope component
-     * @memberof Webvs.SuperScope
+     * @memberof Webvs.SuperScope#
      */
     init: function(gl, main, parent) {
         SuperScope.super.init.call(this, gl, main, parent);
@@ -94,7 +94,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
     /**
      * renders the scope
-     * @memberof Webvs.SuperScope
+     * @memberof Webvs.SuperScope#
      */
     update: function() {
         var gl = this.gl;
@@ -133,7 +133,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             }
             value = value/size;
 
-            var pos = i/(nPoints-1);
+            var pos = i/((nPoints > 1)?(nPoints-1):1);
             code.i = pos;
             code.v = value;
             code.perPoint();
@@ -162,7 +162,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.SuperScope
+     * @memberof Webvs.SuperScope#
      */
     destroy: function() {
         SuperScope.super.destroy.call(this);

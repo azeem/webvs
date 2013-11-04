@@ -58,7 +58,7 @@ function DynamicMovement(options) {
     } else {
         throw new Error("Invalid Dynamic movement code");
     }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b", "w", "h"]);
+    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b"]);
     var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r"]);
     this.code = genResult[0];
     this.inited = false;
@@ -81,14 +81,14 @@ function DynamicMovement(options) {
                                              genResult[1]);
     }
 
-    DynamicMovement.super.constructor.call(this);
+    DynamicMovement.super.constructor.apply(this, arguments);
 }
 Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     componentName: "DynamicMovement",
 
     /**
      * initializes the DynamicMovement component
-     * @memberof Webvs.DynamicMovement
+     * @memberof Webvs.DynamicMovement#
      */
     init: function(gl, main, parent) {
         DynamicMovement.super.init.call(this, gl, main, parent);
@@ -99,10 +99,12 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
         // calculate grid vertices
         if(!this.noGrid) {
-            var nGridW = (this.gridW/this.main.canvas.width)*2;
-            var nGridH = (this.gridH/this.main.canvas.height)*2;
-            var gridCountAcross = Math.ceil(this.main.canvas.width/this.gridW);
-            var gridCountDown = Math.ceil(this.main.canvas.height/this.gridH);
+            var gridW = Webvs.clamp(this.gridW, 1, this.main.canvas.width);
+            var gridH = Webvs.clamp(this.gridH, 1, this.main.canvas.height);
+            var nGridW = (gridW/this.main.canvas.width)*2;
+            var nGridH = (gridH/this.main.canvas.height)*2;
+            var gridCountAcross = Math.ceil(this.main.canvas.width/gridW);
+            var gridCountDown = Math.ceil(this.main.canvas.height/gridH);
             var gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
             var pbi = 0;
             var curx = -1;
@@ -138,7 +140,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
     /**
      * moves the pixels
-     * @memberof Webvs.DynamicMovement
+     * @memberof Webvs.DynamicMovement#
      */
     update: function() {
         var code = this.code;
@@ -167,7 +169,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.DynamicMovement
+     * @memberof Webvs.DynamicMovement#
      */
     destroy: function() {
         DynamicMovement.super.destroy.call(this);
@@ -179,6 +181,8 @@ var GlslHelpers = {
     glslRectToPolar: function(coordMode) {
         if(coordMode === "POLAR") {
             return [
+                "float ar = u_resolution.x/u_resolution.y;",
+                "x=x*ar;",
                 "d = distance(vec2(x, y), vec2(0,0))/sqrt(2.0);",
                 "r = mod(atan(y, x)+PI*0.5, 2.0*PI);"
             ].join("\n");
@@ -191,7 +195,7 @@ var GlslHelpers = {
         if(coordMode === "POLAR") {
             return [
                 "d = d*sqrt(2.0);",
-                "x = d*sin(r);",
+                "x = d*sin(r)/ar;",
                 "y = -d*cos(r);"
             ].join("\n");
         } else {
@@ -225,25 +229,23 @@ var GlslHelpers = {
                 "   vec2 coord = (point+1.0)/2.0;",
                 "   vec2 corn = floor(coord/texel)*texel;",
 
-                "   vec3 tl = getSrcColorAtPos(corn).rgb;",
-                "   vec3 tr = getSrcColorAtPos(corn + vec2(texel.x, 0)).rgb;",
-                "   vec3 bl = getSrcColorAtPos(corn + vec2(0, texel.y)).rgb;",
-                "   vec3 br = getSrcColorAtPos(corn + texel).rgb;",
+                "   ivec2 cornoff = (ivec2(fract(coord/texel)*255.0));",
 
-                "   float xp = floor(fract(coord.x/texel.x)*255.0);",
-                "   float yp = floor(fract(coord.y/texel.y)*255.0);",
+                "   ivec3 tl = ivec3(255.0 * getSrcColorAtPos(corn).rgb);",
+                "   ivec3 tr = ivec3(255.0 * getSrcColorAtPos(corn + vec2(texel.x, 0)).rgb);",
+                "   ivec3 bl = ivec3(255.0 * getSrcColorAtPos(corn + vec2(0, texel.y)).rgb);",
+                "   ivec3 br = ivec3(255.0 * getSrcColorAtPos(corn + texel).rgb);",
 
-                "   #define g_blendtable(i, j) floor(((i)/255.0)*(j))",
+                "   #define bt(i, j) int((float(i)/255.0)*float(j))",
 
-                "   float a1 = g_blendtable(255.0-xp, 255.0-yp);",
-                "   float a2 = g_blendtable(xp,       255.0-yp);",
-                "   float a3 = g_blendtable(255.0-xp, yp);",
-                "   float a4 = g_blendtable(xp,       yp);",
-
-                "   float r = (floor(a1*tl.r) + floor(a2*tr.r) + floor(a3*bl.r) + floor(a4*br.r))/255.0;",
-                "   float g = (floor(a1*tl.g) + floor(a2*tr.g) + floor(a3*bl.g) + floor(a4*br.g))/255.0;",
-                "   float b = (floor(a1*tl.b) + floor(a2*tr.b) + floor(a3*bl.b) + floor(a4*br.b))/255.0;",
-                "   return vec3(r, g, b);",
+                "   int a1 = bt(255-cornoff.x,255-cornoff.y);",
+                "   int a2 = bt(cornoff.x    ,255-cornoff.y);",
+                "   int a3 = bt(255-cornoff.x,cornoff.y);",
+                "   int a4 = bt(cornoff.x    ,cornoff.y);",
+                "   float r = float(bt(a1,tl.r) + bt(a2,tr.r) + bt(a3,bl.r) + bt(a4,br.r))/255.0;",
+                "   float g = float(bt(a1,tl.g) + bt(a2,tr.g) + bt(a3,bl.g) + bt(a4,br.g))/255.0;",
+                "   float b = float(bt(a1,tl.b) + bt(a2,tr.b) + bt(a3,bl.b) + bt(a4,br.b))/255.0;",
+                "   return vec3(r,g,b);",
                 "}"
             ].join("\n");
         } else {

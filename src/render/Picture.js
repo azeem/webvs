@@ -25,12 +25,12 @@ function Picture(options) {
     this.src = options.src;
 
     this.program = new Webvs.PictureProgram();
-    Picture.super.constructor.call(this, options);
+    Picture.super.constructor.apply(this, arguments);
 }
 Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
     /**
      * initializes the ClearScreen component
-     * @memberof Webvs.Picture
+     * @memberof Webvs.Picture#
      */
     init: function(gl, main, parent) {
         Picture.super.init.call(this, gl, main, parent);
@@ -39,7 +39,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
         var _this = this;
         var image = new Image();
-        image.src = this.src;
+        image.src = main.getResource(this.src);
         var promise = new Webvs.Promise();
         image.onload = function() {
             _this.width = image.width;
@@ -49,6 +49,8 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
             promise.resolve();
         };
 
@@ -57,7 +59,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
     /**
      * renders the image
-     * @memberof Webvs.Picture
+     * @memberof Webvs.Picture#
      */
     update: function() {
         this.program.run(this.parent.fm, null, this.x, this.y, this.texture, this.width, this.height);
@@ -65,7 +67,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.Picture
+     * @memberof Webvs.Picture#
      */
     destroy: function() {
         this.program.cleanup();

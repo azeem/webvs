@@ -50,7 +50,7 @@ function CanvasTest() {
 function CanvasTestWithFM() {
     var testFunc = arguments[arguments.length-1];
     var wrapper = function(canvas, gl) {
-        var copier = new Webvs.CopyProgram();
+        var copier = new Webvs.CopyProgram({dynamicBlend: true});
         copier.init(gl);
         var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier);
         testFunc(canvas, gl, fm, copier);
@@ -111,10 +111,10 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
         return true;
     },
 
-    getWaveForm: function() {
+    getWaveform: function() {
         var data = new Float32Array(512);
-        _.times(data.length, function(i) {
-            data[i] = Math.random();
+        _.times(512, function(i) {
+            data[i] = Math.sin((i/512)*4*Math.PI)/2;
         });
         return data;
     },
@@ -122,19 +122,30 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
     getSpectrum: function() {
         var data = new Float32Array(512);
         _.times(data.length, function(i) {
-            data[i] = Math.random();
+            data[i] = Math.sin((i/512)*Math.PI)*2-1;
         });
 
         return data;
     }
 });
 
-function DummyMain(canvas) {
+function DummyMain(canvas, copier) {
     this.canvas = canvas;
     this.registerBank = {};
     this.bootTime = (new Date()).getTime();
     this.analyser = new DummyAnalyser();
+    this.copier = copier;
 }
+DummyMain = Webvs.defineClass(DummyMain, Object, {
+    getResource: function(name) {
+        var resource;
+        resource = Webvs.Resources[name];
+        if(!resource) {
+            resource = name;
+        }
+        return resource;
+    }
+});
 
 function DummyParent(fm) {
     this.fm = fm;
