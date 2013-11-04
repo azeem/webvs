@@ -50,7 +50,7 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
 
     /**
      * Initializes the BufferSave component
-     * @memberof Webvs.BufferSave
+     * @memberof Webvs.BufferSave#
      */
     init: function(gl, main, parent) {
         BufferSave.super.init.call(this, gl, main, parent);
@@ -64,7 +64,7 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
 
     /**
      * Saves or Renders the current frame
-     * @memberof Webvs.BufferSave
+     * @memberof Webvs.BufferSave#
      */
     update: function() {
         var gl = this.gl;
@@ -98,7 +98,7 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
 
     /**
      * Releases resources.
-     * @memberof Webgl.BufferSave
+     * @memberof Webgl.BufferSave#
      */
     destroy: function() {
         BufferSave.super.destroy.call(this);

@@ -6,6 +6,7 @@
 (function(Webvs) {
 
 /**
+ * @class
  * An alias class for {@link Webvs.DynamicMovement} with noGrid=true option
  * @param {object} options - options object
  * @param {string} [options.code.perPixel] - code that will be run once for every pixel. should set 

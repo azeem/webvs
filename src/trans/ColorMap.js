@@ -54,7 +54,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
 
     /**
      * initializes the ColorMap component
-     * @memberof Webvs.ColorMap
+     * @memberof Webvs.ColorMap#
      */
     init: function(gl, main, parent) {
         ColorMap.super.init.call(this, gl, main, parent);
@@ -69,7 +69,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
 
     /**
      * maps the colors
-     * @memberof Webvs.ColorMap
+     * @memberof Webvs.ColorMap#
      */
     update: function() {
         if(this.main.analyser.beat) {
@@ -88,7 +88,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.ColorMap
+     * @memberof Webvs.ColorMap#
      */
     destroy: function() {
         ColorMap.super.destroy.call(this);

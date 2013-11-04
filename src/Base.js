@@ -252,6 +252,12 @@ Webvs.randString = function(count, chars) {
     return string.join("");
 };
 
+/**
+ * Clamps a number between two given numbers
+ * @param {number} num - number to be clamped
+ * @param {number} min - clamp min edge
+ * @returns {number} max - clamp max edge
+ */
 Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };

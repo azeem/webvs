@@ -84,7 +84,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * Loads a preset JSON. If a preset is already loaded and running, then
      * the animation is stopped, and the new preset is loaded.
      * @param {object} preset - JSON representation of the preset
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     loadPreset: function(preset) {
         preset = _.clone(preset); // use our own copy
@@ -98,7 +98,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
     /**
      * Reset all the components. Call this when canvas dimensions changes
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     resetCanvas: function() {
         this.stop();
@@ -111,7 +111,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
     /**
      * Starts the animation if not already started
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     start: function() {
         if(this.isStarted) {
@@ -155,7 +155,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
     /**
      * Stops the animation
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     stop: function() {
         if(!_.isUndefined(this.animReqId)) {
@@ -168,7 +168,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * Generates and returns the instantaneous preset JSON 
      * representation
      * @returns {object} preset json
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     getPreset: function() {
         var preset = this.rootComponent.getOptions();
@@ -184,7 +184,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @param {number} [pos] - position at which the component will be inserted.
      *     default is the end of the list
      * @returns {string} id of the new component
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     addComponent: function(parentId, options, pos) {
         this.stop();
@@ -204,7 +204,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @param {string} id - id of the component
      * @param {object} options - options to be updated.
      * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     updateComponent: function(id, options) {
         this.stop();
@@ -237,7 +237,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * Removes a component
      * @param {string} id - id of the component to be removed
      * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     removeComponent: function(id) {
         var factory = this.rootComponent.detachComponent(id);
@@ -253,7 +253,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @param {string} id - id of the component to be moved
      * @param {string} newParentId - id of the new parent
      * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     moveComponent: function(id, newParentId) {
         var factory = this.rootComponent.detachComponent(id);
@@ -273,7 +273,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * object
      * @param {string} name - name of the resource
      * @returns resource data. if resource is not found then name itself is returned
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     getResource: function(name) {
         var resource;
@@ -291,7 +291,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * Sets a preset level resource
      * @param {string} name - name of the resource
      * @param data - resource data
-     * @memberof Webvs.Main
+     * @memberof Webvs.Main#
      */
     setResource: function(name, data) {
         this.resources[name] = data;

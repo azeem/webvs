@@ -5,6 +5,17 @@
 
 (function(Webvs) {
 
+/**
+ * @class
+ * A Component that applies a unique color tone
+ * @param {object} options - options object
+ * @param {string} [options.color="#FFFFFF"] - the color tone
+ * @param {boolean} [options.invert=false] - if set then tone is inverted
+ * @param {string} [options.blendMode="REPLACE"] - blending mode for this component
+ * @augments Webvs.Component
+ * @memberof Webvs
+ * @constructor
+ */
 function UniqueTone(options) {
     options = _.defaults(options, {
         color: "#ffffff",
@@ -17,15 +28,27 @@ function UniqueTone(options) {
     this.program = new UniqueToneProgram(Webvs.getBlendMode(options.blendMode));
 }
 Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
+    /**
+     * initializes the UniqueTone component
+     * @memberof Webvs.UniqueTone#
+     */
     init: function(gl, main, parent) {
         UniqueTone.super.init.call(this, gl, main, parent);
         this.program.init(gl);
     },
 
+    /**
+     * applies unique tone
+     * @memberof Webvs.UniqueTone#
+     */
     update: function() {
         this.program.run(this.parent.fm, null, this.tone, this.invert);
     },
 
+    /**
+     * releases resources
+     * @memberof Webvs.UniqueTone#
+     */
     destroy: function() {
         UniqueTone.super.destroy.call(this);
         this.program.cleanup();

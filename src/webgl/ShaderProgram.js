@@ -171,7 +171,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
     /**
      * initializes and compiles the shaders
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
 	init: function(gl) {
 		this.gl = gl;
@@ -185,7 +185,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
     /**
      * Sets the output blend mode for this shader
      * @param {Webvs.blendModes} mode - the blending mode
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     setOutputBlendMode: function(mode) {
         this.outputBlendMode = mode;
@@ -196,7 +196,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param {Webvs.FrameBufferManager} fm - frame manager. pass null, if no fm is required
      * @param {Webvs.blendModes} outputBlendMode - overrides the blendmode. pass null to use default
      * @param {...any} extraParams - remaining parameters are passed to the draw function
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     run: function(fm, outputBlendMode) {
         var gl = this.gl;
@@ -239,7 +239,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * Performs the actual drawing and any further bindings and calculations if required.
      * @param {...any} extraParams - the extra parameters passed to {@link Webvs.ShaderProgram.run}
      * @abstract
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     draw: function() {},
 
@@ -305,7 +305,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param {string} name - name of the variable
      * @param {boolean} [attrib] - pass true if variable is attribute
      * @returns {location}
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     getLocation: function(name, attrib) {
         var location = this._locations[name];
@@ -324,7 +324,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * returns the index of a texture. assigns id if not already assigned.
      * @param {string} name - name of the varaible
      * @returns {number} index of the texture
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     getTextureId: function(name) {
         var id = _.indexOf(this._textureVars, name);
@@ -340,7 +340,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param {string} name - name of the variable
      * @param {string} type - type of the variable (texture2D, [1234]f, [1234]i, [1234]fv, [1234]iv)
      * @param {...any} values - values to be assigned
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     setUniform: function(name, type, value) {
         var location = this.getLocation(name);
@@ -373,7 +373,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * @param [normalized=false]
      * @param [stride=0]
      * @param [offset=0]
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     setVertexAttribArray: function(name, array, size, type, normalized, stride, offset) {
         var gl = this.gl;
@@ -412,7 +412,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
     /**
      * destroys webgl resources consumed by this program.
      * call in component destroy
-     * @memberof Webvs.ShaderProgram
+     * @memberof Webvs.ShaderProgram#
      */
     cleanup: function() {
         var gl = this.gl;

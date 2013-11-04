@@ -41,7 +41,7 @@ Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
 
     /**
      * initializes the ChannelShift component
-     * @memberof Webvs.ChannelShift
+     * @memberof Webvs.ChannelShift#
      */
     init: function(gl, main, parent) {
         ChannelShift.super.init.call(this, gl, main, parent);
@@ -51,7 +51,7 @@ Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
 
     /**
      * shifts the colors
-     * @memberof Webvs.ChannelShift
+     * @memberof Webvs.ChannelShift#
      */
     update: function() {
         if(this.onBeatRandom && this.main.analyser.beat) {
@@ -62,7 +62,7 @@ Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.ChannelShift
+     * @memberof Webvs.ChannelShift#
      */
     destroy: function() {
         ChannelShift.super.destroy.call(this);

@@ -50,7 +50,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
 
     /**
      * initializes the ColorClip component
-     * @memberof Webvs.ColorClip
+     * @memberof Webvs.ColorClip#
      */
     init: function(gl, main, parent) {
         ColorClip.super.init.call(this, gl, main, parent);
@@ -60,7 +60,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
 
     /**
      * clips the colors
-     * @memberof Webvs.ColorClip
+     * @memberof Webvs.ColorClip#
      */
     update: function() {
         this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.level);
@@ -68,7 +68,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.ColorClip
+     * @memberof Webvs.ColorClip#
      */
     destroy: function() {
         ColorClip.super.destroy.call(this);

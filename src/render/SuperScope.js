@@ -15,7 +15,7 @@
  *
  * + n (default: 100) - the number of points.
  * + i - 0-1 normalized loop counter
- * + v - the value of the superscope at current position
+ * + v - the value of the superscope at current position (-1 to +1)
  * + x - x position of the dot (-1 to +1)
  * + y - y position of the dot (-1 to +1)
  * + w - width of the screen
@@ -84,7 +84,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
     /**
      * initializes the SuperScope component
-     * @memberof Webvs.SuperScope
+     * @memberof Webvs.SuperScope#
      */
     init: function(gl, main, parent) {
         SuperScope.super.init.call(this, gl, main, parent);
@@ -94,7 +94,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
     /**
      * renders the scope
-     * @memberof Webvs.SuperScope
+     * @memberof Webvs.SuperScope#
      */
     update: function() {
         var gl = this.gl;
@@ -162,7 +162,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.SuperScope
+     * @memberof Webvs.SuperScope#
      */
     destroy: function() {
         SuperScope.super.destroy.call(this);

@@ -52,7 +52,7 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     /**
      * initializes the Convolution component
      * @method
-     * @memberof Webvs.Convolution
+     * @memberof Webvs.Convolution#
      */
     init: function(gl, main, parent) {
         Convolution.super.init.call(this, gl, main, parent);
@@ -62,7 +62,7 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     /**
      * applies the Convolution matrix
      * @method
-     * @memberof Webvs.Convolution
+     * @memberof Webvs.Convolution#
      */
     update: function() {
         this.program.run(this.parent.fm, null);
@@ -70,7 +70,7 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.Convolution
+     * @memberof Webvs.Convolution#
      */
     destroy: function() {
         Convolution.super.destroy.call(this);

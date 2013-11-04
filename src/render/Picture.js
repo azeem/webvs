@@ -30,7 +30,7 @@ function Picture(options) {
 Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
     /**
      * initializes the ClearScreen component
-     * @memberof Webvs.Picture
+     * @memberof Webvs.Picture#
      */
     init: function(gl, main, parent) {
         Picture.super.init.call(this, gl, main, parent);
@@ -59,7 +59,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
     /**
      * renders the image
-     * @memberof Webvs.Picture
+     * @memberof Webvs.Picture#
      */
     update: function() {
         this.program.run(this.parent.fm, null, this.x, this.y, this.texture, this.width, this.height);
@@ -67,7 +67,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.Picture
+     * @memberof Webvs.Picture#
      */
     destroy: function() {
         this.program.cleanup();

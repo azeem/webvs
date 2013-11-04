@@ -30,7 +30,7 @@ function GlobalVar(options) {
 Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
     /**
      * initializes the globalvar component
-     * @memberof Webvs.GlobalVar
+     * @memberof Webvs.GlobalVar#
      */
 	init: function(gl, main, parent) {
 		GlobalVar.super.init.call(this, gl, main, parent);
@@ -40,7 +40,7 @@ Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
 
     /**
      * Runs the code
-     * @memberof Webvs.GlobalVar
+     * @memberof Webvs.GlobalVar#
      */
 	update: function() {
 		var code = this.code;

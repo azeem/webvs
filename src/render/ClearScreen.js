@@ -41,7 +41,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
 
     /**
      * initializes the ClearScreen component
-     * @memberof Webvs.ClearScreen
+     * @memberof Webvs.ClearScreen#
      */
     init: function(gl, main, parent) {
         ClearScreen.super.init.call(this, gl, main, parent);
@@ -50,7 +50,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
 
     /**
      * clears the screen
-     * @memberof Webvs.ClearScreen
+     * @memberof Webvs.ClearScreen#
      */
     update: function() {
         var clear = false;
@@ -74,7 +74,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.ClearScreen
+     * @memberof Webvs.ClearScreen#
      */
     destroy: function() {
         this.program.cleanup();

@@ -88,7 +88,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
     /**
      * initializes the DynamicMovement component
-     * @memberof Webvs.DynamicMovement
+     * @memberof Webvs.DynamicMovement#
      */
     init: function(gl, main, parent) {
         DynamicMovement.super.init.call(this, gl, main, parent);
@@ -140,7 +140,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
     /**
      * moves the pixels
-     * @memberof Webvs.DynamicMovement
+     * @memberof Webvs.DynamicMovement#
      */
     update: function() {
         var code = this.code;
@@ -169,7 +169,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.DynamicMovement
+     * @memberof Webvs.DynamicMovement#
      */
     destroy: function() {
         DynamicMovement.super.destroy.call(this);

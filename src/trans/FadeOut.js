@@ -35,7 +35,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
 
     /**
      * initializes the FadeOut component
-     * @memberof Webvs.FadeOut
+     * @memberof Webvs.FadeOut#
      */
     init: function(gl, main, parent) {
         FadeOut.super.init.call(this, gl, main, parent);
@@ -44,7 +44,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
 
     /**
      * fades the screen
-     * @memberof Webvs.FadeOut
+     * @memberof Webvs.FadeOut#
      */
     update: function() {
         var gl = this.gl;
@@ -57,7 +57,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
 
     /**
      * releases resources
-     * @memberof Webvs.FadeOut
+     * @memberof Webvs.FadeOut#
      */
     destroy: function() {
         FadeOut.super.destroy.call(this);

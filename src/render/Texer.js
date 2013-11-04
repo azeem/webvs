@@ -73,7 +73,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 
     /**
      * initializes the Texer component
-     * @memberof Webvs.Texer
+     * @memberof Webvs.Texer#
      */
     init: function(gl, main, parent) {
         Texer.super.init.call(this, gl, main, parent);
@@ -103,7 +103,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 
     /**
      * renders the scope
-     * @memberof Webvs.Texer
+     * @memberof Webvs.Texer#
      */
     update: function() {
         var code = this.code;
@@ -225,7 +225,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 
     /**
      * release resource
-     * @memberof Webvs.Texer
+     * @memberof Webvs.Texer#
      */
     destroy: function() {
         Texer.super.destroy.call(this);

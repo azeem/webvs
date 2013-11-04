@@ -33,7 +33,7 @@ function Container(options, subFactories) {
 Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     /**
      * initializes all the subcomponents
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     init: function(gl, main, parent) {
         Container.super.init.call(this, gl, main, parent);
@@ -54,7 +54,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
 
     /**
      * destroys all subcomponents
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     destroy: function() {
         Container.super.destroy.call(this);
@@ -69,7 +69,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * Allows iterating over all the subcomponents, flattening
      * out cloned components.
      * @param {function} callback - callback
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     iterChildren: function(callback) {
         for(var i = 0;i < this.components.length;i++) {
@@ -89,7 +89,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      *     default is the end of the list
      * @returns {Array} - a pair containing 1) id of the new component 2) promise
      *     for the new component initialization
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     addComponent: function(parentId, factory, pos) {
         if(!(factory instanceof ComponentFactory)) {
@@ -149,7 +149,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @param {string} id - id of the component
      * @param {object} options - options to be updated.
      * @returns {Webvs.Promise} - promise for the component reinitialiaztion
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     updateComponent: function(id, options) {
         var component, componentIndex, promise, i, j;
@@ -213,7 +213,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     /**
      * Detaches all components in this container
      * @returns {Array.<Webvs.ComponentFactory>} factories for each subcomponent
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     detachAllComponents: function() {
         var detached = _.map(this.components, function(component) {
@@ -227,7 +227,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * Detaches a given component under this container's subtree
      * @param {string} id - id of the component to be detached
      * @returns {Webvs.ComponentFactory} - factory containing the detached component
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     detachComponent: function(id) {
         var component, i;
@@ -264,7 +264,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * Constructs complete options object for this container and its
      * subtree
      * @returns {object} - the options object
-     * @memberof Webvs.Container
+     * @memberof Webvs.Container#
      */
     getOptions: function() {
         var options = this.options;
@@ -297,9 +297,9 @@ Webvs.ComponentFactory = Webvs.defineClass(ComponentFactory, Object, {
     /**
      * Gives out a component instance from the pool. Creates one
      * if pool is empty
-     * @param {Array.<ComponentFactory>} subFactories - factories for sub-components when
+     * @param {Array.<ComponentFactory>} [subFactories] - factories for sub-components when
      *                                                  creating containers.
-     * @memberof Webvs.ComponentFactory
+     * @memberof Webvs.ComponentFactory#
      */
     get: function(subFactories) {
         if(this.pool.length > 0) {
@@ -311,7 +311,7 @@ Webvs.ComponentFactory = Webvs.defineClass(ComponentFactory, Object, {
 
     /**
      * Destroys all components in the pool and empties it
-     * @memberof Webvs.ComponentFactory
+     * @memberof Webvs.ComponentFactory#
      */
     destroyPool: function() {
         _.each(this.pool, function(component) {

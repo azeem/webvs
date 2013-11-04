@@ -58,7 +58,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
      * @param {Array.<string>} treatAsNonUniform - variables to be treated as 
      *                                             uniform variables in the glsl code
      * @returns {Array} pair containing {@link Webvs.CodeInstance} and a glsl code
-     * @memberof Webvs.ExprCodeGenerator
+     * @memberof Webvs.ExprCodeGenerator#
      */
     generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
         var inst = new Webvs.CodeInstance();

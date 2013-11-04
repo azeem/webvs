@@ -34,7 +34,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * @param {WebGLContext} gl - webgl context
      * @param {Webvs.Main} main - container main object for this component
      * @param {Webvs.Component} - parent component
-     * @memberof Webvs.Component
+     * @memberof Webvs.Component#
      */
     init: function(gl, main, parent) {
         this.gl = gl;
@@ -49,7 +49,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * @param {WebGLContext} gl - webgl context
      * @param {Webvs.Main} main - container main object for this component
      * @param {Webvs.Component} - parent component
-     * @memberof Webvs.Component
+     * @memberof Webvs.Component#
      */
     adoptOrInit: function(gl, main, parent) {
         if(this.componentInited) {
@@ -64,7 +64,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * parent. Default implementation simply resets the parent reference.
      * Override and implement additional logic if required
      * @param {Webvs.Component} newParent - the new parent of this component
-     * @memberof Webvs.Component
+     * @memberof Webvs.Component#
      */
     adopt: function(newParent) {
         this.parent = newParent;
@@ -74,7 +74,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * Render a frame. Called once for every frame,
      * Override and implement rendering code
      * @abstract
-     * @memberof Webvs.Component
+     * @memberof Webvs.Component#
      */
     update: function() {},
 
@@ -82,13 +82,13 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
      * Release any Webgl resources. Called during
      * reinitialization. Override and implement cleanup code
      * @abstract
-     * @memberof Webvs.Component
+     * @memberof Webvs.Component#
      */
     destroy: function() {},
 
     /**
      * Returns the component's options
-     * @memberof Webvs.Component
+     * @memberof Webvs.Component#
      */
     getOptions: function() {
         return this.options;
@@ -97,7 +97,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
     /**
      * Generates a printable path of this component
      * @returns {string} printable path generated from the parent hierarchy
-     * @memberof Webvs.Component
+     * @memberof Webvs.Component#
      */
     getPath: function() {
         if(!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {

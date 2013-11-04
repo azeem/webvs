@@ -55,7 +55,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
 
     /**
      * Initializes the effect list
-     * @memberof Webvs.EffectList
+     * @memberof Webvs.EffectList#
      */
     init: function(gl, main, parent) {
         var promises = EffectList.super.init.call(this, gl, main, parent);
@@ -71,7 +71,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
     /**
      * Renders a frame of the effect list, by running
      * all the subcomponents.
-     * @memberof Webvs.EffectList
+     * @memberof Webvs.EffectList#
      */
     update: function() {
         EffectList.super.update.call(this);
@@ -140,7 +140,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
 
     /**
      * Releases resources.
-     * @memberof Webvs.EffectList
+     * @memberof Webvs.EffectList#
      */
     destroy: function() {
         EffectList.super.destroy.call(this);

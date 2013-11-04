@@ -33,7 +33,7 @@ Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
     /**
      * returns whether song is being played or not.
      * @returns {boolean}
-     * @memberof Webvs.DancerAdapter
+     * @memberof Webvs.DancerAdapter#
      */
     isPlaying: function() {
         return this.dancer.isPlaying();
@@ -42,7 +42,7 @@ Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
     /**
      * returns array of waveform values
      * @returns {Float32Array}
-     * @memberof Webvs.DancerAdapter
+     * @memberof Webvs.DancerAdapter#
      */
     getWaveform: function() {
         return this.dancer.getWaveform();
@@ -51,7 +51,7 @@ Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
     /**
      * Returns array of spectrum values
      * @returns {Float32Array}
-     * @memberof Webvs.DancerAdapter
+     * @memberof Webvs.DancerAdapter#
      */
     getSpectrum: function() {
         return this.dancer.getSpectrum();
