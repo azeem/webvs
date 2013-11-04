@@ -252,4 +252,8 @@ Webvs.randString = function(count, chars) {
     return string.join("");
 };
 
+Webvs.clamp = function(num, min, max) {
+  return Math.min(Math.max(num, min), max);
+};
+
 })(window);

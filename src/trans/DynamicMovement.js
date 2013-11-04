@@ -99,10 +99,12 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
         // calculate grid vertices
         if(!this.noGrid) {
-            var nGridW = (this.gridW/this.main.canvas.width)*2;
-            var nGridH = (this.gridH/this.main.canvas.height)*2;
-            var gridCountAcross = Math.ceil(this.main.canvas.width/this.gridW);
-            var gridCountDown = Math.ceil(this.main.canvas.height/this.gridH);
+            var gridW = Webvs.clamp(this.gridW, 1, this.main.canvas.width);
+            var gridH = Webvs.clamp(this.gridH, 1, this.main.canvas.height);
+            var nGridW = (gridW/this.main.canvas.width)*2;
+            var nGridH = (gridH/this.main.canvas.height)*2;
+            var gridCountAcross = Math.ceil(this.main.canvas.width/gridW);
+            var gridCountDown = Math.ceil(this.main.canvas.height/gridH);
             var gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
             var pbi = 0;
             var curx = -1;
