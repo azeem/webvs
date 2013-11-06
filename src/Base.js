@@ -48,7 +48,7 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
     for(var i in requiredOptions) {
         var key =  requiredOptions[i];
         if(!(key in options)) {
-            throw new Error("Required option " + key + "not found");
+            throw new Error("Required option " + key + " not found");
         }
     }
 };

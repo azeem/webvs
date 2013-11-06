@@ -222,7 +222,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             var factories = this.rootComponent.detachAllComponents();
             var preset = this.rootComponent.preset;
             this.rootComponent.destroy();
-            this.rootComponent = new EffectList(preset, factories);
+            this.rootComponent = new Webvs.EffectList(preset, factories);
             _.each(factories, function(factory) {
                 factory.destroyPool();
             });

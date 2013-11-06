@@ -195,7 +195,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
 
         // if component not in this container
         // then try any of the subcomponents
-        for(i = 0;i < this.component.length;i++) {
+        for(i = 0;i < this.components.length;i++) {
             component = this.components[i];
             if(component instanceof Container) {
                 promise = component.updateComponent(id, options);
