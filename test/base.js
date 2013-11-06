@@ -3,6 +3,12 @@
  * See the file license.txt for copying permission.
  */
 
+
+function logGLCall(functionName, args) {   
+   console.log("gl." + functionName + "(" + 
+      WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");   
+} 
+
 /**
  * Create a Shader Test
  * this setsup a scaffold canvas for the test to
@@ -19,19 +25,30 @@ function CanvasTest() {
     }
     extraOptions = _.defaults(extraOptions, {
         canvasSize: [100, 100],
-        async: false
+        async: false,
+        glDebug: false
     });
     var wrapper = function() {
-        var canvas = document.createElement("canvas");
-        document.body.appendChild(canvas);
+        var canvas = document.getElementById("test_canvas");
+        if(!canvas) {
+            canvas = document.createElement("canvas");
+            canvas.setAttribute("id", "test_canvas");
+            document.body.appendChild(canvas);
+        }
         canvas.width = extraOptions.canvasSize[0];
         canvas.height = extraOptions.canvasSize[1];
         var gl = canvas.getContext("webgl", {
             alpha: false,
             preserveDrawingBuffer: true
         });
+        if(extraOptions.glDebug) {
+            gl = WebGLDebugUtils.makeDebugContext(gl, undefined, logGLCall);
+        }
+        // clear
+        gl.clearColor(0,0,0,1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
         testFunc(canvas, gl);
-        document.body.removeChild(canvas);
     }
     var testArgs
     if(hasExtraOptions) {
@@ -53,7 +70,12 @@ function CanvasTestWithFM() {
         var copier = new Webvs.CopyProgram({dynamicBlend: true});
         copier.init(gl);
         var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier);
-        testFunc(canvas, gl, fm, copier);
+        var promise = testFunc(canvas, gl, fm, copier);
+        if(promise) {
+            promise.onResolve(function() {
+                fm.destroy();
+            });
+        }
     };
     var testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-1);
     testArgs.push(wrapper);

@@ -23,10 +23,11 @@ function testPicture(canvas, gl, fm, copier, name, src, value) {
         );
         start();
     });
+    return promise;
 }
 
 CanvasTestWithFM("Picture", 1, {async: true}, function(canvas, gl, fm, copier) {
-    testPicture(
+    return testPicture(
         canvas, gl, fm, copier,
         "Picture", 
         "/images/wave.png", 
@@ -35,7 +36,7 @@ CanvasTestWithFM("Picture", 1, {async: true}, function(canvas, gl, fm, copier) {
 });
 
 CanvasTestWithFM("Picture base64 test", 1, {async: true}, function(canvas, gl, fm, copier) {
-    testPicture(
+    return testPicture(
         canvas, gl, fm, copier,
         "Picture2", 
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAdCAIAAADZ8fBYAAAAA3NCSVQICAjb4U/gAAACv0lEQVRIidWWMXOiQBTHl5MCFkmbdEuHRdLImNglHwf5JEZLZQgpTT5EZjRWzliRxi/AxnEgnYwJycCye8XLeGfO00h19xoY3s5v//v27f5B6P8KaXda1/V6vV6v1w3DwBinaUopDYLg6elptVqVmZAQ0m63wzDM85xzzjkXQsBLnudhGLbbbULIAURZlm3bjqIIWIyxxWIxnU6Hw+F0Ol0sFowxmCOKItu2ZVneD1UUxfO8LMs450mSuK7bbDYxxpIkIYQkScIYN5tN13WTJOGcZ1nmeZ6qqnuUep7HGOOcj8fjWq22Y3CtVnt8fOScF0Vxc3OzS7Vt26D0/v5e07S9i9M07e7uDlS3Wq3tgwghUNPxePwd6BoNqqMo2r6N19fXUNPdy/8zTNOEWnc6na85XdfDMBRCuK57EBTCdV0hBKVU1/WNxOXlZZ7njLGLi4sS3PPzc8ZYnudXV1fw5Qc8LMuqVCovLy+z2awEdzabxXFcqVQsy9rgGoaBEKKUvr+/l+B+fHw8Pz8jhNZb98mFzn99fRVClOAKIVarlSRJ60b65KZpKoSoVqtwrg4NSZKq1aoQIk3TDW4YhrAKRVFKcBVFgQoA5xc3CIKiKI6Pj8/OzkpwT09PT05OiqIIgmAjoes6pVQI0e/3S3D7/f72/kUIdTodOG+maR4ENU1zuVxuP28IIUJIHMec89FohDH+JhRjPBwOOedxHEOzbolWqwX32WAw+A4aYzwYDOA+cxznr+NkWfZ9vygKUL27IKZpjkYjuH9939/jGqqq+r4PqpfLZa/XazQaqqr+7heNRqPX60FNsyy7vb3d4xdr1Y7jQK3B3+bz+WQyeXh4mEwm8/l87W9xHDuO8y1/W4dhGN1ul1IKtvTFjyml3W73rxu19//h6OjIsizLsgghmqa9vb2t/x+SJDlA5r8ePwEtX9iShlMEzwAAAABJRU5ErkJggg==", 
