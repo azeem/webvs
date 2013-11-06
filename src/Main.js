@@ -211,12 +211,14 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         var _this = this;
         options = _.clone(options); // use our own copy
         if(id != "root") {
-            var promise = this.rootComponent.updateComponent();
+            var promise = this.rootComponent.updateComponent(id, options);
             if(promise) {
-                promises.onResolve(function() {
+                promise.onResolve(function() {
                     _this.start();
                 });
                 return true;
+            } else {
+                return false;
             }
         } else {
             var factories = this.rootComponent.detachAllComponents();

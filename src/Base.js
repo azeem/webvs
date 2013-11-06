@@ -183,7 +183,7 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
  */
 Webvs.joinPromises = function(promises) {
     var joinedPromise = new Promise();
-
+    promises = _.filter(promises, function(p) {return !_.isUndefined(p);});
     if(promises.length === 0) {
         joinedPromise.resolve();
     } else {

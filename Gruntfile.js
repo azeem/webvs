@@ -105,7 +105,7 @@ module.exports = function(grunt) {
         connect: {
             server: {
                 options: {
-                    port: 8000,
+                    port: 8080,
                     base: ".",
                     directory: "."
                 }
@@ -127,8 +127,10 @@ module.exports = function(grunt) {
         concat: {
             dev: {
                 files: {
-                    "build/webvs.js": jsFiles,
-                    "build/libs.js": libFiles
+                    //"build/webvs.js": jsFiles,
+                    //"build/libs.js": libFiles
+                    "../qios-webvseditor/webvs.js": jsFiles,
+                    "../qios-webvseditor/libs.js": libFiles
                 }
             }
         },
