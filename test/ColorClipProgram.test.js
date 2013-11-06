@@ -3,15 +3,11 @@
  * See the file license.txt for copying permission.
  */
 
-CanvasTest("ColorClipProgram", 4, function(canvas, gl) {
+CanvasTestWithFM("ColorClipProgram", 4, function(canvas, gl, fm, copier) {
     var gprogram = new GradientProgram();
     var ccprogram = new Webvs.ColorClipProgram();
-    var copier = new Webvs.CopyProgram();
     gprogram.init(gl);
     ccprogram.init(gl);
-    copier.init(gl);
-
-    var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier);
 
     var testValues = [
         [0, 0, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACFUlEQVR4Xu3cQUSFQRSG4TuVSEQikUhEIpFIJCKRSCQikUgkEpFIXJGIRCKRSEQikUhEIpFIJCKRSCQikejvtogWLXJXb3mHYxgzs5jnzPYL4T2KUmOxWEqivs8/rSWz5+uM9/3ujUN4E+SzWSgNE8KrICyQF0FYIM+CsECeBGGBPArCAnkQhAVyLwgL5E4QFsitICyQG0FYINeCsECuBGGBXArCArkQhAVyLggL5EwQFsipICyQE0FYIMeCsECOBGGBHArCAjkQhAWyLwgLZE8QFsiuICyQHUFYINuCsEC2BGGBbArCAtkQhAWyLggLZE0QFsiqICyQFUFYIMuCsECWBGGBLArCAlkQhAUyLwgLZE4QFsisICyQGUFYINOCsECmBGGBTArCApkQhAUyLggLJC4ICiSR3RUl6s+P+FiUVCoeLfEu/BuQUUFQvyo+IggLZFgQFsiQICyQQUFYIAOCsED6BWGB9AnCAukVhAXSIwgLpFsQFkiXICyQTkFYIB2CsEDaBWGBtAnCAmkVhAXSIggLpFkQFkiTICyQRkFYIA2CsEDqBWGB1AnCAqkVhAVSIwgLpFoQFkiVICyQSkFYIBWCsEDKBWGBlAnCAikVhAVSIggLpFgQFkiRICyQQkFYIAWCsEDyBWGB5AnCAskVhAWSIwgLJFsQFkiWICyQTEFYIBmCsEDSBWGBpAnCAgn/A+QDl+RcshFMEu8AAAAASUVORK5CYII="],

@@ -57,7 +57,7 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
 
         // create frame buffer manager
         if(!main.registerBank[this._bufferId]) {
-            var fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, 1);
+            var fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, true, 1);
             main.registerBank[this._bufferId] = fm;
         }
     },

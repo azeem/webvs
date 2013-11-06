@@ -63,7 +63,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         this.code.setup(main, this);
 
         // create a framebuffer manager for this effect list
-        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier);
+        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
 
         return promises;
     },

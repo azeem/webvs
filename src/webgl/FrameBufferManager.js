@@ -8,31 +8,34 @@
 /**
  * @class
  * FrameBufferManager maintains a set of render targets
- * and switches between them, when requested by different
- * shader programs. Its used in EffectLists to compose rendering
- * of the different {@link Webvs.Component}
+ * and can switch between them.
  *
  * @param {number} width - the width of the textures to be initialized
  * @param {number} height - the height of the textures to be initialized
  * @param {WebGLRenderingContext} gl - the webgl context to be used
  * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
  *                                     when a frame copyOver is required
+ * @param {boolean} textureOnly - if set then only texture's and renderbuffers are maintained
  * @constructor
  * @memberof Webvs
  */
-function FrameBufferManager(width, height, gl, copier, texCount) {
+function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
     this.gl = gl;
     this.width = width;
     this.height = height;
     this.copier = copier;
     this.texCount = texCount || 2;
+    this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
 Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     _initFrameBuffers: function() {
         var gl = this.gl;
 
-        var framebuffer = gl.createFramebuffer();
+        if(!this.textureOnly) {
+            this.framebuffer = gl.createFramebuffer();
+        }
+
         var attachments = [];
         for(var i = 0;i < this.texCount;i++) {
             var texture = gl.createTexture();
@@ -55,7 +58,6 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             };
         }
 
-        this.framebuffer = framebuffer;
         this.frameAttachments = attachments;
         this.currAttachment = 0;
     },
@@ -67,10 +69,13 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      */
     setRenderTarget: function() {
         var gl = this.gl;
-        this.inputFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        gl.viewport(0, 0, this.width, this.height);
+        if(this.textureOnly) {
+            this.oldAttachment = this._getFBAttachment();
+        } else {
+            this.oldFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+            gl.viewport(0, 0, this.width, this.height);
+        }
         this._setFBAttachment();
     },
 
@@ -81,8 +86,11 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      */
     restoreRenderTarget: function() {
         var gl = this.gl;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.inputFrameBuffer);
-        gl.viewport(0, 0, this.width, this.height);
+        if(this.textureOnly) {
+            this._setFBAttachment(this.oldAttachment);
+        } else {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.oldFrameBuffer);
+        }
     },
 
     /**
@@ -122,12 +130,19 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
             gl.deleteTexture(this.frameAttachments[i].texture);
         }
-        gl.deleteFramebuffer(this.framebuffer);
     },
 
 
-    _setFBAttachment: function() {
-        var attachment = this.frameAttachments[this.currAttachment];
+    _getFBAttachment: function() {
+        var gl = this.gl;
+        return {
+            texture: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME),
+            renderbuffer: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME)
+        };
+    },
+
+    _setFBAttachment: function(attachment) {
+        attachment = attachment || this.frameAttachments[this.currAttachment];
         var gl = this.gl;
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
         gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
