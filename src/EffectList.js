@@ -45,8 +45,7 @@ function EffectList(options) {
     this._inited = false;
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
-    var genResult = codeGen.generateCode(["init", "perFrame"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "perFrame"]);
 
     EffectList.super.constructor.apply(this, arguments);
 }

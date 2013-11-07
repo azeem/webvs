@@ -12,9 +12,9 @@
     }
 }
 
-program = p:(statement __ (";" __ statement __)* ";"?) {
-    var stmts = [p[0]];
-    stmts = stmts.concat(_.map(p[2], function(pp) {
+program = p:(__ statement __ (";" __ statement __)* ";"? __) {
+    var stmts = [p[1]];
+    stmts = stmts.concat(_.map(p[3], function(pp) {
         return pp[2];
     }));
     return new Webvs.AstProgram(stmts);

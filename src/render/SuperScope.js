@@ -56,8 +56,7 @@ function SuperScope(options) {
         throw new Error("Invalid superscope");
     }
     var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
     this.code.n = 100;
 
     this.spectrum = options.source == "SPECTRUM";

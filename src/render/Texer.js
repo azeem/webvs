@@ -57,8 +57,7 @@ function Texer(options) {
     this.imageSrc = options.imageSrc;
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
     this.code.n = 100;
     this.spectrum = options.source == "SPECTRUM";
 

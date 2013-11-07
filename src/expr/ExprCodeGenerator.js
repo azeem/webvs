@@ -15,7 +15,17 @@
  * @constructor
  */
 function ExprCodeGenerator(codeSrc, externalVars) {
-    this.codeSrc = codeSrc;
+    this.codeSrc = {};
+    for(var key in codeSrc) {
+        var code = codeSrc[key];
+        if(_.isArray(code)) {
+            code = code.join("\n");
+        }
+        code = code.trim();
+        if(code !== "") {
+            this.codeSrc[key] = code;
+        }
+    }
     this.externalVars = _.union(externalVars || [], ["w", "h", "cid"]);
     this._parseSrc();
 }
@@ -29,9 +39,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         for(var name in this.codeSrc) {
             try {
                 var codeSrc = this.codeSrc[name];
-                if(_.isArray(codeSrc)) {
-                    codeSrc = codeSrc.join("\n");
-                }
                 codeAst[name] = Webvs.PegExprParser.parse(codeSrc);
                 var vars = [];
                 var fu = [];
@@ -60,15 +67,38 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
      * @returns {Array} pair containing {@link Webvs.CodeInstance} and a glsl code
      * @memberof Webvs.ExprCodeGenerator#
      */
-    generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
-        var inst = new Webvs.CodeInstance();
-        var that = this;
-        var glsl = [];
+    generateJs: function(jsFuncs) {
+        var codeInst = new Webvs.CodeInstance();
 
         _.each(this.instanceVars, function(ivar) {
-            // clear instance variables in code instance
-            inst[ivar] = 0;
+            codeInst[ivar] = 0;
+        });
 
+        var jsFuncList = _.intersection(_.keys(this.codeAst), jsFuncs);
+        var missingJsFuncList = _.difference(jsFuncs, jsFuncList);
+
+        // generate javascript functions and assign to code instance
+        _.each(jsFuncList, function(name) {
+            var ast = this.codeAst[name];
+            var codeString = this._generateJs(ast);
+            console.log(name + "\n--------\n" + codeString);
+            codeInst[name] = new Function(codeString);
+        }, this);
+        // add noops for missing expressions
+        _.each(missingJsFuncList, function(name) {
+            codeInst[name] = Webvs.noop;
+        });
+
+        codeInst._registerUsages = this.registerUsages;
+
+        return codeInst;
+    },
+
+    generateGlsl: function(glslFuncs, treatAsNonUniform, codeInst) {
+        var glsl = [];
+        treatAsNonUniform = treatAsNonUniform || [];
+
+        _.each(this.instanceVars, function(ivar) {
             // create declarations for instance variables in glsl
             var prefix = "";
             if(!_.contains(treatAsNonUniform, ivar)) {
@@ -77,66 +107,52 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             glsl.push(prefix + "float " + ivar + ";");
         });
 
-        var jsFuncList = _.intersection(_.keys(this.codeAst), jsFuncs);
-        var missingJsFuncList = _.difference(jsFuncs, jsFuncList);
-
-        // generate javascript functions and assign to code instance
-        _.each(jsFuncList, function(name) {
-            var ast = that.codeAst[name];
-            var codeString = that._generateJs(ast);
-            inst[name] = new Function(codeString);
-        });
-        // add noops for missing expressions
-        _.each(missingJsFuncList, function(name) {
-            inst[name] = Webvs.noop;
-        });
-
         var glslFuncList = _.intersection(_.keys(this.codeAst), glslFuncs);
         var missingGlslFuncList = _.difference(glslFuncs, glslFuncList);
         var glsFuncUsages = _.uniq(
-            _.flatMap(glslFuncList, function(name) { return that.funcUsages[name]; })
+            _.flatMap(glslFuncList, function(name) { return this.funcUsages[name]; }, this)
         );
 
         // include required functions in glsl
         _.each(glsFuncUsages, function(usage) {
-            var code = that.glslFuncCode[usage];
+            var code = this.glslFuncCode[usage];
             if(!code) {
                 return;
             }
             glsl.push(code);
-        });
+        }, this);
         var preCompute = []; // list of precomputed bindings
         var generatedGlslFuncs = [];
         // generate glsl functions
         _.each(glslFuncList, function(name) {
-            var ast = that.codeAst[name];
-            var codeString = that._generateGlsl(ast, preCompute);
+            var ast = this.codeAst[name];
+            var codeString = this._generateGlsl(ast, preCompute);
             generatedGlslFuncs.push("void " + name + "() {");
             generatedGlslFuncs.push(codeString);
             generatedGlslFuncs.push("}");
-        });
+        }, this);
         // add the uniform declarations for precomputed functions
         glsl = glsl.concat(_.map(preCompute, function(item) {
             return "uniform float " + item[1] + ";";
         }));
         glsl = glsl.concat(generatedGlslFuncs);
-        inst._preCompute = preCompute;
 
         // generate noops for missing functions
         _.each(missingGlslFuncList, function(name) {
             glsl.push("void " + name + "() {}");
         });
 
+        // create required bindings in the code instance
+        codeInst._preCompute = preCompute;
         if(_.contains(glslFuncList, "rand")) {
-            inst.hasRandom = true;
+            codeInst.hasRandom = true;
         }
         if(_.contains(glslFuncList, "gettime")) {
-            inst.hasGettime = true;
+            codeInst.hasGettime = true;
         }
-        inst._treatAsNonUniform = treatAsNonUniform;
-        inst._registerUsages = this.registerUsages;
+        codeInst._treatAsNonUniform = treatAsNonUniform;
 
-        return [inst, glsl.join("")];
+        return glsl.join("\n");
     },
 
     funcArgLengths: {
@@ -211,7 +227,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
     },
 
     _generateGlsl: function(ast, preCompute) {
-        var that = this;
 
         if(ast instanceof Webvs.AstBinaryExpr) {
             return "(" + this._generateGlsl(ast.leftOperand, preCompute) + ast.operator + this._generateGlsl(ast.rightOperand, preCompute) + ")";
@@ -258,6 +273,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                     ].join("");
                 case "select":
                     var selectExpr = this._generateGlsl(ast.args[0], preCompute);
+                    var that = this;
                     var generateSelect = function(args, i) {
                         if(args.length == 1) {
                             return that._generateGlsl(args[0], preCompute);
@@ -299,7 +315,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                     }
                     return uniformName;
                 default:
-                    var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg, preCompute);}).join(",");
+                    var args = _.map(ast.args, function(arg) {return this._generateGlsl(arg, preCompute);}, this).join(",");
                     var funcName = ast.funcName;
                     if(_.contains(this.varArgFuncs, ast.funcName)) {
                         funcName += ast.args.length;
@@ -311,7 +327,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             return this._generateGlsl(ast.lhs, preCompute) + "=" + this._generateGlsl(ast.expr, preCompute);
         }
         if(ast instanceof Webvs.AstProgram) {
-            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, preCompute);});
+            var stmts = _.map(ast.statements, function(stmt) {return this._generateGlsl(stmt, preCompute);}, this);
             return stmts.join(";\n")+";";
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
@@ -327,7 +343,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
 
     _generateJs: function(ast) {
         var prefix;
-        var that = this;
 
         if(ast instanceof Webvs.AstBinaryExpr) {
             return "(" + this._generateJs(ast.leftOperand) + ast.operator + this._generateJs(ast.rightOperand) + ")";
@@ -394,7 +409,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                 case "atan2":
                     return "(Math.atan(("+this._generateJs(ast.args[0])+")/("+this._generateJs(ast.args[1])+")))";
                 default:
-                    var args = _.map(ast.args, function(arg) {return that._generateJs(arg);}).join(",");
+                    var args = _.map(ast.args, function(arg) {return this._generateJs(arg);}, this).join(",");
                     if(_.contains(this.jsMathFuncs, ast.funcName)) {
                         prefix = "Math.";
                     } else {
@@ -407,7 +422,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             return this._generateJs(ast.lhs) + "=" + this._generateJs(ast.expr);
         }
         if(ast instanceof Webvs.AstProgram) {
-            var stmts = _.map(ast.statements, function(stmt) {return that._generateJs(stmt);});
+            var stmts = _.map(ast.statements, function(stmt) {return this._generateJs(stmt);}, this);
             return stmts.join(";\n");
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
@@ -425,8 +440,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
     },
 
     _getVars: function(ast, vars, funcUsages, regUsages) {
-        var that = this;
-
         if(ast instanceof Webvs.AstBinaryExpr) {
             this._getVars(ast.leftOperand, vars, funcUsages, regUsages);
             this._getVars(ast.rightOperand, vars, funcUsages, regUsages);
@@ -438,8 +451,8 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         else if(ast instanceof Webvs.AstFuncCall) {
             funcUsages.push(ast.funcName);
             _.each(ast.args, function(arg) {
-               that._getVars(arg, vars, funcUsages, regUsages);
-            });
+               this._getVars(arg, vars, funcUsages, regUsages);
+            }, this);
         }
         else if(ast instanceof Webvs.AstAssignment) {
             this._getVars(ast.lhs, vars, funcUsages, regUsages);
@@ -447,8 +460,8 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         }
         else if(ast instanceof Webvs.AstProgram) {
             _.each(ast.statements, function(stmt) {
-                that._getVars(stmt, vars, funcUsages, regUsages);
-            });
+                this._getVars(stmt, vars, funcUsages, regUsages);
+            }, this);
         }
         else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "ID") {
             vars.push(ast.value);
