@@ -106,10 +106,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             promises = [];
             if(this.componentInited) {
                 doClones(component, function(clone) {
-                    var promise = clone.adoptOrInit(this.gl, this.main, this);
-                    if(promise) {
-                        promises.push(res);
-                    }
+                    promises.push(clone.adoptOrInit(this.gl, this.main, this));
                 }, this);
             }
             promises = Webvs.joinPromises(promises);
@@ -129,15 +126,16 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
                     var res = component.addComponent(parentId, factory, pos);
                     if(res) {
                         var id = res[0];
-                        promises = [res[1]];
+                        var promise = res[1];
                         if(component.__clones) {
+                            promise = [promise];
                             for(var j = 0;j < component.__clones.length;j++) {
                                 res = component.__clones[j].addComponent(parentId, factory, pos);
-                                promises.push(res[1]);
+                                promise.push(res[1]);
                             }
+                            promise = Webvs.joinPromises(promise);
                         }
-                        promises = Webvs.joinPromises(promises);
-                        return [id, promises];
+                        return [id, promise];
                     }
                 }
             }
@@ -158,6 +156,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             if(this.components[i].id == id) {
                 component = this.components[i];
                 componentIndex = i;
+                break;
             }
         }
         if(component) {
@@ -195,16 +194,19 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
 
         // if component not in this container
         // then try any of the subcomponents
-        for(i = 0;i < this.component.length;i++) {
+        for(i = 0;i < this.components.length;i++) {
             component = this.components[i];
             if(component instanceof Container) {
                 promise = component.updateComponent(id, options);
                 if(promise) {
-                    promise = [promise];
-                    for(j = 0;j < component.__clones.length;j++) {
-                        promise.push(component.__clones[j].updateComponent(id, options));
+                    if(component.__clones) {
+                        promise = [promise];
+                        for(j = 0;j < component.__clones.length;j++) {
+                            promise.push(component.__clones[j].updateComponent(id, options));
+                        }
+                        promise = Webvs.joinPromises(promise);
                     }
-                    return Webvs.joinPromises(promise);
+                    return promise;
                 }
             }
         }

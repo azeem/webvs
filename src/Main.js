@@ -211,18 +211,20 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         var _this = this;
         options = _.clone(options); // use our own copy
         if(id != "root") {
-            var promise = this.rootComponent.updateComponent();
+            var promise = this.rootComponent.updateComponent(id, options);
             if(promise) {
-                promises.onResolve(function() {
+                promise.onResolve(function() {
                     _this.start();
                 });
                 return true;
+            } else {
+                return false;
             }
         } else {
             var factories = this.rootComponent.detachAllComponents();
             var preset = this.rootComponent.preset;
             this.rootComponent.destroy();
-            this.rootComponent = new EffectList(preset, factories);
+            this.rootComponent = new Webvs.EffectList(preset, factories);
             _.each(factories, function(factory) {
                 factory.destroyPool();
             });
