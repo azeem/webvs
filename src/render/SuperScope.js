@@ -63,7 +63,7 @@ function SuperScope(options) {
     this.dots = options.drawMode == "DOTS";
 
     this.colors = _.map(options.colors, Webvs.parseColorNorm);
-    this.currentColor = this.colors[0];
+    this.currentColor = [];
     this.maxStep = 100;
 
     this.step = this.maxStep; // so that we compute steps, the first time
@@ -179,7 +179,9 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
                     this.colorStep[i] = (nextColor[i]-curColor[i])/this.maxStep;
                 }
                 this.step = 0;
-                this.currentColor = curColor;
+                for(i = 0;i < 3;i++) {
+                    this.currentColor[i] = curColor[i];
+                }
             } else {
                 for(i = 0;i < 3;i++) {
                     this.currentColor[i] += this.colorStep[i];
