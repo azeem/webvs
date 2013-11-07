@@ -81,7 +81,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         _.each(jsFuncList, function(name) {
             var ast = this.codeAst[name];
             var codeString = this._generateJs(ast);
-            console.log(name + "\n--------\n" + codeString);
             codeInst[name] = new Function(codeString);
         }, this);
         // add noops for missing expressions
