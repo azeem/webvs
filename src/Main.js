@@ -255,13 +255,14 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * Moves a component to a different parent
      * @param {string} id - id of the component to be moved
      * @param {string} newParentId - id of the new parent
+     * @param {number} pos - position in the new parent
      * @returns {boolean} - success of the operation
      * @memberof Webvs.Main#
      */
-    moveComponent: function(id, newParentId) {
+    moveComponent: function(id, newParentId, pos) {
         var factory = this.rootComponent.detachComponent(id);
         if(factory) {
-            var res = this.rootComponent.addComponent(newParentId, factory);
+            var res = this.rootComponent.addComponent(newParentId, factory, pos);
             factory.destroyPool();
             if(res) {
                 return true;
