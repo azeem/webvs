@@ -367,7 +367,7 @@ ComponentFactory.makeComponent = function(options, subFactories) {
 
     var component = new componentClass(options, subFactories);
 
-    var count = _.isNumber(options.clone)?options.clone:1;
+    var count = 1;//_.isNumber(options.clone)?options.clone:1;
     count--;
     if(count) {
         var clones = [];

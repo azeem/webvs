@@ -127,5 +127,18 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
     }
 });
 
+CodeInstance.clone = function(codeInst, count) {
+    codeInst.cid = 0;
+    var clones = [codeInst];
+    if(count > 1) {
+        _.times(count-1, function(index) {
+            var clone = _.clone(codeInst);
+            clone.cid = index+1;
+            clones.push(clone);
+        });
+    }
+    return clones;
+};
+
 
 })(Webvs);
