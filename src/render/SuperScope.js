@@ -97,7 +97,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     update: function() {
         this._stepColor();
         _.each(this.code, function(code) {
-            this.drawScope(code, this.inited);
+            this.drawScope(code, !this.inited);
         }, this);
         this.inited = true;
     },
@@ -196,6 +196,8 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
                 }
                 this.step++;
             }
+        } else {
+            this.currentColor = this.colors[0];
         }
     }
 });
