@@ -48,7 +48,7 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
     for(var i in requiredOptions) {
         var key =  requiredOptions[i];
         if(!(key in options)) {
-            throw new Error("Required option " + key + "not found");
+            throw new Error("Required option " + key + " not found");
         }
     }
 };
@@ -183,7 +183,7 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
  */
 Webvs.joinPromises = function(promises) {
     var joinedPromise = new Promise();
-
+    promises = _.filter(promises, function(p) {return !_.isUndefined(p);});
     if(promises.length === 0) {
         joinedPromise.resolve();
     } else {
@@ -260,6 +260,14 @@ Webvs.randString = function(count, chars) {
  */
 Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
+};
+
+Webvs.getComponentClass = function(name) {
+    var componentClass = Webvs[name];
+    if(!componentClass) {
+        throw new Error("Unknown Component class " + name);
+    }
+    return componentClass;
 };
 
 })(window);
@@ -532,38 +540,30 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             return;
         }
 
-        var rootComponent = this.rootComponent;
-
-        var that = this;
+        var _this = this;
         var drawFrame = function() {
-            if(that.analyser.isPlaying()) {
-                rootComponent.update();
+            if(_this.analyser.isPlaying()) {
+                _this.rootComponent.update();
             }
-            that.animReqId = requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
         // wrap drawframe in stats collection if required
         if(this.stats) {
             var oldDrawFrame = drawFrame;
             drawFrame = function() {
-                that.stats.begin();
+                _this.stats.begin();
                 oldDrawFrame.call(this, arguments);
-                that.stats.end();
+                _this.stats.end();
             };
         }
 
-        if(rootComponent.componentInited) {
-            this.animReqId = requestAnimationFrame(drawFrame);
-        } else {
+        if(!this.rootComponent.componentInited) {
             this.registerBank = {};
             this.bootTime = (new Date()).getTime();
-            var promise = rootComponent.init(this.gl, this);
-
-            // start rendering when the promise is  done
-            promise.onResolve(function() {
-                that.animReqId = requestAnimationFrame(drawFrame);
-            });
+            this.rootComponent.init(this.gl, this);
         }
+        this.animReqId = requestAnimationFrame(drawFrame);
         this.isStarted = true;
     },
 
@@ -601,16 +601,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     addComponent: function(parentId, options, pos) {
-        this.stop();
         options = _.clone(options); // use our own copy
-        var res = this.rootComponent.addComponent(parentId, options, pos);
-        if(res) {
-            var _this = this;
-            res[1].onResolve(function() {
-                _this.start();
-            });
-            return res[0];
-        }
+        this.rootComponent.addComponent(parentId, options, pos);
+        return res;
     },
 
     /**
@@ -621,29 +614,18 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     updateComponent: function(id, options) {
-        this.stop();
-        var _this = this;
         options = _.clone(options); // use our own copy
-        if(id != "root") {
-            var promise = this.rootComponent.updateComponent();
-            if(promise) {
-                promises.onResolve(function() {
-                    _this.start();
-                });
-                return true;
-            }
-        } else {
-            var factories = this.rootComponent.detachAllComponents();
-            var preset = this.rootComponent.preset;
+        options.id = id;
+        if(id == "root") {
+            var subComponents = this.rootComponent.detachAllComponents();
+            options = _.defaults(options, this.rootComponent.options);
             this.rootComponent.destroy();
-            this.rootComponent = new EffectList(preset, factories);
-            _.each(factories, function(factory) {
-                factory.destroyPool();
-            });
-            _this.start();
+            this.rootComponent = new Webvs.EffectList(options, subComponents);
+            this.rootComponent.init(this.gl, this);
             return true;
+        } else {
+            return this.rootComponent.updateComponent(id, options);
         }
-        return false;
     },
 
 
@@ -654,31 +636,30 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     removeComponent: function(id) {
-        var factory = this.rootComponent.detachComponent(id);
-        if(factory) {
-            factory.destroyPool();
+        var component = this.rootComponent.detachComponent(id);
+        if(component) {
+            component.destroy();
             return true;
+        } else {
+            return false;
         }
-        return false;
     },
 
     /**
      * Moves a component to a different parent
      * @param {string} id - id of the component to be moved
      * @param {string} newParentId - id of the new parent
+     * @param {number} pos - position in the new parent
      * @returns {boolean} - success of the operation
      * @memberof Webvs.Main#
      */
-    moveComponent: function(id, newParentId) {
-        var factory = this.rootComponent.detachComponent(id);
-        if(factory) {
-            var res = this.rootComponent.addComponent(newParentId, factory);
-            factory.destroyPool();
-            if(res) {
-                return true;
-            }
+    moveComponent: function(id, newParentId, pos) {
+        var component = this.rootComponent.detachComponent(id);
+        if(component) {
+            return this.rootComponent.addComponent(newParentId, component, pos);
+        } else {
+            return false;
         }
-        return false;
     },
 
     /**
@@ -892,15 +873,14 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
  *     provided then subcomponents are added from this factory and options.components is ignored.
  *     useful when moving existing subcomponent instances into new container.
  */
-function Container(options, subFactories) {
+function Container(options, subComponents) {
     Container.super.constructor.call(this, options);
 
     this.components = [];
-    this._containerInited = false;
 
     // add all the sub components
-    _.each(subFactories || options.components || [], function(factory) {
-        this.addComponent(this.id, factory);
+    _.each(subComponents || options.components || [], function(component) {
+        this.addComponent(this.id, component);
     }, this);
 
 }
@@ -911,19 +891,10 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      */
     init: function(gl, main, parent) {
         Container.super.init.call(this, gl, main, parent);
-        this._containerInited = true;
 
-        var initPromises = [];
-        _.each(this.components, function(component) {
-            doClones(component, function(clone) {
-                var res = clone.adoptOrInit(gl, main, this);
-                if(res) {
-                    initPromises.push(res);
-                }
-            }, this);
-        }, this);
-
-        return Webvs.joinPromises(initPromises);
+        for(var i = 0;i < this.components.length;i++) {
+            this.components[i].adoptOrInit(gl, main, this);
+        }
     },
 
     /**
@@ -932,25 +903,11 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      */
     destroy: function() {
         Container.super.destroy.call(this);
-        _.each(this.components, function(component) {
-            doClones(component, function(clone) {
-                clone.destroy();
-            });
-        });
-    },
-    
-    /**
-     * Allows iterating over all the subcomponents, flattening
-     * out cloned components.
-     * @param {function} callback - callback
-     * @memberof Webvs.Container#
-     */
-    iterChildren: function(callback) {
         for(var i = 0;i < this.components.length;i++) {
-            doClones(this.components[i], callback, this);
+            this.components[i].destroy();
         }
     },
-
+    
     /**
      * Adds a component as child of the given parent that
      * resides under this containers subtree
@@ -961,57 +918,38 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      *      is implicitly created from it
      * @param {number} [pos] - position at which the component will be inserted.
      *     default is the end of the list
-     * @returns {Array} - a pair containing 1) id of the new component 2) promise
-     *     for the new component initialization
+     * @returns {string} - id of the new component
      * @memberof Webvs.Container#
      */
-    addComponent: function(parentId, factory, pos) {
-        if(!(factory instanceof ComponentFactory)) {
-            // if its an options object, then make a factory
-            // out of it
-            factory.id = factory.id || Webvs.randString(5);
-            factory = new ComponentFactory(factory);
+    addComponent: function(parentId, options, pos) {
+        if(!(options instanceof Webvs.Component)) {
+            options.id = options.id || Webvs.randString(5);
         }
 
-        var component, promises;
-        // we are at the correct parent
+        var component;
         if(parentId == this.id) {
-            component = factory.get();
-            promises = [];
-            if(this.componentInited) {
-                doClones(component, function(clone) {
-                    var promise = clone.adoptOrInit(this.gl, this.main, this);
-                    if(promise) {
-                        promises.push(res);
-                    }
-                }, this);
+            if(options instanceof Webvs.Component) {
+                component = options;
+            } else {
+                component = new (Webvs.getComponentClass(options.type))(options);
             }
-            promises = Webvs.joinPromises(promises);
+            if(this.componentInited) {
+                component.adoptOrInit(this.gl, this.main, this);
+            }
 
             if(_.isNumber(pos)) {
                 this.components.splice(pos, 0, component);
             } else {
                 this.components.push(component);
             }
-            return [component.id, promises];
+            return component.id;
         } else {
-            // try any of the subcontainers and repeat
-            // on all clones if required
             for(var i = 0;i < this.components.length;i++) {
                 component = this.components[i];
                 if(component instanceof Container) {
-                    var res = component.addComponent(parentId, factory, pos);
-                    if(res) {
-                        var id = res[0];
-                        promises = [res[1]];
-                        if(component.__clones) {
-                            for(var j = 0;j < component.__clones.length;j++) {
-                                res = component.__clones[j].addComponent(parentId, factory, pos);
-                                promises.push(res[1]);
-                            }
-                        }
-                        promises = Webvs.joinPromises(promises);
-                        return [id, promises];
+                    var id = component.addComponent(parentId, options, pos);
+                    if(id) {
+                        return id;
                     }
                 }
             }
@@ -1022,63 +960,37 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * Updates a component under this container's subtree
      * @param {string} id - id of the component
      * @param {object} options - options to be updated.
-     * @returns {Webvs.Promise} - promise for the component reinitialiaztion
+     * @returns {boolean} - true if update succeeded else false
      * @memberof Webvs.Container#
      */
     updateComponent: function(id, options) {
-        var component, componentIndex, promise, i, j;
+        var component, i;
         // find the component in this container
         for(i = 0;i < this.components.length;i++) {
-            if(this.components[i].id == id) {
-                component = this.components[i];
-                componentIndex = i;
+            component = this.components[i];
+            if(component.id != id) {
+                continue;
             }
-        }
-        if(component) {
-            options = _.defaults(options, component.options); // use undefined properties from existing
+
+            options = _.defaults(options, component.options);
             options.id = id;
-            // create updated component. detach and move subcomponents if required
-            var subFactories = component instanceof Container?component.detachAllComponents():undefined;
-            var newComponent = ComponentFactory.makeComponent(options, subFactories);
-            if(subFactories) {
-                // cleanup the detached factories. in case they have more elements
-                for(j = 0;j < subFactories.length;j++) {
-                    subFactories[j].destroyPool();
-                }
-            }
+            var subComponents = component instanceof Container?component.detachAllComponents():undefined;
+            var newComponent = new (Webvs.getComponentClass(options.type))(options, subComponents);
 
-            // replace and init the components
-            var promises = [];
             if(this.componentInited) {
-                doClones(newComponent, function(clone) {
-                    promises.push(clone.adoptOrInit(this.gl, this.main, this));
-                }, this);
+                newComponent.adoptOrInit(this.gl, this.main, this);
             }
-            promises = Webvs.joinPromises(promises);
 
-            // replace the component
-            this.components[componentIndex] = newComponent;
-
-            // destroy the old component
-            doClones(component, function(clone) {
-                clone.destroy();
-            });
-
-            return promises;
+            this.components[i] = newComponent;
+            component.destroy();
+            return true;
         }
 
-        // if component not in this container
-        // then try any of the subcomponents
-        for(i = 0;i < this.component.length;i++) {
+        for(i = 0;i < this.components.length;i++) {
             component = this.components[i];
             if(component instanceof Container) {
-                promise = component.updateComponent(id, options);
-                if(promise) {
-                    promise = [promise];
-                    for(j = 0;j < component.__clones.length;j++) {
-                        promise.push(component.__clones[j].updateComponent(id, options));
-                    }
-                    return Webvs.joinPromises(promise);
+                if(component.updateComponent(id, options)) {
+                    return true;
                 }
             }
         }
@@ -1090,11 +1002,9 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @memberof Webvs.Container#
      */
     detachAllComponents: function() {
-        var detached = _.map(this.components, function(component) {
-            return new ComponentFactory(component.options, [component]);
-        });
+        var components = this.components;
         this.components = [];
-        return detached;
+        return components;
     },
 
     /**
@@ -1110,7 +1020,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             component = this.components[i];
             if(component.id == id) {
                 this.components.splice(i, 1);
-                return new ComponentFactory(component.options, [component]);
+                return component;
             }
         }
 
@@ -1119,16 +1029,9 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         for(i = 0;i < this.components.length;i++) {
             component = this.components[i];
             if(component instanceof Container) {
-                var factory = component.detachComponent(id);
-                if(factory) {
-                    if(component.__clones) {
-                        factory = [factory];
-                        for(var j = 0;j < component.__clones.length;j++) {
-                            factory.push(component.__clones[j].detachComponent(id));
-                        }
-                        factory = ComponentFactory.merge(factory);
-                    }
-                    return factory;
+                var detached = component.detachComponent(id);
+                if(detached) {
+                    return detached;
                 }
             }
         }
@@ -1156,7 +1059,8 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      */
     traverse: function(callback) {
         callback.call(this, this.id, (this.parent?this.parent.id:undefined), this.options);
-        _.each(this.components, function(component) {
+        for(var i = 0;i < this.components.length;i++) {
+            var component = this.components[i];
             if(component instanceof Container) {
                 component.traverse(callback);
             } else {
@@ -1165,7 +1069,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
                 var options = component.options;
                 callback.call(component, id, parentId, options);
             }
-        });
+        }
     }
 
     /**
@@ -1176,106 +1080,6 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @param {object} options - the options for this component.
      */
 });
-
-/**
- * @class
- * A Helper class for creating/reusing component instances
- * consistently. Basically this provides a facility for
- * giving out component instances from a pool. New instances
- * are created for requests that come after the pool is exhausted.
- * @constructor
- * @memberof Webvs
- * @param {object} options - options for the component. this will be used when creating
- *                           new instances
- * @param {Array.<Webvs.Component>} pool - pool of used components
- */
-function ComponentFactory(options, pool) {
-    this.options = options;
-    this.pool = pool || [];
-}
-Webvs.ComponentFactory = Webvs.defineClass(ComponentFactory, Object, {
-    /**
-     * Gives out a component instance from the pool. Creates one
-     * if pool is empty
-     * @param {Array.<ComponentFactory>} [subFactories] - factories for sub-components when
-     *                                                  creating containers.
-     * @memberof Webvs.ComponentFactory#
-     */
-    get: function(subFactories) {
-        if(this.pool.length > 0) {
-            return this.pool.pop();
-        } else {
-            return ComponentFactory.makeComponent(this.options, subFactories);
-        }
-    },
-
-    /**
-     * Destroys all components in the pool and empties it
-     * @memberof Webvs.ComponentFactory#
-     */
-    destroyPool: function() {
-        _.each(this.pool, function(component) {
-            doClones(component, function(clone) {
-                clone.destroy();
-            });
-        });
-        this.pool = [];
-    }
-});
-/**
- * Creates a new component instance, and its clones, if required. Clones
- * are conveniently tucked away inside one component, so that a component
- * can be moved around as if it is a single component.
- * @param {object} options - options for the component
- * @param {Array.<ComponentFactory>} subFactories - factories for sub-components when
- *                                                  creating containers.
- * @memberof Webvs.ComponentFactory
- */
-ComponentFactory.makeComponent = function(options, subFactories) {
-    var componentClass = Webvs[options.type];
-    if(!componentClass) {
-        throw new Error("Unknown Component class " + options.type);
-    }
-
-    var component = new componentClass(options, subFactories);
-
-    var count = _.isNumber(options.clone)?options.clone:1;
-    count--;
-    if(count) {
-        var clones = [];
-        _.times(count, function(index) {
-            var clone = new componentClass(options, subFactories);
-            clone.cloneId = index + 1;
-            clones.push(clone);
-        });
-        component.cloneId = 0;
-        component.__clones = clones;
-    }
-    
-    return component;
-};
-/**
- * Merges several Webvs.ComponentFactory into one with a merged pool
- * @param {Array.<ComponentFactory>} factories - factories to be merged
- * @memberof Webvs.ComponentFactory
- */
-ComponentFactory.merge = function(factories) {
-    var pool = [];
-    _.each(factories, function(factory) {
-        pool = pool.concat(factory.pool);
-    });
-    return new ComponentFactory(factories[0].options, pool);
-};
-
-// this function lets us iterate over a component and its clones
-function doClones(component, callback, context) {
-    callback.call(context, component);
-    if(component.__clones) {
-        for(var i = 0;i < component.__clones.length;i++) {
-            callback.call(context, component.__clones[i]);
-        }
-    }
-}
 
 })(Webvs);
 
@@ -1326,8 +1130,7 @@ function EffectList(options) {
     this._inited = false;
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
-    var genResult = codeGen.generateCode(["init", "perFrame"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "perFrame"]);
 
     EffectList.super.constructor.apply(this, arguments);
 }
@@ -1339,14 +1142,12 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
      * @memberof Webvs.EffectList#
      */
     init: function(gl, main, parent) {
-        var promises = EffectList.super.init.call(this, gl, main, parent);
+        EffectList.super.init.call(this, gl, main, parent);
 
         this.code.setup(main, this);
 
         // create a framebuffer manager for this effect list
-        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier);
-
-        return promises;
+        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
     },
 
     /**
@@ -1400,11 +1201,11 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         }
 
         // render all the components
-        this.iterChildren(function(component) {
-            if(component.enabled) {
-                component.update();
+        for(var i = 0;i < this.components.length;i++) {
+            if(this.components[i].enabled) {
+                this.components[i].update();
             }
-        });
+        }
 
         // switch to old framebuffer
         this.fm.restoreRenderTarget();
@@ -2002,31 +1803,34 @@ Webvs.CopyProgram = Webvs.defineClass(CopyProgram, Webvs.QuadBoxProgram, {
 /**
  * @class
  * FrameBufferManager maintains a set of render targets
- * and switches between them, when requested by different
- * shader programs. Its used in EffectLists to compose rendering
- * of the different {@link Webvs.Component}
+ * and can switch between them.
  *
  * @param {number} width - the width of the textures to be initialized
  * @param {number} height - the height of the textures to be initialized
  * @param {WebGLRenderingContext} gl - the webgl context to be used
  * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
  *                                     when a frame copyOver is required
+ * @param {boolean} textureOnly - if set then only texture's and renderbuffers are maintained
  * @constructor
  * @memberof Webvs
  */
-function FrameBufferManager(width, height, gl, copier, texCount) {
+function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
     this.gl = gl;
     this.width = width;
     this.height = height;
     this.copier = copier;
     this.texCount = texCount || 2;
+    this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
 Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     _initFrameBuffers: function() {
         var gl = this.gl;
 
-        var framebuffer = gl.createFramebuffer();
+        if(!this.textureOnly) {
+            this.framebuffer = gl.createFramebuffer();
+        }
+
         var attachments = [];
         for(var i = 0;i < this.texCount;i++) {
             var texture = gl.createTexture();
@@ -2049,7 +1853,6 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             };
         }
 
-        this.framebuffer = framebuffer;
         this.frameAttachments = attachments;
         this.currAttachment = 0;
     },
@@ -2061,10 +1864,13 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      */
     setRenderTarget: function() {
         var gl = this.gl;
-        this.inputFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        gl.viewport(0, 0, this.width, this.height);
+        if(this.textureOnly) {
+            this.oldAttachment = this._getFBAttachment();
+        } else {
+            this.oldFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+            gl.viewport(0, 0, this.width, this.height);
+        }
         this._setFBAttachment();
     },
 
@@ -2075,8 +1881,11 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      */
     restoreRenderTarget: function() {
         var gl = this.gl;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.inputFrameBuffer);
-        gl.viewport(0, 0, this.width, this.height);
+        if(this.textureOnly) {
+            this._setFBAttachment(this.oldAttachment);
+        } else {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.oldFrameBuffer);
+        }
     },
 
     /**
@@ -2116,12 +1925,19 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
             gl.deleteTexture(this.frameAttachments[i].texture);
         }
-        gl.deleteFramebuffer(this.framebuffer);
     },
 
 
-    _setFBAttachment: function() {
-        var attachment = this.frameAttachments[this.currAttachment];
+    _getFBAttachment: function() {
+        var gl = this.gl;
+        return {
+            texture: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME),
+            renderbuffer: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME)
+        };
+    },
+
+    _setFBAttachment: function(attachment) {
+        attachment = attachment || this.frameAttachments[this.currAttachment];
         var gl = this.gl;
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
         gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
@@ -2425,100 +2241,112 @@ Webvs.PegExprParser = (function(){
           return cachedResult.result;
         }
         
-        var result0, result1, result2, result3, result4, result5, result6;
+        var result0, result1, result2, result3, result4, result5, result6, result7;
         var pos0, pos1, pos2;
         
         pos0 = clone(pos);
         pos1 = clone(pos);
-        result0 = parse_statement();
+        result0 = parse___();
         if (result0 !== null) {
-          result1 = parse___();
+          result1 = parse_statement();
           if (result1 !== null) {
-            result2 = [];
-            pos2 = clone(pos);
-            if (input.charCodeAt(pos.offset) === 59) {
-              result3 = ";";
-              advance(pos, 1);
-            } else {
-              result3 = null;
-              if (reportFailures === 0) {
-                matchFailed("\";\"");
-              }
-            }
-            if (result3 !== null) {
-              result4 = parse___();
-              if (result4 !== null) {
-                result5 = parse_statement();
-                if (result5 !== null) {
-                  result6 = parse___();
-                  if (result6 !== null) {
-                    result3 = [result3, result4, result5, result6];
-                  } else {
-                    result3 = null;
-                    pos = clone(pos2);
-                  }
-                } else {
-                  result3 = null;
-                  pos = clone(pos2);
-                }
-              } else {
-                result3 = null;
-                pos = clone(pos2);
-              }
-            } else {
-              result3 = null;
-              pos = clone(pos2);
-            }
-            while (result3 !== null) {
-              result2.push(result3);
+            result2 = parse___();
+            if (result2 !== null) {
+              result3 = [];
               pos2 = clone(pos);
               if (input.charCodeAt(pos.offset) === 59) {
-                result3 = ";";
+                result4 = ";";
                 advance(pos, 1);
               } else {
-                result3 = null;
+                result4 = null;
                 if (reportFailures === 0) {
                   matchFailed("\";\"");
                 }
               }
-              if (result3 !== null) {
-                result4 = parse___();
-                if (result4 !== null) {
-                  result5 = parse_statement();
-                  if (result5 !== null) {
-                    result6 = parse___();
-                    if (result6 !== null) {
-                      result3 = [result3, result4, result5, result6];
+              if (result4 !== null) {
+                result5 = parse___();
+                if (result5 !== null) {
+                  result6 = parse_statement();
+                  if (result6 !== null) {
+                    result7 = parse___();
+                    if (result7 !== null) {
+                      result4 = [result4, result5, result6, result7];
                     } else {
-                      result3 = null;
+                      result4 = null;
                       pos = clone(pos2);
                     }
                   } else {
-                    result3 = null;
+                    result4 = null;
                     pos = clone(pos2);
                   }
                 } else {
-                  result3 = null;
+                  result4 = null;
                   pos = clone(pos2);
                 }
               } else {
-                result3 = null;
+                result4 = null;
                 pos = clone(pos2);
               }
-            }
-            if (result2 !== null) {
-              if (input.charCodeAt(pos.offset) === 59) {
-                result3 = ";";
-                advance(pos, 1);
-              } else {
-                result3 = null;
-                if (reportFailures === 0) {
-                  matchFailed("\";\"");
+              while (result4 !== null) {
+                result3.push(result4);
+                pos2 = clone(pos);
+                if (input.charCodeAt(pos.offset) === 59) {
+                  result4 = ";";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\";\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse___();
+                  if (result5 !== null) {
+                    result6 = parse_statement();
+                    if (result6 !== null) {
+                      result7 = parse___();
+                      if (result7 !== null) {
+                        result4 = [result4, result5, result6, result7];
+                      } else {
+                        result4 = null;
+                        pos = clone(pos2);
+                      }
+                    } else {
+                      result4 = null;
+                      pos = clone(pos2);
+                    }
+                  } else {
+                    result4 = null;
+                    pos = clone(pos2);
+                  }
+                } else {
+                  result4 = null;
+                  pos = clone(pos2);
                 }
               }
-              result3 = result3 !== null ? result3 : "";
               if (result3 !== null) {
-                result0 = [result0, result1, result2, result3];
+                if (input.charCodeAt(pos.offset) === 59) {
+                  result4 = ";";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\";\"");
+                  }
+                }
+                result4 = result4 !== null ? result4 : "";
+                if (result4 !== null) {
+                  result5 = parse___();
+                  if (result5 !== null) {
+                    result0 = [result0, result1, result2, result3, result4, result5];
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
               } else {
                 result0 = null;
                 pos = clone(pos1);
@@ -2537,8 +2365,8 @@ Webvs.PegExprParser = (function(){
         }
         if (result0 !== null) {
           result0 = (function(offset, line, column, p) {
-            var stmts = [p[0]];
-            stmts = stmts.concat(_.map(p[2], function(pp) {
+            var stmts = [p[1]];
+            stmts = stmts.concat(_.map(p[3], function(pp) {
                 return pp[2];
             }));
             return new Webvs.AstProgram(stmts);
@@ -4541,7 +4369,6 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
 
         this.w = main.canvas.width;
         this.h = main.canvas.height;
-        this.cid = parent.cloneId || 0;
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {
@@ -4551,6 +4378,19 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         });
     }
 });
+
+CodeInstance.clone = function(codeInst, count) {
+    codeInst.cid = 0;
+    var clones = [codeInst];
+    if(count > 1) {
+        _.times(count-1, function(index) {
+            var clone = _.clone(codeInst);
+            clone.cid = index+1;
+            clones.push(clone);
+        });
+    }
+    return clones;
+};
 
 
 })(Webvs);
@@ -4572,7 +4412,17 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
  * @constructor
  */
 function ExprCodeGenerator(codeSrc, externalVars) {
-    this.codeSrc = codeSrc;
+    this.codeSrc = {};
+    for(var key in codeSrc) {
+        var code = codeSrc[key];
+        if(_.isArray(code)) {
+            code = code.join("\n");
+        }
+        code = code.trim();
+        if(code !== "") {
+            this.codeSrc[key] = code;
+        }
+    }
     this.externalVars = _.union(externalVars || [], ["w", "h", "cid"]);
     this._parseSrc();
 }
@@ -4586,9 +4436,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         for(var name in this.codeSrc) {
             try {
                 var codeSrc = this.codeSrc[name];
-                if(_.isArray(codeSrc)) {
-                    codeSrc = codeSrc.join("\n");
-                }
                 codeAst[name] = Webvs.PegExprParser.parse(codeSrc);
                 var vars = [];
                 var fu = [];
@@ -4617,15 +4464,37 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
      * @returns {Array} pair containing {@link Webvs.CodeInstance} and a glsl code
      * @memberof Webvs.ExprCodeGenerator#
      */
-    generateCode: function(jsFuncs, glslFuncs, treatAsNonUniform) {
-        var inst = new Webvs.CodeInstance();
-        var that = this;
-        var glsl = [];
+    generateJs: function(jsFuncs) {
+        var codeInst = new Webvs.CodeInstance();
 
         _.each(this.instanceVars, function(ivar) {
-            // clear instance variables in code instance
-            inst[ivar] = 0;
+            codeInst[ivar] = 0;
+        });
 
+        var jsFuncList = _.intersection(_.keys(this.codeAst), jsFuncs);
+        var missingJsFuncList = _.difference(jsFuncs, jsFuncList);
+
+        // generate javascript functions and assign to code instance
+        _.each(jsFuncList, function(name) {
+            var ast = this.codeAst[name];
+            var codeString = this._generateJs(ast);
+            codeInst[name] = new Function(codeString);
+        }, this);
+        // add noops for missing expressions
+        _.each(missingJsFuncList, function(name) {
+            codeInst[name] = Webvs.noop;
+        });
+
+        codeInst._registerUsages = this.registerUsages;
+
+        return codeInst;
+    },
+
+    generateGlsl: function(glslFuncs, treatAsNonUniform, codeInst) {
+        var glsl = [];
+        treatAsNonUniform = treatAsNonUniform || [];
+
+        _.each(this.instanceVars, function(ivar) {
             // create declarations for instance variables in glsl
             var prefix = "";
             if(!_.contains(treatAsNonUniform, ivar)) {
@@ -4634,66 +4503,52 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             glsl.push(prefix + "float " + ivar + ";");
         });
 
-        var jsFuncList = _.intersection(_.keys(this.codeAst), jsFuncs);
-        var missingJsFuncList = _.difference(jsFuncs, jsFuncList);
-
-        // generate javascript functions and assign to code instance
-        _.each(jsFuncList, function(name) {
-            var ast = that.codeAst[name];
-            var codeString = that._generateJs(ast);
-            inst[name] = new Function(codeString);
-        });
-        // add noops for missing expressions
-        _.each(missingJsFuncList, function(name) {
-            inst[name] = Webvs.noop;
-        });
-
         var glslFuncList = _.intersection(_.keys(this.codeAst), glslFuncs);
         var missingGlslFuncList = _.difference(glslFuncs, glslFuncList);
         var glsFuncUsages = _.uniq(
-            _.flatMap(glslFuncList, function(name) { return that.funcUsages[name]; })
+            _.flatMap(glslFuncList, function(name) { return this.funcUsages[name]; }, this)
         );
 
         // include required functions in glsl
         _.each(glsFuncUsages, function(usage) {
-            var code = that.glslFuncCode[usage];
+            var code = this.glslFuncCode[usage];
             if(!code) {
                 return;
             }
             glsl.push(code);
-        });
+        }, this);
         var preCompute = []; // list of precomputed bindings
         var generatedGlslFuncs = [];
         // generate glsl functions
         _.each(glslFuncList, function(name) {
-            var ast = that.codeAst[name];
-            var codeString = that._generateGlsl(ast, preCompute);
+            var ast = this.codeAst[name];
+            var codeString = this._generateGlsl(ast, preCompute);
             generatedGlslFuncs.push("void " + name + "() {");
             generatedGlslFuncs.push(codeString);
             generatedGlslFuncs.push("}");
-        });
+        }, this);
         // add the uniform declarations for precomputed functions
         glsl = glsl.concat(_.map(preCompute, function(item) {
             return "uniform float " + item[1] + ";";
         }));
         glsl = glsl.concat(generatedGlslFuncs);
-        inst._preCompute = preCompute;
 
         // generate noops for missing functions
         _.each(missingGlslFuncList, function(name) {
             glsl.push("void " + name + "() {}");
         });
 
+        // create required bindings in the code instance
+        codeInst._preCompute = preCompute;
         if(_.contains(glslFuncList, "rand")) {
-            inst.hasRandom = true;
+            codeInst.hasRandom = true;
         }
         if(_.contains(glslFuncList, "gettime")) {
-            inst.hasGettime = true;
+            codeInst.hasGettime = true;
         }
-        inst._treatAsNonUniform = treatAsNonUniform;
-        inst._registerUsages = this.registerUsages;
+        codeInst._treatAsNonUniform = treatAsNonUniform;
 
-        return [inst, glsl.join("")];
+        return glsl.join("\n");
     },
 
     funcArgLengths: {
@@ -4768,7 +4623,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
     },
 
     _generateGlsl: function(ast, preCompute) {
-        var that = this;
 
         if(ast instanceof Webvs.AstBinaryExpr) {
             return "(" + this._generateGlsl(ast.leftOperand, preCompute) + ast.operator + this._generateGlsl(ast.rightOperand, preCompute) + ")";
@@ -4815,6 +4669,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                     ].join("");
                 case "select":
                     var selectExpr = this._generateGlsl(ast.args[0], preCompute);
+                    var that = this;
                     var generateSelect = function(args, i) {
                         if(args.length == 1) {
                             return that._generateGlsl(args[0], preCompute);
@@ -4856,7 +4711,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                     }
                     return uniformName;
                 default:
-                    var args = _.map(ast.args, function(arg) {return that._generateGlsl(arg, preCompute);}).join(",");
+                    var args = _.map(ast.args, function(arg) {return this._generateGlsl(arg, preCompute);}, this).join(",");
                     var funcName = ast.funcName;
                     if(_.contains(this.varArgFuncs, ast.funcName)) {
                         funcName += ast.args.length;
@@ -4868,7 +4723,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             return this._generateGlsl(ast.lhs, preCompute) + "=" + this._generateGlsl(ast.expr, preCompute);
         }
         if(ast instanceof Webvs.AstProgram) {
-            var stmts = _.map(ast.statements, function(stmt) {return that._generateGlsl(stmt, preCompute);});
+            var stmts = _.map(ast.statements, function(stmt) {return this._generateGlsl(stmt, preCompute);}, this);
             return stmts.join(";\n")+";";
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
@@ -4884,7 +4739,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
 
     _generateJs: function(ast) {
         var prefix;
-        var that = this;
 
         if(ast instanceof Webvs.AstBinaryExpr) {
             return "(" + this._generateJs(ast.leftOperand) + ast.operator + this._generateJs(ast.rightOperand) + ")";
@@ -4951,7 +4805,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
                 case "atan2":
                     return "(Math.atan(("+this._generateJs(ast.args[0])+")/("+this._generateJs(ast.args[1])+")))";
                 default:
-                    var args = _.map(ast.args, function(arg) {return that._generateJs(arg);}).join(",");
+                    var args = _.map(ast.args, function(arg) {return this._generateJs(arg);}, this).join(",");
                     if(_.contains(this.jsMathFuncs, ast.funcName)) {
                         prefix = "Math.";
                     } else {
@@ -4964,7 +4818,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             return this._generateJs(ast.lhs) + "=" + this._generateJs(ast.expr);
         }
         if(ast instanceof Webvs.AstProgram) {
-            var stmts = _.map(ast.statements, function(stmt) {return that._generateJs(stmt);});
+            var stmts = _.map(ast.statements, function(stmt) {return this._generateJs(stmt);}, this);
             return stmts.join(";\n");
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
@@ -4982,8 +4836,6 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
     },
 
     _getVars: function(ast, vars, funcUsages, regUsages) {
-        var that = this;
-
         if(ast instanceof Webvs.AstBinaryExpr) {
             this._getVars(ast.leftOperand, vars, funcUsages, regUsages);
             this._getVars(ast.rightOperand, vars, funcUsages, regUsages);
@@ -4995,8 +4847,8 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         else if(ast instanceof Webvs.AstFuncCall) {
             funcUsages.push(ast.funcName);
             _.each(ast.args, function(arg) {
-               that._getVars(arg, vars, funcUsages, regUsages);
-            });
+               this._getVars(arg, vars, funcUsages, regUsages);
+            }, this);
         }
         else if(ast instanceof Webvs.AstAssignment) {
             this._getVars(ast.lhs, vars, funcUsages, regUsages);
@@ -5004,8 +4856,8 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         }
         else if(ast instanceof Webvs.AstProgram) {
             _.each(ast.statements, function(stmt) {
-                that._getVars(stmt, vars, funcUsages, regUsages);
-            });
+                this._getVars(stmt, vars, funcUsages, regUsages);
+            }, this);
         }
         else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "ID") {
             vars.push(ast.value);
@@ -5050,8 +4902,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
 function GlobalVar(options) {
 	Webvs.checkRequiredOptions(options, ["code"]);
 	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
     this.inited = false;
 
     GlobalVar.super.constructor.apply(this, arguments);
@@ -5175,7 +5026,7 @@ Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
 
         // create frame buffer manager
         if(!main.registerBank[this._bufferId]) {
-            var fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, 1);
+            var fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, true, 1);
             main.registerBank[this._bufferId] = fm;
         }
     },
@@ -5920,8 +5771,9 @@ function DynamicMovement(options) {
         throw new Error("Invalid Dynamic movement code");
     }
     var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r"]);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
+    var glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], this.code);
+
     this.inited = false;
 
     this.noGrid = options.noGrid;
@@ -5935,11 +5787,11 @@ function DynamicMovement(options) {
     if(this.noGrid) {
         this.program = new Webvs.DMovProgramNG(this.coordMode, this.bFilter,
                                                this.compat, this.code.hasRandom,
-                                               genResult[1]);
+                                               glslCode);
     } else {
         this.program = new Webvs.DMovProgram(this.coordMode, this.bFilter,
                                              this.compat, this.code.hasRandom,
-                                             genResult[1]);
+                                             glslCode);
     }
 
     DynamicMovement.super.constructor.apply(this, arguments);
@@ -6546,15 +6398,15 @@ function SuperScope(options) {
         throw new Error("Invalid superscope");
     }
     var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
     this.code.n = 100;
+    this.clone = options.clone || 1;
 
     this.spectrum = options.source == "SPECTRUM";
     this.dots = options.drawMode == "DOTS";
 
     this.colors = _.map(options.colors, Webvs.parseColorNorm);
-    this.currentColor = this.colors[0];
+    this.currentColor = [];
     this.maxStep = 100;
 
     this.step = this.maxStep; // so that we compute steps, the first time
@@ -6580,24 +6432,31 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         SuperScope.super.init.call(this, gl, main, parent);
         this.program.init(gl);
         this.code.setup(main, this);
+
+        this.code = Webvs.CodeInstance.clone(this.code, this.clone);
+    },
+
+    update: function() {
+        this._stepColor();
+        _.each(this.code, function(code) {
+            this.drawScope(code, !this.inited);
+        }, this);
+        this.inited = true;
     },
 
     /**
      * renders the scope
      * @memberof Webvs.SuperScope#
      */
-    update: function() {
+    drawScope: function(code, runInit) {
         var gl = this.gl;
-        var code = this.code;
 
-        this._stepColor();
         code.red = this.currentColor[0];
         code.green = this.currentColor[1];
         code.blue = this.currentColor[2];
 
-        if(!this.inited) {
+        if(runInit) {
             code.init();
-            this.inited = true;
         }
 
         var beat = this.main.analyser.beat;
@@ -6670,13 +6529,17 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
                     this.colorStep[i] = (nextColor[i]-curColor[i])/this.maxStep;
                 }
                 this.step = 0;
-                this.currentColor = curColor;
+                for(i = 0;i < 3;i++) {
+                    this.currentColor[i] = curColor[i];
+                }
             } else {
                 for(i = 0;i < 3;i++) {
                     this.currentColor[i] += this.colorStep[i];
                 }
                 this.step++;
             }
+        } else {
+            this.currentColor = this.colors[0];
         }
     }
 });
@@ -6903,8 +6766,7 @@ function Texer(options) {
     this.imageSrc = options.imageSrc;
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
     this.code.n = 100;
     this.spectrum = options.source == "SPECTRUM";
 
@@ -6927,24 +6789,17 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         this.program.init(gl);
         this.code.setup(main, this);
 
-        var _this = this;
         var image = new Image();
         image.src = main.getResource(this.imageSrc);
-        var promise = new Webvs.Promise();
-        image.onload = function() {
-            _this.imagewidth = image.width;
-            _this.imageHeight = image.height;
-            _this.texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, _this.texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            promise.resolve();
-        };
-
-        return promise;
+        this.imagewidth = image.width;
+        this.imageHeight = image.height;
+        this.texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     },
 
     /**
@@ -7278,24 +7133,17 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
         this.program.init(gl);
 
-        var _this = this;
         var image = new Image();
         image.src = main.getResource(this.src);
-        var promise = new Webvs.Promise();
-        image.onload = function() {
-            _this.width = image.width;
-            _this.height = image.height;
-            _this.texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, _this.texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            promise.resolve();
-        };
-
-        return promise;
+        this.width = image.width;
+        this.height = image.height;
+        this.texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     },
 
     /**
