@@ -45,8 +45,7 @@ function EffectList(options) {
     this._inited = false;
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
-    var genResult = codeGen.generateCode(["init", "perFrame"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "perFrame"]);
 
     EffectList.super.constructor.apply(this, arguments);
 }
@@ -58,14 +57,12 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
      * @memberof Webvs.EffectList#
      */
     init: function(gl, main, parent) {
-        var promises = EffectList.super.init.call(this, gl, main, parent);
+        EffectList.super.init.call(this, gl, main, parent);
 
         this.code.setup(main, this);
 
         // create a framebuffer manager for this effect list
-        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier);
-
-        return promises;
+        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
     },
 
     /**
@@ -119,11 +116,11 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         }
 
         // render all the components
-        this.iterChildren(function(component) {
-            if(component.enabled) {
-                component.update();
+        for(var i = 0;i < this.components.length;i++) {
+            if(this.components[i].enabled) {
+                this.components[i].update();
             }
-        });
+        }
 
         // switch to old framebuffer
         this.fm.restoreRenderTarget();

@@ -118,38 +118,30 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             return;
         }
 
-        var rootComponent = this.rootComponent;
-
-        var that = this;
+        var _this = this;
         var drawFrame = function() {
-            if(that.analyser.isPlaying()) {
-                rootComponent.update();
+            if(_this.analyser.isPlaying()) {
+                _this.rootComponent.update();
             }
-            that.animReqId = requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
         // wrap drawframe in stats collection if required
         if(this.stats) {
             var oldDrawFrame = drawFrame;
             drawFrame = function() {
-                that.stats.begin();
+                _this.stats.begin();
                 oldDrawFrame.call(this, arguments);
-                that.stats.end();
+                _this.stats.end();
             };
         }
 
-        if(rootComponent.componentInited) {
-            this.animReqId = requestAnimationFrame(drawFrame);
-        } else {
+        if(!this.rootComponent.componentInited) {
             this.registerBank = {};
             this.bootTime = (new Date()).getTime();
-            var promise = rootComponent.init(this.gl, this);
-
-            // start rendering when the promise is  done
-            promise.onResolve(function() {
-                that.animReqId = requestAnimationFrame(drawFrame);
-            });
+            this.rootComponent.init(this.gl, this);
         }
+        this.animReqId = requestAnimationFrame(drawFrame);
         this.isStarted = true;
     },
 
@@ -187,16 +179,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     addComponent: function(parentId, options, pos) {
-        this.stop();
         options = _.clone(options); // use our own copy
-        var res = this.rootComponent.addComponent(parentId, options, pos);
-        if(res) {
-            var _this = this;
-            res[1].onResolve(function() {
-                _this.start();
-            });
-            return res[0];
-        }
+        this.rootComponent.addComponent(parentId, options, pos);
+        return res;
     },
 
     /**
@@ -207,29 +192,18 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     updateComponent: function(id, options) {
-        this.stop();
-        var _this = this;
         options = _.clone(options); // use our own copy
-        if(id != "root") {
-            var promise = this.rootComponent.updateComponent();
-            if(promise) {
-                promises.onResolve(function() {
-                    _this.start();
-                });
-                return true;
-            }
-        } else {
-            var factories = this.rootComponent.detachAllComponents();
-            var preset = this.rootComponent.preset;
+        options.id = id;
+        if(id == "root") {
+            var subComponents = this.rootComponent.detachAllComponents();
+            options = _.defaults(options, this.rootComponent.options);
             this.rootComponent.destroy();
-            this.rootComponent = new EffectList(preset, factories);
-            _.each(factories, function(factory) {
-                factory.destroyPool();
-            });
-            _this.start();
+            this.rootComponent = new Webvs.EffectList(options, subComponents);
+            this.rootComponent.init(this.gl, this);
             return true;
+        } else {
+            return this.rootComponent.updateComponent(id, options);
         }
-        return false;
     },
 
 
@@ -240,31 +214,30 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     removeComponent: function(id) {
-        var factory = this.rootComponent.detachComponent(id);
-        if(factory) {
-            factory.destroyPool();
+        var component = this.rootComponent.detachComponent(id);
+        if(component) {
+            component.destroy();
             return true;
+        } else {
+            return false;
         }
-        return false;
     },
 
     /**
      * Moves a component to a different parent
      * @param {string} id - id of the component to be moved
      * @param {string} newParentId - id of the new parent
+     * @param {number} pos - position in the new parent
      * @returns {boolean} - success of the operation
      * @memberof Webvs.Main#
      */
-    moveComponent: function(id, newParentId) {
-        var factory = this.rootComponent.detachComponent(id);
-        if(factory) {
-            var res = this.rootComponent.addComponent(newParentId, factory);
-            factory.destroyPool();
-            if(res) {
-                return true;
-            }
+    moveComponent: function(id, newParentId, pos) {
+        var component = this.rootComponent.detachComponent(id);
+        if(component) {
+            return this.rootComponent.addComponent(newParentId, component, pos);
+        } else {
+            return false;
         }
-        return false;
     },
 
     /**

@@ -5,20 +5,16 @@
 
 function testTexer(canvas, gl, fm, copier, name, options, value) {
     var texer = new Webvs.Texer(options);
-    var promise = texer.init(gl, new DummyMain(canvas), new DummyParent(fm));
-
-    promise.onResolve(function() {
-        fm.setRenderTarget();
-        texer.update();
-        fm.restoreRenderTarget();
-        copier.run(null, null, fm.getCurrentTexture());
-        texer.destroy();
-        equal(canvas.toDataURL(), value, "Texter output in test"+name+" should be correct");
-        start();
-    });
+    texer.init(gl, new DummyMain(canvas), new DummyParent(fm));
+    fm.setRenderTarget();
+    texer.update();
+    fm.restoreRenderTarget();
+    copier.run(null, null, fm.getCurrentTexture());
+    texer.destroy();
+    equal(canvas.toDataURL(), value, "Texter output in test"+name+" should be correct");
 }
 
-CanvasTestWithFM("Texer Simple", 1, {async: true}, function(canvas, gl, fm, copier) {
+CanvasTestWithFM("Texer Simple", 1, function(canvas, gl, fm, copier) {
     testTexer(canvas, gl, fm, copier, 
         "Texer Simple",
         {
@@ -34,7 +30,7 @@ CanvasTestWithFM("Texer Simple", 1, {async: true}, function(canvas, gl, fm, copi
     );
 });
 
-CanvasTestWithFM("Texer Wrap", 1, {async: true}, function(canvas, gl, fm, copier) {
+CanvasTestWithFM("Texer Wrap", 1, function(canvas, gl, fm, copier) {
     testTexer(canvas, gl, fm, copier, 
         "Texer Wrap",
         {
@@ -49,7 +45,7 @@ CanvasTestWithFM("Texer Wrap", 1, {async: true}, function(canvas, gl, fm, copier
     );
 });
 
-CanvasTestWithFM("Texer ColorFilter", 1, {async: true}, function(canvas, gl, fm, copier) {
+CanvasTestWithFM("Texer ColorFilter", 1, function(canvas, gl, fm, copier) {
     testTexer(canvas, gl, fm, copier, 
         "Texer Wrap",
         {

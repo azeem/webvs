@@ -3,10 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-CanvasTest("SuperScopeShaderTest", 4, function(canvas, gl) {
-    var copier = new Webvs.CopyProgram({dynamicBlend: true});
-    copier.init(gl);
-    var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier);
+CanvasTestWithFM("SuperScopeShaderTest", 4, function(canvas, gl, fm, copier) {
     var program = new Webvs.SuperScopeShader();
     program.init(gl);
 

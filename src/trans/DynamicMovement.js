@@ -59,8 +59,9 @@ function DynamicMovement(options) {
         throw new Error("Invalid Dynamic movement code");
     }
     var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r"]);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
+    var glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], this.code);
+
     this.inited = false;
 
     this.noGrid = options.noGrid;
@@ -74,11 +75,11 @@ function DynamicMovement(options) {
     if(this.noGrid) {
         this.program = new Webvs.DMovProgramNG(this.coordMode, this.bFilter,
                                                this.compat, this.code.hasRandom,
-                                               genResult[1]);
+                                               glslCode);
     } else {
         this.program = new Webvs.DMovProgram(this.coordMode, this.bFilter,
                                              this.compat, this.code.hasRandom,
-                                             genResult[1]);
+                                             glslCode);
     }
 
     DynamicMovement.super.constructor.apply(this, arguments);

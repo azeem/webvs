@@ -48,7 +48,7 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
     for(var i in requiredOptions) {
         var key =  requiredOptions[i];
         if(!(key in options)) {
-            throw new Error("Required option " + key + "not found");
+            throw new Error("Required option " + key + " not found");
         }
     }
 };
@@ -183,7 +183,7 @@ Webvs.Promise = Webvs.defineClass(Promise, Object, {
  */
 Webvs.joinPromises = function(promises) {
     var joinedPromise = new Promise();
-
+    promises = _.filter(promises, function(p) {return !_.isUndefined(p);});
     if(promises.length === 0) {
         joinedPromise.resolve();
     } else {
@@ -260,6 +260,14 @@ Webvs.randString = function(count, chars) {
  */
 Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
+};
+
+Webvs.getComponentClass = function(name) {
+    var componentClass = Webvs[name];
+    if(!componentClass) {
+        throw new Error("Unknown Component class " + name);
+    }
+    return componentClass;
 };
 
 })(window);

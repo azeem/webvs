@@ -57,8 +57,7 @@ function Texer(options) {
     this.imageSrc = options.imageSrc;
 
     var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue"]);
-    var genResult = codeGen.generateCode(["init", "onBeat", "perFrame", "perPoint"], [], []);
-    this.code = genResult[0];
+    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
     this.code.n = 100;
     this.spectrum = options.source == "SPECTRUM";
 
@@ -81,24 +80,17 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         this.program.init(gl);
         this.code.setup(main, this);
 
-        var _this = this;
         var image = new Image();
         image.src = main.getResource(this.imageSrc);
-        var promise = new Webvs.Promise();
-        image.onload = function() {
-            _this.imagewidth = image.width;
-            _this.imageHeight = image.height;
-            _this.texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, _this.texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            promise.resolve();
-        };
-
-        return promise;
+        this.imagewidth = image.width;
+        this.imageHeight = image.height;
+        this.texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     },
 
     /**
