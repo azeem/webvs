@@ -130,9 +130,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         if(this.stats) {
             var oldDrawFrame = drawFrame;
             drawFrame = function() {
-                that.stats.begin();
+                _this.stats.begin();
                 oldDrawFrame.call(this, arguments);
-                that.stats.end();
+                _this.stats.end();
             };
         }
 
