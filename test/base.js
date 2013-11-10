@@ -75,6 +75,8 @@ function CanvasTestWithFM() {
             promise.onResolve(function() {
                 fm.destroy();
             });
+        } else {
+            fm.destroy();
         }
     };
     var testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-1);
