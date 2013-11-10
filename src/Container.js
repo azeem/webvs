@@ -63,8 +63,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      *      is implicitly created from it
      * @param {number} [pos] - position at which the component will be inserted.
      *     default is the end of the list
-     * @returns {Array} - a pair containing 1) id of the new component 2) promise
-     *     for the new component initialization
+     * @returns {string} - id of the new component
      * @memberof Webvs.Container#
      */
     addComponent: function(parentId, options, pos) {
@@ -106,7 +105,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * Updates a component under this container's subtree
      * @param {string} id - id of the component
      * @param {object} options - options to be updated.
-     * @returns {Webvs.Promise} - promise for the component reinitialiaztion
+     * @returns {boolean} - true if update succeeded else false
      * @memberof Webvs.Container#
      */
     updateComponent: function(id, options) {

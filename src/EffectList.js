@@ -57,14 +57,12 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
      * @memberof Webvs.EffectList#
      */
     init: function(gl, main, parent) {
-        var promises = EffectList.super.init.call(this, gl, main, parent);
+        EffectList.super.init.call(this, gl, main, parent);
 
         this.code.setup(main, this);
 
         // create a framebuffer manager for this effect list
         this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
-
-        return promises;
     },
 
     /**
