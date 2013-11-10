@@ -152,100 +152,112 @@ Webvs.PegExprParser = (function(){
           return cachedResult.result;
         }
         
-        var result0, result1, result2, result3, result4, result5, result6;
+        var result0, result1, result2, result3, result4, result5, result6, result7;
         var pos0, pos1, pos2;
         
         pos0 = clone(pos);
         pos1 = clone(pos);
-        result0 = parse_statement();
+        result0 = parse___();
         if (result0 !== null) {
-          result1 = parse___();
+          result1 = parse_statement();
           if (result1 !== null) {
-            result2 = [];
-            pos2 = clone(pos);
-            if (input.charCodeAt(pos.offset) === 59) {
-              result3 = ";";
-              advance(pos, 1);
-            } else {
-              result3 = null;
-              if (reportFailures === 0) {
-                matchFailed("\";\"");
-              }
-            }
-            if (result3 !== null) {
-              result4 = parse___();
-              if (result4 !== null) {
-                result5 = parse_statement();
-                if (result5 !== null) {
-                  result6 = parse___();
-                  if (result6 !== null) {
-                    result3 = [result3, result4, result5, result6];
-                  } else {
-                    result3 = null;
-                    pos = clone(pos2);
-                  }
-                } else {
-                  result3 = null;
-                  pos = clone(pos2);
-                }
-              } else {
-                result3 = null;
-                pos = clone(pos2);
-              }
-            } else {
-              result3 = null;
-              pos = clone(pos2);
-            }
-            while (result3 !== null) {
-              result2.push(result3);
+            result2 = parse___();
+            if (result2 !== null) {
+              result3 = [];
               pos2 = clone(pos);
               if (input.charCodeAt(pos.offset) === 59) {
-                result3 = ";";
+                result4 = ";";
                 advance(pos, 1);
               } else {
-                result3 = null;
+                result4 = null;
                 if (reportFailures === 0) {
                   matchFailed("\";\"");
                 }
               }
-              if (result3 !== null) {
-                result4 = parse___();
-                if (result4 !== null) {
-                  result5 = parse_statement();
-                  if (result5 !== null) {
-                    result6 = parse___();
-                    if (result6 !== null) {
-                      result3 = [result3, result4, result5, result6];
+              if (result4 !== null) {
+                result5 = parse___();
+                if (result5 !== null) {
+                  result6 = parse_statement();
+                  if (result6 !== null) {
+                    result7 = parse___();
+                    if (result7 !== null) {
+                      result4 = [result4, result5, result6, result7];
                     } else {
-                      result3 = null;
+                      result4 = null;
                       pos = clone(pos2);
                     }
                   } else {
-                    result3 = null;
+                    result4 = null;
                     pos = clone(pos2);
                   }
                 } else {
-                  result3 = null;
+                  result4 = null;
                   pos = clone(pos2);
                 }
               } else {
-                result3 = null;
+                result4 = null;
                 pos = clone(pos2);
               }
-            }
-            if (result2 !== null) {
-              if (input.charCodeAt(pos.offset) === 59) {
-                result3 = ";";
-                advance(pos, 1);
-              } else {
-                result3 = null;
-                if (reportFailures === 0) {
-                  matchFailed("\";\"");
+              while (result4 !== null) {
+                result3.push(result4);
+                pos2 = clone(pos);
+                if (input.charCodeAt(pos.offset) === 59) {
+                  result4 = ";";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\";\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse___();
+                  if (result5 !== null) {
+                    result6 = parse_statement();
+                    if (result6 !== null) {
+                      result7 = parse___();
+                      if (result7 !== null) {
+                        result4 = [result4, result5, result6, result7];
+                      } else {
+                        result4 = null;
+                        pos = clone(pos2);
+                      }
+                    } else {
+                      result4 = null;
+                      pos = clone(pos2);
+                    }
+                  } else {
+                    result4 = null;
+                    pos = clone(pos2);
+                  }
+                } else {
+                  result4 = null;
+                  pos = clone(pos2);
                 }
               }
-              result3 = result3 !== null ? result3 : "";
               if (result3 !== null) {
-                result0 = [result0, result1, result2, result3];
+                if (input.charCodeAt(pos.offset) === 59) {
+                  result4 = ";";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\";\"");
+                  }
+                }
+                result4 = result4 !== null ? result4 : "";
+                if (result4 !== null) {
+                  result5 = parse___();
+                  if (result5 !== null) {
+                    result0 = [result0, result1, result2, result3, result4, result5];
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
               } else {
                 result0 = null;
                 pos = clone(pos1);
@@ -264,8 +276,8 @@ Webvs.PegExprParser = (function(){
         }
         if (result0 !== null) {
           result0 = (function(offset, line, column, p) {
-            var stmts = [p[0]];
-            stmts = stmts.concat(_.map(p[2], function(pp) {
+            var stmts = [p[1]];
+            stmts = stmts.concat(_.map(p[3], function(pp) {
                 return pp[2];
             }));
             return new Webvs.AstProgram(stmts);
