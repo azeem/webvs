@@ -58,6 +58,7 @@ function SuperScope(options) {
     var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
     this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
     this.code.n = 100;
+    this.clone = options.clone || 1;
 
     this.spectrum = options.source == "SPECTRUM";
     this.dots = options.drawMode == "DOTS";
@@ -89,24 +90,31 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         SuperScope.super.init.call(this, gl, main, parent);
         this.program.init(gl);
         this.code.setup(main, this);
+
+        this.code = Webvs.CodeInstance.clone(this.code, this.clone);
+    },
+
+    update: function() {
+        this._stepColor();
+        _.each(this.code, function(code) {
+            this.drawScope(code, this.inited);
+        }, this);
+        this.inited = true;
     },
 
     /**
      * renders the scope
      * @memberof Webvs.SuperScope#
      */
-    update: function() {
+    drawScope: function(code, runInit) {
         var gl = this.gl;
-        var code = this.code;
 
-        this._stepColor();
         code.red = this.currentColor[0];
         code.green = this.currentColor[1];
         code.blue = this.currentColor[2];
 
-        if(!this.inited) {
+        if(runInit) {
             code.init();
-            this.inited = true;
         }
 
         var beat = this.main.analyser.beat;
