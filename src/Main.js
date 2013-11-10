@@ -118,14 +118,12 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             return;
         }
 
-        var rootComponent = this.rootComponent;
-
-        var that = this;
+        var _this = this;
         var drawFrame = function() {
-            if(that.analyser.isPlaying()) {
-                rootComponent.update();
+            if(_this.analyser.isPlaying()) {
+                _this.rootComponent.update();
             }
-            that.animReqId = requestAnimationFrame(drawFrame);
+            _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
         // wrap drawframe in stats collection if required
@@ -138,12 +136,12 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             };
         }
 
-        if(!rootComponent.componentInited) {
+        if(!this.rootComponent.componentInited) {
             this.registerBank = {};
             this.bootTime = (new Date()).getTime();
-            rootComponent.init(this.gl, this);
+            this.rootComponent.init(this.gl, this);
         }
-        that.animReqId = requestAnimationFrame(drawFrame);
+        this.animReqId = requestAnimationFrame(drawFrame);
         this.isStarted = true;
     },
 
@@ -236,7 +234,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     moveComponent: function(id, newParentId, pos) {
         var component = this.rootComponent.detachComponent(id);
         if(component) {
-            return this.rootComponent.addComponent(newParentId, factory, pos);
+            return this.rootComponent.addComponent(newParentId, component, pos);
         } else {
             return false;
         }

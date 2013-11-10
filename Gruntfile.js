@@ -128,9 +128,7 @@ module.exports = function(grunt) {
             dev: {
                 files: {
                     "build/webvs.js": jsFiles,
-                    "build/libs.js": libFiles,
-                    "../qios-webvseditor/webvs.js": jsFiles,
-                    "../qios-webvseditor/libs.js": libFiles
+                    "build/libs.js": libFiles
                 }
             }
         },
