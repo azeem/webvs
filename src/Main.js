@@ -138,18 +138,12 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             };
         }
 
-        if(rootComponent.componentInited) {
-            this.animReqId = requestAnimationFrame(drawFrame);
-        } else {
+        if(!rootComponent.componentInited) {
             this.registerBank = {};
             this.bootTime = (new Date()).getTime();
-            var promise = rootComponent.init(this.gl, this);
-
-            // start rendering when the promise is  done
-            promise.onResolve(function() {
-                that.animReqId = requestAnimationFrame(drawFrame);
-            });
+            rootComponent.init(this.gl, this);
         }
+        that.animReqId = requestAnimationFrame(drawFrame);
         this.isStarted = true;
     },
 
@@ -187,16 +181,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     addComponent: function(parentId, options, pos) {
-        this.stop();
         options = _.clone(options); // use our own copy
-        var res = this.rootComponent.addComponent(parentId, options, pos);
-        if(res) {
-            var _this = this;
-            res[1].onResolve(function() {
-                _this.start();
-            });
-            return res[0];
-        }
+        this.rootComponent.addComponent(parentId, options, pos);
+        return res;
     },
 
     /**
@@ -207,32 +194,18 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     updateComponent: function(id, options) {
-        this.stop();
-        var _this = this;
         options = _.clone(options); // use our own copy
-        if(id != "root") {
-            var promise = this.rootComponent.updateComponent(id, options);
-            if(promise) {
-                promise.onResolve(function() {
-                    _this.start();
-                });
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            var factories = this.rootComponent.detachAllComponents();
+        options.id = id;
+        if(id == "root") {
+            var subComponents = this.rootComponent.detachAllComponents();
             options = _.defaults(options, this.rootComponent.options);
             this.rootComponent.destroy();
-            this.rootComponent = new Webvs.EffectList(options, factories);
+            this.rootComponent = new Webvs.EffectList(options, subComponents);
             this.rootComponent.init(this.gl, this);
-            _.each(factories, function(factory) {
-                factory.destroyPool();
-            });
-            _this.start();
             return true;
+        } else {
+            return this.rootComponent.updateComponent(id, options);
         }
-        return false;
     },
 
 
@@ -243,12 +216,13 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     removeComponent: function(id) {
-        var factory = this.rootComponent.detachComponent(id);
-        if(factory) {
-            factory.destroyPool();
+        var component = this.rootComponent.detachComponent(id);
+        if(component) {
+            component.destroy();
             return true;
+        } else {
+            return false;
         }
-        return false;
     },
 
     /**
@@ -260,15 +234,12 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     moveComponent: function(id, newParentId, pos) {
-        var factory = this.rootComponent.detachComponent(id);
-        if(factory) {
-            var res = this.rootComponent.addComponent(newParentId, factory, pos);
-            factory.destroyPool();
-            if(res) {
-                return true;
-            }
+        var component = this.rootComponent.detachComponent(id);
+        if(component) {
+            return this.rootComponent.addComponent(newParentId, factory, pos);
+        } else {
+            return false;
         }
-        return false;
     },
 
     /**

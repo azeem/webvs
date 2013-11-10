@@ -262,4 +262,12 @@ Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };
 
+Webvs.getComponentClass = function(name) {
+    var componentClass = Webvs[name];
+    if(!componentClass) {
+        throw new Error("Unknown Component class " + name);
+    }
+    return componentClass;
+};
+
 })(window);

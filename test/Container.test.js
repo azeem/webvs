@@ -72,7 +72,7 @@ CanvasTestWithFM("Container crud", 5, function(canvas, gl, fm, copier) {
     );
 
     // remove component
-    el.detachComponent("cs123").destroyPool();
+    el.detachComponent("cs123").destroy();
     renderFrame(
       "Container code: removing new component should work",
       images.magenta
@@ -110,19 +110,15 @@ CanvasTestWithFM("Container Move & JSON", 5, function(canvas, gl, fm, copier) {
                 id: "el1",
                 type: "EffectList",
                 input: "REPLACE",
-                clone: 3,
-                code: {
-                    perFrame: "@cid=cid;"
-                },
                 components: [
                     {
                         type: "SuperScope",
                         id: "ss",
-                        clone: 2,
+                        clone: 6,
                         drawMode: "DOTS",
                         code: {
                             init: "n=1;",
-                            perPoint: "x=((@cid*2+cid+1)*2/10)-1;y=0",
+                            perPoint: "x=((cid+1)*2/10)-1;y=0",
                         }
                     }
                 ]
@@ -131,10 +127,6 @@ CanvasTestWithFM("Container Move & JSON", 5, function(canvas, gl, fm, copier) {
                 id: "el2",
                 type: "EffectList",
                 input: "REPLACE",
-                clone: 4,
-                code: {
-                    perFrame: "@cid=cid;"
-                }
             }
         ]
     });
@@ -148,20 +140,17 @@ CanvasTestWithFM("Container Move & JSON", 5, function(canvas, gl, fm, copier) {
         equal(canvas.toDataURL(), imageData, message);
     }
 
-    var factory;
+    var component;
 
-    factory = el.detachComponent("ss");
-    el.addComponent("el2", factory);
+    component = el.detachComponent("ss");
+    el.addComponent("el2", component);
     renderFrame("8 dots", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAB0klEQVR4Xu2TMQoDQRDDdv//6EsCqaPOKKCFq87gQcL3nPO8v56EwE2IxMT3jIS4fJyEJERGQHZOC0mIjIDsnBaSEBkB2TktJCEyArJzWkhCZARk57SQhMgIyM5pIQmREZCd00ISIiMgO6eFJERGQHZOC0mIjIDsnBaSEBkB2TktJCEyArJzWkhCZARk57SQhMgIyM5pIQmREZCd00ISIiMgO6eFJERGQHZOC0mIjIDsnBaSEBkB2TktJCEyArJzWkhCZARk57SQhMgIyM5pIQmREZCd00L+UcjzPOfej7vfrxwR4v8thBlNEwmZ4uayhDCjaSIhU9xclhBmNE0kZIqbyxLCjKaJhExxc1lCmNE0kZApbi5LCDOaJhIyxc1lCWFG00RCpri5LCHMaJpIyBQ3lyWEGU0TCZni5rKEMKNpIiFT3FyWEGY0TSRkipvLEsKMpomETHFzWUKY0TSRkCluLksIM5omEjLFzWUJYUbTREKmuLksIcxomkjIFDeXJYQZTRMJmeLmsoQwo2kiIVPcXJYQZjRNJGSKm8sSwoymiYRMcXNZQpjRNJGQKW4uSwgzmiYSMsXNZQlhRtNEQqa4uSwhzGiaSMgUN5clhBlNEy+khnwB28XwAgAAAABJRU5ErkJggg==");
-    equal(factory.pool.length, 0, "All components in pool should've been used up");
 
     equal(JSON.stringify(el.getOptions()), '{"dummy":"dummy","id":"root","clearFrame":true,"components":[{"id":"el1","type":"EffectList","input":"REPLACE","clone":3,"code":{"perFrame":"@cid=cid;"},"components":[],"output":"REPLACE","clearFrame":false,"enableOnBeat":false,"enableOnBeatFor":1},{"id":"el2","type":"EffectList","input":"REPLACE","clone":4,"code":{"perFrame":"@cid=cid;"},"output":"REPLACE","clearFrame":false,"enableOnBeat":false,"enableOnBeatFor":1,"components":[{"type":"SuperScope","id":"ss","clone":2,"drawMode":"DOTS","code":{"init":"n=1;","perPoint":"x=((@cid*2+cid+1)*2/10)-1;y=0"},"source":"SPECTRUM","colors":["#ffffff"]}]}],"output":"REPLACE","input":"IGNORE","enableOnBeat":false,"enableOnBeatFor":1}', "live preset json generation should work");
 
-    factory = el.detachComponent("ss");
-    el.addComponent("el1", factory);
+    component = el.detachComponent("ss");
+    el.addComponent("el1", component);
     renderFrame("6 dots", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAB3UlEQVR4Xu2TQQrCUBTEfu9/6KrgWmEgECWFruoMz4S5zjn38+2RELgSIjHxPiMhLh8nIQmREZCd00ISIiMgO6eFJERGQHZOC0mIjIDsnBaSEBkB2TktJCEyArJzWkhCZARk57SQhMgIyM5pIQmREZCd00ISIiMgO6eFJERGQHZOC0mIjIDsnBaSEBkB2TktJCEyArJzWkhCZARk57SQhMgIyM5pIQmREZCd00ISIiMgO6eFJERGQHZOC0mIjIDsnBaSEBkB2TktJCEyArJzWkhCZARk57SQXxRy3/e5rpe7z8+//O7b/yS/txCS7tCdkAEaGUkISXfoTsgAjYwkhKQ7dCdkgEZGEkLSHboTMkAjIwkh6Q7dCRmgkZGEkHSH7oQM0MhIQki6Q3dCBmhkJCEk3aE7IQM0MpIQku7QnZABGhlJCEl36E7IAI2MJISkO3QnZIBGRhJC0h26EzJAIyMJIekO3QkZoJGRhJB0h+6EDNDISEJIukN3QgZoZCQhJN2hOyEDNDKSEJLu0J2QARoZSQhJd+hOyACNjCSEpDt0J2SARkYSQtIduhMyQCMjCSHpDt0JGaCRkYSQdIfuhAzQyEhCSLpDd0IGaGQkISTdoTshAzQykhCS7tD9AJl9dgHDlZa2AAAAAElFTkSuQmCC");
-    equal(factory.pool.length, 1, "One components should be left in pool");
-    factory.destroyPool();
 
     el.destroy();
 });

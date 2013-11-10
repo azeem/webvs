@@ -118,11 +118,11 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         }
 
         // render all the components
-        this.iterChildren(function(component) {
-            if(component.enabled) {
-                component.update();
+        for(var i = 0;i < this.components.length;i++) {
+            if(this.components[i].enabled) {
+                this.components[i].update();
             }
-        });
+        }
 
         // switch to old framebuffer
         this.fm.restoreRenderTarget();
