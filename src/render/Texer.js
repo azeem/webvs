@@ -42,64 +42,79 @@
  * @constructor
  * @memberof Webvs
  */
-function Texer(options) {
-    Webvs.checkRequiredOptions(options, ["code", "imageSrc"]);
-    options = _.defaults(options, {
+function Texer(gl, main, parent, opts) {
+    Texer.super.constructor.call(this, gl, main, parent, opts);
+}
+Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
+    defaultOptions: {
+        code: {
+            init: "",
+            onBeat: "",
+            perFrame: "",
+            perPoint: ""
+        },
+        imageSrc: "avsres_texer_circle_edgeonly_19x19",
         source: "SPECTRUM",
         resizing: false,
         wrapAround: false,
+        clone: 1,
         colorFiltering: true
-    });
-
-    this.resizing = options.resizing;
-    this.colorFiltering = options.colorFiltering;
-    this.wrapAround = options.wrapAround;
-    this.imageSrc = options.imageSrc;
-
-    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
-    this.code.n = 100;
-    this.spectrum = options.source == "SPECTRUM";
-
-    this._inited = false;
-
-    this.program = new TexerProgram();
-
-    Texer.super.constructor.apply(this, arguments);
-}
-Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
-    componentName: "Texer",
-
-    /**
-     * initializes the Texer component
-     * @memberof Webvs.Texer#
-     */
-    init: function(gl, main, parent) {
-        Texer.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
-        this.code.setup(main, this);
-
-        var image = new Image();
-        image.src = main.getResource(this.imageSrc);
-        this.imagewidth = image.width;
-        this.imageHeight = image.height;
-        this.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     },
 
-    /**
-     * renders the scope
-     * @memberof Webvs.Texer#
-     */
-    update: function() {
-        var code = this.code;
-        if(!this._inited) {
+    onChange: {
+        code: "updateCode",
+        clone: "updateClone",
+        imageSrc: "updateImage"
+    },
+
+    init: function() {
+        this.program = new TexerProgram();
+        this.program.init(this.gl);
+        this.updateCode();
+        this.updateClone();
+        this.updateImage();
+    },
+
+    draw: function() {
+        _.each(this.code, function(code) {
+            this._drawScope(code, !this.inited);
+        }, this);
+        this.inited = true;
+    },
+
+    updateCode: function() {
+        var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue", "cid"]);
+        var code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
+        code.n = 100;
+        code.setup(this.main, this);
+        this.inited = false;
+        this.code = [code];
+    },
+
+    updateClone: function() {
+        this.code = Webvs.CodeInstance.clone(this.code, this.opts.clone);
+    },
+
+    updateImage: function() {
+        var image = new Image();
+        image.src = main.getResource(this.opts.imageSrc);
+        this.imagewidth = image.width;
+        this.imageHeight = image.height;
+        if(!this.texture) {
+            this.texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, this.texture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        } else {
+            gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        }
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    },
+
+    _drawScope: function(code, runInit) {
+        if(runInit) {
             code.init();
         }
 
@@ -111,13 +126,18 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         }
 
         var nPoints = Math.floor(code.n);
-        var data = this.spectrum ? this.main.analyser.getSpectrum() : this.main.analyser.getWaveform();
+        var data;
+        if(this.opts.source == "SPECTRUM") {
+            data = this.main.analyser.getSpectrum();
+        } else {
+            data = this.main.analyser.getWaveform();
+        }
         var bucketSize = data.length/nPoints;
 
         var vertexData = [];
         var texVertexData = [];
         var vertexIndices = [];
-        var colorData = this.colorFiltering?[]:null;
+        var colorData = this.opts.colorFiltering?[]:null;
         var index = 0;
         function addRect(cornx, corny, sizex, sizey, red, green, blue) {
             if(cornx < -1-sizex || cornx > 1||
@@ -181,7 +201,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 
             var sizex = imageSizex;
             var sizey = imageSizey;
-            if(this.resizing) {
+            if(this.opts.resizing) {
                 sizex *= code.sizex;
                 sizey *= code.sizey;
             }
@@ -189,7 +209,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
             var corny = (-code.y)-sizey/2;
             
             addRect(cornx, corny, sizex, sizey, code.red, code.green, code.blue);
-            if(this.wrapAround) {
+            if(this.opts.wrapAround) {
                 // wrapped around x value is 1-(-1-cornx) or -1-(1-cornx)
                 // depending on the edge
                 // ie. 2+cornx or -2+cornx
@@ -213,16 +233,6 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
                          new Uint16Array(vertexIndices),
                          colorData?new Float32Array(colorData):null,
                          this.texture);
-    },
-
-    /**
-     * release resource
-     * @memberof Webvs.Texer#
-     */
-    destroy: function() {
-        Texer.super.destroy.call(this);
-        this.gl.deleteTexture(this.texture);
-        this.program.cleanup();
     }
 });
 

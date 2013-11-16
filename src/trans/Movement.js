@@ -36,7 +36,7 @@ Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
     },
 
     onChange: {
-        "*": "updateOption"
+        "*": "optPassThru"
     },
 
     init: function() {
@@ -49,7 +49,6 @@ Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
             noGrid: true
         };
         this.dmov = new Webvs.DynamicMovement(this.gl, this.main, this.parent, dmovOpts);
-        this.dmov.init();
     },
 
     draw: function() {
@@ -60,7 +59,7 @@ Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
         this.dmov.destroy();
     }
 
-    updateOption: function(name, value) {
+    optPassThru: function(name, value) {
         this.dmov.setOption(name, value);
     }
 });

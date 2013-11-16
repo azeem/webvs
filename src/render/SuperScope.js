@@ -95,7 +95,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     drawScope: function(code, runInit) {
         var gl = this.gl;
 
-        var color = this._stepColor();
+        var color = this._makeColor();
         code.red = color[0];
         code.green = color[1];
         code.blue = color[2];
@@ -164,6 +164,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["n", "v", "i", "x", "y", "b", "red", "green", "blue", "cid"]);
         var code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
         code.n = 100;
+        code.setup(this.main, this);
         this.inited = false;
         this.code = [code];
     },
@@ -186,9 +187,6 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         } else {
             this.curStep = 0;
         }
-    },
-
-    updateClones: function() {
     },
 
     _makeColor: function() {

@@ -17,48 +17,88 @@
  * @constructor
  * @memberof Webvs
  */
-function Simple(options) {
-    options = _.defaults(options, {
+function Simple(gl, main, parent, opts) {
+    Simple.super.constructor.call(this, gl, main, parent, opts);
+}
+Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
+    defaultOptions: {
         drawMode: "SOLID",
         source: "WAVEFORM",
         align: "CENTER",
         colors: ["#ffffff"]
-    });
+    },
 
-    var code = {};
-    if(options.drawMode != "SOLID") {
-        code.init = "n=w;";
-        code.perPoint = ({
-            "TOP":    "x=i*2-1; y=-v/2-0.5;",
-            "CENTER": "x=i*2-1; y=-v/2;",
-            "BOTTOM": "x=i*2-1; y=v/2+0.5;"
-        })[options.align];
-    } else {
-        code.init = "n=w*2;";
-        code.perFrame = "c=0;";
-        if(options.source == "SPECTRUM") {
-            code.perPoint = ({
-                "TOP":    "x=i*2-1; y=if(c%2,0,-v/2-0.5); c=c+1;",
-                "CENTER": "x=i*2-1; y=if(c%2,0.5,-v/2);   c=c+1;",
-                "BOTTOM": "x=i*2-1; y=if(c%2,0,v/2+0.5);  c=c+1;",
-            })[options.align];
-        } else {
-            code.perPoint = ({
-                "TOP":    "x=i*2-1; y=if(c%2,-0.5,-v/2-0.5); c=c+1;",
-                "CENTER": "x=i*2-1; y=if(c%2,0,-v/2);        c=c+1;",
-                "BOTTOM": "x=i*2-1; y=if(c%2,0.5,v/2+0.5);   c=c+1;",
-            })[options.align];
-        }
+    onChange: {
+        "drawMode": ["updateCode", "updateDrawMode"]
+        "source": ["updateCode", "optPassThru"],
+        "align": "updateCode",
+        "colors": "optsPassThru"
+    },
+
+    init: function() {
+        var sscopeOpts = {
+            source: this.opts.source,
+            drawMode: this._drawMode(),
+            colors: this.opts.colors,
+            code: this._makeCode()
+        };
+        this.sscope = new Webvs.SuperScope(this.gl, this.main, this.parent, sscopeOpts);
+    },
+
+    draw: function() {
+        this.sscope.draw();
+    },
+
+    destroy: function() {
+        this.sscope.destroy();
+    },
+
+    updateDrawMode: function() {
+        this.sscope.setOption("drawMode", this._drawMode());
+    },
+
+    optPassThru: function(name, value) {
+        this.sscope.setOption(name, value);
     }
 
-    Simple.super.constructor.call(this, {
-        source: options.source,
-        drawMode: (options.drawMode=="SOLID"?"LINES":options.drawMode),
-        colors: options.colors,
-        code: code
-    });
-    this.options = options; // set Simple option instead of superscope options
-}
-Webvs.Simple = Webvs.defineClass(Simple, Webvs.SuperScope);
+    updateCode: function() {
+        this.sscope.setOption("code", this._makeCode());
+    },
+
+    _drawMode: function() {
+        return (this.opts.drawMode=="SOLID"?"LINES":this.opts.drawMode);
+    },
+
+    _makeCode: function() {
+        var code = {};
+        var opts = this.opts;
+        if(opts.drawMode != "SOLID") {
+            code.init = "n=w;";
+            code.perPoint = ({
+                "TOP":    "x=i*2-1; y=-v/2-0.5;",
+                "CENTER": "x=i*2-1; y=-v/2;",
+                "BOTTOM": "x=i*2-1; y=v/2+0.5;"
+            })[opts.align];
+        } else {
+            code.init = "n=w*2;";
+            code.perFrame = "c=0;";
+            if(opts.source == "SPECTRUM") {
+                code.perPoint = ({
+                    "TOP":    "x=i*2-1; y=if(c%2,0,-v/2-0.5); c=c+1;",
+                    "CENTER": "x=i*2-1; y=if(c%2,0.5,-v/2);   c=c+1;",
+                    "BOTTOM": "x=i*2-1; y=if(c%2,0,v/2+0.5);  c=c+1;",
+                })[opts.align];
+            } else {
+                code.perPoint = ({
+                    "TOP":    "x=i*2-1; y=if(c%2,-0.5,-v/2-0.5); c=c+1;",
+                    "CENTER": "x=i*2-1; y=if(c%2,0,-v/2);        c=c+1;",
+                    "BOTTOM": "x=i*2-1; y=if(c%2,0.5,v/2+0.5);   c=c+1;",
+                })[opts.align];
+            }
+        }
+        return code;
+    }
+
+});
 
 })(Webvs);
