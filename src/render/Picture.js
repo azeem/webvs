@@ -17,54 +17,50 @@
  * @constructor
  * @memberof Webvs
  */
-function Picture(options) {
-    Webvs.checkRequiredOptions(options, ["src", "x", "y"]);
-
-    this.x = options.x;
-    this.y = options.y;
-    this.src = options.src;
-
-    this.program = new Webvs.PictureProgram();
-    Picture.super.constructor.apply(this, arguments);
+function Picture(gl, main, parent, opts) {
+    Picture.super.constructor.call(this, gl, main, parent, opts);
 }
 Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
-    /**
-     * initializes the ClearScreen component
-     * @memberof Webvs.Picture#
-     */
-    init: function(gl, main, parent) {
-        Picture.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
-
-        var image = new Image();
-        image.src = main.getResource(this.src);
-        this.width = image.width;
-        this.height = image.height;
-        this.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    defaultOptions: {
+        src: "avsres_texer_circle_edgeonly_19x19",
+        x: 0,
+        y: 0
     },
 
-    /**
-     * renders the image
-     * @memberof Webvs.Picture#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.x, this.y, this.texture, this.width, this.height);
+    onChange: {
+        src: "updateImage"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.Picture#
-     */
+    init: function() {
+        this.program = new Webvs.PictureProgram();
+        this.updateImage();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, 
+                         this.opts.x, this.opts.y,
+                         this.texture, this.width, this.height);
+    },
+
     destroy: function() {
         this.program.cleanup();
         this.gl.deleteTexture(this.texture);
+    },
+
+    updateImage: function() {
+        var image = new Image();
+        image.src = main.getResource(this.opts.src);
+        this.width = image.width;
+        this.height = image.height;
+        if(!this.texture) {
+            this.texture = gl.createTexture();
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        }
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     }
 });
 

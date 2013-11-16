@@ -23,56 +23,52 @@
  * @constructor
  * @memberof Webvs
  */
-function ColorClip(options) {
-    Webvs.checkRequiredOptions(options, ["mode", "color", "outColor"]);
-    options = _.defaults(options, {
+function ColorClip(gl, main, parent, opts) {
+    ColorClip.super.constructor.call(this, gl, main, parent, opts);
+}
+ColorClip.modes = ["BELOW", "ABOVE", "NEAR"];
+Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
+    componentName: "ColorClip",
+
+    defaultOptions: {
         mode: "BELOW",
         color: "#202020",
         outColor: "#202020",
         level: 0
-    });
-
-    this.mode = _.indexOf(this.modes, options.mode);
-    if(this.mode == -1) {
-        throw new Error("ColorClip: invalid mode");
-    }
-    this.color = Webvs.parseColorNorm(options.color);
-    this.outColor = Webvs.parseColorNorm(options.outColor);
-    this.level = options.level;
-
-    this.program = new Webvs.ColorClipProgram();
-
-    ColorClip.super.constructor.apply(this, arguments);
-}
-Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
-    modes: ["BELOW", "ABOVE", "NEAR"],
-    componentName: "ChannelShift",
-
-    /**
-     * initializes the ColorClip component
-     * @memberof Webvs.ColorClip#
-     */
-    init: function(gl, main, parent) {
-        ColorClip.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
     },
 
-    /**
-     * clips the colors
-     * @memberof Webvs.ColorClip#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.level);
+    onChange: {
+        mode: "updateMode"
+        color: "updateColor",
+        outColor: "updateColor"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ColorClip#
-     */
+    init: function() {
+        this.program = new ColorClipProgram();
+        this.program.init(this.gl);
+        this.updateColor();
+        this.updateMode();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.opts.level);
+    },
+
     destroy: function() {
-        ColorClip.super.destroy.call(this);
         this.program.cleanup();
+    },
+
+    updateMode: function() {
+        var index = ColorClip.modes.indexOf(this.opts.mode);
+        if(index == -1) {
+            throw new Error("Unkown mode " + this.opts.mode);
+        }
+        this.mode = index;
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
+        this.outColor = Webvs.parseColorNorm(this.opts.color);
     }
 });
 

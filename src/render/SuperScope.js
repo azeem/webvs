@@ -41,65 +41,51 @@
  * @constructor
  * @memberof Webvs
  */
-function SuperScope(options) {
-    Webvs.checkRequiredOptions(options, ["code"]);
-    options = _.defaults(options, {
-        source: "SPECTRUM",
-        drawMode: "LINES",
-        colors: ["#ffffff"]
-    });
-
-    var codeSrc;
-    if(_.isObject(options.code)) {
-        codeSrc = options.code;
-    } else {
-        throw new Error("Invalid superscope");
-    }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
-    this.code.n = 100;
-    this.clone = options.clone || 1;
-
-    this.spectrum = options.source == "SPECTRUM";
-    this.dots = options.drawMode == "DOTS";
-
-    this.colors = _.map(options.colors, Webvs.parseColorNorm);
-    this.currentColor = [];
-    this.maxStep = 100;
-
-    this.step = this.maxStep; // so that we compute steps, the first time
-    this.colorId = 0;
-    this.colorStep = [0,0,0];
-
-    this.thickness = options.thickness?options.thickness:1;
-
-    this.inited = false;
-
-    this.program = new SuperScopeShader();
-
-    SuperScope.super.constructor.apply(this, arguments);
+function SuperScope(gl, main, parent, opts) {
+    SuperScope.super.constructor.call(this, gl, main, parent, opts);
 }
 Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
-    componentName: "SuperScope",
-
-    /**
-     * initializes the SuperScope component
-     * @memberof Webvs.SuperScope#
-     */
-    init: function(gl, main, parent) {
-        SuperScope.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
-        this.code.setup(main, this);
-
-        this.code = Webvs.CodeInstance.clone(this.code, this.clone);
+    defaultOptions: {
+        code: {
+            init: "n=800",
+            perFrame: "t=t-0.05",
+            onBeat: "",
+            perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d"
+        }
+        source: "SPECTRUM",
+        drawMode: "LINES",
+        thickenss: 1,
+        clone: 1,
+        colors: ["#ffffff"],
+        cycleSpeed: 0.01
     },
 
-    update: function() {
+    onChange: {
+        code: "updateCode",
+        colors: "updateColors",
+        cycleSpeed: "updateSpeed",
+        clone: "updateClone"
+    },
+
+    init: function() {
+        this.program = new SuperScopeShader();
+        this.program.init(this.gl);
+        this.updateCode();
+        this.updateClones();
+        this.updateSpeed();
+        this.updateColor();
+    },
+
+    draw: function() {
         this._stepColor();
         _.each(this.code, function(code) {
             this.drawScope(code, !this.inited);
         }, this);
         this.inited = true;
+    },
+
+    destroy: function() {
+        this.program.cleanup();
     },
 
     /**
@@ -109,9 +95,10 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     drawScope: function(code, runInit) {
         var gl = this.gl;
 
-        code.red = this.currentColor[0];
-        code.green = this.currentColor[1];
-        code.blue = this.currentColor[2];
+        var color = this._stepColor();
+        code.red = color[0];
+        code.green = color[1];
+        code.blue = color[2];
 
         if(runInit) {
             code.init();
@@ -125,13 +112,19 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         }
 
         var nPoints = Math.floor(code.n);
-        var data = this.spectrum ? this.main.analyser.getSpectrum() : this.main.analyser.getWaveform();
+        var data;
+        if(this.opts.source == "SPECTRUM") {
+            data = this.main.analyser.getSpectrum();
+        } else {
+            data = this.main.analyser.getWaveform();
+        }
+        var dots = this.opts.drawMode == "DOTS";
         var bucketSize = data.length/nPoints;
         var pbi = 0;
         var cdi = 0;
 
-        var pointBufferData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 2);
-        var colorData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 3);
+        var pointBufferData = new Float32Array((dots?nPoints:(nPoints*2-2)) * 2);
+        var colorData = new Float32Array((dots?nPoints:(nPoints*2-2)) * 3);
         for(var i = 0;i < nPoints;i++) {
             var value = 0;
             var size = 0;
@@ -146,11 +139,11 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             code.perPoint();
             pointBufferData[pbi++] = code.x;
             pointBufferData[pbi++] = code.y*-1;
-            if(i !== 0 && i != nPoints-1 && !this.dots) {
+            if(i !== 0 && i != nPoints-1 && !dots) {
                 pointBufferData[pbi++] = code.x;
                 pointBufferData[pbi++] = code.y*-1;
             }
-            if(this.dots) {
+            if(dots) {
                 colorData[cdi++] = code.red;
                 colorData[cdi++] = code.green;
                 colorData[cdi++] = code.blue;
@@ -164,40 +157,55 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             }
         }
 
-        this.program.run(this.parent.fm, null, pointBufferData, colorData, this.dots, this.thickness);
+        this.program.run(this.parent.fm, null, pointBufferData, colorData, dots, this.opts.thickness);
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.SuperScope#
-     */
-    destroy: function() {
-        SuperScope.super.destroy.call(this);
-        this.program.cleanup();
+    updateCode: function() {
+        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["n", "v", "i", "x", "y", "b", "red", "green", "blue", "cid"]);
+        var code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
+        code.n = 100;
+        this.inited = false;
+        this.code = [code];
     },
 
-    _stepColor: function() {
-        var i;
-        if(this.colors.length > 1) {
-            if(this.step == this.maxStep) {
-                var curColor = this.colors[this.colorId];
-                this.colorId = (this.colorId+1)%this.colors.length;
-                var nextColor = this.colors[this.colorId];
-                for(i = 0;i < 3;i++) {
-                    this.colorStep[i] = (nextColor[i]-curColor[i])/this.maxStep;
-                }
-                this.step = 0;
-                for(i = 0;i < 3;i++) {
-                    this.currentColor[i] = curColor[i];
-                }
-            } else {
-                for(i = 0;i < 3;i++) {
-                    this.currentColor[i] += this.colorStep[i];
-                }
-                this.step++;
-            }
+    updateClone: function() {
+        this.code = Webvs.CodeInstance.clone(this.code, this.opts.clone);
+    },
+
+    updateColor: function() {
+        this.colors = _.map(this.opts.colors, Webvs.parseColorNorm);
+        this.curColorId = 0;
+    },
+
+    updateSpeed: function() {
+        var oldMaxStep = this.maxStep;
+        this.maxStep = Math.floor(1/this.opts.cycleSpeed);
+        if(this.curStep) {
+            // curStep adjustment when speed changes
+            this.curStep = Math.floor((this.curStep/oldMaxStep)*this.maxStep);
         } else {
-            this.currentColor = this.colors[0];
+            this.curStep = 0;
+        }
+    },
+
+    updateClones: function() {
+    },
+
+    _makeColor: function() {
+        if(this.colors.length == 1) {
+            return this.colors[0];
+        } else {
+            var color = [];
+            var currentColor = this.colors[this.curColorId];
+            var nextColor = this.colors[(this.curColorId+1)%this.colors.length];
+            var mix = this.curStep/this.maxStep;
+            for(var i = 0;i < 3;i++) {
+                color[i] = currentColor[i]*(1-mix) + nextColor[i]*mix;
+            }
+            this.curStep = (this.curStep+1)%this.maxStep;
+            if(this.curStep == 0) {
+                this.curColorId = (this.curColorId+1)%this.colors.length;
+            }
         }
     }
 });
@@ -245,57 +253,5 @@ Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram
         }
     }
 });
-
-SuperScope.ui = {
-    disp: "SuperScope",
-    type: "SuperScope",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                },
-                perPoint: {
-                    type: "string",
-                    title: "Per Point",
-                }
-            },
-        },
-        source: {
-            type: "string",
-            title: "Source",
-            default: "WAVEFORM",
-            enum: ["WAVEFORM", "SPECTRUM"]
-        },
-        drawMode: {
-            type: "string",
-            title: "Draw Mode",
-            default: "LINES",
-            enum: ["DOTS", "LINES"]
-        },
-        colors: {
-            type: "array",
-            title: "Cycle Colors",
-            items: {
-                type: "string",
-                format: "color",
-                default: "#FFFFFF"
-            }
-        }
-    }
-};
-
 
 })(Webvs);

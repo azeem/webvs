@@ -21,22 +21,48 @@
  * @memberof Webvs
  * @constructor
  */
-function Movement(options) {
-    options = _.defaults(options, {
+
+function Movement(gl, main, parent, opts) {
+    Movement.super.constructor.call(this, gl, main, parent, opts);
+}
+Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
+    defaultOptions: {
+        code: {
+            perPixel: ""
+        },
         bFilter: true,
         coord: "POLAR",
         compat: false
-    });
+    },
 
-    Movement.super.constructor.call(this, {
-        noGrid: true,
-        bFilter: options.bFilter,
-        compat: options.compat,
-        coord: options.coord,
-        code: options.code
-    });
-    this.options = options;
-}
-Webvs.Movement = Webvs.defineClass(Movement, Webvs.DynamicMovement);
+    onChange: {
+        "*": "updateOption"
+    },
+
+    init: function() {
+        var opts = this.opts;
+        var dmovOpts = {
+            code: opts.code,
+            bFilter: opts.bFilter,
+            coord: opts.coord,
+            compat: opts.compat,
+            noGrid: true
+        };
+        this.dmov = new Webvs.DynamicMovement(this.gl, this.main, this.parent, dmovOpts);
+        this.dmov.init();
+    },
+
+    draw: function() {
+        this.dmov.draw();
+    },
+
+    destroy: function() {
+        this.dmov.destroy();
+    }
+
+    updateOption: function(name, value) {
+        this.dmov.setOption(name, value);
+    }
+});
 
 })(Webvs);

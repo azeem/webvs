@@ -262,12 +262,56 @@ Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };
 
+/**
+ * Returns the component class with the given name. Throws
+ * and Error if it doesnt exist
+ * @param {string} name - name of the class
+ * @returns {function} - constructor for the component
+ */
 Webvs.getComponentClass = function(name) {
     var componentClass = Webvs[name];
     if(!componentClass) {
         throw new Error("Unknown Component class " + name);
     }
     return componentClass;
+};
+
+/**
+ * Returns the value of property given its (dot separated) path in an object
+ * @param {object} obj - the object
+ * @param {string} name - path to the property
+ * @returns the value of the property, undefined if it doesnt exist
+ */
+Webvs.getProperty = function(obj, name) {
+    if(_.isString(name)) {
+        name = name.split(".");
+    }
+    var value = obj[name.shift()];
+    if(value) {
+        if(name.length > 0) {
+            return Webvs.getProperty(value, name);
+        } else {
+            return value;
+        }
+    }
+};
+
+/**
+ * Sets a property, given its (dot separated) path in an object
+ * @param {object} obj - the object
+ * @param {string} name - path to the property
+ * @param value - value to be set
+ */
+Webvs.setProperty = function(obj, name, value) {
+    if(_.isString(name)) {
+        name = name.split(".");
+    }
+    var propertyName = name.shift();
+    if(name.length === 0) {
+        obj[propertyName] = value;
+    } else {
+        Webvs.setProperty(obj[propertyName], name, value);
+    }
 };
 
 })(window);

@@ -126,17 +126,43 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
     }
 });
 
-CodeInstance.clone = function(codeInst, count) {
-    codeInst.cid = 0;
-    var clones = [codeInst];
-    if(count > 1) {
-        _.times(count-1, function(index) {
-            var clone = _.clone(codeInst);
-            clone.cid = index+1;
+/**
+ * creates an array of clones of code instances
+ * @param {Webvs.CodeInstance} codeInst - code instance to be cloned
+ * @param {number} count - number of clones required
+ * @memberof Webvs.CodeInstance
+ * @returns {Array.<Webvs.CodeInstance>} clones
+ */
+CodeInstance.clone = function(clones, count) {
+    if(!_.isArray(clones)) {
+        clones.cid = 0;
+        clones = [codeInst];
+    }
+
+    var clonesLength = clones.length;
+    if(clonesLength < count) {
+        _.times(count-clonesLength, function(index) {
+            var clone = _.clone(clones[0]);
+            clone.cid = index+clonesLength;
             clones.push(clone);
         });
+    } else if(clonesLength > count) {
+        clones = _.first(this.clones, count);
     }
     return clones;
+};
+
+/**
+ * copies instance values from one code instance to another
+ * @param {Webvs.CodeInstance} dest - destination code instance
+ * @param {Webvs.CodeInstance} src - source code instance
+ */
+CodeInstance.copyValues = function(dest, src) {
+    _.each(src, function(name, value) {
+        if(!_.isFunction(value) && name.charAt(0) !== "_") {
+            dest[name] = value;
+        }
+    });
 };
 
 

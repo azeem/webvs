@@ -5,103 +5,104 @@
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that moves pixels according to user code.
- * 
- * #### Code variables
- *
- * The following variables are available in the code
- *
- * + x - x position of the pixel (-1 to +1)
- * + y - y position of the pixel (-1 to +1)
- * + d - length of pixel position vector (0 to 1)
- * + r - angle of the position vector with y axis in clockwise direction in radians
- * + w - width of the screen
- * + h - height of the screen
- * + b - 1 if a beat has occured else 0
- *
- * @param {object} options - options object
- * @param {string} [options.code.init] - code to be run at startup
- * @param {string} [options.code.onBeat] - code to be run when a beat occurs
- * @param {string} [options.code.perFrame] - code to be run on every frame
- * @param {string} [options.code.perPixel] - code that will be run once for every pixel. should set 
- *       `x`, `y` or `d`, `r` variables (depending on coord) to specify point location. Note: state 
- *        of this code does not persist.
- * @param {number} [options.gridW=16] - width of the interpolation grid
- * @param {number} [options.gridH=16] - height of the interpolation grid
- * @param {boolean} [options.noGrid=false] - if true, then interpolation grid is not used
- *      ie. movement will be pixel accurate
- * @param {boolean} [options.compat=false] - if true, then calculations are low precision.
- *      useful to map winamp AVS behaviour more closely
- * @param {boolean} [options.bFilter=true] - use bilinear interpolation for pixel sampling
- * @param {string} [options.coord="POLAR"] - coordinate system to be used viz. `POLAR`, `RECT`
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- * @constructor
- */
-function DynamicMovement(options) {
-    Webvs.checkRequiredOptions(options, ["code"]);
-    options = _.defaults(options, {
+function DynamicMovement(gl, main, parent, opts) {
+    DynamicMovement.super.constructor.call(this, gl, main, parent, opts);
+}
+Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Component2, {
+    defaultOptions: {
+        code: {
+            init: "",
+            onBeat: "",
+            perFrame: "",
+            perPixel: ""
+        },
         gridW: 16,
         gridH: 16,
         noGrid: false,
-        bFilter: true,
         compat: false,
+        bFilter: true,
         coord: "POLAR"
-    });
+    },
 
-    var codeSrc;
-    if(_.isObject(options.code)) {
-        codeSrc = options.code;
-    } else {
-        throw new Error("Invalid Dynamic movement code");
-    }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
-    var glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], this.code);
+    onChange: {
+        "code": "updateCode",
+        "noGrid": ["updateProgram", "updateGrid"],
+        "compat": "updateProgram",
+        "bFilter": "updateProgram",
+        "coord": "updateProgram",
+        "gridW": "updateGrid",
+        "gridH": "updateGrid"
+    },
+    
+    init: function() {
+        this.updateCode();
+        this.updateGrid();
+    },
 
-    this.inited = false;
+    draw: function() {
+        var code = this.code;
 
-    this.noGrid = options.noGrid;
-    this.gridW = options.gridW;
-    this.gridH = options.gridH;
+        // run init, if required
+        if(!this.inited) {
+            code.init();
+            code.inited = true;
+        }
 
-    this.coordMode = options.coord;
-    this.bFilter = options.bFilter;
-    this.compat = options.compat;
+        var beat = this.main.analyser.beat;
+        code.b = beat?1:0;
+        // run per frame
+        code.perFrame();
+        // run on beat
+        if(beat) {
+            code.onBeat();
+        }
 
-    if(this.noGrid) {
-        this.program = new Webvs.DMovProgramNG(this.coordMode, this.bFilter,
-                                               this.compat, this.code.hasRandom,
-                                               glslCode);
-    } else {
-        this.program = new Webvs.DMovProgram(this.coordMode, this.bFilter,
-                                             this.compat, this.code.hasRandom,
-                                             glslCode);
-    }
+        this.program.run(this.parent.fm, null, this.code, this.gridVertices, this.gridVerticesSize);
+    },
 
-    DynamicMovement.super.constructor.apply(this, arguments);
-}
-Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
-    componentName: "DynamicMovement",
+    destroy: function() {
+        this.program.cleanup();
+    },
 
-    /**
-     * initializes the DynamicMovement component
-     * @memberof Webvs.DynamicMovement#
-     */
-    init: function(gl, main, parent) {
-        DynamicMovement.super.init.call(this, gl, main, parent);
+    updateCode: function() {
+        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["x", "y", "r", "d", "b"]);
 
-        this.program.init(gl);
+        // js code
+        var code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
+        code.setup(this.main, this.parent);
+        this.inited = false;
+        this.code = code;
 
-        this.code.setup(main, parent);
+        // glsl code
+        this.glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], code);
+        this.updateProgram();
+    },
 
-        // calculate grid vertices
-        if(!this.noGrid) {
-            var gridW = Webvs.clamp(this.gridW, 1, this.main.canvas.width);
-            var gridH = Webvs.clamp(this.gridH, 1, this.main.canvas.height);
+    updateProgram: function() {
+        var opts = this.opts;
+        if(this.program) {
+            this.program.cleanup();
+        }
+        if(opts.noGrid) {
+            this.program = new Webvs.DMovProgramNG(opts.coord, opts.bFilter,
+                                                   opts.compat, this.code.hasRandom,
+                                                   this.glslCode);
+        } else {
+            this.program = new Webvs.DMovProgram(opts.coordMode, opts.bFilter,
+                                                 opts.compat, this.code.hasRandom,
+                                                 this.glslCode);
+        }
+        this.program.init(this.gl);
+    },
+
+    updateGrid: function() {
+        var opts = this.opts;
+        if(opts.noGrid) {
+            this.gridVertices = undefined;
+            this.gridVerticesSize = undefined;
+        } else {
+            var gridW = Webvs.clamp(opts.gridW, 1, this.main.canvas.width);
+            var gridH = Webvs.clamp(opts.gridH, 1, this.main.canvas.height);
             var nGridW = (gridW/this.main.canvas.width)*2;
             var nGridH = (gridH/this.main.canvas.height)*2;
             var gridCountAcross = Math.ceil(this.main.canvas.width/gridW);
@@ -137,44 +138,6 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
             this.gridVertices = gridVertices;
             this.gridVerticesSize = pbi/2;
         }
-    },
-
-    /**
-     * moves the pixels
-     * @memberof Webvs.DynamicMovement#
-     */
-    update: function() {
-        var code = this.code;
-
-        // run init, if required
-        if(!this.inited) {
-            code.init();
-            this.inited = true;
-        }
-
-        var beat = this.main.analyser.beat;
-        code.b = beat?1:0;
-        // run per frame
-        code.perFrame();
-        // run on beat
-        if(beat) {
-            code.onBeat();
-        }
-
-        if(this.noGrid) {
-            this.program.run(this.parent.fm, null, this.code);
-        } else {
-            this.program.run(this.parent.fm, null, this.code, this.gridVertices, this.gridVerticesSize);
-        }
-    },
-
-    /**
-     * releases resources
-     * @memberof Webvs.DynamicMovement#
-     */
-    destroy: function() {
-        DynamicMovement.super.destroy.call(this);
-        this.program.cleanup();
     }
 });
 
@@ -325,60 +288,5 @@ Webvs.DMovProgram = Webvs.defineClass(DMovProgram, Webvs.ShaderProgram, GlslHelp
         this.gl.drawArrays(this.gl.TRIANGLES, 0, gridVerticesSize);
     }
 });
-
-DynamicMovement.ui = {
-    type: "DynamicMovement",
-    disp: "Dynamic Movement",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                },
-                perPixel: {
-                    type: "string",
-                    title: "Per Point",
-                }
-            },
-        },
-        gridW: {
-            type: "number",
-            title: "Grid Width",
-            default: 16,
-        },
-        gridH: {
-            type: "number",
-            title: "Grid Height",
-            default: 16,
-        },
-        coord: {
-            type: "string",
-            title: "Coordinate System",
-            enum: ["POLAR", "RECT"],
-            default: "POLAR"
-        }
-    },
-    form: [
-        { key: "code.init", type: "textarea" },
-        { key: "code.onBeat", type: "textarea" },
-        { key: "code.perFrame", type: "textarea" },
-        { key: "code.perPixel", type: "textarea" },
-        "gridW",
-        "gridH",
-        "coord"
-    ]
-};
 
 })(Webvs);

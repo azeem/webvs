@@ -26,7 +26,7 @@ function ExprCodeGenerator(codeSrc, externalVars) {
             this.codeSrc[key] = code;
         }
     }
-    this.externalVars = _.union(externalVars || [], ["w", "h", "cid"]);
+    this.externalVars = _.union(externalVars || [], ["w", "h"]);
     this._parseSrc();
 }
 Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {

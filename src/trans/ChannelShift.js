@@ -5,8 +5,6 @@
 
 (function(Webvs) {
 
-var channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
-
 /**
  * @class
  * A component that swizzles the color component
@@ -20,55 +18,46 @@ var channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
  * @constructor
  * @memberof Webvs
  */
-function ChannelShift(options) {
-    options = _.defaults(options, {
+function ChannelShift(gl, main, parent, opts) {
+    ChannelShift.super.constructor.call(this, gl, main, parent, opts);
+}
+ChannelShift.channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
+Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
+    defaultOptions: {
         channel: "RGB",
         onBeatRandom: false
-    });
-
-    this.channel = channels.indexOf(options.channel);
-    if(this.channel == -1) {
-        throw new Error("Invalid Channel");
-    }
-    this.onBeatRandom = options.onBeatRandom;
-
-    this.program = new ChannelShiftProgram();
-
-    ChannelShift.super.constructor.apply(this, arguments);
-}
-Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
-    componentName: "ChannelShift",
-
-    /**
-     * initializes the ChannelShift component
-     * @memberof Webvs.ChannelShift#
-     */
-    init: function(gl, main, parent) {
-        ChannelShift.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
     },
 
-    /**
-     * shifts the colors
-     * @memberof Webvs.ChannelShift#
-     */
-    update: function() {
-        if(this.onBeatRandom && this.main.analyser.beat) {
-            this.channel = Math.floor(Math.random() * channels.length);
+    onChange: {
+        channel: "updateChannel"
+    },
+
+    init: function() {
+        this.program = new ChannelShiftProgram();
+        this.program.init(this.gl);
+        this.updateChannel();
+    },
+
+    draw: function() {
+        if(this.opts.onBeatRandom && this.main.analyser.beat) {
+            this.channel = Math.floor(Math.random() * ChannelShift.channels.length);
         }
         this.program.run(this.parent.fm, null, this.channel);
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ChannelShift#
-     */
     destroy: function() {
         ChannelShift.super.destroy.call(this);
         this.program.cleanup();
-    }
+    },
 
+    updateChannel: function() {
+        var opts = this.opts;
+        var index = ChannelShift.channels.indexOf(opts.channel);
+        if(index == -1) {
+            throw new Error("Unknown color channel " + opts.channel);
+        }
+        this.channel = index;
+    }
 });
 
 function ChannelShiftProgram() {
@@ -96,21 +85,5 @@ Webvs.ChannelShiftProgram = Webvs.defineClass(ChannelShiftProgram, Webvs.QuadBox
         ChannelShiftProgram.super.draw.call(this);
     }
 });
-
-ChannelShift.ui = {
-    disp: "Channel Shift",
-    type: "ChannelShift",
-    schema: {
-        channel: {
-            type: "string",
-            title: "Channel",
-            enum: channels
-        },
-        onBeatRandom: {
-            type: "boolean",
-            title: "On beat random",
-        }
-    }
-};
 
 })(Webvs);

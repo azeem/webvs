@@ -1,104 +1,73 @@
-/**
- * Copyright (c) 2013 Azeem Arshad
- * See the file license.txt for copying permission.
- */
-
 (function(Webvs) {
 
-/**
- * @class
- * A base class that all Webvs effects extend from.
- * @memberof Webvs
- * @constructor
- * @param {object} options - options object
- * @param {object} [options.id] - id for this component. Default is a random string.
- */
-function Component(options) {
-    this.id = options.id;
-    this.enabled = _.isUndefined(options.enabled)?true:options.enabled;
-    this.componentInited = false;
-    this.options = options;
+function Component(gl, main, parent, options) {
+    this.gl = gl;
+    this.main = main;
+    this.parent = parent;
+
+    var opts = _.clone(options);
+    if(this.defaultOptions) {
+        opts = _.defaults(opts, this.defaultOptions);
+    }
+    this.opts = opts;
+
+    this.id = opts.id || Webvs.randString(5);
+    this.enabled = _.isUndefined(opts.enabled)?true:opts.enabled;
+
+    this.init();
 }
 Webvs.Component = Webvs.defineClass(Component, Object, {
-    /**
-     * String name of the component class. Used to generate
-     * id strings.
-     * @memberof Webvs.Component
-     */
     componentName: "Component",
 
-    /**
-     * Initialize component. Called once before animation starts.
-     * Override and implement initialization code
-     * @abstract
-     * @param {WebGLContext} gl - webgl context
-     * @param {Webvs.Main} main - container main object for this component
-     * @param {Webvs.Component} - parent component
-     * @memberof Webvs.Component#
-     */
-    init: function(gl, main, parent) {
-        this.gl = gl;
-        this.main = main;
-        this.parent = parent;
-        this.componentInited = true;
-    },
+    init: function() {},
 
-    /**
-     * Adopts or initializes this component, depending on whether
-     * it is already initialized
-     * @param {WebGLContext} gl - webgl context
-     * @param {Webvs.Main} main - container main object for this component
-     * @param {Webvs.Component} - parent component
-     * @memberof Webvs.Component#
-     */
-    adoptOrInit: function(gl, main, parent) {
-        if(this.componentInited) {
-            return this.adopt(parent);
-        } else {
-            return this.init(gl, main, parent);
-        }
-    },
+    draw: function() {},
 
-    /**
-     * Called when the component is moved to a different
-     * parent. Default implementation simply resets the parent reference.
-     * Override and implement additional logic if required
-     * @param {Webvs.Component} newParent - the new parent of this component
-     * @memberof Webvs.Component#
-     */
+    destroy: function() {},
+
     adopt: function(newParent) {
         this.parent = newParent;
     },
 
-    /**
-     * Render a frame. Called once for every frame,
-     * Override and implement rendering code
-     * @abstract
-     * @memberof Webvs.Component#
-     */
-    update: function() {},
-
-    /**
-     * Release any Webgl resources. Called during
-     * reinitialization. Override and implement cleanup code
-     * @abstract
-     * @memberof Webvs.Component#
-     */
-    destroy: function() {},
-
-    /**
-     * Returns the component's options
-     * @memberof Webvs.Component#
-     */
     getOptions: function() {
-        return this.options;
+        return this.opts;
     },
 
-    /**
-     * Generates a printable path of this component
-     * @returns {string} printable path generated from the parent hierarchy
-     * @memberof Webvs.Component#
-     */
+    getOption: function(name) {
+        return Webvs.getProperty(this.opts, name);
+    },
+
+    setOption: function(name, value) {
+        var oldValue = Webvs.getProperty(this.opts, name);
+
+        // set the property
+        Webvs.setProperty(this.opts, name, value);
+        if(name == "enabled") {
+            this.enabled = value;
+        }
+        if(name == "id") {
+            this.id = value;
+        }
+
+        // call all onchange handlers
+        if(this.onChange) {
+            try {
+                _.each(this.onChange, function(key, funcName) {
+                    if(name.indexOf(key) === 0 || key == "*") {
+                        var funcs = _.isArray(funcName)?:funcName:[funcName];
+                        _.each(funcs, function(func) {
+                            this[func].call(this, value, name);
+                        }, this);
+                    }
+                }, this);
+            } catch(e) {
+                // restore old value in case any of the onChange handlers fail
+                Webvs.setProperty(this.opts, name, oldValue);
+                throw e;
+            }
+        }
+    },
+
     getPath: function() {
         if(!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
             return this.parent.getIdString() + "/" + this.componentName + "#" + this.id;

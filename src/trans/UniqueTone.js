@@ -16,42 +16,45 @@
  * @memberof Webvs
  * @constructor
  */
-function UniqueTone(options) {
-    options = _.defaults(options, {
+function UniqueTone(gl, main, parent, opts) {
+    UniqueTone.super.constructor.call(this, gl, main, parent, opts);
+}
+Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
+    defaultOptions: {
         color: "#ffffff",
         invert: false,
         blendMode: "REPLACE"
-    });
-
-    this.tone = Webvs.parseColorNorm(options.color);
-    this.invert = options.invert;
-    this.program = new UniqueToneProgram(Webvs.getBlendMode(options.blendMode));
-}
-Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
-    /**
-     * initializes the UniqueTone component
-     * @memberof Webvs.UniqueTone#
-     */
-    init: function(gl, main, parent) {
-        UniqueTone.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
     },
 
-    /**
-     * applies unique tone
-     * @memberof Webvs.UniqueTone#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.tone, this.invert);
+    onChange: {
+        color: "updateColor",
+        blendMode: "updateProgram"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.UniqueTone#
-     */
+    init: function() {
+        this.updateColor();
+        this.updateProgram();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.tone, this.opts.invert);
+    },
+
     destroy: function() {
-        UniqueTone.super.destroy.call(this);
         this.program.cleanup();
+    },
+
+    updateColor: function() {
+        this.tone = Webvs.parseColorNorm(this.opts.color);
+    },
+
+    updateProgram: function() {
+        var program = new UniqueToneProgram(Webvs.getBlendMode(this.opts.blendMode));
+        program.init(this.gl);
+        if(this.program) {
+            this.program.cleanup();
+        }
+        this.program = program;
     }
 });
 

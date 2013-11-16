@@ -18,48 +18,37 @@
  * @constructor
  * @memberof Webvs
  */
-function ClearScreen(options) {
-    options = _.defaults(options, {
+function ClearScreen(gl, main, parent, opts) {
+    ClearScreen.super.constructor.call(this, main, parent, opts);
+}
+Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
+    defaultOptions: {
         n: 0,
         color: "#000000",
         blendMode: "REPLACE"
-    });
-    this.n = options.n;
-    this.color = Webvs.parseColorNorm(options.color);
-
-    this.outputBlendMode = Webvs.blendModes[options.blendMode];
-
-    this.prevBeat = false;
-    this.beatCount = 0;
-
-    this.program = new Webvs.ClearScreenProgram(this.outputBlendMode);
-
-    ClearScreen.super.constructor.apply(this, arguments);
-}
-Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
-    componentName: "ClearScreen",
-
-    /**
-     * initializes the ClearScreen component
-     * @memberof Webvs.ClearScreen#
-     */
-    init: function(gl, main, parent) {
-        ClearScreen.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
     },
 
-    /**
-     * clears the screen
-     * @memberof Webvs.ClearScreen#
-     */
-    update: function() {
+    onChange: {
+        color: "updateColor",
+        blendMode: "updateProgram"
+    },
+
+    init: function() {
+        this.prevBeat = false;
+        this.beatCount = 0;
+
+        this.updateColor();
+        this.updateProgram();
+    },
+
+    draw: function() {
         var clear = false;
-        if(this.n === 0) {
+        if(this.opts.n === 0) {
             clear = true;
         } else {
             if(this.main.analyser.beat && !this.prevBeat) {
                 this.beatCount++;
-                if(this.beatCount == this.n) {
+                if(this.beatCount >= this.opts.n) {
                     clear = true;
                     this.beatCount = 0;
                 }
@@ -72,36 +61,22 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
         }
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ClearScreen#
-     */
     destroy: function() {
         this.program.cleanup();
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
+    },
+
+    updateProgram: function() {
+        var program = new Webvs.ClearScreenProgram(Webvs.getBlendMode(this.opts.blendMode));
+        program.init(this.gl);
+        if(this.program) {
+            this.program.cleanup();
+        }
+        this.program = program;
     }
 });
-
-ClearScreen.ui = {
-    type: "ClearScreen",
-    disp: "Clear Screen",
-    schema: {
-        n: {
-            type: "number",
-            title: "Clear on beat (0 = always clear)",
-            default: 0
-        },
-        color: {
-            type: "string",
-            title: "Clear color",
-            format: "color",
-            default: "#000000"
-        },
-        blendMode: {
-            type: "string",
-            title: "Blend Mode",
-            enum: _.keys(Webvs.blendModes)
-        }
-    }
-};
 
 })(Webvs);
