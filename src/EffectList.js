@@ -26,72 +26,59 @@
  * @memberof Webvs
  * @constructor
  */
-function EffectList(options) {
-    options = _.defaults(options, {
+function EffectList(gl, main, parent, opts) {
+    EffectList.super.constructor.call(this, gl, main, parent, opts);
+}
+Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
+    defaultOptions: _.extend({
+        code: {
+            init: "",
+            perFrame: ""
+        },
         output: "REPLACE",
         input: "IGNORE",
         clearFrame: false,
         enableOnBeat: false,
         enableOnBeatFor: 1
-    });
+    }, Webvs.Container.prototype.defaultOptions),
 
-    this.output = options.output=="IGNORE"?-1:Webvs.blendModes[options.output];
-    this.input = options.input=="IGNORE"?-1:Webvs.blendModes[options.input];
-    this.clearFrame = options.clearFrame;
-    this.enableOnBeat = options.enableOnBeat;
-    this.enableOnBeatFor = options.enableOnBeatFor;
-    this.first = true;
-    this._frameCounter = 0;
-    this._inited = false;
-
-    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
-    this.code = codeGen.generateJs(["init", "perFrame"]);
-
-    EffectList.super.constructor.apply(this, arguments);
-}
-Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
-    componentName: "EffectList",
-
-    /**
-     * Initializes the effect list
-     * @memberof Webvs.EffectList#
-     */
-    init: function(gl, main, parent) {
-        EffectList.super.init.call(this, gl, main, parent);
-
-        this.code.setup(main, this);
-
-        // create a framebuffer manager for this effect list
-        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
+    onChange: {
+        code: "updateCode"
+        output: "updateBlendMode",
+        input: "updateBlendMode",
     },
 
-    /**
-     * Renders a frame of the effect list, by running
-     * all the subcomponents.
-     * @memberof Webvs.EffectList#
-     */
-    update: function() {
-        EffectList.super.update.call(this);
-        var gl = this.gl;
+    init: function() {
+        EffectList.super.init.call(this);
+        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
+        this.updateCode();
+        this.updateBlendMode("input", this.opts.input);
+        this.updateBlendMode("output", this.opts.output);
+        this.frameCounter = 0;
+        this.first = true;
+    },
 
-        if(this.enableOnBeat) {
+    draw: function() {
+        var opts = this.opts
+
+        if(opts.enableOnBeat) {
             if(this.main.analyser.beat) {
-                this._frameCounter = this.enableOnBeatFor;
+                this.frameCounter = opts.enableOnBeatFor;
             } else if(this._frameCounter > 0) {
-                this._frameCounter--;
+                this.frameCounter--;
             }
 
             // only enable for enableOnBeatFor # of frames
-            if(this._frameCounter === 0) {
+            if(this.frameCounter === 0) {
                 return;
             }
         }
 
         this.code.beat = this.main.analyser.beat?1:0;
         this.code.enabled = 1;
-        this.code.clear = this.clearFrame;
-        if(!this._inited) {
-            this._inited = true;
+        this.code.clear = opts.clearFrame;
+        if(!this.inited) {
+            this.inited = true;
             this.code.init();
         }
         this.code.perFrame();
@@ -103,7 +90,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         this.fm.setRenderTarget();
 
         // clear frame
-        if(this.clearFrame || this.first || this.code.clear) {
+        if(opts.clearFrame || this.first || this.code.clear) {
             gl.clearColor(0,0,0,1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             this.first = false;
@@ -135,10 +122,6 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         }
     },
 
-    /**
-     * Releases resources.
-     * @memberof Webvs.EffectList#
-     */
     destroy: function() {
         EffectList.super.destroy.call(this);
         if(this.fm) {
@@ -146,42 +129,17 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
             this.fm.destroy();
         }
     },
-});
 
-EffectList.ui = {
-    disp: "Effect List",
-    type: "EffectList",
-    leaf: false,
-    schema: {
-        clearFrame: {
-            type: "boolean",
-            title: "Clear Frame",
-            default: false,
-            required: true
-        },
-        enableOnBeat: {
-            type: "boolean",
-            title: "Enable on beat",
-            default: false,
-        },
-        enableOnBeatFor: {
-            type: "number",
-            title: "Enable on beat for frames",
-            default: 1
-        },
-        output: {
-            type: "string",
-            title: "Output",
-            default: "REPLACE",
-            enum: _.keys(Webvs.blendModes)
-        },
-        input: {
-            type: "string",
-            title: "Input",
-            default: "IGNORE",
-            enum: _.union(_.keys(Webvs.blendModes), ["IGNORE"])
-        }
+    updateCode: function() {
+        var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
+        this.code = codeGen.generateJs(["init", "perFrame"]);
+        this.code.setup(this.main, this);
+        this.inited = false;
+    },
+
+    updateBlendMode: function(value, name) {
+        this[name] = (value=="IGNORE")?-1:Webvs.getBlendMode(value);
     }
-};
+});
 
 })(Webvs);

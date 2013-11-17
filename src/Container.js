@@ -18,27 +18,24 @@
  *     provided then subcomponents are added from this factory and options.components is ignored.
  *     useful when moving existing subcomponent instances into new container.
  */
-function Container(options, subComponents) {
-    Container.super.constructor.call(this, options);
-
-    this.components = [];
-
-    // add all the sub components
-    _.each(subComponents || options.components || [], function(component) {
-        this.addComponent(this.id, component);
-    }, this);
-
+function Container(gl, main, parent, opts) {
+    Container.super.constructor.call(this, gl, main, parent, opts);
 }
 Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
+    defaultOptions: {
+        components: []
+    },
+
     /**
      * initializes all the subcomponents
      * @memberof Webvs.Container#
      */
     init: function(gl, main, parent) {
-        Container.super.init.call(this, gl, main, parent);
-
-        for(var i = 0;i < this.components.length;i++) {
-            this.components[i].adoptOrInit(gl, main, this);
+        var components = [];
+        for(var i = 0;i < this.opts.components.length;i++) {
+            var opts = this.opts.components[i];
+            var component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
+            components.push(component);
         }
     },
 
@@ -47,7 +44,6 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @memberof Webvs.Container#
      */
     destroy: function() {
-        Container.super.destroy.call(this);
         for(var i = 0;i < this.components.length;i++) {
             this.components[i].destroy();
         }
@@ -66,20 +62,14 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @returns {string} - id of the new component
      * @memberof Webvs.Container#
      */
-    addComponent: function(parentId, options, pos) {
-        if(!(options instanceof Webvs.Component)) {
-            options.id = options.id || Webvs.randString(5);
-        }
-
+    addComponent: function(parentId, opts, pos) {
         var component;
         if(parentId == this.id) {
-            if(options instanceof Webvs.Component) {
-                component = options;
+            if(opts instanceof Webvs.Component) {
+                component = opts;
+                component.adopt(this);
             } else {
-                component = new (Webvs.getComponentClass(options.type))(options);
-            }
-            if(this.componentInited) {
-                component.adoptOrInit(this.gl, this.main, this);
+                component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
             }
 
             if(_.isNumber(pos)) {
@@ -92,7 +82,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             for(var i = 0;i < this.components.length;i++) {
                 component = this.components[i];
                 if(component instanceof Container) {
-                    var id = component.addComponent(parentId, options, pos);
+                    var id = component.addComponent(parentId, opts, pos);
                     if(id) {
                         return id;
                     }
@@ -104,41 +94,43 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     /**
      * Updates a component under this container's subtree
      * @param {string} id - id of the component
-     * @param {object} options - options to be updated.
+     * @param {object|string} name - if string then its treated as the
+     *      name of the option to be updated. Else its treated as an object
+     *      containing the options to be updated.
+     * @param {object} value - updated value.
      * @returns {boolean} - true if update succeeded else false
      * @memberof Webvs.Container#
      */
-    updateComponent: function(id, options) {
+    updateComponent: function(id, name, value) {
         var component, i;
-        // find the component in this container
-        for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
-            if(component.id != id) {
-                continue;
+        for(var i = 0;i < this.components.length;i++) {
+            if(this.components[i].id == id) {
+                component = this.components[i];
+                break;
             }
-
-            options = _.defaults(options, component.options);
-            options.id = id;
-            var subComponents = component instanceof Container?component.detachAllComponents():undefined;
-            var newComponent = new (Webvs.getComponentClass(options.type))(options, subComponents);
-
-            if(this.componentInited) {
-                newComponent.adoptOrInit(this.gl, this.main, this);
-            }
-
-            this.components[i] = newComponent;
-            component.destroy();
-            return true;
         }
 
-        for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
-            if(component instanceof Container) {
-                if(component.updateComponent(id, options)) {
-                    return true;
+        if(component) {
+            if(_.isString(name)) {
+                component.setOption(name, value);
+            } else {
+                var opts = name;
+                _.each(opts, function(value, name) {
+                    component.setOption(name, value);
+                });
+            }
+            return true;
+        } else {
+            for(i = 0;i < this.components.length;i++) {
+                component = this.components[i];
+                if(component instanceof Container) {
+                    if(component.updateComponent(id, name, value)) {
+                        return true;
+                    }
                 }
             }
         }
+        return false;
     },
 
     /**
