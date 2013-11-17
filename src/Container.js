@@ -103,7 +103,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      */
     updateComponent: function(id, name, value) {
         var component, i;
-        for(var i = 0;i < this.components.length;i++) {
+        for(i = 0;i < this.components.length;i++) {
             if(this.components[i].id == id) {
                 component = this.components[i];
                 break;

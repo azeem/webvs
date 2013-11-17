@@ -38,7 +38,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
     },
 
     onChange: {
-        mode: "updateMode"
+        mode: "updateMode",
         color: "updateColor",
         outColor: "updateColor"
     },

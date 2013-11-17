@@ -29,7 +29,7 @@ Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
     },
 
     onChange: {
-        "drawMode": ["updateCode", "updateDrawMode"]
+        "drawMode": ["updateCode", "updateDrawMode"],
         "source": ["updateCode", "optPassThru"],
         "align": "updateCode",
         "colors": "optsPassThru"
@@ -59,7 +59,7 @@ Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
 
     optPassThru: function(name, value) {
         this.sscope.setOption(name, value);
-    }
+    },
 
     updateCode: function() {
         this.sscope.setOption("code", this._makeCode());

@@ -51,7 +51,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             perFrame: "t=t-0.05",
             onBeat: "",
             perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d"
-        }
+        },
         source: "SPECTRUM",
         drawMode: "LINES",
         thickenss: 1,
@@ -201,7 +201,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
                 color[i] = currentColor[i]*(1-mix) + nextColor[i]*mix;
             }
             this.curStep = (this.curStep+1)%this.maxStep;
-            if(this.curStep == 0) {
+            if(this.curStep === 0) {
                 this.curColorId = (this.curColorId+1)%this.colors.length;
             }
         }

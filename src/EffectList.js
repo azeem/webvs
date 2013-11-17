@@ -43,9 +43,9 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     }, Webvs.Container.prototype.defaultOptions),
 
     onChange: {
-        code: "updateCode"
+        code: "updateCode",
         output: "updateBlendMode",
-        input: "updateBlendMode",
+        input: "updateBlendMode"
     },
 
     init: function() {
@@ -59,7 +59,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     },
 
     draw: function() {
-        var opts = this.opts
+        var opts = this.opts;
 
         if(opts.enableOnBeat) {
             if(this.main.analyser.beat) {

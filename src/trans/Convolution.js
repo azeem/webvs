@@ -39,7 +39,7 @@ Webvs.Convolution2 = Webvs.defineClass(Convolution2, Component2, {
 
     destroy: function() {
         this.program.cleanup();
-    }
+    },
 
     updateScale: function() {
         var opts = this.opts;

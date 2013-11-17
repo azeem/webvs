@@ -48,7 +48,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
 
     destroy: function() {
         this.program.cleanup();
-    }
+    },
 
     updateSpeed: function() {
         this.frameCount = 0;

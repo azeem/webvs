@@ -57,7 +57,7 @@ Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
 
     destroy: function() {
         this.dmov.destroy();
-    }
+    },
 
     optPassThru: function(name, value) {
         this.dmov.setOption(name, value);

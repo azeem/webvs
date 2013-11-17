@@ -54,7 +54,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
             try {
                 _.each(this.onChange, function(key, funcName) {
                     if(name.indexOf(key) === 0 || key == "*") {
-                        var funcs = _.isArray(funcName)?:funcName:[funcName];
+                        var funcs = _.isArray(funcName)?funcName:[funcName];
                         _.each(funcs, function(func) {
                             this[func].call(this, value, name);
                         }, this);
