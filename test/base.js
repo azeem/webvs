@@ -174,3 +174,63 @@ DummyMain = Webvs.defineClass(DummyMain, Object, {
 function DummyParent(fm) {
     this.fm = fm;
 }
+
+/**
+ * Checks if the framebuffer image is equal to target image
+ * within threshold
+ */
+function imageFuzzyOk(message, gl, canvas, targetImageData, maxDistance) {
+    maxDistance = _.isNumber(maxDistance)?maxDistance:0.01;
+    var width = canvas.width;
+    var height = canvas.height;
+
+    // load the target pixels
+    var tempCanvas = document.createElement("canvas");
+    var ctxt = tempCanvas.getContext("2d", {
+        preserveDrawingBuffer: true,
+        alpha: false
+    });
+    var img = new Image();
+    img.src = targetImageData;
+    ctxt.drawImage(img, 0, 0);
+    var targetPixels = ctxt.getImageData(0, 0, width, height).data;
+
+    var sourcePixels = new Uint8Array(width*height*4);
+    gl.readPixels( 0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, sourcePixels);
+
+    var match = true;
+    loop:
+    for(var y = 0;y < height;y++) {
+        for(var x = 0;x < width;x++) {
+            var tgtOff = y*width*4+x*4;
+            var srcOff = (height-1-y)*width*4+x*4;
+            var rd = targetPixels[tgtOff]-sourcePixels[srcOff];
+            var gd = targetPixels[tgtOff+1]-sourcePixels[srcOff+1];
+            var bd = targetPixels[tgtOff+2]-sourcePixels[srcOff+2];
+            var ad = targetPixels[tgtOff+3]-sourcePixels[srcOff+3];
+
+            /*console.log("x = ", x, "y=", y);
+            console.log("rendered=", sourcePixels[srcOff], sourcePixels[srcOff+1], sourcePixels[srcOff+2]);
+            console.log("assert=", targetPixels[tgtOff], targetPixels[tgtOff+1], targetPixels[tgtOff+2]);
+            console.log("diff=",rd, gd, bd);*/
+
+            rd*=rd;gd*=gd;bd*=bd;
+            var distance = (rd+gd+bd)/(4*255);
+            if(distance > maxDistance) {
+                console.log("x = ", x, "y=", y);
+                console.log("rendered=", sourcePixels[srcOff], sourcePixels[srcOff+1], sourcePixels[srcOff+2], sourcePixels[srcOff+3]);
+                console.log("assert=", targetPixels[tgtOff], targetPixels[tgtOff+1], targetPixels[tgtOff+2], targetPixels[tgtOff+3]);
+                console.log("diff=",rd, gd, bd);
+                console.log("distance= ", distance);
+
+                match = false;
+                break loop;
+            }
+        }
+    }
+    if(!match) {
+        console.log("Expected Image: " + targetImageData);
+        console.log("Actual Image: " + canvas.toDataURL());
+    }
+    ok(match, message);
+}

@@ -8,7 +8,7 @@
 function ColorMap(gl, main, parent, opts) {
     ColorMap.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.ColorMap = Webvs.defineClass(ColorMap, Component, {
+Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     defaultOptions: {
         key: "RED",
         output: "REPLACE",

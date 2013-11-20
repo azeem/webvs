@@ -3,7 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier) {
+CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier, comparator) {
     var gradientProgram = new GradientProgram();
     gradientProgram.init(gl);
 
@@ -16,10 +16,12 @@ CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier) {
     ];
 
     _.each(testValues, function(value) {
-        var cshift = new Webvs.ChannelShift({
-            channel: value[0]
-        });
-        cshift.init(gl, new DummyMain(canvas), new DummyParent(fm));
+        var cshift = new Webvs.ChannelShift(
+            gl, new DummyMain(canvas), new DummyParent(fm),
+            {
+                channel: value[0]
+            }
+        );
         fm.setRenderTarget();
         // clear
         gl.clearColor(0,0,0,1);
@@ -27,11 +29,13 @@ CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier) {
         //draw gradient
         gradientProgram.run(fm, null);
         // run effect
-        cshift.update();
+        cshift.draw();
         fm.restoreRenderTarget();
         copier.run(null, null, fm.getCurrentTexture());
+
+        imageFuzzyOk("ChannelShift " + value[0], gl, canvas, value[1]);
+
         cshift.destroy();
-        equal(canvas.toDataURL(), value[1], "ChannelShift for " + value[0] + "should be correct");
     });
     gradientProgram.cleanup();
 

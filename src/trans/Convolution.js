@@ -5,10 +5,10 @@
 
 (function(Webvs) {
 
-function Convolution2(gl, main, parent, opts) {
-    Convolution2.super.constructor.call(this, gl, main, parent, opts);
+function Convolution(gl, main, parent, opts) {
+    Convolution.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Convolution2 = Webvs.defineClass(Convolution2, Component2, {
+Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     componentName: "Convolution",
 
     defaultOptions: {

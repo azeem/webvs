@@ -68,7 +68,7 @@ function ChannelShiftProgram() {
             "void main() {",
             "   vec3 color = getSrcColor().rgb;",
 
-            _.flatMap(channels, function(channel, index) {
+            _.flatMap(ChannelShift.channels, function(channel, index) {
                 return [
                     "if(u_channel == "+index+") {",
                     "   setFragColor(vec4(color." + channel.toLowerCase() + ",1));",

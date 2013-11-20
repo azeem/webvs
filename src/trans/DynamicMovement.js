@@ -8,7 +8,7 @@
 function DynamicMovement(gl, main, parent, opts) {
     DynamicMovement.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Component2, {
+Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     defaultOptions: {
         code: {
             init: "",

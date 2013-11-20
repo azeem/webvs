@@ -68,7 +68,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
 
     updateColor: function() {
         this.color = Webvs.parseColorNorm(this.opts.color);
-        this.outColor = Webvs.parseColorNorm(this.opts.color);
+        this.outColor = Webvs.parseColorNorm(this.opts.outColor);
     }
 });
 

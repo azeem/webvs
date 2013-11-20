@@ -14,7 +14,9 @@ module.exports = function(config) {
             "build/webvs.js",
             "test/webgl-debug.js",
             "test/base.js",
-            "test/*.test.js"
+            //"test/*.test.js"
+            "test/ChannelShift.test.js",
+            "test/ColorClipProgram.test.js"
         ],
         proxies: {
             "/images": "http://localhost:8000/test/images/"
