@@ -5,6 +5,20 @@
 
 (function(Webvs) {
 
+/**
+ * @class
+ * A component that applies a convolution kernel
+ *
+ * @param {object} options - options object
+ * @param {Array.<Array.<number>>} options.kernel - an NxN array of numbers
+ * @param {number} [options.bias=0] - bias value to be added
+ * @param {number} [options.scale] - scale for the kernel. default is sum of kernel values
+ * @param {object} [options.edgeMode="EXTEND"] - how the frame edge cases should be handled viz. `WRAP`, `EXTEND`
+ *
+ * @constructor
+ * @augments Webvs.Component
+ * @memberof Webvs
+ */
 function Convolution(gl, main, parent, opts) {
     Convolution.super.constructor.call(this, gl, main, parent, opts);
 }
@@ -15,9 +29,9 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
         edgeMode: "EXTEND",
         scale: undefined,
         kernel: [
-            [0, 0, 0],
-            [0, 1, 0],
-            [0, 0, 0]
+            0, 0, 0,
+            0, 1, 0,
+            0, 0, 0
         ],
         bias: 0
     },
@@ -93,15 +107,10 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode) {
             if(value === 0) {
                 continue;
             }
-            colorSumEq.push("pos = v_position + texel * vec2("+(i-mid)+","+(j-mid)+");");
+            colorSumEq.push("pos = v_position + texel * vec2("+(j-mid)+","+(mid-i)+");");
             colorSumEq.push(edgeFunc);
             colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+Webvs.glslFloatRepr(value)+";");
         }
-    }
-
-    // compute kernel scaling factor
-    if(_.isUndefined(scale)) {
-        scale = _.reduce(kernel, function(memo, num){ return memo + num; }, 0);
     }
 
     ConvolutionProgram.super.constructor.call(this, {

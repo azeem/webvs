@@ -16,7 +16,9 @@ module.exports = function(config) {
             "test/base.js",
             //"test/*.test.js"
             "test/ChannelShift.test.js",
-            "test/ColorClipProgram.test.js"
+            "test/ColorClip.test.js",
+            "test/ColorMap.test.js",
+            "test/Convolution.test.js"
         ],
         proxies: {
             "/images": "http://localhost:8000/test/images/"

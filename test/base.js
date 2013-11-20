@@ -84,12 +84,13 @@ function CanvasTestWithFM() {
     CanvasTest.apply(window, testArgs);
 }
 
-function TriangleProgram(options) {
-    TriangleProgram.super.constructor.call(this, _.defaults(options||{}, {
+function PolyProgram(options) {
+    PolyProgram.super.constructor.call(this, _.defaults(options||{}, {
         copyOnSwap: true,
         vertexShader: [
             "attribute vec2 a_position;",
             "void main() {",
+            "   gl_PointSize = 1.0;",
             "   setPosition(a_position);",
             "}"
         ],
@@ -101,18 +102,14 @@ function TriangleProgram(options) {
         ]
     }));
 }
-TriangleProgram = Webvs.defineClass(TriangleProgram, Webvs.ShaderProgram, {
-    draw: function(color, x, y) {
+PolyProgram = Webvs.defineClass(PolyProgram, Webvs.ShaderProgram, {
+    draw: function(color, points, mode) {
+        mode = _.isUndefined(mode)?this.gl.TRIANGLES:mode;
+        points = new Float32Array(points);
+
         this.setUniform.apply(this, ["u_color", "3f"].concat(Webvs.parseColorNorm(color)));
-        this.setVertexAttribArray(
-            "a_position", 
-            new Float32Array([
-                -0.8+x, -0.6+y,
-                0.46+x, -0.5+y,
-                -0.7+x, 0.7+y
-            ])
-        );
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
+        this.setVertexAttribArray("a_position", points);
+        this.gl.drawArrays(mode, 0, points.length/2);
     }
 });
 
