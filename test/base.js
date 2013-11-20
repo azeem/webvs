@@ -84,8 +84,8 @@ function CanvasTestWithFM() {
     CanvasTest.apply(window, testArgs);
 }
 
-function PolyProgram(options) {
-    PolyProgram.super.constructor.call(this, _.defaults(options||{}, {
+function PolygonProgram(options) {
+    PolygonProgram.super.constructor.call(this, _.defaults(options||{}, {
         copyOnSwap: true,
         vertexShader: [
             "attribute vec2 a_position;",
@@ -102,7 +102,7 @@ function PolyProgram(options) {
         ]
     }));
 }
-PolyProgram = Webvs.defineClass(PolyProgram, Webvs.ShaderProgram, {
+PolygonProgram = Webvs.defineClass(PolygonProgram, Webvs.ShaderProgram, {
     draw: function(color, points, mode) {
         mode = _.isUndefined(mode)?this.gl.TRIANGLES:mode;
         points = new Float32Array(points);

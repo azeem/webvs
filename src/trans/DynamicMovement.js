@@ -5,6 +5,42 @@
 
 (function(Webvs) {
 
+/**
+ * @class
+ * A component that moves pixels according to user code.
+ * 
+ * #### Code variables
+ *
+ * The following variables are available in the code
+ *
+ * + x - x position of the pixel (-1 to +1)
+ * + y - y position of the pixel (-1 to +1)
+ * + d - length of pixel position vector (0 to 1)
+ * + r - angle of the position vector with y axis in clockwise direction in radians
+ * + w - width of the screen
+ * + h - height of the screen
+ * + b - 1 if a beat has occured else 0
+ *
+ * @param {object} options - options object
+ * @param {string} [options.code.init] - code to be run at startup
+ * @param {string} [options.code.onBeat] - code to be run when a beat occurs
+ * @param {string} [options.code.perFrame] - code to be run on every frame
+ * @param {string} [options.code.perPixel] - code that will be run once for every pixel. should set 
+ *       `x`, `y` or `d`, `r` variables (depending on coord) to specify point location. Note: state 
+ *        of this code does not persist.
+ * @param {number} [options.gridW=16] - width of the interpolation grid
+ * @param {number} [options.gridH=16] - height of the interpolation grid
+ * @param {boolean} [options.noGrid=false] - if true, then interpolation grid is not used
+ *      ie. movement will be pixel accurate
+ * @param {boolean} [options.compat=false] - if true, then calculations are low precision.
+ *      useful to map winamp AVS behaviour more closely
+ * @param {boolean} [options.bFilter=true] - use bilinear interpolation for pixel sampling
+ * @param {string} [options.coord="POLAR"] - coordinate system to be used viz. `POLAR`, `RECT`
+ * @augments Webvs.Component
+ * @constructor
+ * @memberof Webvs
+ * @constructor
+ */
 function DynamicMovement(gl, main, parent, opts) {
     DynamicMovement.super.constructor.call(this, gl, main, parent, opts);
 }
@@ -88,7 +124,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
                                                    opts.compat, this.code.hasRandom,
                                                    this.glslCode);
         } else {
-            this.program = new Webvs.DMovProgram(opts.coordMode, opts.bFilter,
+            this.program = new Webvs.DMovProgram(opts.coord, opts.bFilter,
                                                  opts.compat, this.code.hasRandom,
                                                  this.glslCode);
         }
