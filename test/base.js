@@ -116,11 +116,12 @@ TriangleProgram = Webvs.defineClass(TriangleProgram, Webvs.ShaderProgram, {
     }
 });
 
-function GradientProgram() {
+function GradientProgram(blue) {
+    blue = _.isNumber(blue)?blue:1;
     GradientProgram.super.constructor.call(this, {
         fragmentShader: [
             "void main() {",
-            "   setFragColor(vec4(v_position, 1, 1));",
+            "   setFragColor(vec4(v_position, "+Webvs.glslFloatRepr(blue)+", 1));",
             "}"
         ]
     });
