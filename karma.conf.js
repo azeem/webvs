@@ -20,6 +20,8 @@ module.exports = function(config) {
             "test/ColorMap.test.js",
             "test/Convolution.test.js",
             "test/DynamicMovement.test.js",
+            "test/FadeOut.test.js",
+            "test/UniqueTone.test.js",
         ],
         proxies: {
             "/images": "http://localhost:8000/test/images/"

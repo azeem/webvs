@@ -57,7 +57,7 @@ LineProgram = Webvs.defineClass(LineProgram, Webvs.ShaderProgram, {
     }
 });
 
-CanvasTestWithFM("DynamicMovement NG Compat", 3,
+CanvasTestWithFM("DynamicMovement", 3,
     function(canvas, gl, fm, copier) {
         var lineProgram = new LineProgram();
         lineProgram.init(gl);
