@@ -208,29 +208,21 @@ function imageFuzzyOk(message, gl, canvas, targetImageData, maxDistance) {
             var gd = targetPixels[tgtOff+1]-sourcePixels[srcOff+1];
             var bd = targetPixels[tgtOff+2]-sourcePixels[srcOff+2];
             var ad = targetPixels[tgtOff+3]-sourcePixels[srcOff+3];
-
-            /*console.log("x = ", x, "y=", y);
-            console.log("rendered=", sourcePixels[srcOff], sourcePixels[srcOff+1], sourcePixels[srcOff+2]);
-            console.log("assert=", targetPixels[tgtOff], targetPixels[tgtOff+1], targetPixels[tgtOff+2]);
-            console.log("diff=",rd, gd, bd);*/
-
             rd*=rd;gd*=gd;bd*=bd;
             var distance = (rd+gd+bd)/(4*255);
             if(distance > maxDistance) {
-                console.log("x = ", x, "y=", y);
-                console.log("rendered=", sourcePixels[srcOff], sourcePixels[srcOff+1], sourcePixels[srcOff+2], sourcePixels[srcOff+3]);
-                console.log("assert=", targetPixels[tgtOff], targetPixels[tgtOff+1], targetPixels[tgtOff+2], targetPixels[tgtOff+3]);
-                console.log("diff=",rd, gd, bd);
-                console.log("distance= ", distance);
+                // print some debug information
+                console.log("x=", x, "y=", y);
+                console.log("Actual Pixel=", sourcePixels[srcOff], sourcePixels[srcOff+1], sourcePixels[srcOff+2], sourcePixels[srcOff+3]);
+                console.log("Rendered Pixel=", targetPixels[tgtOff], targetPixels[tgtOff+1], targetPixels[tgtOff+2], targetPixels[tgtOff+3]);
+                console.log("Distance=", distance);
+                console.log("Expected Image=" + targetImageData);
+                console.log("Actual Image: " + canvas.toDataURL());
 
                 match = false;
                 break loop;
             }
         }
-    }
-    if(!match) {
-        console.log("Expected Image: " + targetImageData);
-        console.log("Actual Image: " + canvas.toDataURL());
     }
     ok(match, message);
 }
