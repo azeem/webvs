@@ -18,30 +18,27 @@
  * @constructor
  * @memberof Webvs
  */
-function GlobalVar(options) {
-	Webvs.checkRequiredOptions(options, ["code"]);
-	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
-    this.inited = false;
-
-    GlobalVar.super.constructor.apply(this, arguments);
+function GlobalVar(gl, main, parent, opts) {
+    GlobalVar.super.call(this, gl, main, parent, opts);
 }
 Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
-    /**
-     * initializes the globalvar component
-     * @memberof Webvs.GlobalVar#
-     */
-	init: function(gl, main, parent) {
-		GlobalVar.super.init.call(this, gl, main, parent);
+    defaultOptions: {
+        code: {
+            init: "",
+            onBeat: "",
+            perFrame: ""
+        }
+    },
 
-        this.code.setup(main, this);
-	},
+    onChange: {
+        "code": "updateCode"
+    },
 
-    /**
-     * Runs the code
-     * @memberof Webvs.GlobalVar#
-     */
-	update: function() {
+    init: function() {
+        this.updateCode();
+    },
+
+    draw: function() {
 		var code = this.code;
 		code.b = this.main.analyser.beat?1:0;
 
@@ -55,33 +52,13 @@ Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
 		}
 
 		code.perFrame();
-	}
-});
+    },
 
-GlobalVar.ui = {
-    disp: "Global Var",
-    type: "GlobalVar",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                }
-            },
-        }
+    updateCode: function() {
+        var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b"]);
+        this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
+        this.inited = false;
     }
-};
+});
 
 })(Webvs);

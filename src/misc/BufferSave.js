@@ -20,113 +20,77 @@
  * @augments Webvs.Component
  * @memberof Webvs
  */
-function BufferSave(options) {
-    options = _.defaults(options, {
+function BufferSave(gl, main, parent, opts) {
+    BufferSave.super.constructor.call(this, gl, main, parent, opts);
+}
+Webvs.BufferSave = Webvs.defineClass(BufferSave, Webvs.Component, {
+    defaultOptions: {
         action: "SAVE",
         bufferId: 1,
         blendMode: "REPLACE"
-    });
-    this.blendMode = Webvs.blendModes[options.blendMode];
-    this.action = this.actions[options.action];
-    if(!this.action) {
-        throw new Error("Unknown BufferSave action " + options.action);
-    }
-
-    if(this.action == this.actions.SAVERESTORE) {
-        this._nextAction = this.actions.SAVE;
-    } else if(this.action == this.actions.RESTORESAVE) {
-        this._nextAction = this.actions.RESTORE;
-    }
-    this._bufferId = "__BUFFERSAVE_" + options.bufferId;
-    BufferSave.super.constructor.apply(this, arguments);
-}
-Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
-    actions: {
-        SAVE: 1,
-        RESTORE: 2,
-        SAVERESTORE: 3,
-        RESTORESAVE: 4
     },
 
-    /**
-     * Initializes the BufferSave component
-     * @memberof Webvs.BufferSave#
-     */
-    init: function(gl, main, parent) {
-        BufferSave.super.init.call(this, gl, main, parent);
-
-        // create frame buffer manager
-        if(!main.registerBank[this._bufferId]) {
-            var fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, true, 1);
-            main.registerBank[this._bufferId] = fm;
-        }
+    onChange: {
+        "action": "updateAction",
+        "bufferId": "updateBuffer",
+        "blendMode": "updateBlendMode"
     },
 
-    /**
-     * Saves or Renders the current frame
-     * @memberof Webvs.BufferSave#
-     */
-    update: function() {
-        var gl = this.gl;
-        var fm = this.main.registerBank[this._bufferId];
+    init: function() {
+        this.updateAction();
+        this.updateBlendMode();
+        this.updateBuffer();
+    },
 
-        // find the current action
+    draw: function() {
+        var fm = this.main.registerBank[this.bufferId];
+
         var currentAction;
-        if(this.action == this.actions.SAVERESTORE || this.action == this.RESTORESAVE) {
-            currentAction = this._nextAction;
-            // set the next action
-            if(this._nextAction == this.actions.SAVE) {
-                this._nextAction = this.actions.RESTORE;
-            } else {
-                this._nextAction = this.actions.SAVE;
-            }
+        if(this.opts.action == "SAVERESTORE" || this.opts.action == "RESTORESAVE") {
+            currentAction = this.nextAction;
+            // toggle next action
+            this.nextAction = (this.nextAction == "SAVE")?"RESTORE":"SAVE";
         } else {
-            currentAction = this.action;
+            currentAction = this.opts.action;
         }
 
         switch(currentAction) {
-            case this.actions.SAVE:
+            case "SAVE":
                 fm.setRenderTarget();
                 this.main.copier.run(null, null, this.parent.fm.getCurrentTexture());
                 fm.restoreRenderTarget();
                 break;
-            case this.actions.RESTORE:
+            case "RESTORE":
                 this.main.copier.run(this.parent.fm, this.blendMode, fm.getCurrentTexture());
                 break;
         }
     },
 
-    /**
-     * Releases resources.
-     * @memberof Webgl.BufferSave#
-     */
-    destroy: function() {
-        BufferSave.super.destroy.call(this);
-        // destroy the framebuffermanager
-        this.main.registerBank[this._bufferId].destroy();
+    updateAction: function() {
+        if(!_.contains(["SAVE", "RESTORE", "SAVERESTORE", "RESTORESAVE"], this.opts.action)) {
+            throw new Error("Unknow action " + this.opts.action);
+        }
+
+        if(this.opts.action == "SAVERESTORE") {
+            this.nextAction = "SAVE";
+        } else if(this.opts.action == "RESTORESAVE") {
+            this.nextAction = "RESTORE";
+        }
+    },
+
+    updateBuffer: function() {
+        // create frame buffer manager
+        this.bufferId = "__BUFFERSAVE_" + this.opts.bufferId;
+        if(!this.main.registerBank[this.bufferId]) {
+            var fm = new Webvs.FrameBufferManager(this.main.canvas.width, this.main.canvas.height,
+                                                  this.gl, this.main.copier, true, 1);
+            this.main.registerBank[this.bufferId] = fm;
+        }
+    },
+
+    updateBlendMode: function() {
+        this.blendMode = Webvs.getBlendMode(this.opts.blendMode);
     }
 });
-
-BufferSave.ui = {
-    disp: "Buffer Save",
-    type: "BufferSave",
-    schema: {
-        action: {
-            type: "string",
-            title: "Buffer save action",
-            enum: ["SAVE", "RESTORE", "SAVERESTORE", "RESTORESAVE"]
-        },
-        bufferId: {
-            type: "number",
-            title: "Buffer Id",
-            enum: [1,2,3,4,5,6,7,8]
-        },
-        blendMode: {
-            type: "string",
-            title: "Blend mode",
-            enum: _.keys(Webvs.blendModes)
-        }
-    }
-};
 
 })(Webvs);
