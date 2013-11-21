@@ -83,7 +83,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     },
 
     updateCode: function() {
-        var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue", "cid"]);
+        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue", "cid"]);
         var code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
         code.n = 100;
         code.setup(this.main, this);
@@ -96,8 +96,9 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     },
 
     updateImage: function() {
+        var gl = this.gl;
         var image = new Image();
-        image.src = main.getResource(this.opts.imageSrc);
+        image.src = this.main.getResource(this.opts.imageSrc);
         this.imagewidth = image.width;
         this.imageHeight = image.height;
         if(!this.texture) {

@@ -54,7 +54,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         },
         source: "SPECTRUM",
         drawMode: "LINES",
-        thickenss: 1,
+        thickness: 1,
         clone: 1,
         colors: ["#ffffff"],
         cycleSpeed: 0.01
@@ -64,7 +64,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         code: "updateCode",
         colors: "updateColors",
         cycleSpeed: "updateSpeed",
-        clone: "updateClone"
+        clone: "updateClones"
     },
 
     init: function() {
@@ -77,9 +77,9 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     draw: function() {
-        this._stepColor();
+        var color = this._makeColor();
         _.each(this.code, function(code) {
-            this.drawScope(code, !this.inited);
+            this.drawScope(code, color, !this.inited);
         }, this);
         this.inited = true;
     },
@@ -92,10 +92,9 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
      * renders the scope
      * @memberof Webvs.SuperScope#
      */
-    drawScope: function(code, runInit) {
+    drawScope: function(code, color, runInit) {
         var gl = this.gl;
 
-        var color = this._makeColor();
         code.red = color[0];
         code.green = color[1];
         code.blue = color[2];
@@ -169,7 +168,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         this.code = [code];
     },
 
-    updateClone: function() {
+    updateClones: function() {
         this.code = Webvs.CodeInstance.clone(this.code, this.opts.clone);
     },
 

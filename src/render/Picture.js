@@ -33,6 +33,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
 
     init: function() {
         this.program = new Webvs.PictureProgram();
+        this.program.init(this.gl);
         this.updateImage();
     },
 
@@ -48,8 +49,9 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
     },
 
     updateImage: function() {
+        var gl = this.gl;
         var image = new Image();
-        image.src = main.getResource(this.opts.src);
+        image.src = this.main.getResource(this.opts.src);
         this.width = image.width;
         this.height = image.height;
         if(!this.texture) {

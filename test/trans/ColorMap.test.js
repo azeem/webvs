@@ -46,6 +46,7 @@ CanvasTestWithFM("ColorMap", 6, function(canvas, gl, fm, copier) {
         copier.run(null, null, fm.getCurrentTexture());
 
         imageFuzzyOk("ColorMap " + index, gl, canvas, expectedImages[index]);
+        colormap.destroy();
     });
 
     gprogram.cleanup();

@@ -3,7 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier, comparator) {
+CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier) {
     var gradientProgram = new GradientProgram();
     gradientProgram.init(gl);
 

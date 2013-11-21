@@ -6,13 +6,12 @@
 
 
 CanvasTest("ShaderProgram BasicTest", 1, function(canvas, gl) {
-    var program = new TriangleProgram();
+    var program = new PolygonProgram();
     program.init(gl);
-    program.run(null, null, "#0000FF", 0, 0);
-    equal(
-        canvas.toDataURL(),
-        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACuUlEQVR4Xu3aYXKCMBCGYbyZPVntyWpP1iYdmaEWlWxC+LL7MsOfqnTdhy/g6mmapu+0s4l04ASIiMStDEC0PCZAABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlVOZkEt6O3lna9WBCpBzquEz7R+gtNJIx2kAkqsBpZVJIxBQBEFAaYFSkZB8MX9fqYHlqwZmBxCSIggCihWlIiH5ljff+j7b3tKDV2ttIV+3M0juKSglZ1YHEFA6gZT+4JGkbIGpSEgpCEkRBAHlFYoxIfnuKt9lWTeWr0edOwgk3wpnFLb7DhwEkssAZe10PBAElIYgl3SstcGiZQkiKcuuGRPSEoSkCIKAMqMYE7JlsMjyZemAGEh+C7G/4BIEiY1iBLHMsUoDHDMpwiAxkyIOEg/FAHJOXaoZLJYuXbFQBgGJgzIQSAyUwUD8oxhAWs+xuKZUzrIUQPwmZdCEzOeUvw+PBpC9BouWpctfUhyA+EJxAuIHxQDSY7AYd/lyBpIhx/7Nl0OQsVEKQY4YLFqXrzGT4hhkzKQ4BxkPJQDIWCiFICpzLMt1ZYxrSiCQ6+2W2ILZ7zWBQHJT9VEKQdQGi5YzVxslIIh2UoKC6KIUgigPFn0sX8FB9JICyG+wdL4KLgAZabBoWb40UAD5Y3c8CiD/wnQsCiCrq9txKAUgIw8Wx7mmAPLUqn9SAHkZnr4oBSAeBovL7uch47x93bHMjy2f81KuyROcgGxp7vypvEnfdjuIKMijBi//3v/s3U1hceACEOtgccvZ67O5FkADyNy8R+vuGEuDpVk9XlMA0qMc/gcgYucAIICIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsnB88eO8BxQEqiwAAAABJRU5ErkJggg==",
-        "canvas should display a blue triangle"
+    program.run(null, null, "#0000FF", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
+    imageFuzzyOk(
+        "ShaderProgram Basic", gl, canvas, 
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACuUlEQVR4Xu3aYXKCMBCGYbyZPVntyWpP1iYdmaEWlWxC+LL7MsOfqnTdhy/g6mmapu+0s4l04ASIiMStDEC0PCZAABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlVOZkEt6O3lna9WBCpBzquEz7R+gtNJIx2kAkqsBpZVJIxBQBEFAaYFSkZB8MX9fqYHlqwZmBxCSIggCihWlIiH5ljff+j7b3tKDV2ttIV+3M0juKSglZ1YHEFA6gZT+4JGkbIGpSEgpCEkRBAHlFYoxIfnuKt9lWTeWr0edOwgk3wpnFLb7DhwEkssAZe10PBAElIYgl3SstcGiZQkiKcuuGRPSEoSkCIKAMqMYE7JlsMjyZemAGEh+C7G/4BIEiY1iBLHMsUoDHDMpwiAxkyIOEg/FAHJOXaoZLJYuXbFQBgGJgzIQSAyUwUD8oxhAWs+xuKZUzrIUQPwmZdCEzOeUvw+PBpC9BouWpctfUhyA+EJxAuIHxQDSY7AYd/lyBpIhx/7Nl0OQsVEKQY4YLFqXrzGT4hhkzKQ4BxkPJQDIWCiFICpzLMt1ZYxrSiCQ6+2W2ILZ7zWBQHJT9VEKQdQGi5YzVxslIIh2UoKC6KIUgigPFn0sX8FB9JICyG+wdL4KLgAZabBoWb40UAD5Y3c8CiD/wnQsCiCrq9txKAUgIw8Wx7mmAPLUqn9SAHkZnr4oBSAeBovL7uch47x93bHMjy2f81KuyROcgGxp7vypvEnfdjuIKMijBi//3v/s3U1hceACEOtgccvZ67O5FkADyNy8R+vuGEuDpVk9XlMA0qMc/gcgYucAIICIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsnB88eO8BxQEqiwAAAABJRU5ErkJggg=="
     );
     program.cleanup();
 });
@@ -38,22 +37,21 @@ CanvasTestWithFM("ShaderProgram BlendTest", _.keys(Webvs.blendModes).length*2, f
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             // draw a red triangle
-            var program = new TriangleProgram();
+            var program = new PolygonProgram();
             program.init(gl);
-            program.run(fm, null, "#804000", 0, 0);
+            program.run(fm, null, "#804000", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
 
             // draw a blue triangle
-            var program2 = new TriangleProgram({outputBlendMode: blendMode, forceShaderBlend: shaderBlend});
+            var program2 = new PolygonProgram({outputBlendMode: blendMode, forceShaderBlend: shaderBlend});
             program2.init(gl);
-            program2.run(fm, null, "#004080", 0.2, 0.2);
+            program2.run(fm, null, "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
 
             fm.restoreRenderTarget();
             copier.run(null, null, fm.getCurrentTexture());
 
-            equal(
-                canvas.toDataURL(),
-                imageData[blendMode],
-                "Blended triangles for mode " + blendMode + " should be correct"
+            imageFuzzyOk(
+                "ShaderProgram Blend", gl, canvas,
+                imageData[blendMode]
             );
 
             program.cleanup();

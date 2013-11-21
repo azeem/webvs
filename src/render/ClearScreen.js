@@ -19,7 +19,7 @@
  * @memberof Webvs
  */
 function ClearScreen(gl, main, parent, opts) {
-    ClearScreen.super.constructor.call(this, main, parent, opts);
+    ClearScreen.super.constructor.call(this, gl, main, parent, opts);
 }
 Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     defaultOptions: {
