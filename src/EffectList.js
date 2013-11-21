@@ -29,7 +29,7 @@
 function EffectList(gl, main, parent, opts) {
     EffectList.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
+Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
     defaultOptions: _.extend({
         code: {
             init: "",
@@ -50,10 +50,11 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
     init: function() {
         EffectList.super.init.call(this);
-        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
+        this.fm = new Webvs.FrameBufferManager(this.main.canvas.width, this.main.canvas.height,
+                                               this.gl, this.main.copier, this.parent?true:false);
         this.updateCode();
-        this.updateBlendMode("input", this.opts.input);
-        this.updateBlendMode("output", this.opts.output);
+        this.updateBlendMode(this.opts.input, "input");
+        this.updateBlendMode(this.opts.output, "output");
         this.frameCounter = 0;
         this.first = true;
     },
@@ -91,8 +92,8 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
 
         // clear frame
         if(opts.clearFrame || this.first || this.code.clear) {
-            gl.clearColor(0,0,0,1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+            this.gl.clearColor(0,0,0,1);
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
             this.first = false;
         }
 
@@ -105,7 +106,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
         // render all the components
         for(var i = 0;i < this.components.length;i++) {
             if(this.components[i].enabled) {
-                this.components[i].update();
+                this.components[i].draw();
             }
         }
 
@@ -131,7 +132,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Component, {
     },
 
     updateCode: function() {
-        var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
+        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
         this.code = codeGen.generateJs(["init", "perFrame"]);
         this.code.setup(this.main, this);
         this.inited = false;

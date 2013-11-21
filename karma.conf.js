@@ -14,23 +14,7 @@ module.exports = function(config) {
             "build/webvs.js",
             "test/webgl-debug.js",
             "test/base.js",
-            //"test/*.test.js"
-            "test/expr/ExprCodeGenerator.test.js",
-
-            "test/webgl/ShaderProgram.test.js",
-
-            "test/trans/ChannelShift.test.js",
-            "test/trans/ColorClip.test.js",
-            "test/trans/ColorMap.test.js",
-            "test/trans/Convolution.test.js",
-            "test/trans/DynamicMovement.test.js",
-            "test/trans/FadeOut.test.js",
-            "test/trans/UniqueTone.test.js",
-
-            "test/render/ClearScreen.test.js",
-            "test/render/Picture.test.js",
-            "test/render/Simple.test.js",
-            "test/render/Texer.test.js",
+            "test/**/*.test.js"
         ],
         proxies: {
             "/images": "http://localhost:8000/test/images/"

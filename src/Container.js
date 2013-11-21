@@ -37,6 +37,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             var component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
             components.push(component);
         }
+        this.components = components;
     },
 
     /**
