@@ -46,9 +46,9 @@ function Main(options) {
         this.stats = stats;
     }
     this.resources = {};
-    this.rootComponent = new Webvs.EffectList({id:"root"});
     this._registerContextEvents();
     this._initGl();
+    this._setupRoot({id: "root"});
 }
 Webvs.Main = Webvs.defineClass(Main, Object, {
     _registerContextEvents: function() {
@@ -80,6 +80,12 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         }
     },
 
+    _setupRoot: function(preset) {
+        this.registerBank = {};
+        this.bootTime = (new Date()).getTime();
+        this.rootComponent = new Webvs.EffectList(this.gl, this, null, preset);
+    },
+
     /**
      * Loads a preset JSON. If a preset is already loaded and running, then
      * the animation is stopped, and the new preset is loaded.
@@ -89,10 +95,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     loadPreset: function(preset) {
         preset = _.clone(preset); // use our own copy
         preset.id = "root";
-        var newRoot = new Webvs.EffectList(preset);
         this.stop();
         this.rootComponent.destroy();
-        this.rootComponent = newRoot;
+        this._setupRoot(preset);
         this.resources = preset.resources || {};
     },
 
@@ -106,7 +111,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.rootComponent.destroy();
         this.copier.cleanup();
         this._initGl();
-        this.rootComponent = new Webvs.EffectList(preset);
+        this._setupRoot(preset);
     },
 
     /**
@@ -121,7 +126,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         var _this = this;
         var drawFrame = function() {
             if(_this.analyser.isPlaying()) {
-                _this.rootComponent.update();
+                _this.rootComponent.draw();
             }
             _this.animReqId = requestAnimationFrame(drawFrame);
         };
@@ -136,11 +141,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             };
         }
 
-        if(!this.rootComponent.componentInited) {
-            this.registerBank = {};
-            this.bootTime = (new Date()).getTime();
-            this.rootComponent.init(this.gl, this);
-        }
         this.animReqId = requestAnimationFrame(drawFrame);
         this.isStarted = true;
     },
@@ -287,31 +287,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @param {object} options - the options for this component.
      */
 });
-
-Main.ui = {
-    leaf: false,
-    disp: "Main",
-    schema: {
-        name: {
-            type: "string",
-            title: "Name"
-        },
-        author: {
-            type: "string",
-            title: "Author"
-        },
-        description: {
-            type: "string",
-            title: "Description"
-        },
-        clearFrame: {
-            type: "boolean",
-            title: "Clear every frame",
-            default: false,
-            required: true
-        }
-    },
-};
 
 })(Webvs);
 
