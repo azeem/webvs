@@ -65,7 +65,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         if(opts.enableOnBeat) {
             if(this.main.analyser.beat) {
                 this.frameCounter = opts.enableOnBeatFor;
-            } else if(this._frameCounter > 0) {
+            } else if(this.frameCounter > 0) {
                 this.frameCounter--;
             }
 

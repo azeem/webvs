@@ -21,6 +21,8 @@ CanvasTestWithFM("Effectlist Code", 2, function(canvas, gl, fm, copier) {
     });
 
     fm.setRenderTarget();
+    gl.clearColor(0,0,0,1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     el.draw();
     fm.restoreRenderTarget();
     copier.run(null, null, fm.getCurrentTexture());
@@ -30,6 +32,8 @@ CanvasTestWithFM("Effectlist Code", 2, function(canvas, gl, fm, copier) {
     );
 
     fm.setRenderTarget();
+    gl.clearColor(0,0,0,1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     el.draw();
     fm.restoreRenderTarget();
     copier.run(null, null, fm.getCurrentTexture());
@@ -41,3 +45,48 @@ CanvasTestWithFM("Effectlist Code", 2, function(canvas, gl, fm, copier) {
     el.destroy();
 });
 
+CanvasTestWithFM("EffectList EnableOnBeat", 2, function(canvas, gl, fm, copier) {
+    var main = new DummyMain(canvas, copier);
+    var parent = new DummyParent(fm);
+
+    var el = new Webvs.EffectList(gl, main, parent, {
+        enableOnBeat: true,
+        enableOnBeatFor: 2,
+        output: "AVERAGE",
+        components: [
+            {
+                type: "ClearScreen",
+                color: "#ff0000"
+            }
+        ]
+    });
+
+    fm.setRenderTarget();
+    gl.clearColor(0,0,0,1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    el.draw();
+    fm.restoreRenderTarget();
+    copier.run(null, null, fm.getCurrentTexture());
+    imageFuzzyOk(
+        "Effectlist enableOnBeatFor: should'nt render when there is no beat", gl, canvas,
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAABbUlEQVR4Xu3TsQkAMAzEQHv/oZMUGULFGdwLid+ZOe9dxMAKEinxMQRp9RhBBIkZiOFYiCAxAzEcCxEkZiCGYyGCxAzEcCxEkJiBGI6FCBIzEMOxEEFiBmI4FiJIzEAMx0IEiRmI4ViIIDEDMRwLESRmIIZjIYLEDMRwLESQmIEYjoUIEjMQw7EQQWIGYjgWIkjMQAzHQgSJGYjhWIggMQMxHAsRJGYghmMhgsQMxHAsRJCYgRiOhQgSMxDDsRBBYgZiOBYiSMxADMdCBIkZiOFYiCAxAzEcCxEkZiCGYyGCxAzEcCxEkJiBGI6FCBIzEMOxEEFiBmI4FiJIzEAMx0IEiRmI4ViIIDEDMRwLESRmIIZjIYLEDMRwLESQmIEYjoUIEjMQw7EQQWIGYjgWIkjMQAzHQgSJGYjhWIggMQMxHAsRJGYghmMhgsQMxHAsRJCYgRiOhQgSMxDDsRBBYgZiOBYiSMxADMdCYkEuN71kAdKuUAcAAAAASUVORK5CYII="
+    );
+
+    fm.setRenderTarget();
+    gl.clearColor(0,0,0,1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    for(var i = 0;i < 10;i++) {
+        if(i == 5) {
+            main.analyser.beat = true;
+        } else {
+            main.analyser.beat = false;
+        }
+        el.draw();
+    }
+    fm.restoreRenderTarget();
+    copier.run(null, null, fm.getCurrentTexture());
+    imageFuzzyOk(
+        "Effectlist enableOnBeatFor: should render for 2 frames", gl, canvas,
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAABbUlEQVR4Xu3VUQkAMAzE0Na/qEnbYCry8aogJBzdM3PHZQysIJkWH0SQVg9BYj0EEaRmIMbjhwgSMxDDsRBBYgZiOBYiSMxADMdCBIkZiOFYiCAxAzEcCxEkZiCGYyGCxAzEcCxEkJiBGI6FCBIzEMOxEEFiBmI4FiJIzEAMx0IEiRmI4ViIIDEDMRwLESRmIIZjIYLEDMRwLESQmIEYjoUIEjMQw7EQQWIGYjgWIkjMQAzHQgSJGYjhWIggMQMxHAsRJGYghmMhgsQMxHAsRJCYgRiOhQgSMxDDsRBBYgZiOBYiSMxADMdCBIkZiOFYiCAxAzEcCxEkZiCGYyGCxAzEcCxEkJiBGI6FCBIzEMOxEEFiBmI4FiJIzEAMx0IEiRmI4ViIIDEDMRwLESRmIIZjIYLEDMRwLESQmIEYjoUIEjMQw7EQQWIGYjgWIkjMQAzHQgSJGYjhWIggMQMxHAsRJGYghmMhgsQMxHAeJCiunQjq6P4AAAAASUVORK5CYII="
+    );
+});
