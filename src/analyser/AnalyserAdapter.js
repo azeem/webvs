@@ -22,13 +22,7 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
      */
     beat: false,
 
-    /**
-     * returns whether song is being played or not.
-     * @abstract
-     * @returns {boolean}
-     * @memberof Webvs.AnalyserAdapter#
-     */
-    isPlaying: function() {return false;},
+    frame: function() {},
 
     /**
      * Returns array of waveform values

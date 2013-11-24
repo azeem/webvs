@@ -125,9 +125,8 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
         var _this = this;
         var drawFrame = function() {
-            if(_this.analyser.isPlaying()) {
-                _this.rootComponent.draw();
-            }
+            _this.analyser.frame();
+            _this.rootComponent.draw();
             _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
@@ -191,18 +190,19 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @returns {boolean} - success of the operation
      * @memberof Webvs.Main#
      */
-    updateComponent: function(id, options) {
-        options = _.clone(options); // use our own copy
-        options.id = id;
+    updateComponent: function(id, name, value) {
         if(id == "root") {
-            var subComponents = this.rootComponent.detachAllComponents();
-            options = _.defaults(options, this.rootComponent.options);
-            this.rootComponent.destroy();
-            this.rootComponent = new Webvs.EffectList(options, subComponents);
-            this.rootComponent.init(this.gl, this);
+            if(_.isString(name)) {
+                this.rootComponent.setOption(name, value);
+            } else {
+                var opts = name;
+                _.each(opts, function(value, name) {
+                    this.rootComponent.setOption(name, value);
+                }, this);
+            }
             return true;
         } else {
-            return this.rootComponent.updateComponent(id, options);
+            return this.rootComponent.updateComponent(id, name, value);
         }
     },
 
