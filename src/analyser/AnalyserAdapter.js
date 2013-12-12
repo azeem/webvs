@@ -22,23 +22,31 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
      */
     beat: false,
 
+    /**
+     * This function is called once every frame. The analyser
+     * data should computed here.
+     * @abstract
+     * @memberof Webvs.AnalyserAdapter#
+     */
     frame: function() {},
 
     /**
      * Returns array of waveform values
      * @abstract
+     * @param {number} channel - the channel whose data is to be fetched. 0 - center, 1 - left, 2 - right
      * @returns {Float32Array}
      * @memberof Webvs.AnalyserAdapter#
      */
-    getWaveform: function() {return new Float32Array(0);},
+    getWaveform: function(channel) {return new Float32Array(0);},
 
     /**
      * Returns array of spectrum values
      * @abstract
+     * @param {number} channel - the channel whose data is to be fetched. 0 - center, 1 - left, 2 - right
      * @returns {Float32Array}
      * @memberof Webvs.AnalyserAdapter#
      */
-    getSpectrum: function() {return new Float32Array(0);}
+    getSpectrum: function(channel) {return new Float32Array(0);}
 });
 
 })(Webvs);

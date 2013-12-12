@@ -13,7 +13,13 @@
  * @constructor
  */
 function WebAudioAnalyser(fftSize) {
-    this.context = new AudioContext();
+    if(window.webkitAudioContext) {
+        this.context = new webkitAudioContext();
+    } else if(window.AudioContext) {
+        this.context = new AudioContext();
+    } else {
+        throw new Error("Cannot creat webaudio context");
+    }
 
     this.fftSize = fftSize || 512;
     this.visData = [];
@@ -24,6 +30,11 @@ function WebAudioAnalyser(fftSize) {
     }
 }
 Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapter, {
+    /**
+     * Connect this analyser to any WebAudio Node
+     * @memberof Webvs.WebAudioAnalyser#
+     * @param {AudioNode} sourceNode - node which will give audio data to this analyzer
+     */
     connectToNode: function(sourceNode) {
         // this gain node simply up/down mixes input source to stereo output
         this.gain = this.context.createGain();
@@ -46,7 +57,16 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
         }
     },
 
-    load: function(source) {
+    /**
+     * Helper for @link{Webvs.WebAudioAnalyser#connectToNode}. This creates Audio object
+     * for the audio file and connects this analyser to its mediaElementSource
+     * @memberof Webvs.WebAudioAnalyser#
+     * @param {string|HTMLMediaElement} source - location of audio file or a media DOM
+     * @param {boolean} [autoplay=false] - automatically starts playing the Audio when its ready
+     * @param {function} [readyFunc] - this function is called when the Audio is ready to be played
+     * @returns {HTMLMediaElement} the DOM media object. Use this to play/pause the audio
+     */
+    load: function(source, autoplay, readyFunc) {
         var element;
         if(source instanceof HTMLMediaElement) {
             element = source;
@@ -60,11 +80,20 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
             this_.source = this_.context.createMediaElementSource(element);
             this_.connectToNode(this_.source);
             this_.source.connect(this_.context.destination);
+            element.removeEventListener("canplay", onCanPlay);
+
+            if(autoplay) {
+                element.play();
+            }
+
+            if(readyFunc) {
+                readyFunc(element);
+            }
         };
         if(element.readyState < 3) {
-            onCanPlay();
-        } else {
             element.addEventListener("canplay", onCanPlay);
+        } else {
+            onCanPlay();
         }
 
         return element;
@@ -94,10 +123,10 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
         // center channel is average of left and right
         var centerVisData = this.visData[0];
         for(i = 0;i < centerVisData.spectrum.length;i++) {
-            centerVisData.spectrum[i] = (this.visData[1].spectrum[i]+this.visData[2].spectrum[i])/2;
+            centerVisData.spectrum[i] = (this.visData[1].spectrum[i]/2+this.visData[2].spectrum[i]/2);
         }
         for(i = 0;i < centerVisData.waveform.length;i++) {
-            centerVisData.waveform[i] = (this.visData[1].waveform[i]+this.visData[2].waveform[i])/2;
+            centerVisData.waveform[i] = (this.visData[1].waveform[i]/2+this.visData[2].waveform[i]/2);
         }
 
         // TODO: do beat detection here

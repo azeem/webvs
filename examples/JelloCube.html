@@ -189,16 +189,12 @@ See the file license.txt for copying permission.
             webvsMain.start();
 
             // load and play the track
-            /*dancer.load({
-                src: "music.m4a"
-            });
-            dancer.play();*/
             var trackUrl = "https://soundcloud.com/kartell/kartell-minimum-move";//https://soundcloud.com/kartell/atwater";
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
                 if (xhr.readyState == 4 && xhr.status == 200) {
                     var json = JSON.parse(xhr.responseText);
-                    analyser.load(json.stream_url + "?client_id=" + clientId).play();
+                    analyser.load(json.stream_url + "?client_id=" + clientId, true);
                 }
             };
             var apiUrl = "http://api.soundcloud.com/resolve.json?url="+encodeURI(trackUrl)+"&client_id="+clientId
