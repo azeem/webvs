@@ -23,14 +23,6 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
     beat: false,
 
     /**
-     * This function is called once every frame. The analyser
-     * data should computed here.
-     * @abstract
-     * @memberof Webvs.AnalyserAdapter#
-     */
-    frame: function() {},
-
-    /**
      * Returns array of waveform values
      * @abstract
      * @param {number} channel - the channel whose data is to be fetched. 0 - center, 1 - left, 2 - right

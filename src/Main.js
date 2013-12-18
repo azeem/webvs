@@ -125,7 +125,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
         var _this = this;
         var drawFrame = function() {
-            _this.analyser.frame();
             _this.rootComponent.draw();
             _this.animReqId = requestAnimationFrame(drawFrame);
         };

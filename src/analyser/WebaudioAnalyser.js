@@ -9,10 +9,22 @@
  * @class
  * AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
  * Adapters extend this class and define the required methods.
+ * @param {object} [options] - option object
+ * @param {number} [options.fftSize=512 - fft bucket size
+ * @param {number} [options.minFreq=0] - lower bound of frequency range where beats are checked. 0-1 normalized
+ * @param {number} [options.maxFreq=0.015] - upper bound of frequency range where beats are checked. 0-1 normalized
+ * @param {number} [options.threshold=0.3] - 0-1 threshold amplitude which will be treated as a beat
+ * @param {number} [options.decay=0.02] - decay for a moving threshold which is raised for every detected beat
  * @memberof Webvs
  * @constructor
  */
-function WebAudioAnalyser(fftSize) {
+function WebAudioAnalyser(options) {
+    options = _.defaults(options||{}, {
+        fftSize: 512,
+        threshold: 0.3,
+        decay: 0.02
+    });
+
     if(window.webkitAudioContext) {
         this.context = new webkitAudioContext();
     } else if(window.AudioContext) {
@@ -21,7 +33,12 @@ function WebAudioAnalyser(fftSize) {
         throw new Error("Cannot creat webaudio context");
     }
 
-    this.fftSize = fftSize || 512;
+    this.fftSize = options.fftSize;
+
+    this.threshold = options.threshold;
+    this.movingThreshold = 0;
+    this.decay = options.decay;
+
     this.visData = [];
     for(var ch = 0;ch < 3;ch++) {
         var spectrum = new Float32Array(this.fftSize/2);
@@ -55,63 +72,26 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
             this.channelSplit.connect(analyser, ch);
             this.analysers[ch] = analyser;
         }
-    },
 
-    /**
-     * Helper for @link{Webvs.WebAudioAnalyser#connectToNode}. This creates Audio object
-     * for the audio file and connects this analyser to its mediaElementSource
-     * @memberof Webvs.WebAudioAnalyser#
-     * @param {string|HTMLMediaElement} source - location of audio file or a media DOM
-     * @param {boolean} [autoplay=false] - automatically starts playing the Audio when its ready
-     * @param {function} [readyFunc] - this function is called when the Audio is ready to be played
-     * @returns {HTMLMediaElement} the DOM media object. Use this to play/pause the audio
-     */
-    load: function(source, autoplay, readyFunc) {
-        var element;
-        if(source instanceof HTMLMediaElement) {
-            element = source;
-        } else {
-            element = new Audio();
-            element.src = source;
-        }
-
+        // the analyser should have new data at roughly this
+        // interval.
+        var analyserFrameInterval = 1000*this.fftSize/this.context.sampleRate;
         var this_ = this;
-        var onCanPlay = function() {
-            this_.source = this_.context.createMediaElementSource(element);
-            this_.connectToNode(this_.source);
-            this_.source.connect(this_.context.destination);
-            element.removeEventListener("canplay", onCanPlay);
-
-            if(autoplay) {
-                element.play();
-            }
-
-            if(readyFunc) {
-                readyFunc(element);
-            }
-        };
-        if(element.readyState < 3) {
-            element.addEventListener("canplay", onCanPlay);
-        } else {
-            onCanPlay();
-        }
-
-        return element;
+        this.intervalHandler = setInterval(function() {
+            this_._update();
+        }, analyserFrameInterval);
     },
 
-    frame: function() {
-        if(!this.analysers) {
-            return;
-        }
+    _update: function() {
         var i;
         var byteBuffer = new Uint8Array(this.fftSize);
         for(var ch = 0;ch < 2;ch++) {
             var visData = this.visData[ch+1];
             var analyser = this.analysers[ch];
 
-            analyser.getFloatFrequencyData(visData.spectrum);
+            analyser.getByteFrequencyData(byteBuffer);
             for(i = 0;i < visData.spectrum.length;i++) { // scale to 0-1 range
-                visData.spectrum[i] = (visData.spectrum[i]-analyser.minDecibels)/(analyser.maxDecibels-analyser.minDecibels);
+                visData.spectrum[i] = byteBuffer[i]/255;
             }
 
             analyser.getByteTimeDomainData(byteBuffer);
@@ -129,7 +109,61 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
             centerVisData.waveform[i] = (this.visData[1].waveform[i]/2+this.visData[2].waveform[i]/2);
         }
 
-        // TODO: do beat detection here
+        // Simple kick detection 
+        this.beat = false;
+        var peak_left = 0, peak_right = 0;
+        for(i = 0;i < this.fftSize;i++) {
+            peak_left += Math.abs(this.visData[1].waveform[i]);
+        }
+        for(i = 0;i < this.fftSize;i++) {
+            peak_right += Math.abs(this.visData[2].waveform[i]);
+        }
+        var peak = Math.max(peak_left, peak_right)/this.fftSize;
+
+        if(peak >= this.movingThreshold && peak >= this.threshold) {
+            this.movingThreshold = peak;
+            this.beat = true;
+        } else {
+            this.movingThreshold = this.movingThreshold*(1-this.decay)+peak*this.decay;
+        }
+    },
+
+    /**
+     * Helper for @link{Webvs.WebAudioAnalyser#connectToNode}. This creates Audio object
+     * for the audio file and connects this analyser to its mediaElementSource
+     * @memberof Webvs.WebAudioAnalyser#
+     * @param {string|HTMLMediaElement} source - location of audio file or a media DOM
+     * @param {boolean} [autoplay=false] - automatically starts playing the Audio when its ready
+     * @param {function} [readyFunc] - this function is called when the Audio is ready to be played
+     * @returns {HTMLMediaElement} the DOM media object. Use this to play/pause the audio
+     */
+    load: function(source, readyFunc) {
+        var element;
+        if(source instanceof HTMLMediaElement) {
+            element = source;
+        } else {
+            element = new Audio();
+            element.src = source;
+        }
+
+        var this_ = this;
+        var onCanPlay = function() {
+            this_.source = this_.context.createMediaElementSource(element);
+            this_.connectToNode(this_.source);
+            this_.source.connect(this_.context.destination);
+            element.removeEventListener("canplay", onCanPlay);
+
+            if(readyFunc) {
+                readyFunc(element);
+            }
+        };
+        if(element.readyState < 3) {
+            element.addEventListener("canplay", onCanPlay);
+        } else {
+            onCanPlay();
+        }
+
+        return element;
     },
 
     /**
