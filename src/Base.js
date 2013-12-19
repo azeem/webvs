@@ -236,6 +236,15 @@ Webvs.getBlendMode = function(name) {
     return mode;
 };
 
+Webvs.getChannelId = function(name) {
+    switch(name) {
+        case "CENTER": return 0;
+        case "LEFT": return 1;
+        case "RIGHT": return 2;
+        default: throw new Error("invalid channel name");
+    }
+};
+
 /**
  * Returns a random string of given length
  * @param {number} count - the number of characters required

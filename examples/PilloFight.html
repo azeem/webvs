@@ -371,12 +371,12 @@ See the file license.txt for copying permission.
             webvsMain.start();
 
             // load and play the track
-            var trackUrl = "https://soundcloud.com/knightone/rasmus-faber-indian-summer-knight-one-remix";
+            var trackUrl = "https://soundcloud.com/anna-lunoe/i-met-you-anna-lunoe-flume";
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
                 if (xhr.readyState == 4 && xhr.status == 200) {
                     var json = JSON.parse(xhr.responseText);
-                    analyser.load(json.stream_url + "?client_id=" + clientId, true);
+                    analyser.load(json.stream_url + "?client_id=" + clientId).play();
                 }
             };
             var apiUrl = "http://api.soundcloud.com/resolve.json?url="+encodeURI(trackUrl)+"&client_id="+clientId

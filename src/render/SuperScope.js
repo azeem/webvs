@@ -52,6 +52,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             onBeat: "",
             perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d"
         },
+        channel: "CENTER",
         source: "SPECTRUM",
         drawMode: "LINES",
         thickness: 1,
@@ -64,7 +65,8 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         code: "updateCode",
         colors: "updateColors",
         cycleSpeed: "updateSpeed",
-        clone: "updateClones"
+        clone: "updateClones",
+        channel: "updateChannel"
     },
 
     init: function() {
@@ -74,6 +76,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         this.updateClones();
         this.updateSpeed();
         this.updateColor();
+        this.updateChannel();
     },
 
     draw: function() {
@@ -113,9 +116,9 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         var nPoints = Math.floor(code.n);
         var data;
         if(this.opts.source == "SPECTRUM") {
-            data = this.main.analyser.getSpectrum();
+            data = this.main.analyser.getSpectrum(this.channel);
         } else {
-            data = this.main.analyser.getWaveform();
+            data = this.main.analyser.getWaveform(this.channel);
         }
         var dots = this.opts.drawMode == "DOTS";
         var bucketSize = data.length/nPoints;
@@ -186,6 +189,10 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         } else {
             this.curStep = 0;
         }
+    },
+
+    updateChannel: function() {
+        this.channel = Webvs.getChannelId(this.opts.channel);
     },
 
     _makeColor: function() {

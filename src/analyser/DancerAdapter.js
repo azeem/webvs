@@ -31,15 +31,6 @@ function DancerAdapter(dancer) {
 }
 Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
     /**
-     * returns whether song is being played or not.
-     * @returns {boolean}
-     * @memberof Webvs.DancerAdapter#
-     */
-    isPlaying: function() {
-        return this.dancer.isPlaying();
-    },
-
-    /**
      * returns array of waveform values
      * @returns {Float32Array}
      * @memberof Webvs.DancerAdapter#

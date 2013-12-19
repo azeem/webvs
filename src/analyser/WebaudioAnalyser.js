@@ -11,17 +11,15 @@
  * Adapters extend this class and define the required methods.
  * @param {object} [options] - option object
  * @param {number} [options.fftSize=512 - fft bucket size
- * @param {number} [options.minFreq=0] - lower bound of frequency range where beats are checked. 0-1 normalized
- * @param {number} [options.maxFreq=0.015] - upper bound of frequency range where beats are checked. 0-1 normalized
- * @param {number} [options.threshold=0.3] - 0-1 threshold amplitude which will be treated as a beat
- * @param {number} [options.decay=0.02] - decay for a moving threshold which is raised for every detected beat
+ * @param {number} [options.threshold=0.125] - 0-1 threshold amplitude which will be treated as a beat
+ * @param {number} [options.decay=0.02] - decay for a moving threshold 
  * @memberof Webvs
  * @constructor
  */
 function WebAudioAnalyser(options) {
     options = _.defaults(options||{}, {
         fftSize: 512,
-        threshold: 0.3,
+        threshold: 0.125,
         decay: 0.02
     });
 
@@ -30,7 +28,7 @@ function WebAudioAnalyser(options) {
     } else if(window.AudioContext) {
         this.context = new AudioContext();
     } else {
-        throw new Error("Cannot creat webaudio context");
+        throw new Error("Cannot create webaudio context");
     }
 
     this.fftSize = options.fftSize;
@@ -114,8 +112,6 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
         var peak_left = 0, peak_right = 0;
         for(i = 0;i < this.fftSize;i++) {
             peak_left += Math.abs(this.visData[1].waveform[i]);
-        }
-        for(i = 0;i < this.fftSize;i++) {
             peak_right += Math.abs(this.visData[2].waveform[i]);
         }
         var peak = Math.max(peak_left, peak_right)/this.fftSize;
