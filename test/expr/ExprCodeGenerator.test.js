@@ -17,7 +17,7 @@ test('ExprCodeGenerator GLSL Generation', function() {
         perPixel: "x=x+(sin(y*dx)*.03); y=rand(y)-(cos(x*dy)*.03);"
     }, ["x", "y", "r", "d", "b", "w", "h"]);
 
-    var glslExpect = "float x;\nfloat y;\nfloat r;\nfloat d;\nuniform float b;\nuniform float w;\nuniform float h;\nuniform float c;\nuniform float f;\nuniform float dt;\nuniform float dl;\nuniform float beatdiv;\nuniform float t;\nuniform float dx;\nuniform float dy;\nuniform vec2 __randStep;\nvec2 __randSeed;\nfloat rand(float max) {\n   __randCur += __randStep;\n   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);\n   return (floor(val*max)+1);\n}\nvoid perPixel() {\nx=(x+((sin((y*dx)))*0.03));\ny=((rand(y))-((cos((x*dy)))*0.03));\n}";
+    var glslExpect = "uniform float c;\nuniform float f;\nuniform float dt;\nuniform float dl;\nuniform float beatdiv;\nuniform float t;\nuniform float dx;\nuniform float dy;\nfloat x = 0.0;\nfloat y = 0.0;\nfloat d = 0.0;\nfloat r = 0.0;\nuniform vec2 __randStep;\nvec2 __randSeed;\nfloat rand(float max) {\n   __randCur += __randStep;\n   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);\n   return (floor(val*max)+1);\n}\nvoid perPixel() {\nx=(x+((sin((y*dx)))*0.03));\ny=((rand(y))-((cos((x*dy)))*0.03));\n}";
     var js = codeGen.generateJs(["init", "perFrame", "onBeat"]);
     var glsl = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], js);
 

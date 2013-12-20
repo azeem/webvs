@@ -101,7 +101,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     },
 
     updateCode: function() {
-        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["x", "y", "r", "d", "b"]);
+        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code);
 
         // js code
         var code = codeGen.generateJs(["init", "onBeat", "perFrame"]);

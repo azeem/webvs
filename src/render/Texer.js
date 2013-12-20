@@ -83,7 +83,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     },
 
     updateCode: function() {
-        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue", "cid"]);
+        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code);
         var code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
         code.n = 100;
         code.setup(this.main, this);

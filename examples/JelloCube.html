@@ -193,7 +193,7 @@ See the file license.txt for copying permission.
             xhr.onreadystatechange = function() {
                 if (xhr.readyState == 4 && xhr.status == 200) {
                     var json = JSON.parse(xhr.responseText);
-                    analyser.load(json.stream_url + "?client_id=" + clientId, true).play();
+                    analyser.load(json.stream_url + "?client_id=" + clientId).play();
                 }
             };
             var apiUrl = "http://api.soundcloud.com/resolve.json?url="+encodeURI(trackUrl)+"&client_id="+clientId

@@ -59,28 +59,24 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
      * @memberof Webvs.CodeInstance#
      */
     bindUniforms: function(program) {
-        var that = this;
         // bind all values
-        var toBeBound = _.difference(_.keys(this), this._treatAsNonUniform);
-        _.each(toBeBound, function(name) {
-            var value = that[name];
-            if(typeof value !== "number") { return; }
-            program.setUniform(name, "1f", value);
-        });
+        _.each(this._instanceVars, function(name) {
+            program.setUniform(name, "1f", this[name]);
+        }, this);
 
         // bind registers
         _.each(this._registerUsages, function(name) {
             program.setUniform(name, "1f", this._registerBank[name]);
-        });
+        }, this);
 
         // bind random step value if there are usages of random
-        if(this.hasRandom) {
+        if(this._hasRandom) {
             var step = [Math.random()/100, Math.random()/100];
             program.setUniform("__randStep", "2fv", step);
         }
 
         // bind time values for gettime calls
-        if(this.hasGettime) {
+        if(this._hasGettime) {
             var time0 = ((new Date()).getTime()-this._bootTime)/1000;
             program.setUniform("__gettime0", "1f", time0);
         }
@@ -97,10 +93,10 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
                 } else {
                     return arg;
                 }
-            });
+            }, this);
             var result = this[item[0]].apply(this, args);
             program.setUniform(item[1], "1f", result);
-        });
+        }, this);
     },
 
     /**

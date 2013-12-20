@@ -55,7 +55,7 @@ Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
     },
 
     updateCode: function() {
-        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["b"]);
+        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code);
         this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
         this.code.setup(this.main, this);
         this.inited = false;

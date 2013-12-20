@@ -14,7 +14,7 @@
  * @memberof Webvs
  * @constructor
  */
-function ExprCodeGenerator(codeSrc, externalVars) {
+function ExprCodeGenerator(codeSrc) {
     this.codeSrc = {};
     for(var key in codeSrc) {
         var code = codeSrc[key];
@@ -26,7 +26,6 @@ function ExprCodeGenerator(codeSrc, externalVars) {
             this.codeSrc[key] = code;
         }
     }
-    this.externalVars = _.union(externalVars || [], ["w", "h"]);
     this._parseSrc();
 }
 Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
@@ -52,7 +51,7 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         this.funcUsages = funcUsages;
 
         // find instance variables
-        this.instanceVars = _.uniq(this.externalVars.concat(variables));
+        this.instanceVars = _.uniq(variables);
 
         // find register variable usages
         this.registerUsages = _.uniq(registerUsages);
@@ -97,13 +96,13 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         var glsl = [];
         treatAsNonUniform = treatAsNonUniform || [];
 
-        _.each(this.instanceVars, function(ivar) {
+        _.each(_.difference(this.instanceVars, treatAsNonUniform), function(ivar) {
             // create declarations for instance variables in glsl
-            var prefix = "";
-            if(!_.contains(treatAsNonUniform, ivar)) {
-                prefix = "uniform ";
-            }
-            glsl.push(prefix + "float " + ivar + ";");
+            glsl.push("uniform float " + ivar + ";");
+        });
+        _.each(treatAsNonUniform, function(nuvar) {
+            // create declarations and init for non uniform variables in glsl
+            glsl.push("float " + nuvar + " = 0.0;");
         });
 
         var glslFuncList = _.intersection(_.keys(this.codeAst), glslFuncs);
@@ -144,12 +143,12 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         // create required bindings in the code instance
         codeInst._preCompute = preCompute;
         if(_.contains(glslFuncList, "rand")) {
-            codeInst.hasRandom = true;
+            codeInst._hasRandom = true;
         }
         if(_.contains(glslFuncList, "gettime")) {
-            codeInst.hasGettime = true;
+            codeInst._hasGettime = true;
         }
-        codeInst._treatAsNonUniform = treatAsNonUniform;
+        codeInst._instanceVars = this.instanceVars;
 
         return glsl.join("\n");
     },
