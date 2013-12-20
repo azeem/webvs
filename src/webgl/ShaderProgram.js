@@ -62,7 +62,8 @@ function ShaderProgram(options) {
         varyingPos: false,
         dynamicBlend: false,
         swapFrame: false,
-        copyOnSwap: false
+        copyOnSwap: false,
+        blendValue: 0.5
     });
     var fsrc = [
         "precision mediump float;",
@@ -80,6 +81,7 @@ function ShaderProgram(options) {
 
     // select the blend equation
     this.outputBlendMode = options.outputBlendMode;
+    this.blendValue = options.blendValue;
 
     if(options.swapFrame || this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
         this.swapFrame = true;
@@ -110,6 +112,7 @@ function ShaderProgram(options) {
 
         fsrc.push(
             "uniform sampler2D u_srcTexture;",
+            "uniform float u_blendValue;",
             "#define getSrcColor() (texture2D(u_srcTexture, v_position))",
             "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))"
         );
@@ -155,7 +158,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         Webvs.ADDITIVE,
         Webvs.SUBTRACTIVE1,
         Webvs.SUBTRACTIVE2,
-        Webvs.MULTIPLY
+        Webvs.MULTIPLY,
+        Webvs.ADJUSTABLE
     ],
 
     // the blending formulas to be used inside shaders
@@ -166,7 +170,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         [Webvs.ADDITIVE, "color+texture2D(u_srcTexture, v_position)"],
         [Webvs.SUBTRACTIVE1, "texture2D(u_srcTexture, v_position)-color"],
         [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"],
-        [Webvs.MULTIPLY, "color*texture2D(u_srcTexture, v_position)"]
+        [Webvs.MULTIPLY, "color*texture2D(u_srcTexture, v_position)"],
+        [Webvs.ADJUSTABLE, "(u_blendValue*color)+((1.0-u_blendValue)*texture2D(u_srcTexture, v_position))"],
     ]),
 
     /**
@@ -227,6 +232,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             this._setGlBlendMode(gl, outputBlendMode);
         } else {
             gl.disable(gl.BLEND);
+            this.setUniform("u_blendValue", "1f", this.blendValue);
         }
 
         this.draw.apply(this, _.drop(arguments, 2));
@@ -289,6 +295,11 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 break;
             case Webvs.MULTIPLY:
                 gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
+            case Webvs.ADJUSTABLE:
+                gl.blendColor(0, 0, 0, this.blendValue);
+                gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.AVERAGE:
