@@ -32,7 +32,8 @@ Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
         },
         bFilter: true,
         coord: "POLAR",
-        compat: false
+        compat: false,
+        blend: false
     },
 
     onChange: {
@@ -46,6 +47,7 @@ Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
             bFilter: opts.bFilter,
             coord: opts.coord,
             compat: opts.compat,
+            blend: opts.blend,
             noGrid: true
         };
         this.dmov = new Webvs.DynamicMovement(this.gl, this.main, this.parent, dmovOpts);

@@ -54,6 +54,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
         },
         gridW: 16,
         gridH: 16,
+        blend: false,
         noGrid: false,
         compat: false,
         bFilter: true,
@@ -66,6 +67,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
         "compat": "updateProgram",
         "bFilter": "updateProgram",
         "coord": "updateProgram",
+        "blend": "updateProgram",
         "gridW": "updateGrid",
         "gridH": "updateGrid"
     },
@@ -110,7 +112,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
         this.code = code;
 
         // glsl code
-        this.glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], code);
+        this.glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r", "alpha"], code);
         this.updateProgram();
     },
 
@@ -122,11 +124,11 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
         if(opts.noGrid) {
             this.program = new Webvs.DMovProgramNG(opts.coord, opts.bFilter,
                                                    opts.compat, this.code.hasRandom,
-                                                   this.glslCode);
+                                                   this.glslCode, opts.blend);
         } else {
             this.program = new Webvs.DMovProgram(opts.coord, opts.bFilter,
                                                  opts.compat, this.code.hasRandom,
-                                                 this.glslCode);
+                                                 this.glslCode, opts.blend);
         }
         this.program.init(this.gl);
     },
@@ -258,7 +260,7 @@ var GlslHelpers = {
     }
 };
 
-function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode) {
+function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode, blend) {
     var fragmentShader = [
         exprCode,
         this.glslFilter(bFilter, compat),
@@ -267,14 +269,16 @@ function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode) {
         "   x = v_position.x*2.0-1.0;",
         "   y = -(v_position.y*2.0-1.0);",
         this.glslRectToPolar(coordMode),
+        "   alpha=0.5;",
         "   perPixel();",
         this.glslPolarToRect(coordMode),
-        "   setFragColor(vec4(filter(vec2(x, -y)), 1));",
+        "   setFragColor(vec4(filter(vec2(x, -y)), "+(blend?"alpha":"1.0")+"));",
         "}"
     ];
 
     DMovProgramNG.super.constructor.call(this, {
         fragmentShader: fragmentShader,
+        outputBlendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
         swapFrame: true
     });
 }
@@ -285,10 +289,11 @@ Webvs.DMovProgramNG = Webvs.defineClass(DMovProgramNG, Webvs.QuadBoxProgram, Gls
     }
 });
 
-function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode) {
+function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode, blend) {
     var vertexShader = [
         "attribute vec2 a_position;",
         "varying vec2 v_newPoint;",
+        "varying float v_alpha;",
         "uniform int u_coordMode;",
         exprCode,
         "void main() {",
@@ -296,7 +301,9 @@ function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode) {
         "   x = a_position.x;",
         "   y = -a_position.y;",
         this.glslRectToPolar(coordMode),
+        "   alpha = 0.5;",
         "   perPixel();",
+        "   v_alpha = alpha;",
         this.glslPolarToRect(coordMode),
         "   v_newPoint = vec2(x,-y);",
         "   setPosition(a_position);",
@@ -305,13 +312,15 @@ function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode) {
 
     var fragmentShader = [
         "varying vec2 v_newPoint;",
+        "varying float v_alpha;",
         this.glslFilter(bFilter, compat),
         "void main() {",
-        "   setFragColor(vec4(filter(v_newPoint), 1));",
+        "   setFragColor(vec4(filter(v_newPoint), "+(blend?"v_alpha":"1.0")+"));",
         "}"
     ];
 
     DMovProgram.super.constructor.call(this, {
+        outputBlendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
         fragmentShader: fragmentShader,
         vertexShader: vertexShader,
         swapFrame: true
