@@ -219,7 +219,8 @@ Webvs.blendModes = {
     SUBTRACTIVE1: 5,
     SUBTRACTIVE2: 6,
     MULTIPLY: 7,
-    ADJUSTABLE: 8
+    ADJUSTABLE: 8,
+    ALPHA: 9
 };
 _.extend(Webvs, Webvs.blendModes);
 

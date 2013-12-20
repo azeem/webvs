@@ -159,7 +159,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         Webvs.SUBTRACTIVE1,
         Webvs.SUBTRACTIVE2,
         Webvs.MULTIPLY,
-        Webvs.ADJUSTABLE
+        Webvs.ADJUSTABLE,
+        Webvs.ALPHA
     ],
 
     // the blending formulas to be used inside shaders
@@ -172,6 +173,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"],
         [Webvs.MULTIPLY, "color*texture2D(u_srcTexture, v_position)"],
         [Webvs.ADJUSTABLE, "(u_blendValue*color)+((1.0-u_blendValue)*texture2D(u_srcTexture, v_position))"],
+        [Webvs.ALPHA, "vec4((color.a*color.rgb)+((1.0-color.a)*texture2D(u_srcTexture, v_position).rgb), 1.0)"]
     ]),
 
     /**
@@ -295,6 +297,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 break;
             case Webvs.MULTIPLY:
                 gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
+            case Webvs.ALPHA:
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.ADJUSTABLE:
