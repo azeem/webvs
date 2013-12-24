@@ -103,16 +103,16 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     },
 
     updateCode: function() {
-        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code);
+        var compileResult = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r", "alpha"]);
 
         // js code
-        var code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
+        var code = compileResult.codeInst;
         code.setup(this.main, this.parent);
         this.inited = false;
         this.code = code;
 
         // glsl code
-        this.glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r", "alpha"], code);
+        this.glslCode = compileResult.glslCode;
         this.updateProgram();
     },
 

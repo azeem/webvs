@@ -60,12 +60,12 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
      */
     bindUniforms: function(program) {
         // bind all values
-        _.each(this._instanceVars, function(name) {
+        _.each(this._uniforms, function(name) {
             program.setUniform(name, "1f", this[name]);
         }, this);
 
         // bind registers
-        _.each(this._registerUsages, function(name) {
+        _.each(this._glslRegisters, function(name) {
             program.setUniform(name, "1f", this._registerBank[name]);
         }, this);
 
@@ -75,15 +75,9 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
             program.setUniform("__randStep", "2fv", step);
         }
 
-        // bind time values for gettime calls
-        if(this._hasGettime) {
-            var time0 = ((new Date()).getTime()-this._bootTime)/1000;
-            program.setUniform("__gettime0", "1f", time0);
-        }
-
         // bind precomputed values
-        _.each(this._preCompute, function(item, index) {
-            var args = _.map(_.last(item, item.length-2), function(arg) {
+        _.each(this._preCompute, function(entry, name) {
+            var args = _.map(_.drop(entry), function(arg) {
                 if(_.isString(arg)) {
                     if(arg.substring(0, 5) == "__REG") {
                         return this._registerBank[arg];
@@ -94,8 +88,8 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
                     return arg;
                 }
             }, this);
-            var result = this[item[0]].apply(this, args);
-            program.setUniform(item[1], "1f", result);
+            var result = this[entry[0]].apply(this, args);
+            program.setUniform(name, "1f", result);
         }, this);
     },
 

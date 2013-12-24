@@ -27,7 +27,7 @@ module.exports = function(grunt) {
         "src/expr/Ast.js",
         "build/pegs_expr_parser.js",
         "src/expr/CodeInstance.js",
-        "src/expr/ExprCodeGenerator.js",
+        "src/expr/CodeGenerator.js",
 
         "src/misc/GlobalVar.js",
         "src/misc/BufferSave.js",

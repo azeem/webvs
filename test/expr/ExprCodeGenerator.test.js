@@ -4,52 +4,40 @@
  */
 
 test('ExprCodeGenerator GLSL Generation', function() {
-    var codeGen = new Webvs.ExprCodeGenerator({
-        init: "c=200;f=0;dt=0;dl=0;beatdiv=8",
-        perFrame: [
-            "f = f + 1;",
-            "t = ((f * $PI * 2)/c)/beatdiv;",
-            "dt = dl + t;",
-            "dx = 14+(cos(dt)*8);",
-            "dy = 10+(sin(dt*2)*4);"
-        ].join("\n"),
-        onBeat: "c=f;f=0;dl=dt",
-        perPixel: "x=x+(sin(y*dx)*.03); y=rand(y)-(cos(x*dy)*.03);"
-    }, ["x", "y", "r", "d", "b", "w", "h"]);
+    var gen = Webvs.compileExpr({
+        init: "a=10;n=100",
+        perPixel: "b=10+a;c=rand(20);c=gettime(0)+1;x=0;"
+    }, ["init", "perFrame"], ["perPixel"], ["x", "y"]);
 
-    var glslExpect = "uniform float c;\nuniform float f;\nuniform float dt;\nuniform float dl;\nuniform float beatdiv;\nuniform float t;\nuniform float dx;\nuniform float dy;\nfloat x = 0.0;\nfloat y = 0.0;\nfloat d = 0.0;\nfloat r = 0.0;\nuniform vec2 __randStep;\nvec2 __randSeed;\nfloat rand(float max) {\n   __randCur += __randStep;\n   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);\n   return (floor(val*max)+1);\n}\nvoid perPixel() {\nx=(x+((sin((y*dx)))*0.03));\ny=((rand(y))-((cos((x*dy)))*0.03));\n}";
-    var js = codeGen.generateJs(["init", "perFrame", "onBeat"]);
-    var glsl = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], js);
-
-    equal(glsl, glslExpect, "Glsl code can be generated");
+    equal(
+        gen.glslCode,
+        "float b = 0.0;\nfloat c = 0.0;\nfloat x = 0.0;\nfloat y = 0.0;\nuniform float a;\nuniform vec2 __randStep;\nvec2 __randSeed;\nfloat rand(float max) {\n   __randSeed += __randStep;\n   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);\n   return (floor(val*max)+1);\n}\nuniform float __PC_gettime_0;\nvoid perPixel() {\nb=(10.0+a);\nc=(rand(20.0));\nc=((__PC_gettime_0)+1.0);\nx=0.0;\n}", 
+        "Glsl code can be generated"
+    );
 });
 
 test("ExprCodeGenerator comments", function() {
-    var codeGen = new Webvs.ExprCodeGenerator({
+    var gen = Webvs.compileExpr({
         test: [
             "a = a + 1;// this is a single line comment",
-            "a = pow( /*this is a comment in between*/ a, 2);",
+            "a = pow( /*this is a comment in between\*\/ a, 2);",
             "b = a + 1; /* this comment spans mutliple",
-            "lines */ c = b"
+            "lines \*\/ c = b"
         ].join("\n")
-    }, ["a", "c"]);
-    var js= codeGen.generateJs(["test"]);
-    js.a = 1;
-    js.test();
-    equal(js.c, 5, "comments are supported");
+    }, ["test"]);
+    gen.codeInst.a = 1;
+    gen.codeInst.test();
+    equal(gen.codeInst.c, 5, "comments are supported");
 });
 
 test("ExprCodeGenerator register support", function() {
-    var codeGen1 = new Webvs.ExprCodeGenerator({
+    var js1 = (Webvs.compileExpr({
         test: "@hello = a;reg12 = a;"
-    }, ["a"]);
+    }, ["test"])).codeInst;
 
-    var codeGen2 = new Webvs.ExprCodeGenerator({
+    var js2 = (Webvs.compileExpr({
         test: "b = @hello + 1;c = reg12 + 2"
-    }, ["b", "c"]);
-
-    var js1 = codeGen1.generateJs(["test"]);
-    var js2 = codeGen2.generateJs(["test"]);
+    }, ["test"])).codeInst;
 
     var dummyMain = {
         registerBank: {},
@@ -69,12 +57,11 @@ test("ExprCodeGenerator register support", function() {
 });
 
 test("ExprCodeGenerator comparison function test", function() {
-    var codeGen = new Webvs.ExprCodeGenerator({
+    var js = (Webvs.compileExpr({
         test: "d = if(above(a, b), if(above(a, c), a ,  c), if(above(b, c), b, c));\n" +
               "e = if(below(a, b), if(below(a, c), a ,  c), if(below(b, c), b, c));"
-    }, ["a", "b", "c", "d", "e"]);
+    }, ["test"])).codeInst;
 
-    var js = codeGen.generateJs(["test"]);
     js.a = 12;
     js.b = 9.23;
     js.c = 12.54;
@@ -84,12 +71,11 @@ test("ExprCodeGenerator comparison function test", function() {
 });
 
 test("ExprCodeGenerator trailing space and empty code", function() {
-    var codeGen = new Webvs.ExprCodeGenerator({
-        test: "   a=a+1;",
+    var js = (Webvs.compileExpr({
+        test: "   a=a+1",
         test2: "    a=a+2;",
         test3: "    "
-    });
-    var js = codeGen.generateJs(["test", "test2", "test3"]);
+    }, ["test", "test2", "test3"])).codeInst;
     js.a = 1;
     js.test();
     js.test2();

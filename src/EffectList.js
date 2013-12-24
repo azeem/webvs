@@ -132,8 +132,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
     },
 
     updateCode: function() {
-        var codeGen = new Webvs.ExprCodeGenerator(this.opts.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
-        this.code = codeGen.generateJs(["init", "perFrame"]);
+        this.code = Webvs.compileExpr(this.opts.code, ["init", "perFrame"]).codeInst;
         this.code.setup(this.main, this);
         this.inited = false;
     },
