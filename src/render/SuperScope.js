@@ -66,7 +66,8 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         colors: "updateColors",
         cycleSpeed: "updateSpeed",
         clone: "updateClones",
-        channel: "updateChannel"
+        channel: "updateChannel",
+        thickness: "updateThickness"
     },
 
     init: function() {
@@ -77,6 +78,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         this.updateSpeed();
         this.updateColor();
         this.updateChannel();
+        this.updateThickness();
     },
 
     draw: function() {
@@ -125,12 +127,23 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         var pbi = 0;
         var cdi = 0;
 
-        var pointBufferData = new Float32Array((dots?nPoints:(nPoints*2-2)) * 2);
-        var colorData = new Float32Array((dots?nPoints:(nPoints*2-2)) * 3);
+        var bufferSize, thickX, thickY;
+        var lastX, lastY, lastR, lastG, lastB;
+        if(this.veryThick) {
+            bufferSize = (dots?(nPoints*6):(nPoints*6-6));
+            thickX = this.opts.thickness/this.main.canvas.width;
+            thickY = this.opts.thickness/this.main.canvas.height;
+        } else {
+            bufferSize = (dots?nPoints:(nPoints*2-2));
+        }
+
+        var pointBufferData = new Float32Array(bufferSize * 2);
+        var colorData = new Float32Array(bufferSize * 3);
         for(var i = 0;i < nPoints;i++) {
             var value = 0;
             var size = 0;
-            for(var j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
+            var j;
+            for(j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
                 value += data[j];
             }
             value = value/size;
@@ -139,27 +152,86 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             code.i = pos;
             code.v = value;
             code.perPoint();
-            pointBufferData[pbi++] = code.x;
-            pointBufferData[pbi++] = code.y*-1;
-            if(i !== 0 && i != nPoints-1 && !dots) {
+            code.y *= -1;
+            if(this.veryThick) {
+                if(dots) {
+                    pointBufferData[pbi++] = code.x-thickX;
+                    pointBufferData[pbi++] = code.y-thickY;
+
+                    pointBufferData[pbi++] = code.x+thickX;
+                    pointBufferData[pbi++] = code.y-thickY;
+
+                    pointBufferData[pbi++] = code.x-thickX;
+                    pointBufferData[pbi++] = code.y+thickY;
+
+                    pointBufferData[pbi++] = code.x+thickX;
+                    pointBufferData[pbi++] = code.y-thickY;
+
+                    pointBufferData[pbi++] = code.x-thickX;
+                    pointBufferData[pbi++] = code.y+thickY;
+
+                    pointBufferData[pbi++] = code.x+thickX;
+                    pointBufferData[pbi++] = code.y+thickY;
+
+                    for(j = 0;j < 6;j++) {
+                        colorData[cdi++] = code.red;
+                        colorData[cdi++] = code.green;
+                        colorData[cdi++] = code.blue;
+                    }
+                } else {
+                    if(i%2 == 1 || i == nPoints-1) {
+                        var xdiff = Math.abs(lastX-code.x);
+                        var ydiff = Math.abs(lastY-code.y);
+                        var xoff = (xdiff <= ydiff)?thickX:0;
+                        var yoff = (xdiff >  ydiff)?thickY:0;
+
+                        pointBufferData[pbi++] = lastX+xoff;
+                        pointBufferData[pbi++] = lastY+yoff;
+
+                        pointBufferData[pbi++] = code.x+xoff;
+                        pointBufferData[pbi++] = code.y+yoff;
+
+                        pointBufferData[pbi++] = lastX-xoff;
+                        pointBufferData[pbi++] = lastY-yoff;
+
+                        pointBufferData[pbi++] = code.x+xoff;
+                        pointBufferData[pbi++] = code.y+yoff;
+
+                        pointBufferData[pbi++] = lastX-xoff;
+                        pointBufferData[pbi++] = lastY-yoff;
+
+                        pointBufferData[pbi++] = code.x-xoff;
+                        pointBufferData[pbi++] = code.y-yoff;
+
+                        for(j = 0;j < 6;j++) {
+                            colorData[cdi++] = (j%2 == 1)?code.red:lastR;
+                            colorData[cdi++] = (j%2 == 1)?code.green:lastG;
+                            colorData[cdi++] = (j%2 == 1)?code.blue:lastB;
+                        }
+                    }
+                    lastX = code.x;
+                    lastY = code.y;
+                    lastR = code.red;
+                    lastG = code.green;
+                    lastB = code.blue;
+                }
+            } else {
                 pointBufferData[pbi++] = code.x;
-                pointBufferData[pbi++] = code.y*-1;
-            }
-            if(dots) {
+                pointBufferData[pbi++] = code.y;
                 colorData[cdi++] = code.red;
                 colorData[cdi++] = code.green;
                 colorData[cdi++] = code.blue;
-            } else if(i !== 0) {
-                colorData[cdi++] = code.red;
-                colorData[cdi++] = code.green;
-                colorData[cdi++] = code.blue;
-                colorData[cdi++] = code.red;
-                colorData[cdi++] = code.green;
-                colorData[cdi++] = code.blue;
+                if(i !== 0 && i != nPoints-1 && !dots) {
+                    pointBufferData[pbi++] = code.x;
+                    pointBufferData[pbi++] = code.y;
+                    colorData[cdi++] = code.red;
+                    colorData[cdi++] = code.green;
+                    colorData[cdi++] = code.blue;
+                }
             }
         }
 
-        this.program.run(this.parent.fm, null, pointBufferData, colorData, dots, this.opts.thickness);
+        this.program.run(this.parent.fm, null, pointBufferData, colorData, dots, this.veryThick?1:this.opts.thickness, this.veryThick);
     },
 
     updateCode: function() {
@@ -192,6 +264,20 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
     updateChannel: function() {
         this.channel = Webvs.getChannelId(this.opts.channel);
+    },
+
+    updateThickness: function() {
+        var range;
+        if(this.opts.drawMode == "DOTS") {
+            range = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
+        } else {
+            range = this.gl.getParameter(this.gl.ALIASED_LINE_WIDTH_RANGE);
+        }
+        if(this.opts.thickness < range[0] || this.opts.thickness > range[1]) {
+            this.veryThick = true;
+        } else {
+            this.veryThick = false;
+        }
     },
 
     _makeColor: function() {
@@ -236,7 +322,7 @@ function SuperScopeShader() {
     });
 }
 Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
-    draw: function(points, colors, dots, thickness) {
+    draw: function(points, colors, dots, thickness, triangles) {
         var gl = this.gl;
 
         this.setUniform("u_pointSize", "1f", thickness);
@@ -249,7 +335,15 @@ Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram
             gl.lineWidth(thickness);
         }
 
-        gl.drawArrays(dots?gl.POINTS:gl.LINES, 0, points.length/2);
+        var mode;
+        if(triangles) {
+            mode = gl.TRIANGLES;
+        } else if(dots) {
+            mode = gl.POINTS;
+        } else {
+            mode = gl.LINES;
+        }
+        gl.drawArrays(mode, 0, points.length/2);
 
         if(!dots) {
             gl.lineWidth(prevLineWidth);
