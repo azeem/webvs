@@ -68,7 +68,8 @@ See the file license.txt for copying permission.
             webvsMain = new Webvs.Main({
                 canvas: document.getElementById("canvas"),
                 analyser: analyser,
-                showStat: true
+                showStat: true,
+                resourcePrefix: "../resources/"
             });
             webvsMain.loadPreset(samplePreset);
             webvsMain.start();

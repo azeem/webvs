@@ -53,7 +53,6 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
     connectToNode: function(sourceNode) {
         // this gain node simply up/down mixes input source to stereo output
         this.gain = this.context.createGain();
-        this.gain.value = 1.0;
         this.gain.channelCountMode = "explicit";
         this.gain.channelCount = 2;
         this.source.connect(this.gain);

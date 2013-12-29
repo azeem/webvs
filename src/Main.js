@@ -45,12 +45,35 @@ function Main(options) {
         document.body.appendChild(stats.domElement);
         this.stats = stats;
     }
-    this.resources = {};
+
+    this._initResourceManager(options.resourcePrefix);
     this._registerContextEvents();
     this._initGl();
     this._setupRoot({id: "root"});
 }
 Webvs.Main = Webvs.defineClass(Main, Object, {
+    _initResourceManager: function(prefix) {
+        var builtinPack = Webvs.ResourcePack;
+        if(prefix) {
+            builtinPack = _.clone(builtinPack);
+            builtinPack.prefix = prefix;
+        }
+        this.rsrcMan = new Webvs.ResourceManager(builtinPack);
+        var this_ = this;
+        this.rsrcMan.onWait = function() {
+            console.log("Please wait, Kicking the lamma's ass ...");
+            if(this_.isStarted) {
+                this_._stopAnimation();
+            }
+        };
+        this.rsrcMan.onReady = function() {
+            console.log("Enjoy the amp ...");
+            if(this_.isStarted) {
+                this_._startAnimation();
+            }
+        };
+    },
+
     _registerContextEvents: function() {
         var _this = this;
 
@@ -86,43 +109,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.rootComponent = new Webvs.EffectList(this.gl, this, null, preset);
     },
 
-    /**
-     * Loads a preset JSON. If a preset is already loaded and running, then
-     * the animation is stopped, and the new preset is loaded.
-     * @param {object} preset - JSON representation of the preset
-     * @memberof Webvs.Main#
-     */
-    loadPreset: function(preset) {
-        preset = _.clone(preset); // use our own copy
-        preset.id = "root";
-        this.stop();
-        this.rootComponent.destroy();
-        this._setupRoot(preset);
-        this.resources = preset.resources || {};
-    },
-
-    /**
-     * Reset all the components. Call this when canvas dimensions changes
-     * @memberof Webvs.Main#
-     */
-    resetCanvas: function() {
-        this.stop();
-        var preset = this.rootComponent.getOptions();
-        this.rootComponent.destroy();
-        this.copier.cleanup();
-        this._initGl();
-        this._setupRoot(preset);
-    },
-
-    /**
-     * Starts the animation if not already started
-     * @memberof Webvs.Main#
-     */
-    start: function() {
-        if(this.isStarted) {
-            return;
-        }
-
+    _startAnimation: function() {
         var _this = this;
         var drawFrame = function() {
             _this.rootComponent.draw();
@@ -138,9 +125,25 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
                 _this.stats.end();
             };
         }
-
         this.animReqId = requestAnimationFrame(drawFrame);
+    },
+
+    _stopAnimation: function() {
+        cancelAnimationFrame(this.animReqId);
+    },
+
+    /**
+     * Starts the animation if not already started
+     * @memberof Webvs.Main#
+     */
+    start: function() {
+        if(this.isStarted) {
+            return;
+        }
         this.isStarted = true;
+        if(this.rsrcMan.ready) {
+            this._startAnimation();
+        }
     },
 
     /**
@@ -148,11 +151,47 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     stop: function() {
-        if(!_.isUndefined(this.animReqId)) {
-            cancelAnimationFrame(this.animReqId);
-            this.isStarted = false;
+        if(!this.isStarted) {
+            return;
+        }
+        this.isStarted = false;
+        if(this.rsrcMan.ready) {
+            this._stopAnimation();
         }
     },
+
+    /**
+     * Loads a preset JSON. If a preset is already loaded and running, then
+     * the animation is stopped, and the new preset is loaded.
+     * @param {object} preset - JSON representation of the preset
+     * @memberof Webvs.Main#
+     */
+    loadPreset: function(preset) {
+        preset = _.clone(preset); // use our own copy
+        preset.id = "root";
+        this.rootComponent.destroy();
+
+        // setup resources
+        this.rsrcMan.clear();
+        if("resources" in preset && "uris" in preset.resources) {
+            this.rsrcMan.registerUri(preset.resources.uris);
+        }
+
+        this._setupRoot(preset);
+    },
+
+    /**
+     * Reset all the components. Call this when canvas dimensions changes
+     * @memberof Webvs.Main#
+     */
+    resetCanvas: function() {
+        var preset = this.rootComponent.getOptions();
+        this.rootComponent.destroy();
+        this.copier.cleanup();
+        this._initGl();
+        this._setupRoot(preset);
+    },
+
 
     /**
      * Generates and returns the instantaneous preset JSON 
@@ -162,7 +201,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      */
     getPreset: function() {
         var preset = this.rootComponent.getOptions();
-        preset.resources = this.resources;
+        preset.resources = {
+            uris: _.clone(this.rsrcMan.uris)
+        };
         return preset;
     },
 
@@ -237,36 +278,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         } else {
             return false;
         }
-    },
-
-    /**
-     * Returns resource data. If resource is not defined
-     * at preset level, its searched in the global resources
-     * object
-     * @param {string} name - name of the resource
-     * @returns resource data. if resource is not found then name itself is returned
-     * @memberof Webvs.Main#
-     */
-    getResource: function(name) {
-        var resource;
-        resource = this.resources[name];
-        if(!resource) {
-            resource = Webvs.Resources[name];
-        }
-        if(!resource) {
-            resource = name;
-        }
-        return resource;
-    },
-
-    /**
-     * Sets a preset level resource
-     * @param {string} name - name of the resource
-     * @param data - resource data
-     * @memberof Webvs.Main#
-     */
-    setResource: function(name, data) {
-        this.resources[name] = data;
     },
 
     /**
