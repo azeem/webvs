@@ -75,7 +75,6 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
         this.waitCount++;
         if(this.waitCount == 1) {
             this.ready = false;
-            console.log("setting ready to false");
             if(this.onWait) {
                 this.onWait();
             }
@@ -85,7 +84,6 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
     _loadEnd: function() {
         this.waitCount--;
         if(this.waitCount === 0) {
-            console.log("setting ready to true");
             this.ready = true;
             if(this.onReady) {
                 this.onReady();

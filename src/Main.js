@@ -67,7 +67,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             }
         };
         this.rsrcMan.onReady = function() {
-            console.log("Enjoy the amp ...");
+            console.log("Finished loading ...");
             if(this_.isStarted) {
                 this_._startAnimation();
             }
