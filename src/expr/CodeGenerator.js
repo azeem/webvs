@@ -391,7 +391,7 @@ function generateGlsl(codeAst, tables, glslFuncs) {
             glslCode.push(codeString);
             glslCode.push("}");
         } else {
-            glsl.push("void " + name + "() {}");
+            glslCode.push("void " + name + "() {}");
         }
     }
 
