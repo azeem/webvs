@@ -63,8 +63,7 @@ CanvasTestWithFM("ShaderProgram Alpha BlendTest", 1, function(canvas, gl, fm, co
     gradProgram.cleanup();
 });
 
-
-CanvasTestWithFM("ShaderProgram BlendTest", 20, function(canvas, gl, fm, copier) {
+CanvasTestWithFM("ShaderProgram BlendTest", 40, function(canvas, gl, fm, copier) {
     var testData = [
         [Webvs.REPLACE, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACyUlEQVR4Xu3cXW6DMBAEYOdmPRpHy83aUDUVScAsa3u8P4OUp5oYzceuaz/kVkr5fnx4GUngRhAjEn+PQRBbHoUgBDGWgLHHYYWkBPlaSrk/PrxOE8BUyAqyXkQxBkIUgyBEqaJgW9b2Udi+dmHGgzzXj73pifKRylwQti+DIER5QZlfIc/HYfv6TcIOCCulHWT5KmW5n/xrXVvUudD3XUNWkPWqolwFSV4pTS3rCVJF0YAkRukGcoiiBUmK0hVkF6UFJCGKGmTbrt5Xppc1pRUkGcoQkJdK6QGSCGUYyD9KL5AkKGNBynKySVH8OfiO3h9I8ErxCRIYxS9IUBTfIAFR/IMEQ4kBEgglDkgQlFggAVDigThHUYHUDha3e+9lxE5durl3uqMniBQYNC4uiNPWNQxkarvavs3OWld8EGeVkgPEEUoeECcouUAcoOQDMY6SE8QwSl4Qoyi5QQyiEMQYymUQFweLmnMnIzt6ghg7ZiHIezVNrpQhIGYOFjWta/KaQpAjtEmVQpBaFU1AIchZWwOjEOQMBLymEEQCAkQhiBQEhEKQKyAAFIJcBRmMQhANyECUSyBhDxYNoRBEi/G8r/M+hSCtIJ3bV3cQ9weLWqBOlUIQLcDefR1QCKIB6RD80bTpQdYWe/qreBo05T2hQFrWLysopkFaAta8oBZQYCDocDUg6z2zUbqDaIOwdN9MFIIcvAmzUAhSKc0ZKGIQ6cGipdbT41nQKAQRqCFRCLIBQQbfvFP31rIshCsovo8hLirEa7huQDIFfBWluUIY7tXI6+PFIH2n5bc1L+qMEJMAKwSTs3gWgoijwgwkCCZn8SwEEUeFGUgQTM7iWQgijgozkCCYnMWzEEQcFWYgQTA5i2chiDgqzECCYHIWz0IQcVSYgQTB5CyehSDiqDADCYLJWTwLQcRRYQYSBJOzeBaCiKPCDPwB0yE6EEyIqTkAAAAASUVORK5CYII="],
         [Webvs.MAXIMUM, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC2klEQVR4Xu3ca26DMBAEYOdmOVqOlpu1gJoqJGAWsx7vY6jyb8FoPtYOjtRbKeVn+vAwksCNIEYk/m6DILY8CkEIYiwBY7fDDkkJcn+U8pw+PA4TwHTIDDIfRDEGQhSDIESpomCnrPdb4fS1CdMf5LV+bA1PlK9UxoJw+jIIQpQVyvgOed0Op68lCTsg7JTrII97KY/nwVfr2qLOhV53DZlB5qOKchYkeadcmrJeIFWUFpDEKGoguyitIElRVEE2Ua6AJERpBnmfrj5XptWachUkGUoXkFWnaIAkQukG8o+iBZIEpSvI9IV4+lM+gr/RdwdZOkXZJPIvjxAQosifSBgIUWQoUBCiHKPAQYhSRxkCQpR9lGEgRNlGGQpClG+U4SBEWaM0gdQ2FteXl78SyiuPv6ksFU7f6M2AqHcKQbae3PPP/fkzKh3jEKVjh7RH237mBo4zFJMgmacvsyBZUUyDZEQxD5INxQVIJhQ3IFlQXIFkQMkNYnCLxR2IepcYQzkN0mNjUbhduCpTfZs3hOIWJGqnuAaJiNIJRH1Cqc5q6qMN3JAMARKpU8KAREEJBRIBJRyId5SQIJ5RwoJ4RQkN4hElPIg3lBQgnlBOgVjZWGzZjPSCkgrEA0o6EOsoHUDUt/paZyiXG5JpQax2SmqQZpSO2/PpQZb/NvHsMis2XTQYSPv6ZQXFOEh7wC2PpwUUIAg23BaQZU0ZPH11AGmNws55I1EIsvMcjEIhSKUxR6CIQeQbi3amHo07QaMQRKCGRCHIGwgy+L3nICyIhXAFzfdV4gLEa7huQDIFfBblcocw3LOR1+vFILrD8mqXF3VGiEmAHYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKCYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKCYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKfwHs4jYQ/FLTjwAAAABJRU5ErkJggg=="],
@@ -80,32 +79,34 @@ CanvasTestWithFM("ShaderProgram BlendTest", 20, function(canvas, gl, fm, copier)
 
     _.each(testData, function(data) {
         _.each([true, false], function(shaderBlend) {
-            fm.setRenderTarget();
+            _.each([true, false], function(dynamicBlend) {
+                fm.setRenderTarget();
 
-            // clear
-            gl.clearColor(0,0,0,1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+                // clear
+                gl.clearColor(0,0,0,1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
 
-            // draw a red triangle
-            var program = new PolygonProgram();
-            program.init(gl);
-            program.run(fm, null, "#804000", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
+                // draw a red triangle
+                var program = new PolygonProgram();
+                program.init(gl);
+                program.run(fm, null, "#804000", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
 
-            // draw a blue triangle
-            var program2 = new PolygonProgram({outputBlendMode: data[0], forceShaderBlend: shaderBlend, blendValue: data[1]});
-            program2.init(gl);
-            program2.run(fm, null, "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
+                // draw a blue triangle
+                var program2 = new PolygonProgram({outputBlendMode: data[0], forceShaderBlend: shaderBlend, blendValue: data[1], dynamicBlend: dynamicBlend});
+                program2.init(gl);
+                program2.run(fm, null, "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
 
-            fm.restoreRenderTarget();
-            copier.run(null, null, fm.getCurrentTexture());
+                fm.restoreRenderTarget();
+                copier.run(null, null, fm.getCurrentTexture());
 
-            imageFuzzyOk(
-                "ShaderProgram Blend", gl, canvas,
-                data[2]
-            );
+                imageFuzzyOk(
+                    "ShaderProgram Blend", gl, canvas,
+                    data[2]
+                );
 
-            program.cleanup();
-            program2.cleanup();
+                program.cleanup();
+                program2.cleanup();
+            });
         });
     });
 

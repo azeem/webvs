@@ -83,7 +83,7 @@ function ShaderProgram(options) {
     this.outputBlendMode = options.outputBlendMode;
     this.blendValue = options.blendValue;
 
-    if(options.swapFrame || this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
+    if(options.swapFrame || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
         this.swapFrame = true;
         this.glBlendMode = false;
         this.varyingPos = true;
@@ -119,7 +119,7 @@ function ShaderProgram(options) {
     }
 
     // color blend macro/function
-    if(this.dynamicBlend) {
+    if(this.dynamicBlend && this.swapFrame) {
         fsrc.push(
             "uniform int u_blendMode;",
             "void setFragColor(vec4 color) {"
@@ -225,7 +225,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
         }
         outputBlendMode = outputBlendMode || this.outputBlendMode;
-        if(this.dynamicBlend) {
+        if(this.dynamicBlend && this.swapFrame) {
             this.setUniform("u_blendMode", "1i", outputBlendMode);
         }
 
