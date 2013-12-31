@@ -3,7 +3,10 @@
  * See the file license.txt for copying permission.
  */
 
-CanvasTestWithFM("Texer", 3, function(canvas, gl, fm, copier) {
+CanvasTestWithFM("Texer", 3, {async: true}, function(canvas, gl, fm, copier, resume) {
+    var main = new DummyMain(canvas);
+    var parent = new DummyParent(fm);
+
     var testValues = [
         {
             imageSrc: "avsres_texer_circle_edgeonly_29x29.bmp",
@@ -38,24 +41,28 @@ CanvasTestWithFM("Texer", 3, function(canvas, gl, fm, copier) {
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAKRElEQVR4Xu2b6VJcxxmG3zMryzDAsG8CAUJClCQnkpc4ksouK1Y5Tu4jzl0kF5D8SeVXKjeR1YldZUuK4yVObKkENqsQm0BsAgSzn7xfzwxCwNAD0nSdH91VUwPqmtPfvM/51oMcAC5fdnlEAccC8QiJvBkWiLd4wAKxQDymgMfMsR5igXhMAY+ZYz3EAvGYAh4zx3qIBeIxBTxmjvUQC8RjCnjMHOshFojHFPCYOdZDLBCPKeAxc6yHWCAeU8Bj5lgPsUA8poDHzLEeYoF4TAGPmWM9xALxmAIeM8d6iAXiMQU8Zo71EAvEYwp4zBzrIRaIxxTwmDnWQywQjyngMXOsh1ggHlPAY+ZYD7FAPKaAx8yxHmKBeEwBj5ljPcTzQBxhxOW+3P++nrtsjv9LvjTKZHL+uuWxuZjRDjdcxxcAgiE4gTDg58+yMmm4qQSQTsLNpk8EyPE5CIT8CFQE1LvP7yCbcXnJNNLxDN8zvPbxwYtEAT9QwVdYTPflTE5lgThNTWRoNl/HvzJvmTLZLABK0dnxVUVdX3UMvmgjfNX1cEKVOQdJ7iD7dA3ZjWW+ryIb3wYETIkrEPajsq4CNc1ViDRVoSIahp/KZahafCOBrcfb2Fzaxs56HGlRsMQVoPiRENBYBTRXAw00tyqY+/DTFLC6Ayw9BZZp7laSYAip1FUum8Eb3ldRRX31OjuhvituoKUP/sYu+Gqa4IT5TQVIYhvZzcfILM8gvTiB9PJDuFtrcDP81poVokK1HRE0n4mhsa8edR01hBNWXiJesbOewPrcJpYn1rA0toonc1tIbuuvG6RHCIDeemCgATjN9xZCqSYgBYQAFgljag0YXQEm+b5CQKkSeJfLZscfhBOpR6DxFErR2Ync/KUb6DjPDxAIPQTBirz/x5WHpAXI3DBS03eRWhglpNUjPUXCU0N3FJ0/aOWrBc0DMURbqxHmbe3j7Z3lLZvgrbvx6CmWRlcx+79Fvh5hZXqDYay4B4pniFcMNQGX24GLLQRSR0D8Nx6plnx8hZ4xtQ7cXQS+ngfuP855y1GeUi6blWfUxBBsG0Cw+yJK0dmJffBHN9B2hh9sgBPk7efLB+RsljmEYWtzBemFMSQn/4Pk+Jf8mVB2Ng/NKRJ/a9sj6H6tHX1XO9FFIHVdUVTU5GA4jKMuM7pAiW8msT6zgRkCmbgzi+kv5/FkfuvQnCI5o5b3yXnCuHoK+FEXMNiYC1mVDFdMTWoxPWGHjiYha2QZ+PcMcOchMEwoT+KH55Ry2Sw5w1dRg0D7AEL9ryHUewWl6Ow0//q266trJQx+4wKMQkhSUOgp6wtIPvgWye/uIDn2BTKrc4eGLnH7jkvNOHujB/3XutB8NkYYYZXMd6sKFQ8JherFNxNY+n4V47dnMPrxA8x+s3Ro6JJQdaoWuEYYN3qBK/SQzmjOM3gPPLekRhBPmd0AvqKHfDyZgzL95PDQVS6bJVT5Yx0InSGMc9cQ6nkFpejstP522HVI8gCMvVDim8pLEiO3kRj+BKnZEeYY3ob7loSm/uuncP69XvS80YEoA7x4RrElnrLBoP/g8zkM/20S47ceqlC2f0kSlxB1sy8HZJCewhoh5xn7gEhpJZ7CukF5hgD5cCIXwiTJm7LZCVcj2DmI8Pm3EB68pryjFJ2dtt9NuVLyHrlSSWRWZpAY/QyJex8xfP0X2S3mkj1LeoHG/hgG3z2tgHQxh4QiTGiFJuGQAyR8JbdSDFuPFJCRf0xheXz1QJ8iueONTuD9AeDtHqCbuYNF3HNOt/fy0udI4faAueSTB8BfRoHPZ3O5xJTNvkiMYeqHCF+4gfDAm/A3MM6WoLPT9vtpd7f3KEaFPUlm/ZEKV4m7/0Ri/AuWw7z99nR4Eovbhhox9NM+DN7sRfuFJlVVFVUtH7qk6pq/9xjDf58klAks3F9+Lo8ITzoernUDPycQeW+nQ4vjFWMtZkkSn2equzUN/JlAbvNdnG9vU1oum1X+iDYhfOZ1hC/+hDnkdfiZFkrR+eUCOU8g778AkL8SyPBBIFLaXn8BIH/KA5GS+ACQMti8C4QgwpeOC+S4IesuQ9ZUkZDFnkO8IxeyWhiy2P1rQ1ZSVVoqZH04qXqT/aMVKW0lZP2MHvIWQ1bPcULWFD1kLBeypCQ+ELLKZLMKWacZsi4eM2S1/oZJvVKT1FnmSrmb+I5J/f6nSM0dntRreCv3X+/C0Ht9TOrtkN/9UiIVWRl2bJsqqc/jPsPV+K0Z9fthSf1CM5N6/7OkXqtJ6k+Y1EcYVT/KJ/V7RZJ6uWxWSb3jHMJDTOqssgLsRUrR2Wn61aeuv779yLI3szaPVKHsZS9SrOwNVgbQ+UoLzr7Tgz6WvS1S9rIcKlr2shRaZNk7wbL3e5a9c98WKXuZL6Tsvcqw9c5p4NV82Ss9yGFlr/Qiu2UvPUTK3odFyt5y2Sz5QsreMMNW6NxVBHsuoRSdnfpf/EE1hn4Zm4SkF8nf0VkO/pJxZDg+kZI3Nfl1vjEc41xL0xi+2obeq10qbNWzMQyzMZQ5VqExlHlWgo3hWr4xnLwzg+mvFo5sDKPSGLIZ/DF7kTcLjWGEcyz2Iv58ZZ1hIt9mD7K0lWsMP2Nj+C9pDPnzhq4xfMk27zaG1FYaw2DvZVX66nR2Iu9+wNHJoJq1yMxFNYhc0hDK7EpmWGmGqN3RiZS7hFVsyYAu1l2rPGV3dNIWQQVL4MLoJM5Sd2Nh69no5JtFrLJzO2rIWBidSA9yuS0/OuGkR2ZbdEy1dmR0wtmVzLLU6GQh14tIuSuwTNssN7fkkmejE73OTqj3sutv6UWg4ZSa+D43XOSkN73yEJnFSQVGZlsyltctCQMyUGw6U58bLrJOrayv2J327qzFsc6aVBL447E1NWhMiZqaVRguygyrMFyU8cne4aKMTQrDRZlpSSKXsbxulctmNVysrlM3fCk6O77KqCue4a8hDH5w7/jdfbrOkMUylJ6Slc78CM/Y/4ULo2wZvUcaKw+O35d31Aj+JON3AcBLqllWbM/4XQbGu+N3eopMf08yfn/ZNitPYZIvRWf1gEo+IA+nnODBB1RumuWKgDjBYz5pvPxsDoMMYwJIfpcHUhKaUnxlXuQBFfOGPJza/4AqIQ+o+BIQJ31AVQ6bVRdbgs4Hn6mX6XmofYS7L4YU0dn+kYMuuRjet0AMC647zgLRKWR43wIxLLjuOAtEp5DhfQvEsOC64ywQnUKG9y0Qw4LrjrNAdAoZ3rdADAuuO84C0SlkeN8CMSy47jgLRKeQ4X0LxLDguuMsEJ1ChvctEMOC646zQHQKGd63QAwLrjvOAtEpZHjfAjEsuO44C0SnkOF9C8Sw4LrjLBCdQob3LRDDguuOs0B0Chnet0AMC647zgLRKWR43wIxLLjuOAtEp5DhfQvEsOC64ywQnUKG9y0Qw4LrjrNAdAoZ3rdADAuuO84C0SlkeN8CMSy47jgLRKeQ4X0LxLDguuMsEJ1ChvctEMOC6477P9gSadI9SARHAAAAAElFTkSuQmCC"
     ];
 
-    var main = new DummyMain(canvas);
-    var parent = new DummyParent(fm);
+    var texers;
+    main.rsrcMan.onReady = function() {
+        _.each(texers, function(texer, index) {
+            fm.setRenderTarget();
 
-    _.each(testValues, function(opts, index) {
-        var texer = new Webvs.Texer(gl, main, parent, opts);
-        fm.setRenderTarget();
+            // clear
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
 
-        // clear
-        gl.clearColor(0,0,0,1);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+            texer.draw();
+            
+            fm.restoreRenderTarget();
+            copier.run(null, null, fm.getCurrentTexture());
 
-        texer.draw();
-        
-        fm.restoreRenderTarget();
-        copier.run(null, null, fm.getCurrentTexture());
+            imageFuzzyOk("Texer " + index, gl, canvas, expectedImages[index]);
+            texer.destroy();
+        });
+        resume();
+    };
 
-        imageFuzzyOk("Texer " + index, gl, canvas, expectedImages[index]);
-        texer.destroy();
+    texers = _.map(testValues, function(opts) {
+        return new Webvs.Texer(gl, main, parent, opts);
     });
 });
 

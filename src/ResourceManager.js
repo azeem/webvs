@@ -141,7 +141,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
     }
 
     /**
-     * This function is called once for each component in the tree
+     * This function is called when a resource is successfully loaded
      * @callback Webvs.ResourceManager~successCallback
      * @param {object} resource - the resource that was loaded
      */

@@ -66,16 +66,24 @@ function CanvasTest() {
 
 function CanvasTestWithFM() {
     var testFunc = arguments[arguments.length-1];
+
+    var async = false;
+    if(_.isObject(arguments[arguments.length-2])) {
+        async = arguments[arguments.length-2].async?true:false;
+    }
+
     var wrapper = function(canvas, gl) {
         var copier = new Webvs.CopyProgram({dynamicBlend: true});
         copier.init(gl);
         var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier, false);
-        var promise = testFunc(canvas, gl, fm, copier);
-        if(promise) {
-            promise.onResolve(function() {
+        if(async) {
+            var resume = function() {
                 fm.destroy();
-            });
+                start();
+            };
+            testFunc(canvas, gl, fm, copier, resume);
         } else {
+            testFunc(canvas, gl, fm, copier);
             fm.destroy();
         }
     };
@@ -151,12 +159,19 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
     }
 });
 
-function DummyMain(canvas, copier) {
+function DummyMain(canvas, copier, resourcePrefix) {
     this.canvas = canvas;
     this.registerBank = {};
     this.bootTime = (new Date()).getTime();
     this.analyser = new DummyAnalyser();
     this.copier = copier;
+
+    var builtinPack = Webvs.ResourcePack;
+    if(resourcePrefix) {
+        builtinPack = _.clone(builtinPack);
+        builtinPack.prefix = resourcePrefix;
+    }
+    this.rsrcMan = new Webvs.ResourceManager(builtinPack);
 }
 DummyMain = Webvs.defineClass(DummyMain, Object, {
     getResource: function(name) {
