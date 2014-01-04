@@ -256,6 +256,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             // shader blending cases
+            case Webvs.REPLACE:
             case Webvs.MAXIMUM:
                 gl.disable(gl.BLEND);
                 break;
