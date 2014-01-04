@@ -5,8 +5,7 @@
 
 
 CanvasTestWithFM("BufferSave", 1, function(canvas, gl, fm, copier) {
-    var polyProgram = new PolygonProgram();
-    polyProgram.init(gl);
+    var polyProgram = new PolygonProgram(gl);
 
     var main = new DummyMain(canvas, copier);
     var parent = new DummyParent(fm);
@@ -35,5 +34,5 @@ CanvasTestWithFM("BufferSave", 1, function(canvas, gl, fm, copier) {
 
     bufferSave.destroy();
 
-    polyProgram.cleanup();
+    polyProgram.destroy();
 });

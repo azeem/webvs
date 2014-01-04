@@ -6,20 +6,19 @@
 
 
 CanvasTest("ShaderProgram BasicTest", 1, function(canvas, gl) {
-    var program = new PolygonProgram();
-    program.init(gl);
+    var program = new PolygonProgram(gl);
     program.run(null, null, "#0000FF", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
     imageFuzzyOk(
         "ShaderProgram Basic", gl, canvas, 
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACuUlEQVR4Xu3aYXKCMBCGYbyZPVntyWpP1iYdmaEWlWxC+LL7MsOfqnTdhy/g6mmapu+0s4l04ASIiMStDEC0PCZAABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlVOZkEt6O3lna9WBCpBzquEz7R+gtNJIx2kAkqsBpZVJIxBQBEFAaYFSkZB8MX9fqYHlqwZmBxCSIggCihWlIiH5ljff+j7b3tKDV2ttIV+3M0juKSglZ1YHEFA6gZT+4JGkbIGpSEgpCEkRBAHlFYoxIfnuKt9lWTeWr0edOwgk3wpnFLb7DhwEkssAZe10PBAElIYgl3SstcGiZQkiKcuuGRPSEoSkCIKAMqMYE7JlsMjyZemAGEh+C7G/4BIEiY1iBLHMsUoDHDMpwiAxkyIOEg/FAHJOXaoZLJYuXbFQBgGJgzIQSAyUwUD8oxhAWs+xuKZUzrIUQPwmZdCEzOeUvw+PBpC9BouWpctfUhyA+EJxAuIHxQDSY7AYd/lyBpIhx/7Nl0OQsVEKQY4YLFqXrzGT4hhkzKQ4BxkPJQDIWCiFICpzLMt1ZYxrSiCQ6+2W2ILZ7zWBQHJT9VEKQdQGi5YzVxslIIh2UoKC6KIUgigPFn0sX8FB9JICyG+wdL4KLgAZabBoWb40UAD5Y3c8CiD/wnQsCiCrq9txKAUgIw8Wx7mmAPLUqn9SAHkZnr4oBSAeBovL7uch47x93bHMjy2f81KuyROcgGxp7vypvEnfdjuIKMijBi//3v/s3U1hceACEOtgccvZ67O5FkADyNy8R+vuGEuDpVk9XlMA0qMc/gcgYucAIICIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsnB88eO8BxQEqiwAAAABJRU5ErkJggg=="
     );
-    program.cleanup();
+    program.destroy();
 });
 
-function AlphaGradientProgram() {
-    AlphaGradientProgram.super.constructor.call(this, {
+function AlphaGradientProgram(gl) {
+    AlphaGradientProgram.super.constructor.call(this, gl, {
         varyingPos: true,
-        outputBlendMode: Webvs.ALPHA,
+        blendMode: Webvs.ALPHA,
         fragmentShader: [
             "uniform vec3 u_color;",
             "void main() {",
@@ -36,11 +35,8 @@ AlphaGradientProgram = Webvs.defineClass(AlphaGradientProgram, Webvs.QuadBoxProg
 });
 
 CanvasTestWithFM("ShaderProgram Alpha BlendTest", 1, function(canvas, gl, fm, copier) {
-    var fillProgram = new PolygonProgram();
-    var gradProgram = new AlphaGradientProgram();
-    fillProgram.init(gl);
-    gradProgram.init(gl);
-
+    var fillProgram = new PolygonProgram(gl);
+    var gradProgram = new AlphaGradientProgram(gl);
 
     fm.setRenderTarget();
 
@@ -59,11 +55,11 @@ CanvasTestWithFM("ShaderProgram Alpha BlendTest", 1, function(canvas, gl, fm, co
         "data:image/png;base64,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"
     );
 
-    fillProgram.cleanup();
-    gradProgram.cleanup();
+    fillProgram.destroy();
+    gradProgram.destroy();
 });
 
-CanvasTestWithFM("ShaderProgram BlendTest", 40, function(canvas, gl, fm, copier) {
+CanvasTestWithFM("ShaderProgram BlendTest", 20, function(canvas, gl, fm, copier) {
     var testData = [
         [Webvs.REPLACE, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACyUlEQVR4Xu3cXW6DMBAEYOdmPRpHy83aUDUVScAsa3u8P4OUp5oYzceuaz/kVkr5fnx4GUngRhAjEn+PQRBbHoUgBDGWgLHHYYWkBPlaSrk/PrxOE8BUyAqyXkQxBkIUgyBEqaJgW9b2Udi+dmHGgzzXj73pifKRylwQti+DIER5QZlfIc/HYfv6TcIOCCulHWT5KmW5n/xrXVvUudD3XUNWkPWqolwFSV4pTS3rCVJF0YAkRukGcoiiBUmK0hVkF6UFJCGKGmTbrt5Xppc1pRUkGcoQkJdK6QGSCGUYyD9KL5AkKGNBynKySVH8OfiO3h9I8ErxCRIYxS9IUBTfIAFR/IMEQ4kBEgglDkgQlFggAVDigThHUYHUDha3e+9lxE5durl3uqMniBQYNC4uiNPWNQxkarvavs3OWld8EGeVkgPEEUoeECcouUAcoOQDMY6SE8QwSl4Qoyi5QQyiEMQYymUQFweLmnMnIzt6ghg7ZiHIezVNrpQhIGYOFjWta/KaQpAjtEmVQpBaFU1AIchZWwOjEOQMBLymEEQCAkQhiBQEhEKQKyAAFIJcBRmMQhANyECUSyBhDxYNoRBEi/G8r/M+hSCtIJ3bV3cQ9weLWqBOlUIQLcDefR1QCKIB6RD80bTpQdYWe/qreBo05T2hQFrWLysopkFaAta8oBZQYCDocDUg6z2zUbqDaIOwdN9MFIIcvAmzUAhSKc0ZKGIQ6cGipdbT41nQKAQRqCFRCLIBQQbfvFP31rIshCsovo8hLirEa7huQDIFfBWluUIY7tXI6+PFIH2n5bc1L+qMEJMAKwSTs3gWgoijwgwkCCZn8SwEEUeFGUgQTM7iWQgijgozkCCYnMWzEEQcFWYgQTA5i2chiDgqzECCYHIWz0IQcVSYgQTB5CyehSDiqDADCYLJWTwLQcRRYQYSBJOzeBaCiKPCDPwB0yE6EEyIqTkAAAAASUVORK5CYII="],
         [Webvs.MAXIMUM, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC2klEQVR4Xu3ca26DMBAEYOdmOVqOlpu1gJoqJGAWsx7vY6jyb8FoPtYOjtRbKeVn+vAwksCNIEYk/m6DILY8CkEIYiwBY7fDDkkJcn+U8pw+PA4TwHTIDDIfRDEGQhSDIESpomCnrPdb4fS1CdMf5LV+bA1PlK9UxoJw+jIIQpQVyvgOed0Op68lCTsg7JTrII97KY/nwVfr2qLOhV53DZlB5qOKchYkeadcmrJeIFWUFpDEKGoguyitIElRVEE2Ua6AJERpBnmfrj5XptWachUkGUoXkFWnaIAkQukG8o+iBZIEpSvI9IV4+lM+gr/RdwdZOkXZJPIvjxAQosifSBgIUWQoUBCiHKPAQYhSRxkCQpR9lGEgRNlGGQpClG+U4SBEWaM0gdQ2FteXl78SyiuPv6ksFU7f6M2AqHcKQbae3PPP/fkzKh3jEKVjh7RH237mBo4zFJMgmacvsyBZUUyDZEQxD5INxQVIJhQ3IFlQXIFkQMkNYnCLxR2IepcYQzkN0mNjUbhduCpTfZs3hOIWJGqnuAaJiNIJRH1Cqc5q6qMN3JAMARKpU8KAREEJBRIBJRyId5SQIJ5RwoJ4RQkN4hElPIg3lBQgnlBOgVjZWGzZjPSCkgrEA0o6EOsoHUDUt/paZyiXG5JpQax2SmqQZpSO2/PpQZb/NvHsMis2XTQYSPv6ZQXFOEh7wC2PpwUUIAg23BaQZU0ZPH11AGmNws55I1EIsvMcjEIhSKUxR6CIQeQbi3amHo07QaMQRKCGRCHIGwgy+L3nICyIhXAFzfdV4gLEa7huQDIFfBblcocw3LOR1+vFILrD8mqXF3VGiEmAHYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKCYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKCYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKfwHs4jYQ/FLTjwAAAABJRU5ErkJggg=="],
@@ -78,35 +74,36 @@ CanvasTestWithFM("ShaderProgram BlendTest", 40, function(canvas, gl, fm, copier)
     ];
 
     _.each(testData, function(data) {
-        _.each([true, false], function(shaderBlend) {
-            _.each([true, false], function(dynamicBlend) {
-                fm.setRenderTarget();
+        _.each([true, false], function(dynamicBlend) {
+            fm.setRenderTarget();
 
-                // clear
-                gl.clearColor(0,0,0,1);
-                gl.clear(gl.COLOR_BUFFER_BIT);
+            // clear
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
 
-                // draw a red triangle
-                var program = new PolygonProgram();
-                program.init(gl);
-                program.run(fm, null, "#804000", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
+            // draw a red triangle
+            var program = new PolygonProgram(gl);
+            program.run(fm, null, "#804000", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
 
-                // draw a blue triangle
-                var program2 = new PolygonProgram({outputBlendMode: data[0], forceShaderBlend: shaderBlend, blendValue: data[1], dynamicBlend: dynamicBlend});
-                program2.init(gl);
+            // draw a blue triangle
+            if(dynamicBlend) {
+                var program2 = new PolygonProgram(gl, {blendValue: data[1], dynamicBlend: true});
+                program2.run(fm, data[0], "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
+            } else {
+                var program2 = new PolygonProgram(gl, {blendMode: data[0], blendValue: data[1]});
                 program2.run(fm, null, "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
+            }
 
-                fm.restoreRenderTarget();
-                copier.run(null, null, fm.getCurrentTexture());
+            fm.restoreRenderTarget();
+            copier.run(null, null, fm.getCurrentTexture());
 
-                imageFuzzyOk(
-                    "ShaderProgram Blend", gl, canvas,
-                    data[2]
-                );
+            imageFuzzyOk(
+                "ShaderProgram Blend", gl, canvas,
+                data[2]
+            );
 
-                program.cleanup();
-                program2.cleanup();
-            });
+            program.destroy();
+            program2.destroy();
         });
     });
 

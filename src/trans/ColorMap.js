@@ -62,13 +62,19 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
         this.program.run(this.parent.fm, null, this.colorMaps[this.currentMap]);
     },
 
+    destroy: function() {
+        this.program.destroy();
+        _.each(this.colorMaps, function(tex) {
+            this.gl.deleteTexture(tex);
+        }, this);
+    },
+
     updateProgram: function() {
         if(this.program) {
             this.program.cleanup();
         }
         var output = Webvs.getBlendMode(this.opts.output);
-        this.program = new Webvs.ColorMapProgram(this.opts.key, output);
-        this.program.init(this.gl);
+        this.program = new Webvs.ColorMapProgram(this.gl, this.opts.key, output);
     },
 
     updateMap: function() {
@@ -118,9 +124,9 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
             var second = pair[1];
             var steps = second.index - first.index;
             _.times(steps, function(i) {
-                colorMap[cmi++] = Math.floor((first.color[0]*(255-i) + second.color[0]*i)/255);
-                colorMap[cmi++] = Math.floor((first.color[1]*(255-i) + second.color[1]*i)/255);
-                colorMap[cmi++] = Math.floor((first.color[2]*(255-i) + second.color[2]*i)/255);
+                colorMap[cmi++] = Math.floor((first.color[0]*(steps-i) + second.color[0]*i)/steps);
+                colorMap[cmi++] = Math.floor((first.color[1]*(steps-i) + second.color[1]*i)/steps);
+                colorMap[cmi++] = Math.floor((first.color[2]*(steps-i) + second.color[2]*i)/steps);
             });
         });
         colorMap[cmi++] = last.color[0];
@@ -139,7 +145,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     }
 });
 
-function ColorMapProgram(key, blendMode) {
+function ColorMapProgram(gl, key, blendMode) {
     var keyEq = "";
     switch(key) {
         case "RED": keyEq = "srcColor.r"; break;
@@ -151,8 +157,8 @@ function ColorMapProgram(key, blendMode) {
         default: throw new Error("Unknown colormap key function " + options.key);
     }
 
-    ColorMapProgram.super.constructor.call(this, {
-        outputBlendMode: blendMode,
+    ColorMapProgram.super.constructor.call(this, gl, {
+        blendMode: blendMode,
         swapFrame: true,
         fragmentShader: [
             "uniform sampler2D u_colorMap;",

@@ -68,8 +68,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     },
 
     init: function() {
-        this.program = new TexerProgram();
-        this.program.init(this.gl);
+        this.program = new TexerProgram(this.gl);
         this.updateCode();
         this.updateClone();
         this.updateImage();
@@ -80,6 +79,11 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
             this._drawScope(code, !this.inited);
         }, this);
         this.inited = true;
+    },
+
+    destroy: function() {
+        this.program.destroy();
+        this.gl.deleteTexture(this.texture);
     },
 
     updateCode: function() {
@@ -241,8 +245,9 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     }
 });
 
-function TexerProgram() {
-    TexerProgram.super.constructor.call(this, {
+function TexerProgram(gl) {
+    TexerProgram.super.constructor.call(this, gl, {
+        copyOnSwap: true,
         vertexShader: [
             "uniform bool u_colorFilter;",
             "attribute vec2 a_texVertex;",

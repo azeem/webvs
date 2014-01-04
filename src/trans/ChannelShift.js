@@ -33,8 +33,7 @@ Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     },
 
     init: function() {
-        this.program = new ChannelShiftProgram();
-        this.program.init(this.gl);
+        this.program = new ChannelShiftProgram(this.gl);
         this.updateChannel();
     },
 
@@ -47,7 +46,7 @@ Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
 
     destroy: function() {
         ChannelShift.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     updateChannel: function() {
@@ -60,8 +59,8 @@ Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     }
 });
 
-function ChannelShiftProgram() {
-    ChannelShiftProgram.super.constructor.call(this, {
+function ChannelShiftProgram(gl) {
+    ChannelShiftProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
             "uniform int u_channel;",

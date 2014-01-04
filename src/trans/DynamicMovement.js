@@ -99,7 +99,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     updateCode: function() {
@@ -122,15 +122,14 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
             this.program.cleanup();
         }
         if(opts.noGrid) {
-            this.program = new Webvs.DMovProgramNG(opts.coord, opts.bFilter,
+            this.program = new Webvs.DMovProgramNG(this.gl, opts.coord, opts.bFilter,
                                                    opts.compat, this.code.hasRandom,
                                                    this.glslCode, opts.blend);
         } else {
-            this.program = new Webvs.DMovProgram(opts.coord, opts.bFilter,
+            this.program = new Webvs.DMovProgram(this.gl, opts.coord, opts.bFilter,
                                                  opts.compat, this.code.hasRandom,
                                                  this.glslCode, opts.blend);
         }
-        this.program.init(this.gl);
     },
 
     updateGrid: function() {
@@ -260,7 +259,7 @@ var GlslHelpers = {
     }
 };
 
-function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode, blend) {
+function DMovProgramNG(gl, coordMode, bFilter, compat, randSeed, exprCode, blend) {
     var fragmentShader = [
         exprCode,
         this.glslFilter(bFilter, compat),
@@ -276,9 +275,9 @@ function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode, blend) {
         "}"
     ];
 
-    DMovProgramNG.super.constructor.call(this, {
+    DMovProgramNG.super.constructor.call(this, gl, {
         fragmentShader: fragmentShader,
-        outputBlendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
+        blendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
         swapFrame: true
     });
 }
@@ -289,7 +288,7 @@ Webvs.DMovProgramNG = Webvs.defineClass(DMovProgramNG, Webvs.QuadBoxProgram, Gls
     }
 });
 
-function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode, blend) {
+function DMovProgram(gl, coordMode, bFilter, compat, randSeed, exprCode, blend) {
     var vertexShader = [
         "attribute vec2 a_position;",
         "varying vec2 v_newPoint;",
@@ -319,8 +318,8 @@ function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode, blend) {
         "}"
     ];
 
-    DMovProgram.super.constructor.call(this, {
-        outputBlendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
+    DMovProgram.super.constructor.call(this, gl, {
+        blendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
         fragmentShader: fragmentShader,
         vertexShader: vertexShader,
         swapFrame: true

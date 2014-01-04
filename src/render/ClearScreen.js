@@ -62,7 +62,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     updateColor: function() {
@@ -70,8 +70,7 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var program = new Webvs.ClearScreenProgram(Webvs.getBlendMode(this.opts.blendMode));
-        program.init(this.gl);
+        var program = new Webvs.ClearScreenProgram(this.gl, Webvs.getBlendMode(this.opts.blendMode));
         if(this.program) {
             this.program.cleanup();
         }

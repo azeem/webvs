@@ -4,8 +4,7 @@
  */
 
 CanvasTestWithFM("Convolution", 1, function(canvas, gl, fm, copier) {
-    var polyProgram = new PolygonProgram();
-    polyProgram.init(gl);
+    var polyProgram = new PolygonProgram(gl);
 
     var smileyKernel = [ // @QOAL's smiley test
         0,0,0,0,0,0,0,
@@ -44,5 +43,5 @@ CanvasTestWithFM("Convolution", 1, function(canvas, gl, fm, copier) {
         imageFuzzyOk("Convolution " + index, gl, canvas, expectedImages[index]);
     });
 
-    polyProgram.cleanup();
+    polyProgram.destroy();
 });

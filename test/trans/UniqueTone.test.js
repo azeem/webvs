@@ -5,8 +5,7 @@
 
 
 CanvasTestWithFM("UniqueTone", 6, function(canvas, gl, fm, copier) {
-    var polyProgram = new PolygonProgram();
-    polyProgram.init(gl);
+    var polyProgram = new PolygonProgram(gl);
 
     var testValues = [
         {color: "#800000", invert: false, blendMode: "REPLACE"},
@@ -46,5 +45,5 @@ CanvasTestWithFM("UniqueTone", 6, function(canvas, gl, fm, copier) {
         uniquetone.destroy();
     });
 
-    polyProgram.cleanup();
+    polyProgram.destroy();
 });

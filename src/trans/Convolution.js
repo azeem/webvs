@@ -52,7 +52,7 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     updateScale: function() {
@@ -75,14 +75,13 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
         }
 
         if(this.program) {
-            this.program.cleanup();
+            this.program.destroy();
         }
-        this.program = new Webvs.ConvolutionProgram(opts.kernel, kernelSize, opts.edgeMode);
-        this.program.init(this.gl);
+        this.program = new Webvs.ConvolutionProgram(this.gl, opts.kernel, kernelSize, opts.edgeMode);
     }
 });
 
-function ConvolutionProgram(kernel, kernelSize, edgeMode) {
+function ConvolutionProgram(gl, kernel, kernelSize, edgeMode) {
     // generate edge correction function
     var edgeFunc = "";
     switch(edgeMode) {
@@ -113,7 +112,7 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode) {
         }
     }
 
-    ConvolutionProgram.super.constructor.call(this, {
+    ConvolutionProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
             "uniform float u_scale;",

@@ -4,8 +4,7 @@
  */
 
 CanvasTestWithFM("FadeOut", 2, function(canvas, gl, fm, copier) {
-    var polyProgram = new PolygonProgram();
-    polyProgram.init(gl);
+    var polyProgram = new PolygonProgram(gl);
 
     var testValues = [
         {opts: {speed: 1, color: "#FF0000"}, iter: 2},
@@ -39,5 +38,5 @@ CanvasTestWithFM("FadeOut", 2, function(canvas, gl, fm, copier) {
         imageFuzzyOk("FadeOut " + index, gl, canvas, expectedImages[index]);
     });
 
-    polyProgram.cleanup();
+    polyProgram.destroy();
 });

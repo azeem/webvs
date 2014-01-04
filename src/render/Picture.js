@@ -32,8 +32,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
     },
 
     init: function() {
-        this.program = new Webvs.PictureProgram();
-        this.program.init(this.gl);
+        this.program = new Webvs.PictureProgram(this.gl);
         this.updateImage();
     },
 
@@ -44,7 +43,7 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
         this.gl.deleteTexture(this.texture);
     },
 
@@ -73,8 +72,8 @@ Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
     }
 });
 
-function PictureProgram() {
-    PictureProgram.super.constructor.call(this, {
+function PictureProgram(gl) {
+    PictureProgram.super.constructor.call(this, gl, {
         copyOnSwap: true,
         vertexShader: [
             "attribute vec2 a_texVertex;",

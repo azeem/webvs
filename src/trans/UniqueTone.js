@@ -41,7 +41,7 @@ Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     updateColor: function() {
@@ -49,8 +49,7 @@ Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var program = new UniqueToneProgram(Webvs.getBlendMode(this.opts.blendMode));
-        program.init(this.gl);
+        var program = new UniqueToneProgram(this.gl, Webvs.getBlendMode(this.opts.blendMode));
         if(this.program) {
             this.program.cleanup();
         }
@@ -58,9 +57,9 @@ Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
     }
 });
 
-function UniqueToneProgram(blendMode) {
-    UniqueToneProgram.super.constructor.call(this, {
-        outputBlendMode: blendMode,
+function UniqueToneProgram(gl, blendMode) {
+    UniqueToneProgram.super.constructor.call(this, gl, {
+        blendMode: blendMode,
         swapFrame: true,
         fragmentShader: [
             "uniform vec3 u_tone;",

@@ -91,8 +91,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         try {
             this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
 
-            this.copier = new Webvs.CopyProgram({dynamicBlend: true});
-            this.copier.init(this.gl);
+            this.copier = new Webvs.CopyProgram(this.gl, {dynamicBlend: true});
 
             this.resolution = {
                 width: this.canvas.width,

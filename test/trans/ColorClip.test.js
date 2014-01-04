@@ -4,8 +4,7 @@
  */
 
 CanvasTestWithFM("ColorClip", 4, function(canvas, gl, fm, copier) {
-    var gprogram = new GradientProgram();
-    gprogram.init(gl);
+    var gprogram = new GradientProgram(gl);
 
     var testOptions = [
         {mode: "BELOW", color: "#7F7FFF", outColor: "#000000"},
@@ -41,4 +40,6 @@ CanvasTestWithFM("ColorClip", 4, function(canvas, gl, fm, copier) {
 
         imageFuzzyOk("ColorClip " + index, gl, canvas, expectedImages[index]);
     });
+
+    gprogram.destroy();
 });

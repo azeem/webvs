@@ -32,8 +32,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
     },
 
     init: function() {
-        this.program = new Webvs.ClearScreenProgram(Webvs.AVERAGE);
-        this.program.init(this.gl);
+        this.program = new Webvs.ClearScreenProgram(this.gl, Webvs.AVERAGE);
         this.updateSpeed();
         this.updateColor();
     },
@@ -47,7 +46,7 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     updateSpeed: function() {

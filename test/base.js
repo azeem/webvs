@@ -73,8 +73,7 @@ function CanvasTestWithFM() {
     }
 
     var wrapper = function(canvas, gl) {
-        var copier = new Webvs.CopyProgram({dynamicBlend: true});
-        copier.init(gl);
+        var copier = new Webvs.CopyProgram(gl, {dynamicBlend: true});
         var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier, false);
         if(async) {
             var resume = function() {
@@ -92,8 +91,8 @@ function CanvasTestWithFM() {
     CanvasTest.apply(window, testArgs);
 }
 
-function PolygonProgram(options) {
-    PolygonProgram.super.constructor.call(this, _.defaults(options||{}, {
+function PolygonProgram(gl, options) {
+    PolygonProgram.super.constructor.call(this, gl, _.defaults(options||{}, {
         copyOnSwap: true,
         vertexShader: [
             "attribute vec2 a_position;",
@@ -121,9 +120,9 @@ PolygonProgram = Webvs.defineClass(PolygonProgram, Webvs.ShaderProgram, {
     }
 });
 
-function GradientProgram(blue) {
+function GradientProgram(gl, blue) {
     blue = _.isNumber(blue)?blue:1;
-    GradientProgram.super.constructor.call(this, {
+    GradientProgram.super.constructor.call(this, gl, {
         fragmentShader: [
             "void main() {",
             "   setFragColor(vec4(v_position, "+Webvs.glslFloatRepr(blue)+", 1));",

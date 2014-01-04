@@ -44,8 +44,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
     },
 
     init: function() {
-        this.program = new ColorClipProgram();
-        this.program.init(this.gl);
+        this.program = new ColorClipProgram(this.gl);
         this.updateColor();
         this.updateMode();
     },
@@ -55,7 +54,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     updateMode: function() {
@@ -72,8 +71,8 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
     }
 });
 
-function ColorClipProgram() {
-    ColorClipProgram.super.constructor({
+function ColorClipProgram(gl) {
+    ColorClipProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
             "uniform int u_mode;",

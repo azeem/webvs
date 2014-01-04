@@ -13,15 +13,15 @@
  * @memberof Webvs
  * @constructor
  */
-function ClearScreenProgram(blendMode) {
-    ClearScreenProgram.super.constructor.call(this, {
+function ClearScreenProgram(gl, blendMode) {
+    ClearScreenProgram.super.constructor.call(this, gl, {
         fragmentShader: [
             "uniform vec3 u_color;",
             "void main() {",
             "   setFragColor(vec4(u_color, 1));",
             "}"
         ],
-        outputBlendMode: blendMode
+        blendMode: blendMode
     });
 }
 Webvs.ClearScreenProgram = Webvs.defineClass(ClearScreenProgram, Webvs.QuadBoxProgram, {

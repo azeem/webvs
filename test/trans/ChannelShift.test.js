@@ -4,8 +4,7 @@
  */
 
 CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier) {
-    var gradientProgram = new GradientProgram();
-    gradientProgram.init(gl);
+    var gradientProgram = new GradientProgram(gl);
 
     var testOptions = [
         {channel: "RBG"},
@@ -42,6 +41,6 @@ CanvasTestWithFM("ChannelShift", 5, function(canvas, gl, fm, copier) {
 
         cshift.destroy();
     });
-    gradientProgram.cleanup();
+    gradientProgram.destroy();
 
 });

@@ -13,7 +13,7 @@
  * @memberof Webvs
  * @constructor
  */
-function CopyProgram(options) {
+function CopyProgram(gl, options) {
     options = _.defaults(options||{}, {
         fragmentShader: [
             "uniform sampler2D u_copySource;",
@@ -22,7 +22,7 @@ function CopyProgram(options) {
             "}"
         ]
     });
-    CopyProgram.super.constructor.call(this, options);
+    CopyProgram.super.constructor.call(this, gl, options);
 }
 Webvs.CopyProgram = Webvs.defineClass(CopyProgram, Webvs.QuadBoxProgram, {
     /**

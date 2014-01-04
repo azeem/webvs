@@ -52,6 +52,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             onBeat: "",
             perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d"
         },
+        blendMode: "REPLACE",
         channel: "CENTER",
         source: "SPECTRUM",
         drawMode: "LINES",
@@ -67,12 +68,12 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         cycleSpeed: "updateSpeed",
         clone: "updateClones",
         channel: "updateChannel",
-        thickness: "updateThickness"
+        thickness: "updateThickness",
+        blendMode: "updateProgram"
     },
 
     init: function() {
-        this.program = new SuperScopeShader();
-        this.program.init(this.gl);
+        this.updateProgram();
         this.updateCode();
         this.updateClones();
         this.updateSpeed();
@@ -90,7 +91,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     destroy: function() {
-        this.program.cleanup();
+        this.program.destroy();
     },
 
     /**
@@ -155,6 +156,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             code.y *= -1;
             if(this.veryThick) {
                 if(dots) {
+                    // just a box at current point
                     pointBufferData[pbi++] = code.x-thickX;
                     pointBufferData[pbi++] = code.y-thickY;
 
@@ -179,12 +181,13 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
                         colorData[cdi++] = code.blue;
                     }
                 } else {
-                    if(i%2 == 1 || i == nPoints-1) {
+                    if(i !== 0) {
                         var xdiff = Math.abs(lastX-code.x);
                         var ydiff = Math.abs(lastY-code.y);
                         var xoff = (xdiff <= ydiff)?thickX:0;
                         var yoff = (xdiff >  ydiff)?thickY:0;
 
+                        // a rectangle from last point to the current point
                         pointBufferData[pbi++] = lastX+xoff;
                         pointBufferData[pbi++] = lastY+yoff;
 
@@ -204,9 +207,9 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
                         pointBufferData[pbi++] = code.y-yoff;
 
                         for(j = 0;j < 6;j++) {
-                            colorData[cdi++] = (j%2 == 1)?code.red:lastR;
-                            colorData[cdi++] = (j%2 == 1)?code.green:lastG;
-                            colorData[cdi++] = (j%2 == 1)?code.blue:lastB;
+                            colorData[cdi++] = code.red;
+                            colorData[cdi++] = code.green;
+                            colorData[cdi++] = code.blue;
                         }
                     }
                     lastX = code.x;
@@ -216,22 +219,48 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
                     lastB = code.blue;
                 }
             } else {
-                pointBufferData[pbi++] = code.x;
-                pointBufferData[pbi++] = code.y;
-                colorData[cdi++] = code.red;
-                colorData[cdi++] = code.green;
-                colorData[cdi++] = code.blue;
-                if(i !== 0 && i != nPoints-1 && !dots) {
+                if(dots) {
+                    // just a point at the current point
                     pointBufferData[pbi++] = code.x;
                     pointBufferData[pbi++] = code.y;
+
                     colorData[cdi++] = code.red;
                     colorData[cdi++] = code.green;
                     colorData[cdi++] = code.blue;
+                } else {
+                    if(i !== 0) {
+                        // lines from last point to current point
+                        pointBufferData[pbi++] = lastX;
+                        pointBufferData[pbi++] = lastY;
+
+                        pointBufferData[pbi++] = code.x;
+                        pointBufferData[pbi++] = code.y;
+
+                        for(j = 0;j < 2;j++) {
+                            // use current color for both points because
+                            // we dont want color interpolation between points
+                            colorData[cdi++] = code.red;
+                            colorData[cdi++] = code.green;
+                            colorData[cdi++] = code.blue;
+                        }
+                    }
+                    lastX = code.x;
+                    lastY = code.y;
+                    lastR = code.red;
+                    lastG = code.green;
+                    lastB = code.blue;
                 }
             }
         }
 
         this.program.run(this.parent.fm, null, pointBufferData, colorData, dots, this.veryThick?1:this.opts.thickness, this.veryThick);
+    },
+
+    updateProgram: function() {
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = new SuperScopeShader(this.gl, Webvs.getBlendMode(this.opts.blendMode));
     },
 
     updateCode: function() {
@@ -299,9 +328,10 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     }
 });
 
-function SuperScopeShader() {
-    SuperScopeShader.super.constructor.call(this, {
+function SuperScopeShader(gl, blendMode) {
+    SuperScopeShader.super.constructor.call(this, gl, {
         copyOnSwap: true,
+        blendMode: blendMode,
         vertexShader: [
             "attribute vec2 a_position;",
             "attribute vec3 a_color;",
@@ -309,7 +339,7 @@ function SuperScopeShader() {
             "uniform float u_pointSize;",
             "void main() {",
             "   gl_PointSize = u_pointSize;",
-            "   setPosition(clamp(a_position, vec2(-1,-1), vec2(1,1)));",
+            "   setPosition(a_position);",
             "   v_color = a_color;",
             "}"
         ],

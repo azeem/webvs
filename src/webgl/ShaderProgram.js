@@ -37,8 +37,7 @@
  * @param {object} options - refer class description
  * @param {string} options.vertexShader - the source for the vertex shader
  * @param {string} options.fragmentShader - the source for the fragment shader
- * @param {boolean} [options.forceShaderBlend=false] - force the use of shader based blending mode
- * @param {string} [options.oututBlendMode="REPLACE"] - the output blending mode.
+ * @param {string} [options.blendMode="REPLACE"] - the output blending mode.
  * @param {boolean} [options.dynamicBlend=false] - when set to true, blending mode can be changed
  *     at runtime even after shader compilation
  * @param {boolean} [options.swapFrame=false] - if set then a render target swap is done on the 
@@ -49,212 +48,99 @@
  *     the framebuffermanager. This is used to maintain
  *     consistency during shader based blending in shaders
  *     that do not touch all the pixels
- * @param {boolean} [options.varyingPos=false] - if true then a varying called v_position is added
- *     automatically
- * @param {function} [options.draw ] - override the draw function
  * @memberof Webvs
  * @constructor
  */
-function ShaderProgram(options) { 
-    options = _.defaults(options, {
-        forceShaderBlend: false,
-        outputBlendMode: Webvs.REPLACE,
-        varyingPos: false,
-        dynamicBlend: false,
+function ShaderProgram(gl, opts) {
+    opts = _.defaults(opts, {
+        blendMode: Webvs.REPLACE,
         swapFrame: false,
         copyOnSwap: false,
+        dynamicBlend: false,
         blendValue: 0.5
     });
+
+    var vsrc = [
+        "precision mediump float;",
+        "varying vec2 v_position;",
+        "uniform vec2 u_resolution;",
+        "uniform sampler2D u_srcTexture;",
+
+        "#define PI "+Math.PI,
+        "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))",
+        "#define setPosition(pos) (v_position = (((pos)+1.0)/2.0),gl_Position = vec4((pos), 0, 1))"
+    ];
+
     var fsrc = [
         "precision mediump float;",
+        "varying vec2 v_position;",
         "uniform vec2 u_resolution;",
-        "#define PI "+Math.PI
+        "uniform sampler2D u_srcTexture;",
+
+        "#define PI "+Math.PI,
+        "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))",
+        "#define getSrcColor() (texture2D(u_srcTexture, v_position))"
     ];
-    var vsrc = _.clone(fsrc);
 
-    if(_.isFunction(options.draw)) {
-        this.draw = options.draw;
-    }
-    this.copyOnSwap = options.copyOnSwap;
-    this.varyingPos = options.varyingPos;
-    this.dynamicBlend = options.dynamicBlend;
+    this.gl = gl;
+    this.swapFrame = opts.swapFrame;
+    this.copyOnSwap = opts.copyOnSwap;
+    this.blendValue = opts.blendValue;
+    this.blendMode = opts.blendMode;
+    this.dynamicBlend = opts.dynamicBlend;
 
-    // select the blend equation
-    this.outputBlendMode = options.outputBlendMode;
-    this.blendValue = options.blendValue;
-
-    if(options.swapFrame || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
-        this.swapFrame = true;
-        this.glBlendMode = false;
-        this.varyingPos = true;
-    } else {
-        this.swapFrame = false;
-        this.glBlendMode = true;
-    }
-
-    // varying position and macros
-    if(this.varyingPos) {
-        fsrc.push("varying vec2 v_position;");
-        vsrc.push(
-            "varying vec2 v_position;",
-            "#define setPosition(pos) (v_position = (((pos)+1.0)/2.0),gl_Position = vec4((pos), 0, 1))"
-        );
-    } else {
-        vsrc.push("#define setPosition(pos) (gl_Position = vec4((pos), 0, 1))");
-    }
-
-    // source teture uniform variable and macors
-    if(this.swapFrame) {
-        vsrc.push(
-            "uniform sampler2D u_srcTexture;",
-            "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))"
-        );
-
-        fsrc.push(
-            "uniform sampler2D u_srcTexture;",
-            "uniform float u_blendValue;",
-            "#define getSrcColor() (texture2D(u_srcTexture, v_position))",
-            "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))"
-        );
-    }
-
-    // color blend macro/function
-    if(this.dynamicBlend && this.swapFrame) {
+    if(this.dynamicBlend) {
         fsrc.push(
             "uniform int u_blendMode;",
             "void setFragColor(vec4 color) {"
         );
-        _.each(this.blendEqs, function(eq, mode) {
+        _.each(ShaderProgram.shaderBlendEq, function(eq, mode) {
             fsrc.push(
                 "   if(u_blendMode == "+mode+") {",
                 "       gl_FragColor = ("+eq+");",
-                "   }"
+                "   }",
+                "   else"
             );
-        });
+        }, this);
         fsrc.push(
+            "   {",
+            "       gl_FragColor = color;",
+            "   }",
             "}"
         );
     } else {
-        var blendEq = this.blendEqs[this.glBlendMode?Webvs.REPLACE:this.outputBlendMode];
-        if(_.isUndefined(blendEq)) {
-            throw new Error("Blend Mode " + this.outputBlendMode + " not supported");
+        if(this._isShaderBlend(this.blendMode)) {
+            var eq = ShaderProgram.shaderBlendEq[this.blendMode];
+            fsrc.push("#define setFragColor(color) (gl_FragColor = ("+eq+"))");
+        } else {
+            fsrc.push("#define setFragColor(color) (gl_FragColor = color)");
         }
-        fsrc.push("#define setFragColor(color) (gl_FragColor = ("+blendEq+"))");
     }
 
-    this.fragmentSrc = fsrc.join("\n") + "\n" + options.fragmentShader.join("\n");
-    this.vertexSrc = vsrc.join("\n") + "\n" + options.vertexShader.join("\n");
+    this.fragmentSrc = fsrc.join("\n") + "\n" + opts.fragmentShader.join("\n");
+    this.vertexSrc = vsrc.join("\n") + "\n" + opts.vertexShader.join("\n");
     this._locations = {};
     this._textureVars = [];
     this._arrBuffers = {};
+
+    this._compile();
 }
 
+// these are blend modes not supported with gl.BLEND
+// and the formula to be used inside shader
+ShaderProgram.shaderBlendEq = _.object([
+    [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"]
+]);
+
 Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
-    // these are blend modes supported with gl.BLEND
-    // all other modes have to implemented with shaders
-    glBlendModes: [
-        Webvs.REPLACE,
-        Webvs.AVERAGE,
-        Webvs.ADDITIVE,
-        Webvs.SUBTRACTIVE1,
-        Webvs.SUBTRACTIVE2,
-        Webvs.MULTIPLY,
-        Webvs.ADJUSTABLE,
-        Webvs.ALPHA
-    ],
-
-    // the blending formulas to be used inside shaders
-    blendEqs: _.object([
-        [Webvs.REPLACE, "color"],
-        [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"],
-        [Webvs.AVERAGE, "(color+texture2D(u_srcTexture, v_position))/2.0"],
-        [Webvs.ADDITIVE, "color+texture2D(u_srcTexture, v_position)"],
-        [Webvs.SUBTRACTIVE1, "texture2D(u_srcTexture, v_position)-color"],
-        [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"],
-        [Webvs.MULTIPLY, "color*texture2D(u_srcTexture, v_position)"],
-        [Webvs.ADJUSTABLE, "(u_blendValue*color)+((1.0-u_blendValue)*texture2D(u_srcTexture, v_position))"],
-        [Webvs.ALPHA, "vec4((color.a*color.rgb)+((1.0-color.a)*texture2D(u_srcTexture, v_position).rgb), 1.0)"]
-    ]),
-
-    /**
-     * initializes and compiles the shaders
-     * @memberof Webvs.ShaderProgram#
-     */
-	init: function(gl) {
-		this.gl = gl;
-        try {
-            this._compileProgram(this.vertexSrc, this.fragmentSrc);
-        } catch(e) {
-            throw e;
-        }
-	},
-
-    /**
-     * Sets the output blend mode for this shader
-     * @param {Webvs.blendModes} mode - the blending mode
-     * @memberof Webvs.ShaderProgram#
-     */
-    setOutputBlendMode: function(mode) {
-        this.outputBlendMode = mode;
+    _isShaderBlend: function(mode) {
+        return (mode == Webvs.MAXIMUM);
     },
 
-    /**
-     * Runs this shader program
-     * @param {Webvs.FrameBufferManager} fm - frame manager. pass null, if no fm is required
-     * @param {Webvs.blendModes} outputBlendMode - overrides the blendmode. pass null to use default
-     * @param {...any} extraParams - remaining parameters are passed to the draw function
-     * @memberof Webvs.ShaderProgram#
-     */
-    run: function(fm, outputBlendMode) {
+    _compile: function() {
         var gl = this.gl;
-        var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
-        gl.useProgram(this.program);
-
-        if(fm) {
-            this.setUniform("u_resolution", "2f", fm.width, fm.height);
-            if(this.swapFrame) {
-                this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
-                fm.swapAttachment();
-                if(this.copyOnSwap) {
-                    fm.copyOver();
-                }
-            }
-        }
-
-        if(outputBlendMode && !this.dynamicBlend) {
-            throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
-        }
-        outputBlendMode = outputBlendMode || this.outputBlendMode;
-        if(this.dynamicBlend && this.swapFrame) {
-            this.setUniform("u_blendMode", "1i", outputBlendMode);
-        }
-
-        if(this.glBlendMode && outputBlendMode != Webvs.REPLACE) {
-            gl.enable(gl.BLEND);
-            this._setGlBlendMode(gl, outputBlendMode);
-        } else {
-            gl.disable(gl.BLEND);
-            this.setUniform("u_blendValue", "1f", this.blendValue);
-        }
-
-        this.draw.apply(this, _.drop(arguments, 2));
-
-        gl.disable(gl.BLEND);
-        gl.useProgram(oldProgram);
-    },
-
-    /**
-     * Performs the actual drawing and any further bindings and calculations if required.
-     * @param {...any} extraParams - the extra parameters passed to {@link Webvs.ShaderProgram.run}
-     * @abstract
-     * @memberof Webvs.ShaderProgram#
-     */
-    draw: function() {},
-
-    _compileProgram: function(vertexSrc, fragmentSrc) {
-        var gl = this.gl;
-        var vertex = this._compileShader(vertexSrc, gl.VERTEX_SHADER);
-        var fragment = this._compileShader(fragmentSrc, gl.FRAGMENT_SHADER);
+        var vertex = this._compileShader(this.vertexSrc, gl.VERTEX_SHADER);
+        var fragment = this._compileShader(this.fragmentSrc, gl.FRAGMENT_SHADER);
         var program = gl.createProgram();
         gl.attachShader(program, vertex);
         gl.attachShader(program, fragment);
@@ -281,39 +167,100 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return shader;
     },
 
-    _setGlBlendMode: function(gl, mode) {
+    /**
+     * Performs the actual drawing and any further bindings and calculations if required.
+     * @param {...any} extraParams - the extra parameters passed to {@link Webvs.ShaderProgram.run}
+     * @abstract
+     * @memberof Webvs.ShaderProgram#
+     */
+    draw: function() {},
+
+    /**
+     * Runs this shader program
+     * @param {Webvs.FrameBufferManager} fm - frame manager. pass null, if no fm is required
+     * @param {Webvs.blendModes} outputBlendMode - overrides the blendmode. pass null to use default
+     * @param {...any} extraParams - remaining parameters are passed to the draw function
+     * @memberof Webvs.ShaderProgram#
+     */
+    run: function(fm, blendMode) {
+        var gl = this.gl;
+        var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
+        gl.useProgram(this.program);
+
+        if(blendMode && !this.dynamicBlend) {
+            throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
+        }
+        blendMode = blendMode || this.blendMode;
+
+        if(fm) {
+            this.setUniform("u_resolution", "2f", fm.width, fm.height);
+            if(this.swapFrame || this._isShaderBlend(blendMode)) {
+                this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
+                fm.swapAttachment();
+                if(this.copyOnSwap) {
+                    fm.copyOver();
+                }
+            } else if(this.dynamicBlend) {
+                this.setUniform("u_srcTexture", "texture2D", null);
+            }
+        }
+
+        if(this.dynamicBlend) {
+            this.setUniform("u_blendMode", "1i", blendMode);
+        }
+
+        this._setGlBlendMode(blendMode);
+        this.draw.apply(this, _.drop(arguments, 2));
+        gl.disable(gl.BLEND);
+        gl.useProgram(oldProgram);
+    },
+
+    _setGlBlendMode: function(mode) {
+        var gl = this.gl;
         switch(mode) {
             case Webvs.ADDITIVE:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.SUBTRACTIVE1:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
                 break;
             case Webvs.SUBTRACTIVE2:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_SUBTRACT);
                 break;
             case Webvs.MULTIPLY:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.DST_COLOR, gl.ZERO);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.ALPHA:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.ADJUSTABLE:
+                gl.enable(gl.BLEND);
                 gl.blendColor(0, 0, 0, this.blendValue);
                 gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.AVERAGE:
+                gl.enable(gl.BLEND);
                 gl.blendColor(0.5, 0.5, 0.5, 1);
                 gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            default: throw new Error("Invalid blend mode");
+            // shader blending cases
+            case Webvs.MAXIMUM:
+                gl.disable(gl.BLEND);
+                break;
+            default:
+                throw new Error("Unknown blend mode " + mode + " in shader");
         }
     },
 
@@ -431,7 +378,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
      * call in component destroy
      * @memberof Webvs.ShaderProgram#
      */
-    cleanup: function() {
+    destroy: function() {
         var gl = this.gl;
         _.each(this._buffers, function(buffer) {
             gl.deleteBuffer(buffer);
@@ -442,6 +389,5 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
     },
 
 });
-
 
 })(Webvs);

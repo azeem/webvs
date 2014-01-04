@@ -14,17 +14,16 @@
  * @memberof Webvs
  * @constructor
  */
-function QuadBoxProgram(options) {
+function QuadBoxProgram(gl, options) {
     options = _.defaults(options, {
         vertexShader: [
             "attribute vec2 a_position;",
             "void main() {",
             "   setPosition(a_position);",
             "}"
-        ],
-        varyingPos: true
+        ]
     });
-    QuadBoxProgram.super.constructor.call(this, options);
+    QuadBoxProgram.super.constructor.call(this, gl, options);
 }
 Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
     /**

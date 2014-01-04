@@ -4,8 +4,7 @@
  */
 
 CanvasTestWithFM("ClearScreen", 3, function(canvas, gl, fm, copier, comparator) {
-    var gprogram = new GradientProgram(0);
-    gprogram.init(gl);
+    var gprogram = new GradientProgram(gl, 0);
 
     var testValues = [
         {opts: {color: "#00FFFF"}, beat: false, iter: 1},
@@ -47,5 +46,5 @@ CanvasTestWithFM("ClearScreen", 3, function(canvas, gl, fm, copier, comparator) 
         clearscreen.destroy();
     });
 
-    gprogram.cleanup();
+    gprogram.destroy();
 });
