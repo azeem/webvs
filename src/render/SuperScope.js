@@ -63,7 +63,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     onChange: {
-        code: "updateCode",
+        code: ["updateCode", "updateClones"],
         colors: "updateColors",
         cycleSpeed: "updateSpeed",
         clone: "updateClones",

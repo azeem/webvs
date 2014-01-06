@@ -39,6 +39,7 @@ CanvasTestWithFM("ColorClip", 4, function(canvas, gl, fm, copier) {
         copier.run(null, null, fm.getCurrentTexture());
 
         imageFuzzyOk("ColorClip " + index, gl, canvas, expectedImages[index]);
+        colorclip.destroy();
     });
 
     gprogram.destroy();

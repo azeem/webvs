@@ -107,7 +107,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
         // js code
         var code = compileResult.codeInst;
-        code.setup(this.main, this.parent);
+        code.setup(this.main, this);
         this.inited = false;
         this.code = code;
 
@@ -118,18 +118,20 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
     updateProgram: function() {
         var opts = this.opts;
-        if(this.program) {
-            this.program.cleanup();
-        }
+        var program;
         if(opts.noGrid) {
-            this.program = new Webvs.DMovProgramNG(this.gl, opts.coord, opts.bFilter,
-                                                   opts.compat, this.code.hasRandom,
-                                                   this.glslCode, opts.blend);
+            program = new Webvs.DMovProgramNG(this.gl, opts.coord, opts.bFilter,
+                                              opts.compat, this.code.hasRandom,
+                                              this.glslCode, opts.blend);
         } else {
-            this.program = new Webvs.DMovProgram(this.gl, opts.coord, opts.bFilter,
-                                                 opts.compat, this.code.hasRandom,
-                                                 this.glslCode, opts.blend);
+            program = new Webvs.DMovProgram(this.gl, opts.coord, opts.bFilter,
+                                            opts.compat, this.code.hasRandom,
+                                            this.glslCode, opts.blend);
         }
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
     },
 
     updateGrid: function() {
