@@ -45,6 +45,7 @@ module.exports = function(grunt) {
         "src/render/SuperScope.js",
         "src/render/Simple.js",
         "src/render/Texer.js",
+        "src/render/MovingParticle.js",
         "src/render/ClearScreen.js",
         "src/render/Picture.js"
     ];

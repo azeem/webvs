@@ -257,10 +257,11 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     updateProgram: function() {
+        var program = new SuperScopeShader(this.gl, Webvs.getBlendMode(this.opts.blendMode));
         if(this.program) {
             this.program.destroy();
         }
-        this.program = new SuperScopeShader(this.gl, Webvs.getBlendMode(this.opts.blendMode));
+        this.program = program;
     },
 
     updateCode: function() {
