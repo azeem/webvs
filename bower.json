@@ -9,8 +9,8 @@
     "tests"
   ],
   "devDependencies": {
-    "dancer.js": "jsantell/dancer.js#~0.3.1",
     "underscore": "~1.5.1",
-    "stats.js": "*"
+    "stats.js": "*",
+    "soundmanager2": "*"
   }
 }

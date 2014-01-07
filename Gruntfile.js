@@ -53,9 +53,7 @@ module.exports = function(grunt) {
 
     var libFiles = [
         "bower_components/underscore/underscore.js",
-        "bower_components/dancer.js/lib/fft.js",
-        "bower_components/dancer.js/dancer.js",
-        "bower_components/stats.js/src/Stats.js"
+        "bower_components/stats.js/src/Stats.js",
     ];
 
     grunt.initConfig({
