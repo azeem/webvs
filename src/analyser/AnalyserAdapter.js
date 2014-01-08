@@ -23,6 +23,12 @@ Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
     beat: false,
 
     /**
+     * Called every frame. Override and implement analyser code
+     * @memberof Webvs.AnalyserAdapter#
+     */
+    update: function() {},
+
+    /**
      * Returns array of waveform values
      * @abstract
      * @param {number} channel - the channel whose data is to be fetched. 0 - center, 1 - left, 2 - right

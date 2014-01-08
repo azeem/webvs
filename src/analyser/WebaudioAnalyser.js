@@ -69,17 +69,12 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
             this.channelSplit.connect(analyser, ch);
             this.analysers[ch] = analyser;
         }
-
-        // the analyser should have new data at roughly this
-        // interval.
-        var analyserFrameInterval = 1000*this.fftSize/this.context.sampleRate;
-        var this_ = this;
-        this.intervalHandler = setInterval(function() {
-            this_._update();
-        }, analyserFrameInterval);
     },
 
-    _update: function() {
+    update: function() {
+        if(!this.analysers) {
+            return; // analysers not ready. nothing update
+        }
         var i;
         var byteBuffer = new Uint8Array(this.fftSize);
         for(var ch = 0;ch < 2;ch++) {
@@ -143,7 +138,6 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
 
         var this_ = this;
         var onCanPlay = function() {
-            console.log("canplay called");
             this_.source = this_.context.createMediaElementSource(element);
             this_.connectToNode(this_.source);
             this_.source.connect(this_.context.destination);

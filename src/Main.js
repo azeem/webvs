@@ -111,11 +111,12 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
     _startAnimation: function() {
         var _this = this;
         var drawFrame = function() {
+            _this.analyser.update();
             _this.rootComponent.draw();
             _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
-        // wrap drawframe in stats collection if required
+        // Wrap drawframe in stats collection if required
         if(this.stats) {
             var oldDrawFrame = drawFrame;
             drawFrame = function() {
