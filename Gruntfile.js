@@ -42,6 +42,7 @@ module.exports = function(grunt) {
         "src/trans/ChannelShift.js",
         "src/trans/UniqueTone.js",
         "src/trans/Invert.js",
+        "src/trans/Mosaic.js",
 
         "src/render/SuperScope.js",
         "src/render/Simple.js",
