@@ -29,6 +29,10 @@
 function EffectList(gl, main, parent, opts) {
     EffectList.super.constructor.call(this, gl, main, parent, opts);
 }
+var ELBlendModes = _.extend({
+    "IGNORE": 50
+}, Webvs.BlendModes);
+EffectList.ELBlendModes = ELBlendModes;
 Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
     defaultOptions: _.extend({
         code: {
@@ -98,7 +102,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         }
 
         // blend input texture onto internal texture
-        if(this.input !== -1) {
+        if(this.input !== ELBlendModes.IGNORE) {
             var inputTexture = this.parent.fm.getCurrentTexture();
             this.main.copier.run(this.fm, this.input, inputTexture);
         }
@@ -114,7 +118,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         this.fm.restoreRenderTarget();
 
         // blend current texture to the output framebuffer
-        if(this.output != -1) {
+        if(this.output != ELBlendModes.IGNORE) {
             if(this.parent) {
                 this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
             } else {
@@ -138,7 +142,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
     },
 
     updateBlendMode: function(value, name) {
-        this[name] = (value=="IGNORE")?-1:Webvs.getBlendMode(value);
+        this[name] = Webvs.getEnumValue(value, ELBlendModes);
     }
 });
 

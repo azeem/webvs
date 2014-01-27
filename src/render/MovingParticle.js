@@ -107,7 +107,7 @@ Webvs.MovingParticle = Webvs.defineClass(MovingParticle, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var blendMode = Webvs.getBlendMode(this.opts.blendMode);
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
         var program = new MovingParticleShader(this.gl, blendMode);
         if(this.program) {
             this.program.destroy();

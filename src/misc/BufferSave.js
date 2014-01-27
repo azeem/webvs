@@ -23,6 +23,13 @@
 function BufferSave(gl, main, parent, opts) {
     BufferSave.super.constructor.call(this, gl, main, parent, opts);
 }
+var Actions = {
+    "SAVE": 0,
+    "RESTORE": 1,
+    "SAVERESTORE": 2,
+    "RESTORESAVE": 3
+};
+BufferSave.Actions = Actions;
 Webvs.BufferSave = Webvs.defineClass(BufferSave, Webvs.Component, {
     defaultOptions: {
         action: "SAVE",
@@ -46,35 +53,33 @@ Webvs.BufferSave = Webvs.defineClass(BufferSave, Webvs.Component, {
         var fm = this.main.registerBank[this.bufferId];
 
         var currentAction;
-        if(this.opts.action == "SAVERESTORE" || this.opts.action == "RESTORESAVE") {
+        if(this.action == Actions.SAVERESTORE ||
+           this.action == Actions.RESTORESAVE) {
             currentAction = this.nextAction;
             // toggle next action
-            this.nextAction = (this.nextAction == "SAVE")?"RESTORE":"SAVE";
+            this.nextAction = (this.nextAction == Actions.SAVE)?Actions.RESTORE:Actions.SAVE;
         } else {
-            currentAction = this.opts.action;
+            currentAction = this.action;
         }
 
         switch(currentAction) {
-            case "SAVE":
+            case Actions.SAVE:
                 fm.setRenderTarget();
                 this.main.copier.run(null, null, this.parent.fm.getCurrentTexture());
                 fm.restoreRenderTarget();
                 break;
-            case "RESTORE":
+            case Actions.RESTORE:
                 this.main.copier.run(this.parent.fm, this.blendMode, fm.getCurrentTexture());
                 break;
         }
     },
 
     updateAction: function() {
-        if(!_.contains(["SAVE", "RESTORE", "SAVERESTORE", "RESTORESAVE"], this.opts.action)) {
-            throw new Error("Unknow action " + this.opts.action);
-        }
-
-        if(this.opts.action == "SAVERESTORE") {
-            this.nextAction = "SAVE";
-        } else if(this.opts.action == "RESTORESAVE") {
-            this.nextAction = "RESTORE";
+        this.action = Webvs.getEnumValue(this.opts.action, Actions);
+        if(this.action == Actions.SAVERESTORE) {
+            this.nextAction = Actions.SAVE;
+        } else if(this.action == Actions.RESTORESAVE) {
+            this.nextAction = Actions.RESTORE;
         }
     },
 
@@ -89,7 +94,7 @@ Webvs.BufferSave = Webvs.defineClass(BufferSave, Webvs.Component, {
     },
 
     updateBlendMode: function() {
-        this.blendMode = Webvs.getBlendMode(this.opts.blendMode);
+        this.blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
     }
 });
 

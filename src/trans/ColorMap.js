@@ -73,7 +73,7 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
         if(this.program) {
             this.program.cleanup();
         }
-        var output = Webvs.getBlendMode(this.opts.output);
+        var output = Webvs.getEnumValue(this.opts.output, Webvs.BlendModes);
         this.program = new Webvs.ColorMapProgram(this.gl, this.opts.key, output);
     },
 

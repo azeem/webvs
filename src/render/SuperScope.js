@@ -257,7 +257,8 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var program = new SuperScopeShader(this.gl, Webvs.getBlendMode(this.opts.blendMode));
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new SuperScopeShader(this.gl, blendMode);
         if(this.program) {
             this.program.destroy();
         }
@@ -293,7 +294,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     updateChannel: function() {
-        this.channel = Webvs.getChannelId(this.opts.channel);
+        this.channel = Webvs.getEnumValue(this.opts.channel, Webvs.Channels);
     },
 
     updateThickness: function() {

@@ -70,7 +70,8 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var program = new Webvs.ClearScreenProgram(this.gl, Webvs.getBlendMode(this.opts.blendMode));
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new Webvs.ClearScreenProgram(this.gl, blendMode);
         if(this.program) {
             this.program.cleanup();
         }

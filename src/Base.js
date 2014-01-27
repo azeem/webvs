@@ -211,7 +211,7 @@ _.flatMap = _.compose(_.flatten, _.map);
 /**
  * Blend mode constants
  */
-Webvs.blendModes = {
+Webvs.BlendModes = {
     REPLACE: 1,
     MAXIMUM: 2,
     AVERAGE: 3,
@@ -222,29 +222,21 @@ Webvs.blendModes = {
     ADJUSTABLE: 8,
     ALPHA: 9
 };
-_.extend(Webvs, Webvs.blendModes);
+_.extend(Webvs, Webvs.BlendModes);
 
-/**
- * Returns the blendmode constant. Throws an error if its
- * an invalid blend mode
- * @param {string} name - the blend mode in string
- * @returns {number} the code for the blend mode
- */
-Webvs.getBlendMode = function(name) {
-    var mode = Webvs.blendModes[name];
-    if(!mode) {
-        throw new Error("Unknown blendMode " + name);
-    }
-    return mode;
+Webvs.Channels = {
+    "CENTER": 0,
+    "LEFT": 1,
+    "RIGHT": 2
 };
+_.extend(Webvs, Webvs.Channels);
 
-Webvs.getChannelId = function(name) {
-    switch(name) {
-        case "CENTER": return 0;
-        case "LEFT": return 1;
-        case "RIGHT": return 2;
-        default: throw new Error("invalid channel name");
+Webvs.getEnumValue = function(key, enumeration) {
+    key = key.toUpperCase();
+    if(!(key in enumeration)) {
+        throw new Error("Unknown key " + key + ", expecting one of " + _.keys(enumeration).join(","));
     }
+    return enumeration[key];
 };
 
 /**

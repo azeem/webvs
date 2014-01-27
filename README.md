@@ -65,21 +65,25 @@ The following components are implemented currently. These components try to matc
 
 + EffectList
 + Misc
-	+ BufferSave
+    + BufferSave
     + GlobalVar
 + Render
-	+ ClearScreen
+    + ClearScreen
+    + Moving Particle
     + Picture
     + SuperScope
     + Simple
     + Texer
 + Trans
-	+ ChannelShift
+    + ChannelShift
     + ColorClip
     + ColorMap
     + Convolution
     + DynamicMovement
     + FadeOut
+    + Invert
+    + Mirror
+    + Mosaic
     + Movement
     + UniqueTone
 
