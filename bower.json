@@ -11,6 +11,7 @@
   "devDependencies": {
     "underscore": "~1.5.1",
     "stats.js": "*",
-    "soundmanager2": "*"
+    "soundmanager2": "*",
+    "seedrandom": "~2.3.1"
   }
 }

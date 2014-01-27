@@ -12,6 +12,7 @@ module.exports = function(config) {
         files: [
             "build/libs.js",
             "build/webvs.js",
+            "bower_components/seedrandom/seedrandom.js",
             "test/webgl-debug.js",
             "test/base.js",
             "test/**/*.test.js"
