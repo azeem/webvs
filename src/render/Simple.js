@@ -71,7 +71,7 @@ Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
     },
 
     updateSource: function() {
-        this.source = Webvs.getEnumValue(this.opts.source, Webvs.SuperScope.Source);
+        this.source = Webvs.getEnumValue(this.opts.source, Webvs.Source);
         this.sscope.setOption("source", this.opts.source);
     },
 
@@ -91,7 +91,7 @@ Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
         } else {
             code.init = "n=w*2;";
             code.perFrame = "c=0;";
-            if(this.source == Webvs.SuperScope.Source.SPECTRUM) {
+            if(this.source == Webvs.Source.SPECTRUM) {
                 switch(this.align) {
                     case Align.TOP:    code.perPoint = "x=i*2-1; y=if(c%2,0,-v/2-0.5); c=c+1;"; break;
                     case Align.CENTER: code.perPoint = "x=i*2-1; y=if(c%2,0.5,-v/2);   c=c+1;"; break;

@@ -64,7 +64,8 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
     onChange: {
         code: "updateCode",
         clone: "updateClone",
-        imageSrc: "updateImage"
+        imageSrc: "updateImage",
+        source: "updateSource"
     },
 
     init: function() {
@@ -72,6 +73,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         this.updateCode();
         this.updateClone();
         this.updateImage();
+        this.updateSource();
     },
 
     draw: function() {
@@ -122,6 +124,10 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         );
     },
 
+    updateSource: function() {
+        this.source = Webvs.getEnumValue(this.opts.source, Webvs.Source);
+    },
+
     _drawScope: function(code, runInit) {
         if(runInit) {
             code.init();
@@ -136,7 +142,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 
         var nPoints = Math.floor(code.n);
         var data;
-        if(this.opts.source == "SPECTRUM") {
+        if(this.source == Webvs.Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum();
         } else {
             data = this.main.analyser.getWaveform();

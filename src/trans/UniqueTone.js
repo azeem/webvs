@@ -49,7 +49,8 @@ Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var program = new UniqueToneProgram(this.gl, Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes));
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new UniqueToneProgram(this.gl, blendMode);
         if(this.program) {
             this.program.cleanup();
         }

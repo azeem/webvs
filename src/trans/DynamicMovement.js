@@ -44,6 +44,11 @@
 function DynamicMovement(gl, main, parent, opts) {
     DynamicMovement.super.constructor.call(this, gl, main, parent, opts);
 }
+var CoordModes = {
+    "POLAR": 0,
+    "RECT": 1
+};
+DynamicMovement.CoordModes = CoordModes;
 Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     defaultOptions: {
         code: {
@@ -119,12 +124,13 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
     updateProgram: function() {
         var opts = this.opts;
         var program;
+        var coordMode = Webvs.getEnumValue(this.opts.coord, CoordModes);
         if(opts.noGrid) {
-            program = new Webvs.DMovProgramNG(this.gl, opts.coord, opts.bFilter,
+            program = new Webvs.DMovProgramNG(this.gl, coordMode, opts.bFilter,
                                               opts.compat, this.code.hasRandom,
                                               this.glslCode, opts.blend);
         } else {
-            program = new Webvs.DMovProgram(this.gl, opts.coord, opts.bFilter,
+            program = new Webvs.DMovProgram(this.gl, coordMode, opts.bFilter,
                                             opts.compat, this.code.hasRandom,
                                             this.glslCode, opts.blend);
         }
@@ -182,7 +188,7 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
 var GlslHelpers = {
     glslRectToPolar: function(coordMode) {
-        if(coordMode === "POLAR") {
+        if(coordMode === CoordModes.POLAR) {
             return [
                 "float ar = u_resolution.x/u_resolution.y;",
                 "x=x*ar;",
@@ -195,7 +201,7 @@ var GlslHelpers = {
     },
 
     glslPolarToRect: function(coordMode) {
-        if(coordMode === "POLAR") {
+        if(coordMode === CoordModes.POLAR) {
             return [
                 "d = d*sqrt(2.0);",
                 "x = d*sin(r)/ar;",

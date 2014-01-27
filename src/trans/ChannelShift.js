@@ -21,7 +21,15 @@
 function ChannelShift(gl, main, parent, opts) {
     ChannelShift.super.constructor.call(this, gl, main, parent, opts);
 }
-ChannelShift.channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
+var Channels = {
+    "RGB": 0,
+    "RBG": 1,
+    "BRG": 2,
+    "BGR": 3,
+    "GBR": 4,
+    "GRB": 5
+};
+ChannelShift.Channels = Channels;
 Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     defaultOptions: {
         channel: "RGB",
@@ -50,12 +58,7 @@ Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     },
 
     updateChannel: function() {
-        var opts = this.opts;
-        var index = ChannelShift.channels.indexOf(opts.channel);
-        if(index == -1) {
-            throw new Error("Unknown color channel " + opts.channel);
-        }
-        this.channel = index;
+        this.channel = Webvs.getEnumValue(this.opts.channel, Channels);
     }
 });
 
@@ -67,9 +70,9 @@ function ChannelShiftProgram(gl) {
             "void main() {",
             "   vec3 color = getSrcColor().rgb;",
 
-            _.flatMap(ChannelShift.channels, function(channel, index) {
+            _.flatMap(_.keys(Channels), function(channel) {
                 return [
-                    "if(u_channel == "+index+") {",
+                    "if(u_channel == "+Channels[channel]+") {",
                     "   setFragColor(vec4(color." + channel.toLowerCase() + ",1));",
                     "}"
                 ];

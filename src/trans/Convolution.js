@@ -22,6 +22,11 @@
 function Convolution(gl, main, parent, opts) {
     Convolution.super.constructor.call(this, gl, main, parent, opts);
 }
+var EdgeModes = {
+    "EXTEND": 0,
+    "WRAP": 1,
+};
+Convolution.EdgeModes = EdgeModes;
 Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
     componentName: "Convolution",
 
@@ -77,7 +82,8 @@ Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
         if(this.program) {
             this.program.destroy();
         }
-        this.program = new Webvs.ConvolutionProgram(this.gl, opts.kernel, kernelSize, opts.edgeMode);
+        var edgeMode = Webvs.getEnumValue(this.opts.edgeMode, EdgeModes);
+        this.program = new Webvs.ConvolutionProgram(this.gl, opts.kernel, kernelSize, edgeMode);
     }
 });
 
@@ -85,14 +91,12 @@ function ConvolutionProgram(gl, kernel, kernelSize, edgeMode) {
     // generate edge correction function
     var edgeFunc = "";
     switch(edgeMode) {
-        case "WRAP":
+        case EdgeModes.WRAP:
             edgeFunc = "pos = vec2(pos.x<0?pos.x+1.0:pos.x%1, pos.y<0?pos.y+1.0:pos.y%1);";
             break;
-        case "EXTEND":
+        case EdgeModes.EXTEND:
             edgeFunc = "pos = clamp(pos, vec2(0,0), vec2(1,1));";
             break;
-        default:
-            throw new Error("Invalid edge mode");
     }
 
     var i,j;

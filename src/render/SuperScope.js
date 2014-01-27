@@ -44,11 +44,6 @@
 function SuperScope(gl, main, parent, opts) {
     SuperScope.super.constructor.call(this, gl, main, parent, opts);
 }
-var Source = {
-    "SPECTRUM": 1,
-    "WAVEFORM": 2,
-};
-SuperScope.Source = Source;
 var DrawModes = {
     "LINES": 1,
     "DOTS": 2,
@@ -132,7 +127,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
         var nPoints = Math.floor(code.n);
         var data;
-        if(this.source == Source.SPECTRUM) {
+        if(this.source == Webvs.Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum(this.channel);
         } else {
             data = this.main.analyser.getWaveform(this.channel);
@@ -312,7 +307,7 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     updateSource: function() {
-        this.source = Webvs.getEnumValue(this.opts.source, Source);
+        this.source = Webvs.getEnumValue(this.opts.source, Webvs.Source);
     },
 
     updateDrawMode: function() {

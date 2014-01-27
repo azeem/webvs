@@ -18,7 +18,7 @@ Webvs.Mosaic = Webvs.defineClass(Mosaic, Webvs.Component, {
     },
 
     onChange: {
-        blendMode: "UpdateProgram"
+        blendMode: "updateProgram"
     },
 
     init: function() {

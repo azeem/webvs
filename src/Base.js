@@ -225,11 +225,17 @@ Webvs.BlendModes = {
 _.extend(Webvs, Webvs.BlendModes);
 
 Webvs.Channels = {
-    "CENTER": 0,
-    "LEFT": 1,
-    "RIGHT": 2
+    CENTER: 0,
+    LEFT: 1,
+    RIGHT: 2
 };
 _.extend(Webvs, Webvs.Channels);
+
+Webvs.Source = {
+    SPECTRUM: 1,
+    WAVEFORM: 2
+};
+_.extend(Webvs, Webvs.Source);
 
 Webvs.getEnumValue = function(key, enumeration) {
     key = key.toUpperCase();

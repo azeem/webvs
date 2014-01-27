@@ -27,6 +27,21 @@
 function ColorMap(gl, main, parent, opts) {
     ColorMap.super.constructor.call(this, gl, main, parent, opts);
 }
+var MapKey = {
+    "RED": 0,
+    "GREEN": 1,
+    "BLUE": 2,
+    "(R+G+B)/2": 3,
+    "(R+G+B)/3": 4,
+    "MAX": 5
+};
+ColorMap.MapKey = MapKey;
+var MapCycleModes = {
+    "SINGLE": 0,
+    "ONBEATRANDOM": 1,
+    "ONBEATSEQUENTIAL": 2
+};
+ColorMap.MapCycleModes = MapCycleModes;
 Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     defaultOptions: {
         key: "RED",
@@ -43,19 +58,21 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     onChange: {
         "maps": "updateMap",
         "key": "updateProgram",
+        "mapCycleMode": "updateCycleMode",
         "output": "updateProgram"
     },
 
     init: function() {
         this.updateProgram();
         this.updateMap();
+        this.updateCycleMode();
     },
 
     draw: function() {
         if(this.main.analyser.beat) {
-            if(this.opts.mapCycleMode ==  "ONBEATRANDOM") {
+            if(this.mapCycleMode ==  MapCycleModes.ONBEATRANDOM) {
                 this.currentMap = Math.floor(Math.random()*this.opts.maps.length);
-            } else if(this.opts.mapCycleMode == "ONBEATSEQUENTIAL") {
+            } else if(this.mapCycleMode == MapCycleModes.ONBEATSEQUENTIAL) {
                 this.currentMap = (this.currentMap+1)%this.colorMaps.length;
             }
         }
@@ -74,7 +91,8 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
             this.program.cleanup();
         }
         var output = Webvs.getEnumValue(this.opts.output, Webvs.BlendModes);
-        this.program = new Webvs.ColorMapProgram(this.gl, this.opts.key, output);
+        var key = Webvs.getEnumValue(this.opts.key, MapKey);
+        this.program = new Webvs.ColorMapProgram(this.gl, key, output);
     },
 
     updateMap: function() {
@@ -87,6 +105,10 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
             return this._buildColorMap(map);
         }, this);
         this.currentMap = 0;
+    },
+
+    updateCycleMode: function() {
+        this.mapCycleMode = Webvs.getEnumValue(this.opts.mapCycleMode, MapCycleModes);
     },
 
     _buildColorMap: function(map) {
@@ -148,13 +170,12 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
 function ColorMapProgram(gl, key, blendMode) {
     var keyEq = "";
     switch(key) {
-        case "RED": keyEq = "srcColor.r"; break;
-        case "GREEN": keyEq = "srcColor.g"; break;
-        case "BLUE": keyEq = "srcColor.b"; break;
-        case "(R+G+B)/2": keyEq = "min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
-        case "(R+G+B)/3": keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
-        case "MAX": keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
-        default: throw new Error("Unknown colormap key function " + options.key);
+        case MapKey.RED: keyEq = "srcColor.r"; break;
+        case MapKey.GREEN: keyEq = "srcColor.g"; break;
+        case MapKey.BLUE: keyEq = "srcColor.b"; break;
+        case MapKey["(R+G+B)/2"]: keyEq = "min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
+        case MapKey["(R+G+B)/3"]: keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
+        case MapKey.MAX: keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
     }
 
     ColorMapProgram.super.constructor.call(this, gl, {

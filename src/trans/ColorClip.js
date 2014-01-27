@@ -26,7 +26,12 @@
 function ColorClip(gl, main, parent, opts) {
     ColorClip.super.constructor.call(this, gl, main, parent, opts);
 }
-ColorClip.modes = ["BELOW", "ABOVE", "NEAR"];
+var ClipModes = {
+    "BELOW": 0,
+    "ABOVE": 1,
+    "NEAR": 2
+};
+ColorClip.ClipModes = ClipModes;
 Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
     componentName: "ColorClip",
 
@@ -58,11 +63,7 @@ Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
     },
 
     updateMode: function() {
-        var index = ColorClip.modes.indexOf(this.opts.mode);
-        if(index == -1) {
-            throw new Error("Unkown mode " + this.opts.mode);
-        }
-        this.mode = index;
+        this.mode = Webvs.getEnumValue(this.opts.mode, ClipModes);
     },
 
     updateColor: function() {
