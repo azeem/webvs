@@ -20,6 +20,14 @@
 function Simple(gl, main, parent, opts) {
     Simple.super.constructor.call(this, gl, main, parent, opts);
 }
+var DrawModes = _.extend({
+    "SOLID": 50
+}, Webvs.SuperScope.DrawModes);
+var Align = {
+    "TOP": 1,
+    "CENTER": 2,
+    "BOTTOM": 3
+};
 Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
     defaultOptions: {
         drawMode: "SOLID",
@@ -29,20 +37,20 @@ Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
     },
 
     onChange: {
-        "drawMode": ["updateCode", "updateDrawMode"],
-        "source": ["updateCode", "optPassThru"],
-        "align": "updateCode",
+        "drawMode": ["updateDrawMode", "updateCode",],
+        "source": ["updateSource", "updateCode"],
+        "align": ["updateAlign", "updateCode"],
         "colors": "optsPassThru"
     },
 
     init: function() {
-        var sscopeOpts = {
-            source: this.opts.source,
-            drawMode: this._drawMode(),
-            colors: this.opts.colors,
-            code: this._makeCode()
-        };
-        this.sscope = new Webvs.SuperScope(this.gl, this.main, this.parent, sscopeOpts);
+        this.sscope = new Webvs.SuperScope(this.gl, this.main, this.parent, {
+            colors: this.opts.colors
+        });
+        this.updateDrawMode();
+        this.updateSource();
+        this.updateAlign();
+        this.updateCode();
     },
 
     draw: function() {
@@ -54,51 +62,55 @@ Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
     },
 
     updateDrawMode: function() {
-        this.sscope.setOption("drawMode", this._drawMode());
+        this.drawMode = Webvs.getEnumValue(this.opts.drawMode, DrawModes);
+        var sscopeDrawMode = this.opts.drawMode;
+        if(this.drawMode == DrawModes.SOLID) {
+            sscopeDrawMode = "LINES";
+        }
+        this.sscope.setOption("drawMode", sscopeDrawMode);
+    },
+
+    updateSource: function() {
+        this.source = Webvs.getEnumValue(this.opts.source, Webvs.SuperScope.Source);
+        this.sscope.setOption("source", this.opts.source);
+    },
+
+    updateAlign: function() {
+        this.align = Webvs.getEnumValue(this.opts.align, Align);
+    },
+
+    updateCode: function() {
+        var code = {};
+        if(this.drawMode != DrawModes.SOLID) {
+            code.init = "n=w;";
+            switch(this.align) {
+                case Align.TOP:    code.perPoint = "x=i*2-1; y=-v/2-0.5;"; break;
+                case Align.CENTER: code.perPoint = "x=i*2-1; y=-v/2;"; break;
+                case Align.BOTTOM: code.perPoint = "x=i*2-1; y=v/2+0.5;"; break;
+            }
+        } else {
+            code.init = "n=w*2;";
+            code.perFrame = "c=0;";
+            if(this.source == Webvs.SuperScope.Source.SPECTRUM) {
+                switch(this.align) {
+                    case Align.TOP:    code.perPoint = "x=i*2-1; y=if(c%2,0,-v/2-0.5); c=c+1;"; break;
+                    case Align.CENTER: code.perPoint = "x=i*2-1; y=if(c%2,0.5,-v/2);   c=c+1;"; break;
+                    case Align.BOTTOM: code.perPoint = "x=i*2-1; y=if(c%2,0,v/2+0.5);  c=c+1;"; break;
+                }
+            } else {
+                switch(this.align) {
+                    case Align.TOP:    code.perPoint = "x=i*2-1; y=if(c%2,-0.5,-v/2-0.5); c=c+1;"; break;
+                    case Align.CENTER: code.perPoint = "x=i*2-1; y=if(c%2,0,-v/2);        c=c+1;"; break;
+                    case Align.BOTTOM: code.perPoint = "x=i*2-1; y=if(c%2,0.5,v/2+0.5);   c=c+1;"; break;
+                }
+            }
+        }
+        this.sscope.setOption("code", code);
     },
 
     optPassThru: function(name, value) {
         this.sscope.setOption(name, value);
     },
-
-    updateCode: function() {
-        this.sscope.setOption("code", this._makeCode());
-    },
-
-    _drawMode: function() {
-        return (this.opts.drawMode=="SOLID"?"LINES":this.opts.drawMode);
-    },
-
-    _makeCode: function() {
-        var code = {};
-        var opts = this.opts;
-        if(opts.drawMode != "SOLID") {
-            code.init = "n=w;";
-            code.perPoint = ({
-                "TOP":    "x=i*2-1; y=-v/2-0.5;",
-                "CENTER": "x=i*2-1; y=-v/2;",
-                "BOTTOM": "x=i*2-1; y=v/2+0.5;"
-            })[opts.align];
-        } else {
-            code.init = "n=w*2;";
-            code.perFrame = "c=0;";
-            if(opts.source == "SPECTRUM") {
-                code.perPoint = ({
-                    "TOP":    "x=i*2-1; y=if(c%2,0,-v/2-0.5); c=c+1;",
-                    "CENTER": "x=i*2-1; y=if(c%2,0.5,-v/2);   c=c+1;",
-                    "BOTTOM": "x=i*2-1; y=if(c%2,0,v/2+0.5);  c=c+1;",
-                })[opts.align];
-            } else {
-                code.perPoint = ({
-                    "TOP":    "x=i*2-1; y=if(c%2,-0.5,-v/2-0.5); c=c+1;",
-                    "CENTER": "x=i*2-1; y=if(c%2,0,-v/2);        c=c+1;",
-                    "BOTTOM": "x=i*2-1; y=if(c%2,0.5,v/2+0.5);   c=c+1;",
-                })[opts.align];
-            }
-        }
-        return code;
-    }
-
 });
 
 })(Webvs);

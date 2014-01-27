@@ -44,6 +44,16 @@
 function SuperScope(gl, main, parent, opts) {
     SuperScope.super.constructor.call(this, gl, main, parent, opts);
 }
+var Source = {
+    "SPECTRUM": 1,
+    "WAVEFORM": 2,
+};
+SuperScope.Source = Source;
+var DrawModes = {
+    "LINES": 1,
+    "DOTS": 2,
+};
+SuperScope.DrawModes = DrawModes;
 Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
     defaultOptions: {
         code: {
@@ -69,10 +79,14 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         clone: "updateClones",
         channel: "updateChannel",
         thickness: "updateThickness",
-        blendMode: "updateProgram"
+        blendMode: "updateProgram",
+        drawMode: "updateDrawMode",
+        source: "updateSource",
     },
 
     init: function() {
+        this.updateDrawMode();
+        this.updateSource();
         this.updateProgram();
         this.updateCode();
         this.updateClones();
@@ -118,12 +132,12 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
 
         var nPoints = Math.floor(code.n);
         var data;
-        if(this.opts.source == "SPECTRUM") {
+        if(this.source == Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum(this.channel);
         } else {
             data = this.main.analyser.getWaveform(this.channel);
         }
-        var dots = this.opts.drawMode == "DOTS";
+        var dots = this.drawMode == DrawModes.DOTS;
         var bucketSize = data.length/nPoints;
         var pbi = 0;
         var cdi = 0;
@@ -297,9 +311,17 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         this.channel = Webvs.getEnumValue(this.opts.channel, Webvs.Channels);
     },
 
+    updateSource: function() {
+        this.source = Webvs.getEnumValue(this.opts.source, Source);
+    },
+
+    updateDrawMode: function() {
+        this.drawMode = Webvs.getEnumValue(this.opts.drawMode, DrawModes);
+    },
+
     updateThickness: function() {
         var range;
-        if(this.opts.drawMode == "DOTS") {
+        if(this.drawMode == DrawModes.DOTS) {
             range = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
         } else {
             range = this.gl.getParameter(this.gl.ALIASED_LINE_WIDTH_RANGE);
