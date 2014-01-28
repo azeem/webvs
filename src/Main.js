@@ -34,6 +34,7 @@ function Main(options) {
         showStat: false
     });
     this.canvas = options.canvas;
+    this.msgElement = options.msgElement;
     this.analyser = options.analyser;
     this.isStarted = false;
     if(options.showStat) {
@@ -46,12 +47,20 @@ function Main(options) {
         this.stats = stats;
     }
 
+    this._setMessage("stopped");
     this._initResourceManager(options.resourcePrefix);
     this._registerContextEvents();
     this._initGl();
     this._setupRoot({id: "root"});
 }
 Webvs.Main = Webvs.defineClass(Main, Object, {
+    _setMessage: function(msg) {
+        if(!this.msgElement) {
+            return;
+        }
+        this.msgElement.className = this.msgElement.className.replace(/\s+webvs\-[^\s]+/g, "") + " webvs-" + msg;
+    },
+
     _initResourceManager: function(prefix) {
         var builtinPack = Webvs.ResourcePack;
         if(prefix) {
@@ -61,15 +70,17 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.rsrcMan = new Webvs.ResourceManager(builtinPack);
         var this_ = this;
         this.rsrcMan.onWait = function() {
-            console.log("Please wait, Kicking the lamma's ass ...");
+            this_._setMessage("waiting");
             if(this_.isStarted) {
                 this_._stopAnimation();
             }
         };
         this.rsrcMan.onReady = function() {
-            console.log("Finished loading ...");
             if(this_.isStarted) {
                 this_._startAnimation();
+                this_._setMessage("started");
+            } else {
+                this_._setMessage("stopped");
             }
         };
     },
@@ -143,6 +154,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.isStarted = true;
         if(this.rsrcMan.ready) {
             this._startAnimation();
+            this._setMessage("started");
         }
     },
 
@@ -157,6 +169,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.isStarted = false;
         if(this.rsrcMan.ready) {
             this._stopAnimation();
+            this._setMessage("stopped");
         }
     },
 

@@ -6,9 +6,16 @@ See the file license.txt for copying permission.
 <html>
 <head>
     <title>Webvs|Jello Cube</title>
+    <link href="style.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
-    <canvas style="border: 1px solid black;" width="866" height="650" id="canvas"></canvas>
+    <div class="main-wrap">
+        <canvas width="866" height="650" id="canvas"></canvas>
+        <div id="msg-container">
+          <div class="msg stopped">Webvs Ready!</div>
+          <div class="msg waiting">Please Wait ...<br/>Whipping the llama's ass!</div>
+        </div>
+    </div>
     <script src="../build/libs.js"></script>
     <script src="../build/webvs.js"></script>
     <script type="text/javascript">
@@ -182,6 +189,7 @@ See the file license.txt for copying permission.
             var analyser = new Webvs.WebAudioAnalyser();
             webvsMain = new Webvs.Main({
                 canvas: document.getElementById("canvas"),
+                msgElement: document.getElementById("msg-container"),
                 analyser: analyser,
                 showStat: true,
                 resourcePrefix: "../resources/"
