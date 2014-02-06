@@ -88,3 +88,5 @@ The following components are implemented currently. These components try to matc
 + [AVS-File-Decoder](http://decoder.visbot.net/): AVS to Webvs JSON convertor. Source: [AVS-File-Decoder](https://github.com/grandchild/AVS-File-Decoder), [AVS-File-Decoder-Qt](https://github.com/grandchild/AVS-File-Decoder-Qt)
 + Webvs Editors: Source: [qios-webvseditor](https://github.com/QOAL/qios-webvseditor), [webvsed](https://github.com/azeem/webvsed)
 + [Visbot Network](http://visbot.net/): AVS Visualization Packs
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/azeem/webvs/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
