@@ -20,7 +20,13 @@
 function FadeOut(gl, main, parent, opts) {
     FadeOut.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
+
+Webvs.registerComponent(FadeOut, {
+    name: "FadeOut",
+    menu: "Trans"
+});
+
+Webvs.defineClass(FadeOut, Webvs.Component, {
     defaultOptions: {
         speed: 1,
         color: "#000000"

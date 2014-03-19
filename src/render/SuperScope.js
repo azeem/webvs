@@ -44,12 +44,19 @@
 function SuperScope(gl, main, parent, opts) {
     SuperScope.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(SuperScope, {
+    name: "SuperScope",
+    menu: "Render"
+});
+
 var DrawModes = {
     "LINES": 1,
     "DOTS": 2,
 };
 SuperScope.DrawModes = DrawModes;
-Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
+
+Webvs.defineClass(SuperScope, Webvs.Component, {
     defaultOptions: {
         code: {
             init: "n=800",

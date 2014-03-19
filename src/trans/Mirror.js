@@ -27,7 +27,13 @@
 function Mirror(gl, main, parent, opts) {
     Mirror.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Mirror = Webvs.defineClass(Mirror, Webvs.Component, {
+
+Webvs.registerComponent(Mirror, {
+    name: "Mirror",
+    menu: "Trans"
+});
+
+Webvs.defineClass(Mirror, Webvs.Component, {
     defaultOptions: {
         onBeatRandom: false,
         topToBottom: true,

@@ -27,6 +27,12 @@
 function ColorMap(gl, main, parent, opts) {
     ColorMap.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(ColorMap, {
+    name: "ColorMap",
+    menu: "Trans"
+});
+
 var MapKey = {
     "RED": 0,
     "GREEN": 1,
@@ -36,13 +42,15 @@ var MapKey = {
     "MAX": 5
 };
 ColorMap.MapKey = MapKey;
+
 var MapCycleModes = {
     "SINGLE": 0,
     "ONBEATRANDOM": 1,
     "ONBEATSEQUENTIAL": 2
 };
 ColorMap.MapCycleModes = MapCycleModes;
-Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
+
+Webvs.defineClass(ColorMap, Webvs.Component, {
     defaultOptions: {
         key: "RED",
         output: "REPLACE",

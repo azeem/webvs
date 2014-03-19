@@ -21,7 +21,13 @@
 function ClearScreen(gl, main, parent, opts) {
     ClearScreen.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
+
+Webvs.registerComponent(ClearScreen, {
+    name: "ClearScreen",
+    menu: "Render"
+});
+
+Webvs.defineClass(ClearScreen, Webvs.Component, {
     defaultOptions: {
         n: 0,
         color: "#000000",

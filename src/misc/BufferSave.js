@@ -23,6 +23,12 @@
 function BufferSave(gl, main, parent, opts) {
     BufferSave.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(BufferSave, {
+    name: "BufferSave",
+    menu: "Misc"
+});
+    
 var Actions = {
     "SAVE": 0,
     "RESTORE": 1,
@@ -30,7 +36,8 @@ var Actions = {
     "RESTORESAVE": 3
 };
 BufferSave.Actions = Actions;
-Webvs.BufferSave = Webvs.defineClass(BufferSave, Webvs.Component, {
+
+Webvs.defineClass(BufferSave, Webvs.Component, {
     defaultOptions: {
         action: "SAVE",
         bufferId: 1,

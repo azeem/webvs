@@ -22,14 +22,19 @@
 function Convolution(gl, main, parent, opts) {
     Convolution.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(Convolution, {
+    name: "Convolution",
+    menu: "Trans"
+});
+
 var EdgeModes = {
     "EXTEND": 0,
     "WRAP": 1,
 };
 Convolution.EdgeModes = EdgeModes;
-Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
-    componentName: "Convolution",
 
+Webvs.defineClass(Convolution, Webvs.Component, {
     defaultOptions: {
         edgeMode: "EXTEND",
         scale: undefined,

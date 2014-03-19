@@ -8,7 +8,13 @@
 function Invert(gl, main, parent, opts) {
     Invert.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Invert = Webvs.defineClass(Invert, Webvs.Component, {
+
+Webvs.registerComponent(Invert, {
+    name: "Invert",
+    menu: "Trans"
+});
+
+Webvs.defineClass(Invert, Webvs.Component, {
     defaultOptions: {},
     init: function() {
         this.program = new InvertProgram(this.gl);

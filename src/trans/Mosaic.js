@@ -8,7 +8,13 @@
 function Mosaic(gl, main, parent, opts) {
     Mosaic.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Mosaic = Webvs.defineClass(Mosaic, Webvs.Component, {
+
+Webvs.registerComponent(Mosiac, {
+    name: "Mosaic",
+    menu: "Trans"
+});
+
+Webvs.defineClass(Mosaic, Webvs.Component, {
     defaultOptions: {
         blendMode: "REPLACE",
         squareSize: 0.5,

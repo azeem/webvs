@@ -29,11 +29,17 @@
 function EffectList(gl, main, parent, opts) {
     EffectList.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(Effectlist, {
+    name: "EffectList"
+});
+
 var ELBlendModes = _.extend({
     "IGNORE": 50
 }, Webvs.BlendModes);
 EffectList.ELBlendModes = ELBlendModes;
-Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
+
+Webvs.defineClass(EffectList, Webvs.Container, {
     defaultOptions: _.extend({
         code: {
             init: "",

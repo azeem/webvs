@@ -21,6 +21,12 @@
 function ChannelShift(gl, main, parent, opts) {
     ChannelShift.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(ChannelShift, {
+    name: "ChannelShift",
+    menu: "Trans"
+});
+
 var Channels = {
     "RGB": 0,
     "RBG": 1,
@@ -30,7 +36,8 @@ var Channels = {
     "GRB": 5
 };
 ChannelShift.Channels = Channels;
-Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
+
+Webvs.defineClass(ChannelShift, Webvs.Component, {
     defaultOptions: {
         channel: "RGB",
         onBeatRandom: false

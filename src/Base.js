@@ -34,6 +34,14 @@ Webvs.defineClass = function(constructor, baseConstructor) {
     return constructor;
 };
 
+Webvs.ComponentRegistry = {};
+Webvs.registerComponent = function(componentClass, meta) {
+    Webvs.checkRequiredOptions(meta, ["name"]);
+    componentClass.Meta = meta;
+    Webvs[meta.name] = componentClass;
+    Webvs.ComponentRegistry[meta.name] = componentClass;
+};
+
 /**
  * An empty function
  */
@@ -278,20 +286,11 @@ Webvs.clamp = function(num, min, max) {
  * @returns {function} - constructor for the component
  */
 Webvs.getComponentClass = function(name) {
-    var componentClass = Webvs[name];
+    var componentClass = Webvs.ComponentRegistry[name];
     if(!componentClass) {
         throw new Error("Unknown Component class " + name);
     }
     return componentClass;
-};
-
-Webvs.getComponentClassName = function(class_) {
-    for(var name in Webvs) {
-        if(Webvs[name] === class_) {
-            return name;
-        }
-    }
-    return "Unknown";
 };
 
 /**

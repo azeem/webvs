@@ -45,7 +45,13 @@
 function Texer(gl, main, parent, opts) {
     Texer.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
+
+Webvs.registerComponent(Texer, {
+    name: "Texer",
+    menu: "Render"
+});
+
+Webvs.defineClass(Texer, Webvs.Component, {
     defaultOptions: {
         code: {
             init: "",

@@ -20,15 +20,25 @@
 function Simple(gl, main, parent, opts) {
     Simple.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(WebvSimple, {
+    name: "Simple",
+    menu: "Render"
+});
+
 var DrawModes = _.extend({
     "SOLID": 50
 }, Webvs.SuperScope.DrawModes);
+Simple.DrawModes = DrawModes;
+
 var Align = {
     "TOP": 1,
     "CENTER": 2,
     "BOTTOM": 3
 };
-Webvs.Simple = Webvs.defineClass(Simple, Webvs.Component, {
+Simple.Align = Align;
+
+Webvs.defineClass(Simple, Webvs.Component, {
     defaultOptions: {
         drawMode: "SOLID",
         source: "WAVEFORM",

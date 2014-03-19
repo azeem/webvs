@@ -21,7 +21,13 @@
 function GlobalVar(gl, main, parent, opts) {
     GlobalVar.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
+
+Webvs.registerComponent(GlobalVar, {
+    name: "GlobalVar",
+    menu: "Misc"
+});
+
+Webvs.defineClass(GlobalVar, Webvs.Component, {
     defaultOptions: {
         code: {
             init: "",

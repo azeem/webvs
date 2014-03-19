@@ -19,7 +19,13 @@
 function UniqueTone(gl, main, parent, opts) {
     UniqueTone.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
+
+Webvs.registerComponent(UniqueTone, {
+    name: "UniqueTone",
+    menu: "Trans",
+});
+
+Webvs.defineClass(UniqueTone, Webvs.Component, {
     defaultOptions: {
         color: "#ffffff",
         invert: false,

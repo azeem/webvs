@@ -20,7 +20,13 @@
 function Picture(gl, main, parent, opts) {
     Picture.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
+
+Webvs.RegisterComponent(Picture, {
+    name: "Picture",
+    menu: "Render"
+});
+
+Webvs.defineClass(Picture, Webvs.Component, {
     defaultOptions: {
         src: "avsres_texer_circle_edgeonly_19x19",
         x: 0,

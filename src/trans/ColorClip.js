@@ -26,15 +26,20 @@
 function ColorClip(gl, main, parent, opts) {
     ColorClip.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(ColorClip, {
+    name: "ColorClip",
+    menu: "Trans"
+});
+
 var ClipModes = {
     "BELOW": 0,
     "ABOVE": 1,
     "NEAR": 2
 };
 ColorClip.ClipModes = ClipModes;
-Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component,  {
-    componentName: "ColorClip",
 
+Webvs.defineClass(ColorClip, Webvs.Component,  {
     defaultOptions: {
         mode: "BELOW",
         color: "#202020",

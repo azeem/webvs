@@ -25,7 +25,13 @@
 function Movement(gl, main, parent, opts) {
     Movement.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Movement = Webvs.defineClass(Movement, Webvs.Component, {
+
+Webvs.registerComponent(Movement, {
+    name: "Movement",
+    menu: "Trans"
+});
+
+Webvs.defineClass(Movement, Webvs.Component, {
     defaultOptions: {
         code: {
             perPixel: ""

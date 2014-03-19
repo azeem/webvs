@@ -44,12 +44,19 @@
 function DynamicMovement(gl, main, parent, opts) {
     DynamicMovement.super.constructor.call(this, gl, main, parent, opts);
 }
+
+Webvs.registerComponent(DynamicMovement, {
+    name: "DynamicMovement",
+    menu: "Trans"
+});
+
 var CoordModes = {
     "POLAR": 0,
     "RECT": 1
 };
 DynamicMovement.CoordModes = CoordModes;
-Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
+
+Webvs.defineClass(DynamicMovement, Webvs.Component, {
     defaultOptions: {
         code: {
             init: "",

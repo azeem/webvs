@@ -27,7 +27,13 @@
 function MovingParticle(gl, main, parent, opts) {
     MovingParticle.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.MovingParticle = Webvs.defineClass(MovingParticle, Webvs.Component, {
+
+Webvs.registerComponent(MovingParticle, {
+    name: "MovingParticle",
+    menu: "Render"
+});
+
+Webvs.defineClass(MovingParticle, Webvs.Component, {
     defaultOptions: {
         color: "#FFFFFF",
         distance: 0.7,
