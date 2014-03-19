@@ -11,14 +11,17 @@ function Component(gl, main, parent, options) {
     }
     this.opts = opts;
 
-    this.id = opts.id || Webvs.randString(5);
+    this.id = opts.id;
+    if(!this.id) {
+        var constructor = this.constructor;
+        constructor._instCount = (constructor._instCount || 0) + 1;
+        this.id = Webvs.getComponentClassName(constructor) + "_" + constructor._instCount;
+    }
     this.enabled = _.isUndefined(opts.enabled)?true:opts.enabled;
 
     this.init();
 }
 Webvs.Component = Webvs.defineClass(Component, Object, {
-    componentName: "Component",
-
     init: function() {},
 
     draw: function() {},

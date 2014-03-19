@@ -285,6 +285,15 @@ Webvs.getComponentClass = function(name) {
     return componentClass;
 };
 
+Webvs.getComponentClassName = function(class_) {
+    for(var name in Webvs) {
+        if(Webvs[name] === class_) {
+            return name;
+        }
+    }
+    return "Unknown";
+};
+
 /**
  * Returns the value of property given its (dot separated) path in an object
  * @param {object} obj - the object

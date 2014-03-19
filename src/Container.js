@@ -182,12 +182,12 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @memberof Webvs.Container#
      */
     getOptions: function() {
-        var options = this.options;
-        options.components = [];
+        var opts = this.opts;
+        opts.components = [];
         for(var i = 0;i < this.components.length;i++) {
-            options.components.push(this.components[i].getOptions());
+            opts.components.push(this.components[i].getOptions());
         }
-        return options;
+        return opts;
     },
 
     /**
