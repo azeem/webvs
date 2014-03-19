@@ -9,7 +9,7 @@ function Mosaic(gl, main, parent, opts) {
     Mosaic.super.constructor.call(this, gl, main, parent, opts);
 }
 
-Webvs.registerComponent(Mosiac, {
+Webvs.registerComponent(Mosaic, {
     name: "Mosaic",
     menu: "Trans"
 });

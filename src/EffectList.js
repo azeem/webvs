@@ -30,7 +30,7 @@ function EffectList(gl, main, parent, opts) {
     EffectList.super.constructor.call(this, gl, main, parent, opts);
 }
 
-Webvs.registerComponent(Effectlist, {
+Webvs.registerComponent(EffectList, {
     name: "EffectList"
 });
 

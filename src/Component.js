@@ -15,7 +15,7 @@ function Component(gl, main, parent, options) {
     if(!this.id) {
         var constructor = this.constructor;
         constructor._instCount = (constructor._instCount || 0) + 1;
-        this.id = Webvs.getComponentClassName(constructor) + "_" + constructor._instCount;
+        this.id = constructor.Meta.name + "_" + constructor._instCount;
     }
     this.enabled = _.isUndefined(opts.enabled)?true:opts.enabled;
 

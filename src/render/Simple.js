@@ -21,7 +21,7 @@ function Simple(gl, main, parent, opts) {
     Simple.super.constructor.call(this, gl, main, parent, opts);
 }
 
-Webvs.registerComponent(WebvSimple, {
+Webvs.registerComponent(Simple, {
     name: "Simple",
     menu: "Render"
 });

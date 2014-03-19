@@ -21,7 +21,7 @@ function Picture(gl, main, parent, opts) {
     Picture.super.constructor.call(this, gl, main, parent, opts);
 }
 
-Webvs.RegisterComponent(Picture, {
+Webvs.registerComponent(Picture, {
     name: "Picture",
     menu: "Render"
 });
