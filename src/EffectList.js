@@ -40,7 +40,7 @@ var ELBlendModes = _.extend({
 EffectList.ELBlendModes = ELBlendModes;
 
 Webvs.defineClass(EffectList, Webvs.Container, {
-    defaultOptions: _.extend({
+    defaultOptions: {
         code: {
             init: "",
             perFrame: ""
@@ -50,7 +50,7 @@ Webvs.defineClass(EffectList, Webvs.Container, {
         clearFrame: false,
         enableOnBeat: false,
         enableOnBeatFor: 1
-    }, Webvs.Container.prototype.defaultOptions),
+    },
 
     onChange: {
         code: "updateCode",

@@ -20,22 +20,21 @@
  */
 function Container(gl, main, parent, opts) {
     Container.super.constructor.call(this, gl, main, parent, opts);
+    delete this.opts.components;
 }
 Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
-    defaultOptions: {
-        components: []
-    },
-
     /**
      * initializes all the subcomponents
      * @memberof Webvs.Container#
      */
     init: function(gl, main, parent) {
         var components = [];
-        for(var i = 0;i < this.opts.components.length;i++) {
-            var opts = this.opts.components[i];
-            var component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
-            components.push(component);
+        if(this.opts.components) {
+            for(var i = 0;i < this.opts.components.length;i++) {
+                var opts = this.opts.components[i];
+                var component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
+                components.push(component);
+            }
         }
         this.components = components;
     },
@@ -48,6 +47,10 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         for(var i = 0;i < this.components.length;i++) {
             this.components[i].destroy();
         }
+    },
+    
+    createComponent: function(opts) {
+        return (new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts));
     },
     
     /**
@@ -63,114 +66,58 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @returns {string} - id of the new component
      * @memberof Webvs.Container#
      */
-    addComponent: function(parentId, opts, pos) {
+    addComponent: function(opts, pos) {
         var component;
-        if(parentId == this.id) {
-            if(opts instanceof Webvs.Component) {
-                component = opts;
-                component.adopt(this);
-            } else {
-                component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
-            }
-
-            if(_.isNumber(pos)) {
-                this.components.splice(pos, 0, component);
-            } else {
-                this.components.push(component);
-            }
-            return component.id;
+        if(opts instanceof Webvs.Component) {
+            component = opts;
         } else {
-            for(var i = 0;i < this.components.length;i++) {
-                component = this.components[i];
-                if(component instanceof Container) {
-                    var id = component.addComponent(parentId, opts, pos);
-                    if(id) {
-                        return id;
-                    }
-                }
-            }
+            component = this.createComponent(opts);
         }
+        if(_.isNumber(pos)) {
+            this.components.splice(pos, 0, component);
+        } else {
+            this.components.push(component);
+        }
+        return component;
     },
 
-    /**
-     * Updates a component under this container's subtree
-     * @param {string} id - id of the component
-     * @param {object|string} name - if string then its treated as the
-     *      name of the option to be updated. Else its treated as an object
-     *      containing the options to be updated.
-     * @param {object} value - updated value.
-     * @returns {boolean} - true if update succeeded else false
-     * @memberof Webvs.Container#
-     */
-    updateComponent: function(id, name, value) {
-        var component, i;
-        for(i = 0;i < this.components.length;i++) {
-            if(this.components[i].id == id) {
-                component = this.components[i];
-                break;
-            }
-        }
-
-        if(component) {
-            if(_.isString(name)) {
-                component.setOption(name, value);
-            } else {
-                var opts = name;
-                _.each(opts, function(value, name) {
-                    component.setOption(name, value);
-                });
-            }
-            return true;
-        } else {
+    detachComponent: function(pos) {
+        if(_.isString(pos)) {
+            var id = pos;
+            var i;
             for(i = 0;i < this.components.length;i++) {
-                component = this.components[i];
-                if(component instanceof Container) {
-                    if(component.updateComponent(id, name, value)) {
-                        return true;
-                    }
+                if(this.components[i].id == id) {
+                    pos = i;
+                    break;
                 }
             }
+            if(i == this.components.length) {
+                return;
+            }
         }
-        return false;
+        var component = this.components[pos];
+        this.components.splice(pos, 1);
+        return component;
     },
 
-    /**
-     * Detaches all components in this container
-     * @returns {Array.<Webvs.ComponentFactory>} factories for each subcomponent
-     * @memberof Webvs.Container#
-     */
-    detachAllComponents: function() {
-        var components = this.components;
-        this.components = [];
-        return components;
-    },
-
-    /**
-     * Detaches a given component under this container's subtree
-     * @param {string} id - id of the component to be detached
-     * @returns {Webvs.ComponentFactory} - factory containing the detached component
-     * @memberof Webvs.Container#
-     */
-    detachComponent: function(id) {
-        var component, i;
-        // search for the component in this container
+    findComponent: function(id) {
+        var i;
         for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
+            var component = this.components[i];
             if(component.id == id) {
-                this.components.splice(i, 1);
                 return component;
             }
         }
 
-        // try detaching from any of the subcontainers
-        // aggregating results, in case they are cloned.
+        // search in any subcontainers
         for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
-            if(component instanceof Container) {
-                var detached = component.detachComponent(id);
-                if(detached) {
-                    return detached;
-                }
+            var container = this.components[i];
+            if(!(container instanceof Container)) {
+                continue;
+            }
+            var subComponent = container.findComponent(id);
+            if(subComponent) {
+                return subComponent;
             }
         }
     },
@@ -181,33 +128,13 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @returns {object} - the options object
      * @memberof Webvs.Container#
      */
-    getOptions: function() {
-        var opts = this.opts;
+    generateOptionsObj: function() {
+        var opts = this.super.generateOptionsObj();
         opts.components = [];
         for(var i = 0;i < this.components.length;i++) {
-            opts.components.push(this.components[i].getOptions());
+            opts.components.push(this.components[i].generateOptionsObj());
         }
         return opts;
-    },
-
-    /**
-     * Traverses a callback over this subtree, starting with this container
-     * @param {Webvs.Container~traverseCallback} callback - callback.
-     * @memberof Webvs.Container#
-     */
-    traverse: function(callback) {
-        callback.call(this, this.id, (this.parent?this.parent.id:undefined), this.options);
-        for(var i = 0;i < this.components.length;i++) {
-            var component = this.components[i];
-            if(component instanceof Container) {
-                component.traverse(callback);
-            } else {
-                var parentId = component.parent?component.parent.id:undefined;
-                var id = component.id;
-                var options = component.options;
-                callback.call(component, id, parentId, options);
-            }
-        }
     }
 
     /**

@@ -19,6 +19,9 @@ function Component(gl, main, parent, options) {
     }
     this.enabled = _.isUndefined(opts.enabled)?true:opts.enabled;
 
+    delete opts.id;
+    delete opts.enabled;
+
     this.init();
 }
 Webvs.Component = Webvs.defineClass(Component, Object, {
@@ -28,16 +31,12 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
 
     destroy: function() {},
 
-    adopt: function(newParent) {
-        this.parent = newParent;
-    },
-
-    getOptions: function() {
-        return this.opts;
-    },
-
-    getOption: function(name) {
-        return Webvs.getProperty(this.opts, name);
+    generateOptionsObj: function() {
+        var opts = _.clone(this.opts);
+        opts.id = this.id;
+        opts.type = this.constructor.Meta.name;
+        opts.enabled = this.enabled;
+        return opts;
     },
 
     setOption: function(name, value) {

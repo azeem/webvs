@@ -198,7 +198,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     resetCanvas: function() {
-        var preset = this.rootComponent.getOptions();
+        var preset = this.rootComponent.generateOptionsObj();
         this.rootComponent.destroy();
         this.copier.cleanup();
         this._initGl();
@@ -213,7 +213,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @memberof Webvs.Main#
      */
     getPreset: function() {
-        var preset = this.rootComponent.getOptions();
+        var preset = this.rootComponent.generateOptionsObj();
         preset.resources = {
             uris: _.clone(this.rsrcMan.uris)
         };
