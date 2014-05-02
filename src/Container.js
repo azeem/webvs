@@ -129,7 +129,8 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @memberof Webvs.Container#
      */
     generateOptionsObj: function() {
-        var opts = this.super.generateOptionsObj();
+        var opts = Container.super.generateOptionsObj.call(this);
+
         opts.components = [];
         for(var i = 0;i < this.components.length;i++) {
             opts.components.push(this.components[i].generateOptionsObj());

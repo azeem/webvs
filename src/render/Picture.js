@@ -28,7 +28,7 @@ Webvs.registerComponent(Picture, {
 
 Webvs.defineClass(Picture, Webvs.Component, {
     defaultOptions: {
-        src: "avsres_texer_circle_edgeonly_19x19",
+        src: "avsres_texer_circle_edgeonly_19x19.bmp",
         x: 0,
         y: 0
     },

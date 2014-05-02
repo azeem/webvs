@@ -93,7 +93,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         this.updateCode();
         this.updateClones();
         this.updateSpeed();
-        this.updateColor();
+        this.updateColors();
         this.updateChannel();
         this.updateThickness();
     },
@@ -293,7 +293,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         this.code = Webvs.CodeInstance.clone(this.code, this.opts.clone);
     },
 
-    updateColor: function() {
+    updateColors: function() {
         this.colors = _.map(this.opts.colors, Webvs.parseColorNorm);
         this.curColorId = 0;
     },
@@ -350,6 +350,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
             if(this.curStep === 0) {
                 this.curColorId = (this.curColorId+1)%this.colors.length;
             }
+            return color;
         }
     }
 });

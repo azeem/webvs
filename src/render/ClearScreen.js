@@ -29,7 +29,7 @@ Webvs.registerComponent(ClearScreen, {
 
 Webvs.defineClass(ClearScreen, Webvs.Component, {
     defaultOptions: {
-        n: 0,
+        beatCount: 0,
         color: "#000000",
         blendMode: "REPLACE"
     },
@@ -49,12 +49,12 @@ Webvs.defineClass(ClearScreen, Webvs.Component, {
 
     draw: function() {
         var clear = false;
-        if(this.opts.n === 0) {
+        if(this.opts.beatCount === 0) {
             clear = true;
         } else {
             if(this.main.analyser.beat && !this.prevBeat) {
                 this.beatCount++;
-                if(this.beatCount >= this.opts.n) {
+                if(this.beatCount >= this.opts.beatCount) {
                     clear = true;
                     this.beatCount = 0;
                 }
@@ -79,7 +79,7 @@ Webvs.defineClass(ClearScreen, Webvs.Component, {
         var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
         var program = new Webvs.ClearScreenProgram(this.gl, blendMode);
         if(this.program) {
-            this.program.cleanup();
+            this.program.destroy();
         }
         this.program = program;
     }

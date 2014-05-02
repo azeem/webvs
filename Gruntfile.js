@@ -169,5 +169,6 @@ module.exports = function(grunt) {
     grunt.registerTask('test', ["connect", "default", 'karma:test']);
 
     grunt.registerTask('debug', ["connect", "default", "watch:scripts"]);
+    grunt.registerTask('debug_build', ["default", "watch:scripts"]);
     grunt.registerTask('debug_test', ["connect", "default", "karma:debug", "watch:scripts"]);
 };

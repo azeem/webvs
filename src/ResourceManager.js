@@ -58,6 +58,16 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
         this.ready = true;
     },
 
+    getAllUris: function() {
+        var uris = _.chain(this.packs).map(function(pack) {
+            return _.map(pack.fileNames, function(fileName) {
+                return [fileName, pack.prefix + fileName];
+            });
+        }).flatten(true).object().value();
+        _.extend(uris, this.uris);
+        return uris;
+    },
+
     _getUri: function(fileName) {
         var uri = this.uris[fileName];
         if(uri) {
@@ -119,6 +129,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
             throw new Error("Unknown image file " + fileName);
         }
         image = new Image();
+        image.crossOrigin = "anonymous";
         image.onload = function() {
             this_.images[fileName] = image;
             if(success) {

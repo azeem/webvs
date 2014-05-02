@@ -47,6 +47,7 @@ function Main(options) {
         this.stats = stats;
     }
 
+    this.meta = {};
     this._setMessage("stopped");
     this._initResourceManager(options.resourcePrefix);
     this._registerContextEvents();
@@ -190,7 +191,18 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             this.rsrcMan.registerUri(preset.resources.uris);
         }
 
+        // load meta
+        this.meta = _.clone(preset.meta);
+
         this._setupRoot(preset);
+    },
+
+    setMeta: function(key, value) {
+        if(arguments.length == 1) {
+            this.meta = _.extend(this.meta, key);
+        } else if(arguments.length == 2) {
+            this.meta[key] = value;
+        }
     },
 
     /**
@@ -217,6 +229,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         preset.resources = {
             uris: _.clone(this.rsrcMan.uris)
         };
+        preset.meta = _.clone(this.meta);
         return preset;
     },
 
