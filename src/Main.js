@@ -48,20 +48,12 @@ function Main(options) {
     }
 
     this.meta = {};
-    this._setMessage("stopped");
     this._initResourceManager(options.resourcePrefix);
     this._registerContextEvents();
     this._initGl();
     this._setupRoot({id: "root"});
 }
-Webvs.Main = Webvs.defineClass(Main, Object, {
-    _setMessage: function(msg) {
-        if(!this.msgElement) {
-            return;
-        }
-        this.msgElement.className = this.msgElement.className.replace(/\s+webvs\-[^\s]+/g, "") + " webvs-" + msg;
-    },
-
+Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
     _initResourceManager: function(prefix) {
         var builtinPack = Webvs.ResourcePack;
         if(prefix) {
@@ -69,21 +61,10 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
             builtinPack.prefix = prefix;
         }
         this.rsrcMan = new Webvs.ResourceManager(builtinPack);
+        this.listenTo(this.rsrcMan, "wait", this.handleRsrcWait);
+        this.listenTo(this.rsrcMan, "ready", this.handleRsrcReady);
+
         var this_ = this;
-        this.rsrcMan.onWait = function() {
-            this_._setMessage("waiting");
-            if(this_.isStarted) {
-                this_._stopAnimation();
-            }
-        };
-        this.rsrcMan.onReady = function() {
-            if(this_.isStarted) {
-                this_._startAnimation();
-                this_._setMessage("started");
-            } else {
-                this_._setMessage("stopped");
-            }
-        };
     },
 
     _registerContextEvents: function() {
@@ -155,7 +136,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.isStarted = true;
         if(this.rsrcMan.ready) {
             this._startAnimation();
-            this._setMessage("started");
         }
     },
 
@@ -170,7 +150,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this.isStarted = false;
         if(this.rsrcMan.ready) {
             this._stopAnimation();
-            this._setMessage("stopped");
         }
     },
 
@@ -197,14 +176,6 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this._setupRoot(preset);
     },
 
-    setMeta: function(key, value) {
-        if(arguments.length == 1) {
-            this.meta = _.extend(this.meta, key);
-        } else if(arguments.length == 2) {
-            this.meta[key] = value;
-        }
-    },
-
     /**
      * Reset all the components. Call this when canvas dimensions changes
      * @memberof Webvs.Main#
@@ -217,6 +188,19 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
         this._setupRoot(preset);
     },
 
+    setAttribute: function(key, value, options) {
+        if(key == "meta") {
+            this.meta = value;
+            return true;
+        }
+        return false;
+    },
+
+    get: function(key, value) {
+        if(key == "meta") {
+            return this.meta;
+        }
+    },
 
     /**
      * Generates and returns the instantaneous preset JSON 
@@ -224,13 +208,24 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
      * @returns {object} preset json
      * @memberof Webvs.Main#
      */
-    getPreset: function() {
-        var preset = this.rootComponent.generateOptionsObj();
-        preset.resources = {
-            uris: _.clone(this.rsrcMan.uris)
-        };
+    toJSON: function() {
+        var preset = this.rootComponent.toJSON();
+        preset.resources = this.rsrcMan.toJSON();
         preset.meta = _.clone(this.meta);
         return preset;
+    },
+
+    // event handlers
+    handleRsrcWait: function() {
+        if(this_.isStarted) {
+            this_._stopAnimation();
+        }
+    },
+    
+    handleRsrcReady: function() {
+        if(this_.isStarted) {
+            this_._startAnimation();
+        }
     }
 });
 

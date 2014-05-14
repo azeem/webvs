@@ -32,7 +32,7 @@ function ResourceManager(packs) {
     }
     this.clear();
 }
-Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
+Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLike, {
     /**
      * Register a filename and a URI in the resource manager.
      * @param {string|object} fileName - name of the file or object containing fileName to URI map
@@ -47,6 +47,26 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
         }
     },
 
+    get: function(key, value) {
+        if(key == "uris") {
+            return this.uris;
+        }
+    },
+
+    setAttribute: function(key, value, options) {
+        if(key == "uris") {
+            this.uris = value;
+            return true;
+        }
+        return false;
+    },
+
+    toJSON: function() {
+        return {
+            uris: _.clone(this.uris)
+        };
+    },
+
     /**
      * Clears state, uri mappings and caches. Browser caches still apply.
      * @memberof Webvs.ResourceManager#
@@ -56,16 +76,6 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
         this.images = {};
         this.waitCount = 0;
         this.ready = true;
-    },
-
-    getAllUris: function() {
-        var uris = _.chain(this.packs).map(function(pack) {
-            return _.map(pack.fileNames, function(fileName) {
-                return [fileName, pack.prefix + fileName];
-            });
-        }).flatten(true).object().value();
-        _.extend(uris, this.uris);
-        return uris;
     },
 
     _getUri: function(fileName) {
@@ -85,9 +95,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
         this.waitCount++;
         if(this.waitCount == 1) {
             this.ready = false;
-            if(this.onWait) {
-                this.onWait();
-            }
+            this.trigger("wait");
         }
     },
 
@@ -95,9 +103,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, {
         this.waitCount--;
         if(this.waitCount === 0) {
             this.ready = true;
-            if(this.onReady) {
-                this.onReady();
-            }
+            this.trigger("ready");
         }
     },
     

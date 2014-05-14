@@ -5,33 +5,29 @@ function Component(gl, main, parent, options) {
     this.main = main;
     this.parent = parent;
 
-    var opts = _.clone(options);
-    if(this.defaultOptions) {
-        opts = _.defaults(opts, this.defaultOptions);
-    }
-    this.opts = opts;
-
-    this.id = opts.id;
+    this.id = options.id; // TODO: check for id uniqueness
     if(!this.id) {
-        var constructor = this.constructor;
-        constructor._instCount = (constructor._instCount || 0) + 1;
-        this.id = constructor.Meta.name + "_" + constructor._instCount;
+        this.id = _.uniqueId(this.constructor.Meta.name + "_");
     }
-    this.enabled = _.isUndefined(opts.enabled)?true:opts.enabled;
+    this.enabled = _.isUndefined(options.enabled)?true:options.enabled;
 
-    delete opts.id;
-    delete opts.enabled;
+    this.opts = _.omit(options, ["id", "enabled"]);
+    if(this.defaultOptions) {
+        this.opts = _.defaults(this.opts, this.defaultOptions);
+    }
 
     this.init();
 }
-Webvs.Component = Webvs.defineClass(Component, Object, {
+Webvs.Component = Webvs.defineClass(Component, Object, Webvs.ModelLike, {
     init: function() {},
 
     draw: function() {},
 
-    destroy: function() {},
+    destroy: function() {
+        this.stopListening();
+    },
 
-    generateOptionsObj: function() {
+    toJSON: function() {
         var opts = _.clone(this.opts);
         opts.id = this.id;
         opts.type = this.constructor.Meta.name;
@@ -39,34 +35,59 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
         return opts;
     },
 
-    setOption: function(name, value) {
-        var oldValue = Webvs.getProperty(this.opts, name);
+    setAttribute: function(key, value, options) {
+        var oldValue = this.get(key);
+        if(key == "type" || _.isEqual(value, oldValue)) {
+            return false;
+        }
 
         // set the property
-        Webvs.setProperty(this.opts, name, value);
-        if(name == "enabled") {
+        if(key == "enabled") {
             this.enabled = value;
-        }
-        if(name == "id") {
+        } else if(key == "id") {
             this.id = value;
+        } else {
+            this.opts[key] = value;
         }
 
         // call all onchange handlers
+        // we just call these manually here no need to
+        // go through event triggers
         if(this.onChange) {
             try {
-                _.each(this.onChange, function(funcName, key) {
-                    if(name.indexOf(key) === 0 || key == "*") {
-                        var funcs = _.isArray(funcName)?funcName:[funcName];
-                        _.each(funcs, function(func) {
-                            this[func].call(this, value, name);
-                        }, this);
-                    }
-                }, this);
+                var onChange = _.flatten([
+                    this.onChange[key] || [],
+                    this.onChange["*"] || []
+                ]);
+
+                for(var i = 0;i < onChange.length;i++) {
+                    this[onChange[i]].call(this, value, key);
+                }
             } catch(e) {
                 // restore old value in case any of the onChange handlers fail
-                Webvs.setProperty(this.opts, name, oldValue);
-                throw e;
+                if(key == "enabled") {
+                    this.enabled = oldValue;
+                } else if(key == "id") {
+                    this.id = oldValue;
+                } else {
+                    this.opts[key] = oldValue;
+                }
+
+                this.lastError = e;
+                this.trigger("error:" + key, this, value, options, e);
             }
+        }
+
+        return true;
+    },
+
+    get: function(key) {
+        if(key == "enabled") {
+            return this.enabled;
+        } else if(key == "id") {
+            return this.id;
+        } else {
+            return this.opts[key];
         }
     },
 

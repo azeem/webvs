@@ -12,6 +12,7 @@
     "underscore": "~1.5.1",
     "stats.js": "*",
     "soundmanager2": "*",
-    "seedrandom": "~2.3.1"
+    "seedrandom": "~2.3.1",
+    "backbone-events": "git://github.com/azeem/backbone-events.git#~1.1.2"
   }
 }

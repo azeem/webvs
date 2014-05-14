@@ -73,11 +73,11 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         } else {
             component = this.createComponent(opts);
         }
-        if(_.isNumber(pos)) {
-            this.components.splice(pos, 0, component);
-        } else {
-            this.components.push(component);
+        if(!_.isNumber(pos)) {
+            pos = this.components.length;
         }
+        this.components.splice(pos, 0, component);
+        this.trigger("addComponent", component, this, {pos: pos});
         return component;
     },
 
@@ -97,6 +97,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         }
         var component = this.components[pos];
         this.components.splice(pos, 1);
+        this.trigger("detachComponent", component, this, {pos: pos});
         return component;
     },
 
@@ -128,12 +129,12 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @returns {object} - the options object
      * @memberof Webvs.Container#
      */
-    generateOptionsObj: function() {
-        var opts = Container.super.generateOptionsObj.call(this);
+    toJSON: function() {
+        var opts = Container.super.toJSON.call(this);
 
         opts.components = [];
         for(var i = 0;i < this.components.length;i++) {
-            opts.components.push(this.components[i].generateOptionsObj());
+            opts.components.push(this.components[i].toJSON());
         }
         return opts;
     }

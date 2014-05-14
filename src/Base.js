@@ -14,6 +14,58 @@ var Webvs = {};
 
 window.Webvs = Webvs;
 
+// Events mixin. Use Backbone Events if available
+// else we expect a global Events mixin with similar
+// API to be present
+Webvs.Events = Backbone.Events || window.Events;
+Webvs.ModelLike = _.extend(_.clone(Webvs.Events), {
+    get: function(key) {
+        throw new Error("get not implemented");
+    },
+
+    toJSON: function(key) {
+        throw new Error("toJSON not implemented");
+    },
+
+    setAttribute: function(key) {
+        throw new Error("setAttribute not implemented");
+    },
+
+    set: function(key, value, options) {
+        var success, silent;
+
+        if(!_.isString(key) && arguments.length <= 2) {
+            // if map of key values are passed
+            // then set each value separately
+            silent = value.silent;
+            options = _.defaults({silent:true}, value);
+            value = _.clone(key);
+
+            success = false;
+            for(key in value) {
+                if(this.setAttribute(key, value[key], options)) {
+                    success = true;
+                    if(!silent) {
+                        this.trigger("change:" + key, this, value[key], options); 
+                    }
+                }
+            }
+            if(success && !silent) {
+                this.trigger("change", this, options); 
+            }
+        } else {
+            options = options || {};
+            success = this.setAttribute(key, value, options);
+            if(success && !options.silent) {
+                this.trigger("change:" + key, this, value, options); 
+                this.trigger("change", this, options); 
+            }
+        }
+
+        return success;
+    }
+});
+
 /**
  * A wrapper around Object.create to help with class definition
  * @param {function} constructor - constructor function for which the prototype is to be defined
