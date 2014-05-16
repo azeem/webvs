@@ -66,22 +66,24 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
      * @returns {string} - id of the new component
      * @memberof Webvs.Container#
      */
-    addComponent: function(opts, pos) {
+    addComponent: function(componentOpts, pos, options) {
         var component;
-        if(opts instanceof Webvs.Component) {
-            component = opts;
+        if(componentOpts instanceof Webvs.Component) {
+            component = componentOpts;
         } else {
-            component = this.createComponent(opts);
+            component = this.createComponent(componentOpts);
         }
         if(!_.isNumber(pos)) {
             pos = this.components.length;
         }
         this.components.splice(pos, 0, component);
-        this.trigger("addComponent", component, this, {pos: pos});
+
+        options = _.defaults({pos: pos}, options);
+        this.trigger("addComponent", component, this, options);
         return component;
     },
 
-    detachComponent: function(pos) {
+    detachComponent: function(pos, options) {
         if(_.isString(pos)) {
             var id = pos;
             var i;
@@ -97,7 +99,9 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         }
         var component = this.components[pos];
         this.components.splice(pos, 1);
-        this.trigger("detachComponent", component, this, {pos: pos});
+
+        options = _.defaults({pos: pos}, options);
+        this.trigger("detachComponent", component, this, options);
         return component;
     },
 

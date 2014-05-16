@@ -217,14 +217,14 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
 
     // event handlers
     handleRsrcWait: function() {
-        if(this_.isStarted) {
-            this_._stopAnimation();
+        if(this.isStarted) {
+            this._stopAnimation();
         }
     },
     
     handleRsrcReady: function() {
-        if(this_.isStarted) {
-            this_._startAnimation();
+        if(this.isStarted) {
+            this._startAnimation();
         }
     }
 });

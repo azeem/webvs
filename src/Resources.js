@@ -6,6 +6,7 @@
 (function(Webvs) {
 
 Webvs.ResourcePack = {
+    name: "Builtin",
     prefix: "./resources/",
     fileNames: [
         "avsres_texer_circle_edgeonly_19x19.bmp",

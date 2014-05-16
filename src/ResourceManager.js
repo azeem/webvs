@@ -50,6 +50,8 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
     get: function(key, value) {
         if(key == "uris") {
             return this.uris;
+        } else if(key == "packs") {
+            return this.packs;
         }
     },
 
@@ -135,7 +137,11 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
             throw new Error("Unknown image file " + fileName);
         }
         image = new Image();
-        image.crossOrigin = "anonymous";
+        if(uri.indexOf("data:") != 0) {
+            // add cross origin attribute for
+            // remote images
+            image.crossOrigin = "anonymous";
+        }
         image.onload = function() {
             this_.images[fileName] = image;
             if(success) {
