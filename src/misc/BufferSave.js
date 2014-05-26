@@ -40,7 +40,7 @@ BufferSave.Actions = Actions;
 Webvs.defineClass(BufferSave, Webvs.Component, {
     defaultOptions: {
         action: "SAVE",
-        bufferId: 1,
+        bufferId: "buffer1",
         blendMode: "REPLACE"
     },
 

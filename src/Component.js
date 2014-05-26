@@ -27,6 +27,10 @@ Webvs.Component = Webvs.defineClass(Component, Object, Webvs.ModelLike, {
         this.stopListening();
     },
 
+    setParent: function(newParent) {
+        this.parent = newParent;
+    },
+
     toJSON: function() {
         var opts = _.clone(this.opts);
         opts.id = this.id;

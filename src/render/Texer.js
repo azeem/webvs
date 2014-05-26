@@ -59,7 +59,7 @@ Webvs.defineClass(Texer, Webvs.Component, {
             perFrame: "",
             perPoint: ""
         },
-        imageSrc: "avsres_texer_circle_edgeonly_19x19",
+        imageSrc: "avsres_texer_circle_edgeonly_19x19.bmp",
         source: "SPECTRUM",
         resizing: false,
         wrapAround: false,

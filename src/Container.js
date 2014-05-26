@@ -70,6 +70,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         var component;
         if(componentOpts instanceof Webvs.Component) {
             component = componentOpts;
+            component.setParent(this);
         } else {
             component = this.createComponent(componentOpts);
         }

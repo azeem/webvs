@@ -137,7 +137,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
             throw new Error("Unknown image file " + fileName);
         }
         image = new Image();
-        if(uri.indexOf("data:") != 0) {
+        if(uri.indexOf("data:") !== 0) {
             // add cross origin attribute for
             // remote images
             image.crossOrigin = "anonymous";

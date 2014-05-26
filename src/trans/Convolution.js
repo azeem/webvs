@@ -37,7 +37,8 @@ Convolution.EdgeModes = EdgeModes;
 Webvs.defineClass(Convolution, Webvs.Component, {
     defaultOptions: {
         edgeMode: "EXTEND",
-        scale: undefined,
+        autoScale: true,
+        scale: 0,
         kernel: [
             0, 0, 0,
             0, 1, 0,
@@ -48,7 +49,7 @@ Webvs.defineClass(Convolution, Webvs.Component, {
 
     onChange: {
         "edgeMode": "updateProgram",
-        "kernel": "updateProgram",
+        "kernel": ["updateProgram", "updateScale"],
         "scale": "updateScale"
     },
 
@@ -67,7 +68,7 @@ Webvs.defineClass(Convolution, Webvs.Component, {
 
     updateScale: function() {
         var opts = this.opts;
-        if(_.isUndefined(opts.scale)) {
+        if(opts.autoScale) {
             this.scale = _.reduce(opts.kernel, function(memo, num){ return memo + num; }, 0);
         } else {
             this.scale = opts.scale;
