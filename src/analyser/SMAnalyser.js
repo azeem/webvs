@@ -54,34 +54,10 @@ Webvs.SMAnalyser = Webvs.defineClass(SMAnalyser, Webvs.AnalyserAdapter, {
      * @returns {SMSound} the new sound object
      */
     createSound: function(options) {
-        var this_ = this;
         options.useWaveformData = true;
         options.useEQData = true;
-        options.whileplaying = function() {
-            this_._update();
-        };
         this.sound = soundManager.createSound(options);
         return this.sound;
-    },
-
-    /**
-     * Attaches an SMSound object to this analyser
-     * @memberof Webvs.SMAnalyser
-     * @param {string|SMSound} - sound id or the SMSound object to be attached
-     */
-    attachSound: function(sound) {
-        if(_.isString(sound)) {
-            sound = soundManager.getSoundById(sound);
-        }
-        this.sound = sound;
-    },
-
-    /**
-     * Detaches an SMSound object from this analyser
-     * @memberof Webvs.SMAnalyser
-     */
-    detachSound: function() {
-        this.sound = undefined;
     },
 
     update: function() {
