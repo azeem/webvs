@@ -55,7 +55,8 @@ module.exports = function(grunt) {
 
     var libFiles = [
         "bower_components/underscore/underscore.js",
-        "bower_components/stats.js/src/Stats.js",
+        "bower_components/backbone-events/backbone-events.js",
+        "bower_components/stats.js/src/Stats.js"
     ];
 
     grunt.initConfig({

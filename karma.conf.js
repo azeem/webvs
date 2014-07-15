@@ -7,15 +7,14 @@
  */
 module.exports = function(config) {
     config.set({
-        basePath: "",
         frameworks: ["qunit"],
         files: [
-            "build/libs.js",
-            "build/webvs.js",
-            "bower_components/seedrandom/seedrandom.js",
-            "test/webgl-debug.js",
-            "test/base.js",
-            "test/**/*.test.js"
+            "./build/libs.js",
+            "./build/webvs.js",
+            "./bower_components/seedrandom/seedrandom.js",
+            "./test/webgl-debug.js",
+            "./test/base.js",
+            "./test/**/*.test.js"
         ],
         proxies: {
             "/images": "http://localhost:8000/test/images/",
@@ -27,13 +26,7 @@ module.exports = function(config) {
         colors: true,
         logLevel: config.LOG_DEBUG,
         autoWatch: true,
-        browsers: ['ChromeWithWebgl'],
-        captureTimeout: 60000,
-        customLaunchers: {
-            ChromeWithWebgl: {
-                base: "Chrome",
-                flags: ["--enable-webgl", "--ignore-gpu-blacklist"]
-            }
-        }
+        browsers: ['Firefox'],
+        captureTimeout: 60000
     });
 };

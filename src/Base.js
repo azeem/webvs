@@ -17,7 +17,7 @@ window.Webvs = Webvs;
 // Events mixin. Use Backbone Events if available
 // else we expect a global Events mixin with similar
 // API to be present
-Webvs.Events = Backbone.Events || window.Events;
+Webvs.Events = (window.Backbone && Backbone.Events) || window.Events;
 Webvs.ModelLike = _.extend(_.clone(Webvs.Events), {
     get: function(key) {
         throw new Error("get not implemented");

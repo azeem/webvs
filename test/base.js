@@ -3,7 +3,6 @@
  * See the file license.txt for copying permission.
  */
 
-
 function logGLCall(functionName, args) {   
    console.log("gl." + functionName + "(" + 
       WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");   
@@ -49,8 +48,8 @@ function CanvasTest() {
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         testFunc(canvas, gl);
-    }
-    var testArgs
+    };
+    var testArgs;
     if(hasExtraOptions) {
         testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-2);
     } else {
@@ -91,7 +90,7 @@ function CanvasTestWithFM() {
     CanvasTest.apply(window, testArgs);
 }
 
-function PolygonProgram(gl, options) {
+var PolygonProgram = function(gl, options) {
     PolygonProgram.super.constructor.call(this, gl, _.defaults(options||{}, {
         copyOnSwap: true,
         vertexShader: [
@@ -108,7 +107,7 @@ function PolygonProgram(gl, options) {
             "}"
         ]
     }));
-}
+};
 PolygonProgram = Webvs.defineClass(PolygonProgram, Webvs.ShaderProgram, {
     draw: function(color, points, mode) {
         mode = _.isUndefined(mode)?this.gl.TRIANGLES:mode;
@@ -120,7 +119,7 @@ PolygonProgram = Webvs.defineClass(PolygonProgram, Webvs.ShaderProgram, {
     }
 });
 
-function GradientProgram(gl, blue) {
+var GradientProgram = function(gl, blue) {
     blue = _.isNumber(blue)?blue:1;
     GradientProgram.super.constructor.call(this, gl, {
         fragmentShader: [
@@ -129,12 +128,12 @@ function GradientProgram(gl, blue) {
             "}"
         ]
     });
-}
+};
 GradientProgram = Webvs.defineClass(GradientProgram, Webvs.QuadBoxProgram);
 
-function DummyAnalyser() {
+var DummyAnalyser = function() {
     DummyAnalyser.super.constructor.call(this);
-}
+};
 DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
     isPlaying: function() {
         return true;
@@ -158,7 +157,7 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
     }
 });
 
-function DummyMain(canvas, copier, resourcePrefix) {
+var DummyMain = function(canvas, copier, resourcePrefix) {
     this.canvas = canvas;
     this.registerBank = {};
     this.bootTime = (new Date()).getTime();
@@ -171,7 +170,7 @@ function DummyMain(canvas, copier, resourcePrefix) {
         builtinPack.prefix = resourcePrefix;
     }
     this.rsrcMan = new Webvs.ResourceManager(builtinPack);
-}
+};
 DummyMain = Webvs.defineClass(DummyMain, Object, {
     getResource: function(name) {
         var resource;
@@ -187,6 +186,25 @@ function DummyParent(fm) {
     this.fm = fm;
 }
 
+var fuzzyOkErrorTemplate = _.template([
+    "<table style='border: 1px solid black;margin: 10px;text-align: center;'>",
+    "    <tr>",
+    "        <td>Actual</td><td>Expected</td>",
+    "    </tr>",
+    "    <tr>",
+    "        <td><img src='<%= actualImgSrc %>'/></td>",
+    "        <td><img src='<%= expectedImgSrc %>'/></td>",
+    "    </tr>",
+    "    <tr>",
+    "        <td><div style='width:100%;height:10px;background-color:<%= actualPixel %>'/></td>",
+    "        <td><div style='width:100%;height:10px;background-color:<%= expectedPixel %>'/></td>",
+    "    </tr>",
+    "    <tr>",
+    "        <td colspan='2'>(<%= x %>,<%= y %>) d=<%= Math.round(distance * 100)/100 %></td>",
+    "    </tr>",
+    "</table>",
+].join(""));
+
 /**
  * Checks if the framebuffer image is equal to target image
  * within threshold
@@ -195,6 +213,7 @@ function imageFuzzyOk(message, gl, canvas, targetImageData, maxDistance) {
     maxDistance = _.isNumber(maxDistance)?maxDistance:0.01;
     var width = canvas.width;
     var height = canvas.height;
+    var sourceImageData = canvas.toDataURL();
 
     // load the target pixels
     var tempCanvas = document.createElement("canvas");
@@ -202,13 +221,18 @@ function imageFuzzyOk(message, gl, canvas, targetImageData, maxDistance) {
         preserveDrawingBuffer: true,
         alpha: false
     });
-    var img = new Image();
+
+    var img;
+    
+    img = new Image();
     img.src = targetImageData;
     ctxt.drawImage(img, 0, 0);
     var targetPixels = ctxt.getImageData(0, 0, width, height).data;
 
-    var sourcePixels = new Uint8Array(width*height*4);
-    gl.readPixels( 0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, sourcePixels);
+    img = new Image();
+    img.src = sourceImageData;
+    ctxt.drawImage(img, 0, 0);
+    var sourcePixels = ctxt.getImageData(0, 0, width, height).data;
 
     var match = true;
     loop:
@@ -223,13 +247,16 @@ function imageFuzzyOk(message, gl, canvas, targetImageData, maxDistance) {
             rd*=rd;gd*=gd;bd*=bd;
             var distance = (rd+gd+bd)/(4*255);
             if(distance > maxDistance) {
-                // print some debug information
-                console.log("x=", x, "y=", y);
-                console.log("Actual Pixel=", sourcePixels[srcOff], sourcePixels[srcOff+1], sourcePixels[srcOff+2], sourcePixels[srcOff+3]);
-                console.log("Rendered Pixel=", targetPixels[tgtOff], targetPixels[tgtOff+1], targetPixels[tgtOff+2], targetPixels[tgtOff+3]);
-                console.log("Distance=", distance);
-                console.log("Expected Image=" + targetImageData);
-                console.log("Actual Image: " + canvas.toDataURL());
+                // show some debug information
+                var errorDomElement = document.createElement("span");
+                errorDomElement.innerHTML = fuzzyOkErrorTemplate({
+                    x: x, y: y, distance: distance,
+                    expectedImgSrc: targetImageData,
+                    actualImgSrc: sourceImageData,
+                    actualPixel: "rgba(" + sourcePixels[srcOff] + "," + sourcePixels[srcOff+1] + "," + sourcePixels[srcOff+2] + "," + sourcePixels[srcOff+3] + ")",
+                    expectedPixel: "rgba(" + targetPixels[tgtOff] + "," + targetPixels[tgtOff+1] + "," + targetPixels[tgtOff+2] + "," + targetPixels[tgtOff+3] + ")"
+                });
+                document.body.appendChild(errorDomElement);
 
                 match = false;
                 break loop;

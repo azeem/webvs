@@ -9,10 +9,10 @@
     "tests"
   ],
   "devDependencies": {
-    "underscore": "~1.5.1",
+    "underscore": "~1.6.0",
     "stats.js": "*",
     "soundmanager2": "*",
-    "seedrandom": "~2.3.1",
+    "seedrandom": "~2.3.6",
     "backbone-events": "git://github.com/azeem/backbone-events.git#~1.1.2"
   }
 }
