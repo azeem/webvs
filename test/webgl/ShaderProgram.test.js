@@ -5,17 +5,18 @@
 
 
 
-CanvasTest("ShaderProgram BasicTest", 1, function(canvas, gl) {
-    var program = new PolygonProgram(gl);
-    program.run(null, null, "#0000FF", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
-    imageFuzzyOk(
-        "ShaderProgram Basic", gl, canvas, 
-        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACuUlEQVR4Xu3aYXKCMBCGYbyZPVntyWpP1iYdmaEWlWxC+LL7MsOfqnTdhy/g6mmapu+0s4l04ASIiMStDEC0PCZAABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlUNCABHrgFg5JAQQsQ6IlVOZkEt6O3lna9WBCpBzquEz7R+gtNJIx2kAkqsBpZVJIxBQBEFAaYFSkZB8MX9fqYHlqwZmBxCSIggCihWlIiH5ljff+j7b3tKDV2ttIV+3M0juKSglZ1YHEFA6gZT+4JGkbIGpSEgpCEkRBAHlFYoxIfnuKt9lWTeWr0edOwgk3wpnFLb7DhwEkssAZe10PBAElIYgl3SstcGiZQkiKcuuGRPSEoSkCIKAMqMYE7JlsMjyZemAGEh+C7G/4BIEiY1iBLHMsUoDHDMpwiAxkyIOEg/FAHJOXaoZLJYuXbFQBgGJgzIQSAyUwUD8oxhAWs+xuKZUzrIUQPwmZdCEzOeUvw+PBpC9BouWpctfUhyA+EJxAuIHxQDSY7AYd/lyBpIhx/7Nl0OQsVEKQY4YLFqXrzGT4hhkzKQ4BxkPJQDIWCiFICpzLMt1ZYxrSiCQ6+2W2ILZ7zWBQHJT9VEKQdQGi5YzVxslIIh2UoKC6KIUgigPFn0sX8FB9JICyG+wdL4KLgAZabBoWb40UAD5Y3c8CiD/wnQsCiCrq9txKAUgIw8Wx7mmAPLUqn9SAHkZnr4oBSAeBovL7uch47x93bHMjy2f81KuyROcgGxp7vypvEnfdjuIKMijBi//3v/s3U1hceACEOtgccvZ67O5FkADyNy8R+vuGEuDpVk9XlMA0qMc/gcgYucAIICIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsHBICiFgHxMohIYCIdUCsnB88eO8BxQEqiwAAAABJRU5ErkJggg=="
-    );
-    program.destroy();
-});
+CanvasTest(
+    "ShaderProgram BasicTest", 1,
+    {images: {ShaderProgram0: "/assert/ShaderProgram_0.png"}},
+    function(canvas, gl, images) {
+        var program = new PolygonProgram(gl);
+        program.run(null, null, "#0000FF", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
+        imageFuzzyOk("ShaderProgram Basic", gl, canvas, images.ShaderProgram0, 190);
+        program.destroy();
+    }
+);
 
-function AlphaGradientProgram(gl) {
+var AlphaGradientProgram = function(gl) {
     AlphaGradientProgram.super.constructor.call(this, gl, {
         varyingPos: true,
         blendMode: Webvs.ALPHA,
@@ -26,7 +27,7 @@ function AlphaGradientProgram(gl) {
             "}",
         ]
     });
-}
+};
 AlphaGradientProgram = Webvs.defineClass(AlphaGradientProgram, Webvs.QuadBoxProgram, {
     draw: function(color) {
         this.setUniform.apply(this, ["u_color", "3f"].concat(Webvs.parseColorNorm(color)));
@@ -34,77 +35,81 @@ AlphaGradientProgram = Webvs.defineClass(AlphaGradientProgram, Webvs.QuadBoxProg
     }
 });
 
-CanvasTestWithFM("ShaderProgram Alpha BlendTest", 1, function(canvas, gl, fm, copier) {
-    var fillProgram = new PolygonProgram(gl);
-    var gradProgram = new AlphaGradientProgram(gl);
+CanvasTestWithFM(
+    "ShaderProgram Alpha BlendTest", 1,
+    {images: {ShaderProgram1: "/assert/ShaderProgram_1.png"}},
+    function(canvas, gl, fm, copier, images) {
+        var fillProgram = new PolygonProgram(gl);
+        var gradProgram = new AlphaGradientProgram(gl);
 
-    fm.setRenderTarget();
+        fm.setRenderTarget();
 
-    // clear
-    gl.clearColor(0,0,0,1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+        // clear
+        gl.clearColor(0,0,0,1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
-    fillProgram.run(fm, null, "#00FFFF", [-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
-    gradProgram.run(fm, null, "#FF0000");
+        fillProgram.run(fm, null, "#00FFFF", [-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+        gradProgram.run(fm, null, "#FF0000");
 
-    fm.restoreRenderTarget();
-    copier.run(null, null, fm.getCurrentTexture());
+        fm.restoreRenderTarget();
+        copier.run(null, null, fm.getCurrentTexture());
 
-    imageFuzzyOk(
-        "ShaderProgram Alpha BlendTest", gl, canvas, 
-        "data:image/png;base64,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"
-    );
+        imageFuzzyOk("ShaderProgram Alpha BlendTest", gl, canvas, images.ShaderProgram1);
 
-    fillProgram.destroy();
-    gradProgram.destroy();
-});
+        fillProgram.destroy();
+        gradProgram.destroy();
+    }
+);
 
-CanvasTestWithFM("ShaderProgram BlendTest", 20, function(canvas, gl, fm, copier) {
-    var testData = [
-        [Webvs.REPLACE, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACyUlEQVR4Xu3cXW6DMBAEYOdmPRpHy83aUDUVScAsa3u8P4OUp5oYzceuaz/kVkr5fnx4GUngRhAjEn+PQRBbHoUgBDGWgLHHYYWkBPlaSrk/PrxOE8BUyAqyXkQxBkIUgyBEqaJgW9b2Udi+dmHGgzzXj73pifKRylwQti+DIER5QZlfIc/HYfv6TcIOCCulHWT5KmW5n/xrXVvUudD3XUNWkPWqolwFSV4pTS3rCVJF0YAkRukGcoiiBUmK0hVkF6UFJCGKGmTbrt5Xppc1pRUkGcoQkJdK6QGSCGUYyD9KL5AkKGNBynKySVH8OfiO3h9I8ErxCRIYxS9IUBTfIAFR/IMEQ4kBEgglDkgQlFggAVDigThHUYHUDha3e+9lxE5durl3uqMniBQYNC4uiNPWNQxkarvavs3OWld8EGeVkgPEEUoeECcouUAcoOQDMY6SE8QwSl4Qoyi5QQyiEMQYymUQFweLmnMnIzt6ghg7ZiHIezVNrpQhIGYOFjWta/KaQpAjtEmVQpBaFU1AIchZWwOjEOQMBLymEEQCAkQhiBQEhEKQKyAAFIJcBRmMQhANyECUSyBhDxYNoRBEi/G8r/M+hSCtIJ3bV3cQ9weLWqBOlUIQLcDefR1QCKIB6RD80bTpQdYWe/qreBo05T2hQFrWLysopkFaAta8oBZQYCDocDUg6z2zUbqDaIOwdN9MFIIcvAmzUAhSKc0ZKGIQ6cGipdbT41nQKAQRqCFRCLIBQQbfvFP31rIshCsovo8hLirEa7huQDIFfBWluUIY7tXI6+PFIH2n5bc1L+qMEJMAKwSTs3gWgoijwgwkCCZn8SwEEUeFGUgQTM7iWQgijgozkCCYnMWzEEQcFWYgQTA5i2chiDgqzECCYHIWz0IQcVSYgQTB5CyehSDiqDADCYLJWTwLQcRRYQYSBJOzeBaCiKPCDPwB0yE6EEyIqTkAAAAASUVORK5CYII="],
-        [Webvs.MAXIMUM, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC2klEQVR4Xu3ca26DMBAEYOdmOVqOlpu1gJoqJGAWsx7vY6jyb8FoPtYOjtRbKeVn+vAwksCNIEYk/m6DILY8CkEIYiwBY7fDDkkJcn+U8pw+PA4TwHTIDDIfRDEGQhSDIESpomCnrPdb4fS1CdMf5LV+bA1PlK9UxoJw+jIIQpQVyvgOed0Op68lCTsg7JTrII97KY/nwVfr2qLOhV53DZlB5qOKchYkeadcmrJeIFWUFpDEKGoguyitIElRVEE2Ua6AJERpBnmfrj5XptWachUkGUoXkFWnaIAkQukG8o+iBZIEpSvI9IV4+lM+gr/RdwdZOkXZJPIvjxAQosifSBgIUWQoUBCiHKPAQYhSRxkCQpR9lGEgRNlGGQpClG+U4SBEWaM0gdQ2FteXl78SyiuPv6ksFU7f6M2AqHcKQbae3PPP/fkzKh3jEKVjh7RH237mBo4zFJMgmacvsyBZUUyDZEQxD5INxQVIJhQ3IFlQXIFkQMkNYnCLxR2IepcYQzkN0mNjUbhduCpTfZs3hOIWJGqnuAaJiNIJRH1Cqc5q6qMN3JAMARKpU8KAREEJBRIBJRyId5SQIJ5RwoJ4RQkN4hElPIg3lBQgnlBOgVjZWGzZjPSCkgrEA0o6EOsoHUDUt/paZyiXG5JpQax2SmqQZpSO2/PpQZb/NvHsMis2XTQYSPv6ZQXFOEh7wC2PpwUUIAg23BaQZU0ZPH11AGmNws55I1EIsvMcjEIhSKUxR6CIQeQbi3amHo07QaMQRKCGRCHIGwgy+L3nICyIhXAFzfdV4gLEa7huQDIFfBblcocw3LOR1+vFILrD8mqXF3VGiEmAHYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKCYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKCYLJWTwKQcRRYQoJgslZPApBxFFhCgmCyVk8CkHEUWEKfwHs4jYQ/FLTjwAAAABJRU5ErkJggg=="],
-        [Webvs.AVERAGE, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC2klEQVR4Xu3c6W0CMRQEYNNJSqE0SqMUOkkwySIIezxf43fMSvkTmXgzH2NnHYlTSun7/sVLSQIngiiR+LsNgujySAQhiLIElN0OGxIS5Ouc0u2q7FfXeTuYhmSQfBHl8F2ABSGKQhCi7KLgG7LcDpevVZjxIMv+sTY9UT5SmQvC5UshCFHeUOY3hHuKUhA25QHT1JDL/XnvcvQAvrepc6Pvu4dkkHztopSCBG9Kc0MW4k2UGpDAKN1ANptSCxIUpSvIKkoLSECUapBl/1jbl9+Wr1aQYChDQN6a0gMkEMowkCdKL5AgKENBrumcrre1Ra3he84PJIeD5OiJIn8DQkCIohCEKDIUWEOW2+HytQ8DB2FTFIIQZRtlSkO4fCkFYVM+YaY2hE3pBLJ3sPg6RX5Sl1786+s3qaqGjADpvnwZPWJRBUKUgQ0pWa7+L2tdly9jTRnWkBaQyE1RCxIVRTVIRBT1INFQTIBEQjEDEgXFFEgElNggWVjZc4o5kO4tUYZSDDLqHEt6COn9hNgsiNemmAbxiDIEpPUcK/Ly5QLEU1PcgHhBcQXiAcUdiHUUlyCWUdyCWEVxDWIRxT2INZQQIJZQikC0HCyWPslbOpAMBWKhKeFAtKN0B0EfLHpbvsKCaG1KaJBqlIH/hw8Pcv+sieNPxatdFyte5wokh1t7HX5UYe0PLnydapCWgAtzeAzXgAIDQYdbA6IBpTtIbRCaXjezKQTZeCfMQiHITjVnoIhBpAeLmpaeHveCRiGIQA2JQpAXEGTwW+8DtyAawhWU72OICRCr4ZoBiRRwKUpzQxhuaeT748UgfaflT2ve1BkhJgE2BJOzeBaCiKPCDCQIJmfxLAQRR4UZSBBMzuJZCCKOCjOQIJicxbMQRBwVZiBBMDmLZyGIOCrMQIJgchbPQhBxVJiBBMHkLJ6FIOKoMAMJgslZPAtBxFFhBhIEk7N4FoKIo8IM/AHs2Y4QyGiyAQAAAABJRU5ErkJggg=="],
-        [Webvs.ADDITIVE, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC2UlEQVR4Xu3ca27CMBAEYHMzjsbRuFmbtKUiJHHWr/E+JhK/uuBovqxdm6q3lNLX8uKlJIEbQZRI/N0GQXR5JIIQRFkCym6HHRIS5P5I6bm8eF0mgOmQFWS9iKIMhCgKQYiSRcFOWe+3wunrEGY8yGv9OBqeKLtU5oJw+lIIQpQNyvwOed0Op6+fJPSAsFPaQR73lB7Pi1+tc4s6F/q+a8gKsl5ZlFKQ4J3SNGW9QLIoNSCBUbqBnKLUggRF6QpyiNICEhClGuR9uvpcmTZrSitIMJQhIJtO6QESCGUYyD9KL5AgKENB0oJxuU+52Mbsfux8Rz8c5HKfUgrivFMgIESRP3UwEKLIUKAgRLlGgYMQJY8yBYQo5yjTQIhyjDIVhCh7lOkgRNmiVIHkDhY3H19wbMId/W9yakC6d4rRIxZVIEQZ2SEF09Xn0tZ1+jLWKeM6pAEkcqeoBYmKohokIop6kGgoJkAioZgBiYJiCiQCSmwQhd/PmwPp3iXKUIpBRhwsXn+xua/ouptXhGIWxGunmAbxiDIGpPEcq3QK8zR9uQDx1CluQLyguALxgOIOxDqKSxDLKG5BrKK4BrGI4h7EGkoIEEsoRSBaDhZLd/Kvegs7+lAgFjolHIh2lP4g4INFb9NXWBCtnRIapBpl4N8LhwdZ//1599++aufR5X2+QBqeXC0oukEaAq55SDWg4EDA4daAVK8ptYMdvK8/SMebm/VRMzuFICfqs1AIkmnDGShiEPHB4qx5ZtC4aBSCCCCRKAR5A0EGf/YcuAXREK6g+XYlJkCshmsGJFLApSjNHcJwSyPP14tB+g7LT2te1BkhJgF2CCZn8SgEEUeFKSQIJmfxKAQRR4UpJAgmZ/EoBBFHhSkkCCZn8SgEEUeFKSQIJmfxKAQRR4UpJAgmZ/EoBBFHhSkkCCZn8SgEEUeFKSQIJmfxKAQRR4UpJAgmZ/EoBBFHhSn8BrQuZBC8Ok/zAAAAAElFTkSuQmCC"],
-        [Webvs.SUBTRACTIVE1, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACh0lEQVR4Xu3cUXLCMAxF0bAzlsbSurM20DJTCqSy48hP0s1M/wQW70Sm8QenZVk+1z8ukQROgIhI/LQBiJbHAgggYgmItcOEACKWgFg7TAggYgmItcOEACKWgFg7TAggYgmItcOEACKWgFg7TEgmkMt5WS4fYp8oeDu7JuQKcr1AGXcXDAEBRRAElDEowybk3g7b1z6YbpD798er5UHpRzkEhO1LEASUPpTDJuTWzvqMcunrq+yrDge5TUrZeNs/uAsIKHYYNxBQbCiuIKD8j+IOAso2yhQQUN6jTAMB5TXKVBBQnlGmg4DyiNIFsnWw+PD265O69eLh8TspGRAmRRAElCMnpGG7+rutVd6+jtuydoBUnhRZkKoo0iAVUeRBqqGEAKmEEgakCkookAoogFjPdpzqwoFkn5JmkCMOFntuvqxP82FBsk5KaJCMKMeA7DzHat3CMm1fKUAyTUoakCwoqUAyoKQDiY6SEiQySlqQqCipQSKipAeJhlICJBJKE4jKwWLrk/y9PsITfSmQCJNSDkQdZTyI88Fitu2rLIjqpJQGUUQpD7KctX6ALRfIGm7vpfILRtogOwLugVFA8QNxDrcH5PadMvm/xPEgvUkIvW4mCiBvboRZKIBsTOYMFDOI+WBRaOsZ0Yo3CiAGNU8UQH6BeAb/7j5IC6IQrmH4nkpCgEQNNwxIpYBbUXZPCOG2Rr5dbwYZuyzvtvtLnQh9EmBCfHI2rwKIOSqfQkB8cjavAog5Kp9CQHxyNq8CiDkqn0JAfHI2rwKIOSqfQkB8cjavAog5Kp9CQHxyNq8CiDkqn0JAfHI2rwKIOSqfQkB8cjavAog5Kp9CQHxyNq8CiDkqn8IvZEnoAb/Z7KwAAAAASUVORK5CYII="],
-        [Webvs.SUBTRACTIVE2, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC10lEQVR4Xu3caW7CMBAFYHOzHi1H42YtRqRiizPenmd5kfhVU0fvy4yxkbiklH5vL15KErgQRInE4zYIossjEYQgyhJQdjuskJAgP1tK19uL12kCmArJIPkiijIQoigEIUoRBduynm+F7esrzHyQff34Nj1RPlJZC8L2pRCEKC8o6ytkvx22r3sSekBYKf0g209K2/Xko3VpUedCP3YNySD5KqLUggSvlK6WtYMUUVpAAqMMAzlEaQUJijIU5CtKD0hAlGaQ53b1vjK9rCm9IMFQpoC8VMoIkEAo00D+UUaBBEGZDLKl9PhofLJbkf/Z+Y5+PkiOmijiBw4DQhSFIEQRoeAqZL8dtq8iDB6ElaIQhCiHKGsqhO1LKQgr5QNmbYWwUsaAlA4Wn2fYanbV/PR1j66pQqaAjG5fNQ+DaIeAGaQLhCjzKqSqXb0/fCPbl7FKmVYhXSCBK0UvSFAU3SABUfSDBEOxARIIxQ5IEBRbIAFQYoNkYGX7FHsgo6tEGUo1yLRzrNqjopG7eUUodkGcVoptEIcoU0C6z7ECty8fII4qxQ+IExRfIA5Q/IEYR/EJYhjFL4hRFN8gBlH8gxhDiQFiCKUKRM3BYu1Ofh9v4EAyFoiBSokHohxlOAj8YNFZ+4oLorRSYoO0okz8Hj48yHb76Y/TX8VrbYsN73MFksNtvbSgqAbpCbgFRgMKDAQdbgtIfs9qlOEgrUFoet9KFIIcPAmrUAhSKM0VKGIQ6cGiptYz4l7QKAQRqCFRCPIEggz+6DlwC6IhXEHxfQwxAWI1XDMgkQKuRemuEIZbG3l5vBhk7LT8b92LOiPEJMAKweQsnoUg4qgwAwmCyVk8C0HEUWEGEgSTs3gWgoijwgwkCCZn8SwEEUeFGUgQTM7iWQgijgozkCCYnMWzEEQcFWYgQTA5i2chiDgqzECCYHIWz0IQcVSYgQTB5CyehSDiqDAD/wCm5WgQDp1/jgAAAABJRU5ErkJggg=="],
-        [Webvs.MULTIPLY, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACiElEQVR4Xu3c0VHDMBCEYacjSqC0lEYJlEIHEGfwTIYQz0mWznt3v2fgSUZiP6+S6CGXZVm+bz9cIglcABGR+F0GIFoeCyCAiCUgthwaAohYAmLLoSGAiCUgthwaAohYAmLLoSGAiCUgthwaAohYAmLLoSGZQK7vy3L9EPuPgi/nUENWkPUCZdxTMAQEFEEQUMagDGvIthy2r2Mw3SDb68d/04PSjzIFhO1LEASUPpRpDbmDfN5+ffUtrOpd80HWZEExP18+IKAIgoBiQvFryLYctq9dGH8QmiIIAspLlHMawvYlCkJTnmDObQhNGQOyd7D4OMP9k7r14t3XPamuhkwBYfsSBAFlXkOatqu/21rh7WvalnUIpHBTdEGKomiDFETRBymGEgOkEEockCIosUAKoABiPdpxGhcPJHlLmkGmnWO1PoFJP83HBUnalNggCVGmgBw+xyq8feUASdSUPCBJUHKBJEDJBxIcJSdIYJS8IEFRcoMERMkPEgylBkgglCYQmYPF1k/y2/gAB5K1QAI0pR6IOMpwEPeDxWTbV10Q0abUBhFEKQ9yfdP6ArZUIGu4vZfKNxhJgxwJuAdGAcUNxDvcHpD1nrNRhoP0BqF035kogLx4Es5CAWSnmmegmEGsB4tKW8+ItXijAGJQ80QB5AHEM/hXz0FaEIVwDeV7GhICJGq4YUAqBdyKcrghhNsa+f54M8jYaflrh1/UidAnARrik7N5FkDMUfkMBMQnZ/MsgJij8hkIiE/O5lkAMUflMxAQn5zNswBijspnICA+OZtnAcQclc9AQHxyNs8CiDkqn4GA+ORsngUQc1Q+AwHxydk8CyDmqHwGAuKTs3kWQMxR+Qz8ATdgFhBGgexHAAAAAElFTkSuQmCC"],
-        [Webvs.ADJUSTABLE, 0.5, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC2klEQVR4Xu3c6W0CMRQEYNNJSqE0SqMUOkkwySIIezxf43fMSvkTmXgzH2NnHYlTSun7/sVLSQIngiiR+LsNgujySAQhiLIElN0OGxIS5Ouc0u2q7FfXeTuYhmSQfBHl8F2ABSGKQhCi7KLgG7LcDpevVZjxIMv+sTY9UT5SmQvC5UshCFHeUOY3hHuKUhA25QHT1JDL/XnvcvQAvrepc6Pvu4dkkHztopSCBG9Kc0MW4k2UGpDAKN1ANptSCxIUpSvIKkoLSECUapBl/1jbl9+Wr1aQYChDQN6a0gMkEMowkCdKL5AgKENBrumcrre1Ra3he84PJIeD5OiJIn8DQkCIohCEKDIUWEOW2+HytQ8DB2FTFIIQZRtlSkO4fCkFYVM+YaY2hE3pBLJ3sPg6RX5Sl1786+s3qaqGjADpvnwZPWJRBUKUgQ0pWa7+L2tdly9jTRnWkBaQyE1RCxIVRTVIRBT1INFQTIBEQjEDEgXFFEgElNggWVjZc4o5kO4tUYZSDDLqHEt6COn9hNgsiNemmAbxiDIEpPUcK/Ly5QLEU1PcgHhBcQXiAcUdiHUUlyCWUdyCWEVxDWIRxT2INZQQIJZQikC0HCyWPslbOpAMBWKhKeFAtKN0B0EfLHpbvsKCaG1KaJBqlIH/hw8Pcv+sieNPxatdFyte5wokh1t7HX5UYe0PLnydapCWgAtzeAzXgAIDQYdbA6IBpTtIbRCaXjezKQTZeCfMQiHITjVnoIhBpAeLmpaeHveCRiGIQA2JQpAXEGTwW+8DtyAawhWU72OICRCr4ZoBiRRwKUpzQxhuaeT748UgfaflT2ve1BkhJgE2BJOzeBaCiKPCDCQIJmfxLAQRR4UZSBBMzuJZCCKOCjOQIJicxbMQRBwVZiBBMDmLZyGIOCrMQIJgchbPQhBxVJiBBMHkLJ6FIOKoMAMJgslZPAtBxFFhBhIEk7N4FoKIo8IM/AHs2Y4QyGiyAQAAAABJRU5ErkJggg=="],
-        [Webvs.ADJUSTABLE, 0.25, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAC4ElEQVR4Xu3c6VHDMBQEYKUDSkgplEYplEIJlJAS6ABQwExCfDxdq3esZ/iFEpn9vHIsZnJKKX1+//BQksCJIEokfk+DILo8EkEIoiwBZafDhoQEeTqn9HFR9qfrPB1MQzJIPohyeBVgQYiiEIQouyj4hiynw+VrFWY8yHL/WJueKA+pzAXh8qUQhCh3KPMbwnuKUhA25QrT1JCX55Re3g4+Wu/d1Hmj73sPySD52EUpBQnelOaGLMSbKDUggVG6gWw2pRYkKEpXkFWUFpCAKNUgy/1j7b58t3y1ggRDGQJy15QeIIFQhoH8ofQCCYIyFOSSzun1/eA5pfTXzjckh4PkvIkiv+ogIERRCEIUGQqsIcvpcPnah4GDsCkKQYiyjTKlIVy+lIKwKY8wUxvCpnQC2dtYvJ0iP6lLD376+kmqqiEjQLovX0a3WFSBEGVgQ0qWq//LWtfly1hThjWkBSRyU9SCREVRDRIRRT1INBQTIJFQzIBEQTEFEgElNkgWVvacYg6ke0uUoRSDjNrHkm5Cet8hNgvitSmmQTyiDAFp3ceKvHy5APHUFDcgXlBcgXhAcQdiHcUliGUUtyBWUVyDWERxD2INJQSIJZQiEC0bi6VP8pY2JEOBWGhKOBDtKN1B0BuL3pavsCBamxIapBpl4P/hw4Oc0+X4W/Fq18WK17kCyeHWHodfVVj7xoWvUw3SEnBhDtfhGlBgIOhwa0A0oHQHqQ1C0+tmNoUgG1fCLBSC7FRzBooYRLqxqGnp6XEuaBSCCNSQKAS5AUEGv3UduAXREK6gfA9DTIBYDdcMSKSAS1GaG8JwSyPfHy8G6Tst3635ps4IMQmwIZicxbMQRBwVZiBBMDmLZyGIOCrMQIJgchbPQhBxVJiBBMHkLJ6FIOKoMAMJgslZPAtBxFFhBhIEk7N4FoKIo8IMJAgmZ/EsBBFHhRlIEEzO4lkIIo4KM5AgmJzFsxBEHBVm4Bf5bI4QvuVrHgAAAABJRU5ErkJggg=="],
-        [Webvs.ADJUSTABLE, 1, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACyUlEQVR4Xu3cXW6DMBAEYOdmPRpHy83aUDUVScAsa3u8P4OUp5oYzceuaz/kVkr5fnx4GUngRhAjEn+PQRBbHoUgBDGWgLHHYYWkBPlaSrk/PrxOE8BUyAqyXkQxBkIUgyBEqaJgW9b2Udi+dmHGgzzXj73pifKRylwQti+DIER5QZlfIc/HYfv6TcIOCCulHWT5KmW5n/xrXVvUudD3XUNWkPWqolwFSV4pTS3rCVJF0YAkRukGcoiiBUmK0hVkF6UFJCGKGmTbrt5Xppc1pRUkGcoQkJdK6QGSCGUYyD9KL5AkKGNBynKySVH8OfiO3h9I8ErxCRIYxS9IUBTfIAFR/IMEQ4kBEgglDkgQlFggAVDigThHUYHUDha3e+9lxE5durl3uqMniBQYNC4uiNPWNQxkarvavs3OWld8EGeVkgPEEUoeECcouUAcoOQDMY6SE8QwSl4Qoyi5QQyiEMQYymUQFweLmnMnIzt6ghg7ZiHIezVNrpQhIGYOFjWta/KaQpAjtEmVQpBaFU1AIchZWwOjEOQMBLymEEQCAkQhiBQEhEKQKyAAFIJcBRmMQhANyECUSyBhDxYNoRBEi/G8r/M+hSCtIJ3bV3cQ9weLWqBOlUIQLcDefR1QCKIB6RD80bTpQdYWe/qreBo05T2hQFrWLysopkFaAta8oBZQYCDocDUg6z2zUbqDaIOwdN9MFIIcvAmzUAhSKc0ZKGIQ6cGipdbT41nQKAQRqCFRCLIBQQbfvFP31rIshCsovo8hLirEa7huQDIFfBWluUIY7tXI6+PFIH2n5bc1L+qMEJMAKwSTs3gWgoijwgwkCCZn8SwEEUeFGUgQTM7iWQgijgozkCCYnMWzEEQcFWYgQTA5i2chiDgqzECCYHIWz0IQcVSYgQTB5CyehSDiqDADCYLJWTwLQcRRYQYSBJOzeBaCiKPCDPwB0yE6EEyIqTkAAAAASUVORK5CYII="],
-    ];
+CanvasTestWithFM(
+    "ShaderProgram BlendTest", 20,
+    {
+        images: imagesRange("ShaderProgramBlend", 10)
+    },
+    function(canvas, gl, fm, copier, images) {
+        var testData = [
+            [Webvs.REPLACE, 0.5],
+            [Webvs.MAXIMUM, 0.5],
+            [Webvs.AVERAGE, 0.5],
+            [Webvs.ADDITIVE, 0.5],
+            [Webvs.SUBTRACTIVE1, 0.5],
+            [Webvs.SUBTRACTIVE2, 0.5],
+            [Webvs.MULTIPLY, 0.5],
+            [Webvs.ADJUSTABLE, 0.5],
+            [Webvs.ADJUSTABLE, 0.25],
+            [Webvs.ADJUSTABLE, 1]
+        ];
 
-    _.each(testData, function(data) {
-        _.each([true, false], function(dynamicBlend) {
-            fm.setRenderTarget();
+        _.each(testData, function(data, index) {
+            _.each([true, false], function(dynamicBlend) {
+                fm.setRenderTarget();
 
-            // clear
-            gl.clearColor(0,0,0,1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+                // clear
+                gl.clearColor(0,0,0,1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
 
-            // draw a red triangle
-            var program = new PolygonProgram(gl);
-            program.run(fm, null, "#804000", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
+                // draw a red triangle
+                var program = new PolygonProgram(gl);
+                program.run(fm, null, "#804000", [-0.8,-0.6, 0.46,-0.5, -0.7,0.7]);
 
-            // draw a blue triangle
-            if(dynamicBlend) {
-                var program2 = new PolygonProgram(gl, {blendValue: data[1], dynamicBlend: true});
-                program2.run(fm, data[0], "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
-            } else {
-                var program2 = new PolygonProgram(gl, {blendMode: data[0], blendValue: data[1]});
-                program2.run(fm, null, "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
-            }
+                // draw a blue triangle
+                var program2;
+                if(dynamicBlend) {
+                    program2 = new PolygonProgram(gl, {blendValue: data[1], dynamicBlend: true});
+                    program2.run(fm, data[0], "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
+                } else {
+                    program2 = new PolygonProgram(gl, {blendMode: data[0], blendValue: data[1]});
+                    program2.run(fm, null, "#004080", [-0.6,-0.4, 0.66,-0.3, -0.5,0.9]);
+                }
 
-            fm.restoreRenderTarget();
-            copier.run(null, null, fm.getCurrentTexture());
+                fm.restoreRenderTarget();
+                copier.run(null, null, fm.getCurrentTexture());
 
-            imageFuzzyOk(
-                "ShaderProgram Blend", gl, canvas,
-                data[2]
-            );
+                imageFuzzyOk("ShaderProgram Blend", gl, canvas, images["ShaderProgramBlend"+index]);
 
-            program.destroy();
-            program2.destroy();
+                program.destroy();
+                program2.destroy();
+            });
         });
-    });
-
-});
+    }
+);

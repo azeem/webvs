@@ -17,6 +17,7 @@ module.exports = function(config) {
             "./test/**/*.test.js"
         ],
         proxies: {
+            "/assert": "http://localhost:8000/test/assert/",
             "/images": "http://localhost:8000/test/images/",
             "/resources": "http://localhost:8000/resources/"
         },
@@ -26,7 +27,7 @@ module.exports = function(config) {
         colors: true,
         logLevel: config.LOG_DEBUG,
         autoWatch: true,
-        browsers: ['Firefox'],
+        browsers: ['Firefox', 'Chrome'],
         captureTimeout: 60000
     });
 };

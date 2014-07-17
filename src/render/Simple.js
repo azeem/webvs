@@ -77,12 +77,12 @@ Webvs.defineClass(Simple, Webvs.Component, {
         if(this.drawMode == DrawModes.SOLID) {
             sscopeDrawMode = "LINES";
         }
-        this.sscope.setOption("drawMode", sscopeDrawMode);
+        this.sscope.set("drawMode", sscopeDrawMode);
     },
 
     updateSource: function() {
         this.source = Webvs.getEnumValue(this.opts.source, Webvs.Source);
-        this.sscope.setOption("source", this.opts.source);
+        this.sscope.set("source", this.opts.source);
     },
 
     updateAlign: function() {
@@ -115,11 +115,11 @@ Webvs.defineClass(Simple, Webvs.Component, {
                 }
             }
         }
-        this.sscope.setOption("code", code);
+        this.sscope.set("code", code);
     },
 
     optPassThru: function(name, value) {
-        this.sscope.setOption(name, value);
+        this.sscope.set(name, value);
     },
 });
 

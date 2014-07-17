@@ -28,6 +28,32 @@ function CanvasTest() {
         glDebug: false
     });
     var wrapper = function() {
+        var images = {};
+        if(extraOptions.images) {
+            if(extraOptions.async) {
+                QUnit.stop();
+            }
+            var imageTotal = _.size(extraOptions.images);
+            var imageCount = 0;
+            _.each(extraOptions.images, function(src, key) {
+                var image = new Image();
+                image.onload = function() {
+                    images[key] = image;
+                    imageCount++;
+                    if(imageCount == imageTotal) {
+                        // resume running the test
+                        QUnit.start();
+                        testFunc(canvas, gl, images);
+                    }
+                };
+                image.onerror = function() {
+                    console.log("Test Image " + src + " could not be loaded");
+                    image.onload();
+                };
+                image.src = src;
+            });
+        }
+        
         var canvas = document.getElementById("test_canvas");
         if(!canvas) {
             canvas = document.createElement("canvas");
@@ -47,7 +73,10 @@ function CanvasTest() {
         gl.clearColor(0,0,0,1);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        testFunc(canvas, gl);
+        // dont run test right away if we have test images to be loaded
+        if(!extraOptions.images) { 
+            testFunc(canvas, gl, images);
+        }
     };
     var testArgs;
     if(hasExtraOptions) {
@@ -56,7 +85,7 @@ function CanvasTest() {
         testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-1);
     }
     testArgs.push(wrapper);
-    if(extraOptions.async) {
+    if(extraOptions.async || extraOptions.images) {
         asyncTest.apply(window, testArgs);
     } else {
         test.apply(window, testArgs);
@@ -71,23 +100,29 @@ function CanvasTestWithFM() {
         async = arguments[arguments.length-2].async?true:false;
     }
 
-    var wrapper = function(canvas, gl) {
+    var wrapper = function(canvas, gl, images) {
         var copier = new Webvs.CopyProgram(gl, {dynamicBlend: true});
         var fm = new Webvs.FrameBufferManager(canvas.width, canvas.height, gl, copier, false);
         if(async) {
             var resume = function() {
                 fm.destroy();
-                start();
+                QUnit.start();
             };
-            testFunc(canvas, gl, fm, copier, resume);
+            testFunc(canvas, gl, fm, copier, images, resume);
         } else {
-            testFunc(canvas, gl, fm, copier);
+            testFunc(canvas, gl, fm, copier, images);
             fm.destroy();
         }
     };
     var testArgs = Array.prototype.slice.call(arguments, 0, arguments.length-1);
     testArgs.push(wrapper);
     CanvasTest.apply(window, testArgs);
+}
+
+function imagesRange(prefix, count) {
+    return _.object(_.map(_.range(count), function(i) {
+        return [prefix+i, "/assert/"+prefix+"_" + i + ".png"];
+    }));
 }
 
 var PolygonProgram = function(gl, options) {
@@ -186,82 +221,93 @@ function DummyParent(fm) {
     this.fm = fm;
 }
 
-var fuzzyOkErrorTemplate = _.template([
-    "<table style='border: 1px solid black;margin: 10px;text-align: center;'>",
-    "    <tr>",
-    "        <td>Actual</td><td>Expected</td>",
-    "    </tr>",
-    "    <tr>",
-    "        <td><img src='<%= actualImgSrc %>'/></td>",
-    "        <td><img src='<%= expectedImgSrc %>'/></td>",
-    "    </tr>",
-    "    <tr>",
-    "        <td><div style='width:100%;height:10px;background-color:<%= actualPixel %>'/></td>",
-    "        <td><div style='width:100%;height:10px;background-color:<%= expectedPixel %>'/></td>",
-    "    </tr>",
-    "    <tr>",
-    "        <td colspan='2'>(<%= x %>,<%= y %>) d=<%= Math.round(distance * 100)/100 %></td>",
-    "    </tr>",
-    "</table>",
+var imageFuzzyOkErrorTemplate = _.template([
+    "<table style='border:1px solid black;margin:5px;font-family:sans-serif;text-align:center;'>",
+    "  <tr>",
+    "      <td colspan='3'>ImageMismatch #<%= id %></td>",
+    "  </tr>",
+    "  <tr>",
+    "      <td>Target</td>",
+    "      <td>Output</td>",
+    "      <td>Diff</td>",
+    "  </tr>",
+    "  <tr>",
+    "      <td><img src='<%= targetSrc %>'/></td>",
+    "      <td><img src='<%= outputSrc %>'/></td>",
+    "      <td><img src='<%= diffSrc %>'/></td>",
+    "  </tr>",
+    "</table>"
 ].join(""));
 
 /**
  * Checks if the framebuffer image is equal to target image
  * within threshold
  */
-function imageFuzzyOk(message, gl, canvas, targetImageData, maxDistance) {
-    maxDistance = _.isNumber(maxDistance)?maxDistance:0.01;
+function imageFuzzyOk(message, gl, canvas, targetImage, mismatchThreshold, distanceThreshold) {
+    mismatchThreshold = _.isNumber(mismatchThreshold)?mismatchThreshold:1;
+    distanceThreshold = _.isNumber(distanceThreshold)?(Math.pow(distanceThreshold*255, 2)*3):10; // scale to 255*sqrt(3) and square
     var width = canvas.width;
     var height = canvas.height;
-    var sourceImageData = canvas.toDataURL();
 
-    // load the target pixels
+    // create a temporary canvas for
+    // getting image data and drawing diff image
     var tempCanvas = document.createElement("canvas");
+    tempCanvas.width = width;
+    tempCanvas.height = height;
     var ctxt = tempCanvas.getContext("2d", {
         preserveDrawingBuffer: true,
         alpha: false
     });
 
-    var img;
-    
-    img = new Image();
-    img.src = targetImageData;
-    ctxt.drawImage(img, 0, 0);
+    // get source pixels
+    var sourcePixels = new Uint8Array(width * height * 4);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, sourcePixels);
+
+    // get target pixels
+    ctxt.drawImage(targetImage, 0, 0);
+    var targetDataUrl = tempCanvas.toDataURL();
     var targetPixels = ctxt.getImageData(0, 0, width, height).data;
 
-    img = new Image();
-    img.src = sourceImageData;
-    ctxt.drawImage(img, 0, 0);
-    var sourcePixels = ctxt.getImageData(0, 0, width, height).data;
+    // dim down target image in temporary canvas 
+    ctxt.fillStyle = "rgba(255,255,255,0.85)";
+    ctxt.fillRect(0, 0, width, height);
 
-    var match = true;
-    loop:
+    // red pixel for marking pixel mismatches
+    var redPixel = ctxt.createImageData(1,1);
+    redPixel.data[0] = 255;
+    redPixel.data[1] = 0;
+    redPixel.data[2] = 0;
+    redPixel.data[3] = 255;
+
+    var mismatch = 0;
     for(var y = 0;y < height;y++) {
         for(var x = 0;x < width;x++) {
-            var tgtOff = y*width*4+x*4;
+            var off = y*width*4+x*4;
             var srcOff = (height-1-y)*width*4+x*4;
-            var rd = targetPixels[tgtOff]-sourcePixels[srcOff];
-            var gd = targetPixels[tgtOff+1]-sourcePixels[srcOff+1];
-            var bd = targetPixels[tgtOff+2]-sourcePixels[srcOff+2];
-            var ad = targetPixels[tgtOff+3]-sourcePixels[srcOff+3];
-            rd*=rd;gd*=gd;bd*=bd;
-            var distance = (rd+gd+bd)/(4*255);
-            if(distance > maxDistance) {
-                // show some debug information
-                var errorDomElement = document.createElement("span");
-                errorDomElement.innerHTML = fuzzyOkErrorTemplate({
-                    x: x, y: y, distance: distance,
-                    expectedImgSrc: targetImageData,
-                    actualImgSrc: sourceImageData,
-                    actualPixel: "rgba(" + sourcePixels[srcOff] + "," + sourcePixels[srcOff+1] + "," + sourcePixels[srcOff+2] + "," + sourcePixels[srcOff+3] + ")",
-                    expectedPixel: "rgba(" + targetPixels[tgtOff] + "," + targetPixels[tgtOff+1] + "," + targetPixels[tgtOff+2] + "," + targetPixels[tgtOff+3] + ")"
-                });
-                document.body.appendChild(errorDomElement);
-
-                match = false;
-                break loop;
+            var rd = targetPixels[off]  -sourcePixels[srcOff];
+            var gd = targetPixels[off+1]-sourcePixels[srcOff+1];
+            var bd = targetPixels[off+2]-sourcePixels[srcOff+2];
+            var distance=rd*rd+gd*gd+bd*bd;
+            if(distance >= distanceThreshold) {
+                ctxt.putImageData(redPixel, x, y); // mark pixel mismatch
+                mismatch++;
             }
         }
     }
-    ok(match, message);
+
+    if(mismatch < mismatchThreshold) {
+        ok(true, message);
+    } else {
+        // show the diff image 
+        var errorId = _.uniqueId();
+        var errorElement = document.createElement("span");
+        errorElement.innerHTML = imageFuzzyOkErrorTemplate({
+            id: errorId,
+            targetSrc: targetDataUrl,
+            outputSrc: canvas.toDataURL(),
+            diffSrc: tempCanvas.toDataURL()
+        });
+        document.body.appendChild(errorElement);
+        ok(false, message + " ImageMismatch #" + errorId);
+    }
 }

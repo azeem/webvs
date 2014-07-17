@@ -3,7 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-function QuadrantColorProgram(gl) {
+var QuadrantColorProgram = function(gl) {
     QuadrantColorProgram.super.constructor.call(this, gl, {
         fragmentShader: [
             "void main() {",
@@ -22,52 +22,59 @@ function QuadrantColorProgram(gl) {
             "}"
         ]
     });
-}
+};
 QuadrantColorProgram = Webvs.defineClass(QuadrantColorProgram, Webvs.QuadBoxProgram);
 
-CanvasTestWithFM("Mirror", 7, function(canvas, gl, fm, copier) {
-    var quadProgram = new QuadrantColorProgram(gl);
-    var main = new DummyMain(canvas);
-    var parent = new DummyParent(fm);
+CanvasTestWithFM(
+    "Mirror", 7,
+    {
+        images: _.extend(imagesRange("Mirror", 6), {
+            "Mirror6": "/assert/Blue.png"
+        })
+    },
+    function(canvas, gl, fm, copier, images) {
+        var quadProgram = new QuadrantColorProgram(gl);
+        var main = new DummyMain(canvas);
+        var parent = new DummyParent(fm);
 
-    var testValues = [
-        [{topToBottom: true}, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAB+klEQVR4Xu2U0QnAIBDFvP2Htp0hEJAj+v0CTaRz7n83nFnyGQV56zVOQQriGOiX5XjF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wwL4njF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wwL4njF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wwL4njF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wwL4njF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wwL4njF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wwL4njF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wwL4njF1IJgdc6wII5XTC0IVucMC+J4xdSCYHXOsCCOV0wtCFbnDAvieMXUgmB1zrAgjldMLQhW5wyXBPkAiz4rrH/ZpOYAAAAASUVORK5CYII="],
-        [{topToBottom:false, bottomToTop: true}, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAB+klEQVR4Xu2V0QmAMBDF2v2Hts4QCBxHpL8v0ETxfuf8Z8Gz4xbnFmTWy1iQWT36Qob1KEhBLAP91C2zkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpoVxDILuQWB4qxZQSyzkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpoVxDILuQWB4qxZQSyzkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpoVxDILuQWB4qxZQSyzkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpoVxDILuQWB4qxZQSyzkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpoVxDILuQWB4qxZQSyzkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpoVxDILuQWB4qxZQSyzkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpoVxDILuQWB4qxZQSyzkFsQKM6aFcQyC7kFgeKsWUEss5BbECjOmhXEMgu5BYHirFlBLLOQWxAozpotCfIAuUIrSPM8cuoAAAAASUVORK5CYII="],
-        [{topToBottom:false, leftToRight: true}, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAABcklEQVR4Xu3cuQ0AIBDEQK7/ovmqmMDQgGVrRcasfW+HMTAFYVp8kIJYPQqC9ShIQTQDGE9vSEEwAxhOCykIZgDDaSEFwQxgOC2kIJgBDKeFFAQzgOG0kIJgBjCcFlIQzACG00IKghnAcFpIQTADGE4LKQhmAMNpIQXBDGA4LaQgmAEMp4UUBDOA4bSQgmAGMJwWUhDMAIbTQgqCGcBwWkhBMAMYTgspCGYAw2khBcEMYDgtpCCYAQynhRQEM4DhtJCCYAYwnLnfyfWjHBSlIFCMh1KQgmAGMJwWUhDMAIbTQgqCGcBwWkhBMAMYTgspCGYAw2khBcEMYDgtpCCYAQynhRQEM4DhtJCCYAYwnBZSEMwAhtNCCoIZwHBaSEEwAxhOCykIZgDDaSEFwQxgOC2kIJgBDKeFFAQzgOG0kIJgBjCcFlIQzACG00IKghnAcFpIQTADGE4LKQhmAMNpIQXBDGA4LaQgmAEMp4UUBDOA4RzjscedfsvjPQAAAABJRU5ErkJggg=="],
-        [{topToBottom: false, rightToLeft: true}, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAABc0lEQVR4Xu3cwQ0AIQzEwKT/ormDKuZhKrBsrfhlZ86ZHmNgC8K0eCAFsXoUBOtRkIJoBjCe/pCCYAYwnBZSEMwAhtNCCoIZwHBaSEEwAxhOCykIZgDDaSEFwQxgOC2kIJgBDKeFFAQzgOG0kIJgBjCcFlIQzACG00IKghnAcFpIQTADGE4LKQhmAMNpIQXBDGA4LaQgmAEMp4UUBDOA4bSQgmAGMJwWUhDMAIbTQgqCGcBwWkhBMAMYTgspCGYAw2khBcEMYDj735ProhwUpSBQjItSkIJgBjCcFlIQzACG00IKghnAcFpIQTADGE4LKQhmAMNpIQXBDGA4LaQgmAEMp4UUBDOA4bSQgmAGMJwWUhDMAIbTQgqCGcBwWkhBMAMYTgspCGYAw2khBcEMYDgtpCCYAQynhRQEM4DhtJCCYAYwnBZSEMwAhtNCCoIZwHBaSEEwAxhOCykIZgDDaSEFwQxgOC2kIJgBDKeFFAQzgOF8ILb5a4dyAKgAAAAASUVORK5CYII="],
-        [{topToBottom: true, rightToLeft: true}, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAABa0lEQVR4Xu3VwQkAQAjEQO2/aA+uijzGCkLC4s7cjcsYWEEyLT6IIK0egsR6CCJIzUCMxw8RJGYghmMhgsQMxHAsRJCYgRiOhQgSMxDDsRBBYgZiOBYiSMxADMdCBIkZiOFYiCAxAzEcCxEkZiCGYyGCxAzEcCxEkJiBGI6FCBIzEMOxEEFiBmI4FiJIzEAMx0IEiRmI4ViIIDEDMRwLESRmIIZjIYLEDMRwLESQmIEYjoUIEjMQw7EQQWIGYjgWIkjMQAzHQgSJGYjhWIggMQMxHAsRJGYghmMhgsQMxHAsRJCYgRiOhQgSMxDDsRBBYgZiOBYiSMxADMdCBIkZiOFYiCAxAzEcCxEkZiCGYyGCxAzEcCxEkJiBGI6FCBIzEMOxEEFiBmI4FiJIzEAMx0IEiRmI4ViIIDEDMRwLESRmIIZjIYLEDMRwLESQmIEYjoUIEjMQw7EQQWIGYjgWIkjMQAzHQgSJGYjhPE5Hx53K44yoAAAAAElFTkSuQmCC"],
-        [{_animCount: 5, _beatFrame: [0], topToBottom: true, rightToLeft: true, onBeatRandom: true, smoothTransition: true, transitionDuration: 10}, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACBElEQVR4Xu2cwQnEMBDE1s3makq1uR4EArMo/xFEwvjnM+/zzYbv9274izkFuatjQe7q0Qm5rEdBCmIZ6FK3zEJuQaA4a1YQyyzkFgSKs2YFscxCbkGgOGtWEMss5BYEirNmBbHMQm5BoDhrVhDLLOQWBIqzZgWxzEJuQaA4a1YQyyzkFgSKs2YFscxCbkGgOGtWEMss5BYEirNmBbHMQm5BoDhrVhDLLOQWBIqzZgWxzEJuQaA4a1YQyyzkFgSKs2YFscxCbkGgOGtWEMss5BYEirNmBbHMQm5BoDhrVhDLLOQWBIqzZgWxzEJuQaA4a1YQyyzkFgSKs2YFscxCbkGgOGtWEMss5BYEirNmW4J8z+x4UW7Hg3JzCmIdWcYtCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBi4I86atCqKpZeCCMG/aqiCaWgYuCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBi4I86atCqKpZeCCMG/aqiCaWgYuCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBi4I86atCqKpZeCCMG/aqiCaWgYuCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBi4I86atCqKpZeCCMG/aqiCaWgb+A9n7K3rXdTuiAAAAAElFTkSuQmCC"],
+        var testValues = [
+            {opts: {topToBottom: true}},
+            {opts: {topToBottom:false, bottomToTop: true}},
+            {opts: {topToBottom:false, leftToRight: true}},
+            {opts: {topToBottom: false, rightToLeft: true}}, 
+            {opts: {topToBottom: true, rightToLeft: true, onBeatRandom: true, smoothTransition: true, transitionDuration: 10}, animCount: 5, beatFrame: [0]},
+            {opts: {topToBottom: true, bottomToTop: true, rightToLeft: true, leftToRight: true, onBeatRandom: true, smoothTransition: true, transitionDuration: 15}, animCount: 15, beatFrame: [0, 10]},
+            {opts: {topToBottom: true, rightToLeft: true}},
+        ];
 
-        [{_animCount: 15, _beatFrame: [0, 10], topToBottom: true, bottomToTop: true, rightToLeft: true, leftToRight: true, onBeatRandom: true, smoothTransition: true, transitionDuration: 15}, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAACCUlEQVR4Xu2csQnEMBTF7MVS3VrX3FrpslhuB4HAfJT+CSJh3Hl/7vWuCd9zTfiLtQtyVseCnNWjE3JYj4IUxDLQpW6ZhdyCQHHWrCCWWcgtCBRnzQpimYXcgkBx1qwgllnILQgUZ80KYpmF3IJAcdasIJZZyC0IFGfNCmKZhdyCQHHWrCCWWcgtCBRnzQpimYXcgkBx1qwgllnILQgUZ80KYpmF3IJAcdasIJZZyC0IFGfNCmKZhdyCQHHWrCCWWcgtCBRnzQpimYXcgkBx1qwgllnILQgUZ80KYpmF3IJAcdasIJZZyC0IFGfNCmKZhdyCQHHWrCCWWcgtCBRnzQpimYXcgkBx1qwgllnILQgUZ82mBPl9h7woN+NBubULYh1Zxi0I86atCqKpZeCCMG/aqiCaWgYuCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBi4I86atCqKpZeCCMG/aqiCaWgYuCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBi4I86atCqKpZeCCMG/aqiCaWgYuCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBi4I86atCqKpZeCCMG/aqiCaWgYuCPOmrQqiqWXggjBv2qogmloGLgjzpq0Koqll4IIwb9qqIJpaBv4DHdcFyGDSdY8AAAAASUVORK5CYII="]
-    ];
+        Math.seedrandom("mirror_test2"); // fixed seed
+        _.each(testValues, function(data, index) {
+            var mirror = new Webvs.Mirror(gl, main, parent, data.opts);
+            fm.setRenderTarget();
 
-    Math.seedrandom("mirror_test2"); // fixed seed
-    _.each(testValues, function(testValue, index) {
-        var mirror = new Webvs.Mirror(gl, main, parent, testValue[0]);
-        fm.setRenderTarget();
+            // clear
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
 
-        // clear
-        gl.clearColor(0,0,0,1);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        if(testValue[0]._animCount) {
-            for(var i = 0;i < testValue[0]._animCount;i++) {
-                main.analyser.beat = _.contains(testValue[0]._beatFrame, i);
+            if(data.animCount) {
+                for(var i = 0;i < data.animCount;i++) {
+                    main.analyser.beat = _.contains(data.beatFrame, i);
+                    quadProgram.run(fm, null);
+                    mirror.draw();
+                }
+            } else {
                 quadProgram.run(fm, null);
                 mirror.draw();
             }
-        } else {
-            quadProgram.run(fm, null);
-            mirror.draw();
-        }
 
-        fm.restoreRenderTarget();
-        copier.run(null, null, fm.getCurrentTexture());
+            fm.restoreRenderTarget();
+            copier.run(null, null, fm.getCurrentTexture());
 
-        imageFuzzyOk("Mirror " + index, gl, canvas, testValue[1]);
-        mirror.destroy();
-    });
+            imageFuzzyOk("Mirror " + index, gl, canvas, images["Mirror"+index]);
+            mirror.destroy();
+        });
 
-    quadProgram.destroy();
-    Math.seedrandom(); // random seed
-});
+        quadProgram.destroy();
+        Math.seedrandom(); // random seed
+    }
+);
