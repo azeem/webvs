@@ -26,7 +26,7 @@ module.exports = function(config) {
         runnerPort: 9100,
         colors: true,
         logLevel: config.LOG_DEBUG,
-        autoWatch: true,
+        autoWatch: false,
         browsers: ['Firefox', 'Chrome'],
         captureTimeout: 60000
     });

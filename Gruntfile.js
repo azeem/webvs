@@ -91,6 +91,8 @@ module.exports = function(grunt) {
             },
             debug: {
                 singleRun: false,
+                background: true,
+                browsers: ["Firefox"]
             }
         },
 
@@ -119,6 +121,11 @@ module.exports = function(grunt) {
             scripts: {
                 files: ["src/**/*.js"],
                 tasks: ["default"]
+            },
+
+            scriptsDebugTest: {
+                files: ["src/**/*.js", "test/**/*.js"],
+                tasks: ["default", "karma:debug:run"]
             },
 
             doc: {
@@ -170,5 +177,5 @@ module.exports = function(grunt) {
 
     grunt.registerTask('debug', ["connect", "default", "watch:scripts"]);
     grunt.registerTask('debug_build', ["default", "watch:scripts"]);
-    grunt.registerTask('debug_test', ["connect", "default", "karma:debug", "watch:scripts"]);
+    grunt.registerTask('debug_test', ["connect", "default", "karma:debug:start", "watch:scriptsDebugTest"]);
 };

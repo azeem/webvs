@@ -15,7 +15,7 @@
  * @param {WebGLRenderingContext} gl - the webgl context to be used
  * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
  *                                     when a frame copyOver is required
- * @param {boolean} textureOnly - if set then only texture's and renderbuffers are maintained
+ * @param {boolean} textureOnly - if set then only textures maintained
  * @constructor
  * @memberof Webvs
  */
@@ -46,16 +46,8 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
-                0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-            var renderbuffer = gl.createRenderbuffer();
-            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-
-            attachments[i] = {
-                texture: texture,
-                renderbuffer: renderbuffer
-            };
+                          0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            attachments[i] = texture;
         }
 
         this.frameAttachments = attachments;
@@ -99,7 +91,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager#
      */
     getCurrentTexture: function() {
-        return this.frameAttachments[this.currAttachment].texture;
+        return this.frameAttachments[this.currAttachment];
     },
 
     /**
@@ -107,7 +99,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager#
      */
     copyOver: function() {
-        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount].texture;
+        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount];
         this.copier.run(null, null, prevTexture);
     },
 
@@ -127,25 +119,19 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     destroy: function() {
         var gl = this.gl;
         for(var i = 0;i < this.texCount;i++) {
-            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
-            gl.deleteTexture(this.frameAttachments[i].texture);
+            gl.deleteTexture(this.frameAttachments[i]);
         }
     },
 
-
     _getFBAttachment: function() {
         var gl = this.gl;
-        return {
-            texture: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME),
-            renderbuffer: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME)
-        };
+        return gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
     },
 
     _setFBAttachment: function(attachment) {
         attachment = attachment || this.frameAttachments[this.currAttachment];
         var gl = this.gl;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment, 0);
     },
 });
 
