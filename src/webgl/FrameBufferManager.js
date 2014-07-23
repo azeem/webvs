@@ -19,12 +19,12 @@
  * @constructor
  * @memberof Webvs
  */
-function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
+function FrameBufferManager(width, height, gl, copier, textureOnly, attachCount) {
     this.gl = gl;
     this.width = width;
     this.height = height;
     this.copier = copier;
-    this.texCount = texCount || 2;
+    this.attachCount = attachCount || 2;
     this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
@@ -37,7 +37,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         }
 
         var attachments = [];
-        for(var i = 0;i < this.texCount;i++) {
+        for(var i = 0;i < this.attachCount;i++) {
             var texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -99,7 +99,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager#
      */
     copyOver: function() {
-        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount];
+        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.attachCount];
         this.copier.run(null, null, prevTexture);
     },
 
@@ -108,7 +108,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager#
      */
     swapAttachment : function() {
-        this.currAttachment = (this.currAttachment + 1) % this.texCount;
+        this.currAttachment = (this.currAttachment + 1) % this.attachCount;
         this._setFBAttachment();
     },
 
@@ -118,7 +118,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      */
     destroy: function() {
         var gl = this.gl;
-        for(var i = 0;i < this.texCount;i++) {
+        for(var i = 0;i < this.attachCount;i++) {
             gl.deleteTexture(this.frameAttachments[i]);
         }
     },
