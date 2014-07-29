@@ -20,9 +20,9 @@ test("ExprCodeGenerator comments", function() {
     var gen = Webvs.compileExpr({
         test: [
             "a = a + 1;// this is a single line comment",
-            "a = pow( /*this is a comment in between\*\/ a, 2);",
+            "a = pow( /*this is a comment in between*/ a, 2);",
             "b = a + 1; /* this comment spans mutliple",
-            "lines \*\/ c = b"
+            "lines */ c = b"
         ].join("\n")
     }, ["test"]);
     gen.codeInst.a = 1;
@@ -45,7 +45,7 @@ test("ExprCodeGenerator register support", function() {
             width: 100,
             height: 100
         }
-    }
+    };
     js1.setup(dummyMain, {});
     js2.setup(dummyMain, {});
 

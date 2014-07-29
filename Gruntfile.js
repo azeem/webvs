@@ -26,7 +26,7 @@ module.exports = function(grunt) {
         "src/webgl/ClearScreenProgram.js",
 
         "src/expr/Ast.js",
-        "build/pegs_expr_parser.js",
+        ".tmp/pegs_expr_parser.js",
         "src/expr/CodeInstance.js",
         "src/expr/CodeGenerator.js",
 
@@ -61,7 +61,7 @@ module.exports = function(grunt) {
 
     grunt.initConfig({
         jshint: {
-            files: ["Gruntfile.js", "src/**/*.js"],
+            files: ["Gruntfile.js", "src/**/*.js", "test/**/*.js"],
             options: {
                 globals: {
                     Webvs: true
@@ -73,7 +73,7 @@ module.exports = function(grunt) {
         peg: {
             expr_lang: {
                 grammar: "src/expr/ExprGrammar.pegjs",
-                outputFile: "build/pegs_expr_parser.js",
+                outputFile: ".tmp/pegs_expr_parser.js",
                 exportVar: "Webvs.PegExprParser",
                 options: {
                     trackLineAndColumn : true,
@@ -84,7 +84,25 @@ module.exports = function(grunt) {
 
         karma: {
             options: {
-                configFile: "karma.conf.js"
+                frameworks: ["qunit"],
+                files: [].concat(libFiles, jsFiles, [
+                    "./bower_components/seedrandom/seedrandom.js",
+                    "./test/base.js",
+                    "./test/**/*.test.js"
+                ]),
+                proxies: {
+                    "/assert": "http://localhost:8000/test/assert/",
+                    "/images": "http://localhost:8000/test/images/",
+                    "/resources": "http://localhost:8000/resources/"
+                },
+                reporters: ['progress'],
+                port: 9876,
+                runnerPort: 9100,
+                colors: true,
+                logLevel: "DEBUG",
+                autoWatch: false,
+                browsers: ['Firefox', 'Chrome'],
+                captureTimeout: 60000
             },
             test: {
                 singleRun: true
@@ -118,43 +136,21 @@ module.exports = function(grunt) {
         },
 
         watch: {
-            scripts: {
-                files: ["src/**/*.js"],
-                tasks: ["default"]
-            },
-
-            scriptsDebugTest: {
+            test: {
                 files: ["src/**/*.js", "test/**/*.js"],
                 tasks: ["default", "karma:debug:run"]
             },
-
-            doc: {
-                files: ["src/**/*.js"],
-                tasks: ["doc"]
-            }
-        },
-
-        concat: {
-            dev: {
-                files: {
-                    "build/webvs.js": jsFiles,
-                    "build/libs.js": libFiles
-                }
-            }
         },
 
         uglify: {
             dist: {
                 files: {
-                    "dist/webvs.min.js": jsFiles,
-                    "dist/libs.min.js": libFiles,
-                    "dist/webvs.full.min.js": libFiles.concat(jsFiles)
+                    "dist/webvs.min.js": jsFiles
                 }
             }
         },
 
         clean: {
-            build: ["build/*"],
             dist: ["dist/*"],
             doc: ["doc/*"]
         }
@@ -164,18 +160,15 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-watch");
     grunt.loadNpmTasks("grunt-contrib-uglify");
     grunt.loadNpmTasks("grunt-contrib-clean");
-    grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-connect");
     grunt.loadNpmTasks("grunt-peg");
     grunt.loadNpmTasks("grunt-karma");
     grunt.loadNpmTasks("grunt-jsdoc");
 
-    grunt.registerTask('default', ['clean:build', 'jshint', 'peg', 'concat:dev']);
+    grunt.registerTask('default', ['jshint', 'peg']);
+    grunt.registerTask('dist', ["clean:dist", "default", 'uglify']);
     grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
-    grunt.registerTask('dist', ["default", 'uglify:dist']);
-    grunt.registerTask('test', ["connect", "default", 'karma:test']);
 
-    grunt.registerTask('debug', ["connect", "default", "watch:scripts"]);
-    grunt.registerTask('debug_build', ["default", "watch:scripts"]);
-    grunt.registerTask('debug_test', ["connect", "default", "karma:debug:start", "watch:scriptsDebugTest"]);
+    grunt.registerTask('test', ["connect", "default", 'karma:test']);
+    grunt.registerTask('debug_test', ["connect", "default", "karma:debug:start", "watch:test"]);
 };

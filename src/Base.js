@@ -1,6 +1,7 @@
 /**
  * Copyright (c) 2013 Azeem Arshad
  * See the file license.txt for copying permission.
+
  */
 
 (function(window) {

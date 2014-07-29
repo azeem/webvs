@@ -24,34 +24,21 @@ function FrameBufferManager(width, height, gl, copier, textureOnly, attachCount)
     this.width = width;
     this.height = height;
     this.copier = copier;
-    this.attachCount = attachCount || 2;
+    this.attachCount = _.isUndefined(attachCount)?2:attachCount;
     this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
 Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     _initFrameBuffers: function() {
         var gl = this.gl;
-
         if(!this.textureOnly) {
             this.framebuffer = gl.createFramebuffer();
         }
-
-        var attachments = [];
+        this.frameAttachments = [];
+        this.refs = {};
         for(var i = 0;i < this.attachCount;i++) {
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
-                          0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-            attachments[i] = texture;
+            this.createAttachment();
         }
-
-        this.frameAttachments = attachments;
-        this.currAttachment = 0;
     },
 
     /**
@@ -59,7 +46,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * as the render target
      * @memberof Webvs.FrameBufferManager#
      */
-    setRenderTarget: function() {
+    setRenderTarget: function(refName) {
         var gl = this.gl;
         if(this.textureOnly) {
             this.oldAttachment = this._getFBAttachment();
@@ -68,7 +55,15 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
             gl.viewport(0, 0, this.width, this.height);
         }
-        this._setFBAttachment();
+        var attachment = null;
+        if(refName) {
+            var ref = this.refs[refName];
+            if(!ref) {
+                throw new Error("Unknown attachment reference " + ref);
+            }
+            attachment = this.frameAttachments[ref.index];
+        }
+        this._setFBAttachment(attachment);
     },
 
     /**
@@ -110,6 +105,45 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     swapAttachment : function() {
         this.currAttachment = (this.currAttachment + 1) % this.attachCount;
         this._setFBAttachment();
+    },
+
+    createAttachment: function(refName) {
+        if(refName in this.refs) {
+            this.refs[refName].refCount++;
+            return;
+        }
+        var gl = this.gl;
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
+                      0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        this.frameAttachments.push(texture);
+        if(this.frameAttachments.length == 1) {
+            this.currAttachment = 0;
+        }
+
+        if(refName) {
+            this.refs[refName] = {
+                index: this.frameAttachments.length - 1,
+                refCount: 1
+            };
+        }
+    },
+
+    unrefAttachment: function(refName) {
+        var ref = this.refs[refName];
+        if(!ref) {
+            return;
+        }
+        ref.refCount--;
+        if(ref.refCount === 0) {
+            this.gl.deleteTexture(this.frameAttachments[i]);
+            delete this.refs[refName];
+        }
     },
 
     /**
