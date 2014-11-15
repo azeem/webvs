@@ -19,26 +19,39 @@
  * @constructor
  * @memberof Webvs
  */
-function FrameBufferManager(width, height, gl, copier, textureOnly, attachCount) {
+function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
     this.gl = gl;
     this.width = width;
     this.height = height;
     this.copier = copier;
-    this.attachCount = _.isUndefined(attachCount)?2:attachCount;
+    this.texCount = texCount || 2;
     this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
 Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     _initFrameBuffers: function() {
         var gl = this.gl;
+
         if(!this.textureOnly) {
             this.framebuffer = gl.createFramebuffer();
         }
-        this.frameAttachments = [];
-        this.refs = {};
-        for(var i = 0;i < this.attachCount;i++) {
-            this.createAttachment();
+
+        var textures = [];
+        for(var i = 0;i < this.texCount;i++) {
+            var texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
+                          0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            textures[i] = texture;
         }
+
+        this.textures = textures;
+        this.curTex = 0;
     },
 
     /**
@@ -46,24 +59,23 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * as the render target
      * @memberof Webvs.FrameBufferManager#
      */
-    setRenderTarget: function(refName) {
+    setRenderTarget: function() {
         var gl = this.gl;
         if(this.textureOnly) {
-            this.oldAttachment = this._getFBAttachment();
+            this.oldTexture = gl.getFramebufferAttachmentParameter(
+                                  gl.FRAMEBUFFER,
+                                  gl.COLOR_ATTACHMENT0,
+                                  gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
         } else {
             this.oldFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
             gl.viewport(0, 0, this.width, this.height);
         }
-        var attachment = null;
-        if(refName) {
-            var ref = this.refs[refName];
-            if(!ref) {
-                throw new Error("Unknown attachment reference " + ref);
-            }
-            attachment = this.frameAttachments[ref.index];
-        }
-        this._setFBAttachment(attachment);
+        var texture = this.textures[this.curTex];
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                gl.COLOR_ATTACHMENT0,
+                                gl.TEXTURE_2D,
+                                texture, 0);
     },
 
     /**
@@ -74,9 +86,14 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     restoreRenderTarget: function() {
         var gl = this.gl;
         if(this.textureOnly) {
-            this._setFBAttachment(this.oldAttachment);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                    gl.COLOR_ATTACHMENT0,
+                                    gl.TEXTURE_2D,
+                                    this.oldTexture, 0);
+            this.oldTexture = null;
         } else {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.oldFrameBuffer);
+            this.oldFrameBuffer = null;
         }
     },
 
@@ -86,7 +103,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager#
      */
     getCurrentTexture: function() {
-        return this.frameAttachments[this.currAttachment];
+        return this.textures[this.curTex];
     },
 
     /**
@@ -94,7 +111,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager#
      */
     copyOver: function() {
-        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.attachCount];
+        var prevTexture = this.textures[(this.texCount+this.curTex-1)%this.texCount];
         this.copier.run(null, null, prevTexture);
     },
 
@@ -102,48 +119,12 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * Swaps the current texture
      * @memberof Webvs.FrameBufferManager#
      */
-    swapAttachment : function() {
-        this.currAttachment = (this.currAttachment + 1) % this.attachCount;
-        this._setFBAttachment();
-    },
-
-    createAttachment: function(refName) {
-        if(refName in this.refs) {
-            this.refs[refName].refCount++;
-            return;
-        }
-        var gl = this.gl;
-        var texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
-                      0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-        this.frameAttachments.push(texture);
-        if(this.frameAttachments.length == 1) {
-            this.currAttachment = 0;
-        }
-
-        if(refName) {
-            this.refs[refName] = {
-                index: this.frameAttachments.length - 1,
-                refCount: 1
-            };
-        }
-    },
-
-    unrefAttachment: function(refName) {
-        var ref = this.refs[refName];
-        if(!ref) {
-            return;
-        }
-        ref.refCount--;
-        if(ref.refCount === 0) {
-            this.gl.deleteTexture(this.frameAttachments[i]);
-            delete this.refs[refName];
-        }
+    switchTexture: function() {
+        this.curTex = (this.curTex+1) % this.texCount;
+        var texture = this.textures[this.curTex];
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                gl.COLOR_ATTACHMENT0,
+                                gl.TEXTURE_2D, texture, 0);
     },
 
     /**
@@ -152,21 +133,13 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      */
     destroy: function() {
         var gl = this.gl;
-        for(var i = 0;i < this.attachCount;i++) {
-            gl.deleteTexture(this.frameAttachments[i]);
+        for(var i = 0;i < this.texCount;i++) {
+            gl.deleteTexture(this.textures[i]);
         }
-    },
-
-    _getFBAttachment: function() {
-        var gl = this.gl;
-        return gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-    },
-
-    _setFBAttachment: function(attachment) {
-        attachment = attachment || this.frameAttachments[this.currAttachment];
-        var gl = this.gl;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment, 0);
-    },
+        if(!this.textureOnly) {
+            gl.deleteFrameBuffer(this.frameBuffer);
+        }
+    }
 });
 
 })(Webvs);
