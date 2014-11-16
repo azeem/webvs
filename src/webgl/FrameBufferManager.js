@@ -46,6 +46,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
     addTexture: function(name) {
         if(name && name in this.names) {
+            this.names[name].refCount++;
             return this.names[name];
         }
         var gl = this.gl;
@@ -59,12 +60,21 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
                       0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         this.textures.push(texture);
         if(name) {
-            this.names[name] = this.textures.length-1;
+            this.names[name] = {
+                refCount: 1,
+                index: this.textures.length-1
+            };
         }
         return this.textures.length-1;
     },
 
     removeTexture: function(arg) {
+        if(_.isString(arg) && arg in this.names) {
+            if(this.names[arg].refCount > 1) {
+                this.names[arg].refCount--;
+                return;
+            }
+        }
         var index = this._findIndex(arg);
         if(index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
             throw new Error("Cannot remove current texture when set as render target");
@@ -170,7 +180,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     _findIndex: function(arg) {
         var index;
         if(_.isString(arg) && arg in this.names) {
-            index = this.names[arg];
+            index = this.names[arg].index;
         } else if(_.isNumber(arg) && arg >=0 && arg < this.textures.length) {
             index = arg;
         } else {
