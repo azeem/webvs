@@ -196,7 +196,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
             this.setUniform("u_resolution", "2f", fm.width, fm.height);
             if(this.swapFrame || this._isShaderBlend(blendMode)) {
                 this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
-                fm.swapAttachment();
+                fm.switchTexture();
                 if(this.copyOnSwap) {
                     fm.copyOver();
                 }

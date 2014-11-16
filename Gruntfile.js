@@ -110,7 +110,7 @@ module.exports = function(grunt) {
             debug: {
                 singleRun: false,
                 background: true,
-                browsers: ["Firefox"]
+                browsers: ["Chrome"]
             }
         },
 

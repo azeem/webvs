@@ -36,22 +36,46 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             this.framebuffer = gl.createFramebuffer();
         }
 
-        var textures = [];
+        this.names = {};
+        this.textures = [];
         for(var i = 0;i < this.texCount;i++) {
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
-                          0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-            textures[i] = texture;
+            this.addTexture();
         }
-
-        this.textures = textures;
         this.curTex = 0;
+    },
+
+    addTexture: function(name) {
+        if(name && name in this.names) {
+            return this.names[name];
+        }
+        var gl = this.gl;
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
+                      0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        this.textures.push(texture);
+        if(name) {
+            this.names[name] = this.textures.length-1;
+        }
+        return this.textures.length-1;
+    },
+
+    removeTexture: function(arg) {
+        var index = this._findIndex(arg);
+        if(index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
+            throw new Error("Cannot remove current texture when set as render target");
+        }
+        var gl = this.gl;
+        gl.deleteTexture(this.textures[index]);
+        this.textures.splice(index, 1);
+        if(this.curTex >= this.textures.length) {
+            this.curTex = this.textures.lenght-1;
+        }
+        delete this.names[arg];
     },
 
     /**
@@ -119,8 +143,10 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * Swaps the current texture
      * @memberof Webvs.FrameBufferManager#
      */
-    switchTexture: function() {
-        this.curTex = (this.curTex+1) % this.texCount;
+    switchTexture: function(arg) {
+        var gl = this.gl;
+        this.curTex = _.isUndefined(arg)?(this.curTex+1):this._findIndex(arg);
+        this.curTex %= this.texCount;
         var texture = this.textures[this.curTex];
         gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                 gl.COLOR_ATTACHMENT0,
@@ -137,8 +163,20 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             gl.deleteTexture(this.textures[i]);
         }
         if(!this.textureOnly) {
-            gl.deleteFrameBuffer(this.frameBuffer);
+            gl.deleteFramebuffer(this.frameBuffer);
         }
+    },
+
+    _findIndex: function(arg) {
+        var index;
+        if(_.isString(arg) && arg in this.names) {
+            index = this.names[arg];
+        } else if(_.isNumber(arg) && arg >=0 && arg < this.textures.length) {
+            index = arg;
+        } else {
+            throw new Error("Unknown texture '" + arg + "'");
+        }
+        return index;
     }
 });
 
