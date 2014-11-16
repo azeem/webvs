@@ -69,18 +69,23 @@ Webvs.defineClass(BufferSave, Webvs.Component, {
             currentAction = this.action;
         }
 
+        var buffers = this.main.buffers;
         switch(currentAction) {
             case Actions.SAVE:
-                fm.setRenderTarget();
+                buffers.setRenderTarget(this.opts.bufferId);
                 this.main.copier.run(null, null, this.parent.fm.getCurrentTexture());
-                fm.restoreRenderTarget();
+                buffers.restoreRenderTarget();
                 break;
             case Actions.RESTORE:
-                this.main.copier.run(this.parent.fm, this.blendMode, fm.getCurrentTexture());
+                this.main.copier.run(this.parent.fm, this.blendMode, buffers.getTexture(this.opts.bufferId));
                 break;
         }
     },
 
+    destroy: function() {
+        this.main.buffers.removeTexture(this.opts.bufferId);
+    },
+    
     updateAction: function() {
         this.action = Webvs.getEnumValue(this.opts.action, Actions);
         if(this.action == Actions.SAVERESTORE) {
@@ -90,14 +95,11 @@ Webvs.defineClass(BufferSave, Webvs.Component, {
         }
     },
 
-    updateBuffer: function() {
-        // create frame buffer manager
-        this.bufferId = "__BUFFERSAVE_" + this.opts.bufferId;
-        if(!this.main.registerBank[this.bufferId]) {
-            var fm = new Webvs.FrameBufferManager(this.main.canvas.width, this.main.canvas.height,
-                                                  this.gl, this.main.copier, true, 1);
-            this.main.registerBank[this.bufferId] = fm;
+    updateBuffer: function(value, key, oldValue) {
+        if(oldValue) {
+            this.main.buffers.removeTexture(oldValue);
         }
+        this.main.buffers.addTexture(this.opts.bufferId);
     },
 
     updateBlendMode: function() {

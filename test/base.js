@@ -192,12 +192,13 @@ DummyAnalyser = Webvs.defineClass(DummyAnalyser, Webvs.AnalyserAdapter, {
     }
 });
 
-var DummyMain = function(canvas, copier, resourcePrefix) {
+var DummyMain = function(canvas, copier, resourcePrefix, buffers) {
     this.canvas = canvas;
     this.registerBank = {};
     this.bootTime = (new Date()).getTime();
     this.analyser = new DummyAnalyser();
     this.copier = copier;
+    this.buffers = buffers;
 
     var builtinPack = Webvs.ResourcePack;
     if(resourcePrefix) {

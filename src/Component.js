@@ -65,7 +65,7 @@ Webvs.Component = Webvs.defineClass(Component, Object, Webvs.ModelLike, {
                 ]);
 
                 for(var i = 0;i < onChange.length;i++) {
-                    this[onChange[i]].call(this, value, key);
+                    this[onChange[i]].call(this, value, key, oldValue);
                 }
             } catch(e) {
                 // restore old value in case any of the onChange handlers fail

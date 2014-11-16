@@ -24,7 +24,7 @@ function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
     this.width = width;
     this.height = height;
     this.copier = copier;
-    this.texCount = texCount || 2;
+    this.initTexCount = _.isNumber(texCount)?texCount:2;
     this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
@@ -38,10 +38,11 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
 
         this.names = {};
         this.textures = [];
-        for(var i = 0;i < this.texCount;i++) {
+        for(var i = 0;i < this.initTexCount;i++) {
             this.addTexture();
         }
         this.curTex = 0;
+        this.isRenderTarget = false;
     },
 
     addTexture: function(name) {
@@ -93,23 +94,32 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * as the render target
      * @memberof Webvs.FrameBufferManager#
      */
-    setRenderTarget: function() {
+    setRenderTarget: function(texName) {
         var gl = this.gl;
+        var curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
         if(this.textureOnly) {
+            if(!curFrameBuffer) {
+                throw new Error("Cannot use textureOnly when current rendertarget is the default FrameBuffer");
+            }
             this.oldTexture = gl.getFramebufferAttachmentParameter(
                                   gl.FRAMEBUFFER,
                                   gl.COLOR_ATTACHMENT0,
                                   gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
         } else {
-            this.oldFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+            this.oldFrameBuffer = curFrameBuffer;
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
             gl.viewport(0, 0, this.width, this.height);
         }
-        var texture = this.textures[this.curTex];
-        gl.framebufferTexture2D(gl.FRAMEBUFFER,
-                                gl.COLOR_ATTACHMENT0,
-                                gl.TEXTURE_2D,
-                                texture, 0);
+        this.isRenderTarget = true;
+        if(!_.isUndefined(texName)) {
+            this.switchTexture(texName);
+        } else {
+            var texture = this.textures[this.curTex];
+            gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                    gl.COLOR_ATTACHMENT0,
+                                    gl.TEXTURE_2D,
+                                    texture, 0);
+        }
     },
 
     /**
@@ -129,6 +139,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.oldFrameBuffer);
             this.oldFrameBuffer = null;
         }
+        this.isRenderTarget = false;
     },
 
     /**
@@ -140,12 +151,18 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         return this.textures[this.curTex];
     },
 
+    getTexture: function(arg) {
+        var index = this._findIndex(arg);
+        return this.textures[index];
+    },
+
     /**
      * Copies the previous texture into the current texture
      * @memberof Webvs.FrameBufferManager#
      */
     copyOver: function() {
-        var prevTexture = this.textures[(this.texCount+this.curTex-1)%this.texCount];
+        var texCount = this.textures.length;
+        var prevTexture = this.textures[(texCount+this.curTex-1)%texCount];
         this.copier.run(null, null, prevTexture);
     },
 
@@ -154,9 +171,12 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      * @memberof Webvs.FrameBufferManager#
      */
     switchTexture: function(arg) {
+        if(!this.isRenderTarget) {
+            throw new Error("Cannot switch texture when not set as rendertarget");
+        }
         var gl = this.gl;
         this.curTex = _.isUndefined(arg)?(this.curTex+1):this._findIndex(arg);
-        this.curTex %= this.texCount;
+        this.curTex %= this.textures.length;
         var texture = this.textures[this.curTex];
         gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                 gl.COLOR_ATTACHMENT0,
@@ -169,7 +189,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
      */
     destroy: function() {
         var gl = this.gl;
-        for(var i = 0;i < this.texCount;i++) {
+        for(var i = 0;i < this.textures.length;i++) {
             gl.deleteTexture(this.textures[i]);
         }
         if(!this.textureOnly) {
