@@ -96,6 +96,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         this.updateColors();
         this.updateChannel();
         this.updateThickness();
+        this.listenTo(this.main, "resize", this.handleResize);
     },
 
     draw: function() {
@@ -352,6 +353,10 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
             }
             return color;
         }
+    },
+
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
 });
 

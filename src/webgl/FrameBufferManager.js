@@ -53,8 +53,8 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.gl.drawingBufferWidth,
-                      this.gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
+                      gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         this.textures.push(texture);
         if(name) {
             this.names[name] = {
@@ -176,6 +176,15 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                 gl.COLOR_ATTACHMENT0,
                                 gl.TEXTURE_2D, texture, 0);
+    },
+
+    resize: function() {
+        var gl = this.gl;
+        for(var i = 0;i < this.textures.length;i++) {
+            gl.bindTexture(this.textures[i]);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
+                          gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        }
     },
 
     /**

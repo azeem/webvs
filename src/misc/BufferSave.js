@@ -57,8 +57,6 @@ Webvs.defineClass(BufferSave, Webvs.Component, {
     },
 
     draw: function() {
-        var fm = this.main.registerBank[this.bufferId];
-
         var currentAction;
         if(this.action == Actions.SAVERESTORE ||
            this.action == Actions.RESTORESAVE) {

@@ -66,6 +66,7 @@ Webvs.defineClass(EffectList, Webvs.Container, {
         this.updateBlendMode(this.opts.output, "output");
         this.frameCounter = 0;
         this.first = true;
+        this.listenTo(this.main, "resize", this.handleResize);
     },
 
     draw: function() {
@@ -148,6 +149,11 @@ Webvs.defineClass(EffectList, Webvs.Container, {
 
     updateBlendMode: function(value, name) {
         this[name] = Webvs.getEnumValue(value, ELBlendModes);
+    },
+
+    handleResize: function() {
+        this.fm.resize();
+        this.code.updateDimVars(this.gl);
     }
 });
 

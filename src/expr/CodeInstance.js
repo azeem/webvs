@@ -103,9 +103,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
-
-        this.w = parent.gl.drawingBufferWidth;
-        this.h = parent.gl.drawingBufferHeight;
+        this.updateDimVars(parent.gl);
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {
@@ -113,6 +111,11 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
                 main.registerBank[name] = 0;
             }
         });
+    },
+
+    updateDimVars: function(gl) {
+        this.w = gl.drawingBufferWidth;
+        this.h = gl.drawingBufferHeight;
     }
 });
 

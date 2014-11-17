@@ -87,6 +87,7 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
     init: function() {
         this.updateCode();
         this.updateGrid();
+        this.listenTo(this.main, "resize", this.handleResize);
     },
 
     draw: function() {
@@ -190,6 +191,10 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
             this.gridVertices = gridVertices;
             this.gridVerticesSize = pbi/2;
         }
+    },
+
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
 });
 

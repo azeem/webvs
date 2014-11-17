@@ -80,6 +80,7 @@ Webvs.defineClass(Texer, Webvs.Component, {
         this.updateClone();
         this.updateImage();
         this.updateSource();
+        this.listenTo(this.main, "resize", this.handleResize);
     },
 
     draw: function() {
@@ -254,6 +255,10 @@ Webvs.defineClass(Texer, Webvs.Component, {
                          new Uint16Array(vertexIndices),
                          colorData?new Float32Array(colorData):null,
                          this.texture);
+    },
+
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
 });
 

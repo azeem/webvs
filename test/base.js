@@ -207,7 +207,7 @@ var DummyMain = function(canvas, copier, resourcePrefix, buffers) {
     }
     this.rsrcMan = new Webvs.ResourceManager(builtinPack);
 };
-DummyMain = Webvs.defineClass(DummyMain, Object, {
+DummyMain = Webvs.defineClass(DummyMain, Object, Webvs.ModelLike, {
     getResource: function(name) {
         var resource;
         resource = Webvs.Resources[name];

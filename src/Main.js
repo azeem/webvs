@@ -172,15 +172,21 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
     },
 
     /**
-     * Reset all the components. Call this when canvas dimensions changes
+     * Reset all the components.
      * @memberof Webvs.Main#
      */
     resetCanvas: function() {
         var preset = this.rootComponent.generateOptionsObj();
         this.rootComponent.destroy();
         this.copier.cleanup();
+        this.buffers.destroy();
         this._initGl();
         this._setupRoot(preset);
+    },
+
+    notifyResize: function() {
+        this.buffers.resize();
+        this.trigger("resize", this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
     },
 
     setAttribute: function(key, value, options) {

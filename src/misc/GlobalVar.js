@@ -42,6 +42,7 @@ Webvs.defineClass(GlobalVar, Webvs.Component, {
 
     init: function() {
         this.updateCode();
+        this.listenTo(this.main, "resize", this.handleResize);
     },
 
     draw: function() {
@@ -64,6 +65,10 @@ Webvs.defineClass(GlobalVar, Webvs.Component, {
         this.code = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame"]).codeInst;
         this.code.setup(this.main, this);
         this.inited = false;
+    },
+
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
 });
 
