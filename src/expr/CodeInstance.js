@@ -104,8 +104,8 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
 
-        this.w = main.canvas.width;
-        this.h = main.canvas.height;
+        this.w = parent.gl.drawingBufferWidth;
+        this.h = parent.gl.drawingBufferHeight;
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {

@@ -40,8 +40,8 @@ Webvs.defineClass(Mosaic, Webvs.Component, {
         }
 
         if(this.size !== 0) {
-            var sizeX = 1/Math.floor(this.size*(this.main.canvas.width-1)+1);
-            var sizeY = 1/Math.floor(this.size*(this.main.canvas.height-1)+1);
+            var sizeX = 1/Math.floor(this.size*(this.gl.drawingBufferWidth-1)+1);
+            var sizeY = 1/Math.floor(this.size*(this.gl.drawingBufferHeight-1)+1);
             this.program.run(this.parent.fm, null, sizeX, sizeY);
         }
 

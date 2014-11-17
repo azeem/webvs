@@ -10,9 +10,7 @@ CanvasTestWithFM(
     function(canvas, gl, fm, copier, images) {
         var polyProgram = new PolygonProgram(gl);
 
-        var buffers = new Webvs.FrameBufferManager(canvas.width,
-                                                   canvas.height,
-                                                   gl, copier, false, 0);
+        var buffers = new Webvs.FrameBufferManager(gl, copier, false, 0);
         var main = new DummyMain(canvas, copier, null, buffers);
         var parent = new DummyParent(fm);
 

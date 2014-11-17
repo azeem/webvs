@@ -199,8 +199,8 @@ Webvs.defineClass(Texer, Webvs.Component, {
             index += 4;
         }
 
-        var imageSizex = (this.imagewidth/this.parent.fm.width)*2;
-        var imageSizey = (this.imageHeight/this.parent.fm.height)*2;
+        var imageSizex = (this.imagewidth/this.gl.drawingBufferWidth)*2;
+        var imageSizey = (this.imageHeight/this.gl.drawingBufferHeight)*2;
 
         for(var i = 0;i < nPoints;i++) {
             var value = 0;

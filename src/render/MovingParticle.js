@@ -105,8 +105,8 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
             scaleX = this.opts.particleSize;
             scaleY = this.opts.particleSize;
         }
-        scaleX = 2*scaleX/this.main.canvas.width;
-        scaleY = 2*scaleY/this.main.canvas.height;
+        scaleX = 2*scaleX/this.gl.drawingBufferWidth;
+        scaleY = 2*scaleY/this.gl.drawingBufferHeight;
 
         this.program.run(this.parent.fm, null, Webvs.MovingParticle.circleGeometry,
                          scaleX, scaleY, x, y, this.color);

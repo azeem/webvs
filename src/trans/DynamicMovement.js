@@ -153,12 +153,12 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
             this.gridVertices = undefined;
             this.gridVerticesSize = undefined;
         } else {
-            var gridW = Webvs.clamp(opts.gridW, 1, this.main.canvas.width);
-            var gridH = Webvs.clamp(opts.gridH, 1, this.main.canvas.height);
-            var nGridW = (gridW/this.main.canvas.width)*2;
-            var nGridH = (gridH/this.main.canvas.height)*2;
-            var gridCountAcross = Math.ceil(this.main.canvas.width/gridW);
-            var gridCountDown = Math.ceil(this.main.canvas.height/gridH);
+            var gridW = Webvs.clamp(opts.gridW, 1, this.gl.drawingBufferWidth);
+            var gridH = Webvs.clamp(opts.gridH, 1, this.gl.drawingBufferHeight);
+            var nGridW = (gridW/this.gl.drawingBufferWidth)*2;
+            var nGridH = (gridH/this.gl.drawingBufferHeight)*2;
+            var gridCountAcross = Math.ceil(this.gl.drawingBufferWidth/gridW);
+            var gridCountDown = Math.ceil(this.gl.drawingBufferHeight/gridH);
             var gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
             var pbi = 0;
             var curx = -1;

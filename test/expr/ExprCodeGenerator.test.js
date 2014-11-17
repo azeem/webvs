@@ -41,13 +41,15 @@ test("ExprCodeGenerator register support", function() {
 
     var dummyMain = {
         registerBank: {},
-        canvas: {
-            width: 100,
-            height: 100
+    };
+    var dummyParent = {
+        gl: {
+            drawingBufferWidth: 100,
+            drawingBufferHeight: 100
         }
     };
-    js1.setup(dummyMain, {});
-    js2.setup(dummyMain, {});
+    js1.setup(dummyMain, dummyParent);
+    js2.setup(dummyMain, dummyParent);
 
     js1.a = 10;
     js1.test();

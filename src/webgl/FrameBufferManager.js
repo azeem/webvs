@@ -10,8 +10,6 @@
  * FrameBufferManager maintains a set of render targets
  * and can switch between them.
  *
- * @param {number} width - the width of the textures to be initialized
- * @param {number} height - the height of the textures to be initialized
  * @param {WebGLRenderingContext} gl - the webgl context to be used
  * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
  *                                     when a frame copyOver is required
@@ -19,10 +17,8 @@
  * @constructor
  * @memberof Webvs
  */
-function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
+function FrameBufferManager(gl, copier, textureOnly, texCount) {
     this.gl = gl;
-    this.width = width;
-    this.height = height;
     this.copier = copier;
     this.initTexCount = _.isNumber(texCount)?texCount:2;
     this.textureOnly = textureOnly;
@@ -57,8 +53,8 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
-                      0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.gl.drawingBufferWidth,
+                      this.gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         this.textures.push(texture);
         if(name) {
             this.names[name] = {
@@ -108,7 +104,6 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         } else {
             this.oldFrameBuffer = curFrameBuffer;
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-            gl.viewport(0, 0, this.width, this.height);
         }
         this.isRenderTarget = true;
         if(!_.isUndefined(texName)) {

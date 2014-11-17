@@ -148,8 +148,8 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         var lastX, lastY, lastR, lastG, lastB;
         if(this.veryThick) {
             bufferSize = (dots?(nPoints*6):(nPoints*6-6));
-            thickX = this.opts.thickness/this.main.canvas.width;
-            thickY = this.opts.thickness/this.main.canvas.height;
+            thickX = this.opts.thickness/this.gl.drawingBufferWidth;
+            thickY = this.opts.thickness/this.gl.drawingBufferHeight;
         } else {
             bufferSize = (dots?nPoints:(nPoints*2-2));
         }

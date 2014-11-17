@@ -60,8 +60,7 @@ Webvs.defineClass(EffectList, Webvs.Container, {
 
     init: function() {
         EffectList.super.init.call(this);
-        this.fm = new Webvs.FrameBufferManager(this.main.canvas.width, this.main.canvas.height,
-                                               this.gl, this.main.copier, this.parent?true:false);
+        this.fm = new Webvs.FrameBufferManager(this.gl, this.main.copier, this.parent?true:false);
         this.updateCode();
         this.updateBlendMode(this.opts.input, "input");
         this.updateBlendMode(this.opts.output, "output");

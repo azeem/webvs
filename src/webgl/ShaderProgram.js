@@ -193,7 +193,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         blendMode = blendMode || this.blendMode;
 
         if(fm) {
-            this.setUniform("u_resolution", "2f", fm.width, fm.height);
+            this.setUniform("u_resolution", "2f", gl.drawingBufferWidth, gl.drawingBufferHeight);
             if(this.swapFrame || this._isShaderBlend(blendMode)) {
                 this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
                 fm.switchTexture();

@@ -82,18 +82,9 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
 
     _initGl: function() {
         try {
-            this.resolution = {
-                width: this.canvas.width,
-                height: this.canvas.height
-            };
             this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
             this.copier = new Webvs.CopyProgram(this.gl, {dynamicBlend: true});
-            this.buffers = new Webvs.FrameBufferManager(this.resolution.width,
-                                                        this.resolution.height,
-                                                        this.gl,
-                                                        this.copier,
-                                                        true, 0);
-
+            this.buffers = new Webvs.FrameBufferManager(this.gl, this.copier, true, 0);
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
         }
