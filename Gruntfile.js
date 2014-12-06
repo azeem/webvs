@@ -88,7 +88,7 @@ module.exports = function(grunt) {
                 files: [].concat(libFiles, jsFiles, [
                     "./bower_components/seedrandom/seedrandom.js",
                     "./test/base.js",
-                    "./test/**/*.test.js"
+                    "./test/**/*.js"
                 ]),
                 proxies: {
                     "/assert": "http://localhost:8000/test/assert/",
@@ -110,7 +110,7 @@ module.exports = function(grunt) {
             debug: {
                 singleRun: false,
                 background: true,
-                browsers: ["Chrome"]
+                browsers: ["Firefox"]
             }
         },
 

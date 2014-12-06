@@ -181,7 +181,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     resize: function() {
         var gl = this.gl;
         for(var i = 0;i < this.textures.length;i++) {
-            gl.bindTexture(this.textures[i]);
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
                           gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }

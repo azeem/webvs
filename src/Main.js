@@ -82,7 +82,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
 
     _initGl: function() {
         try {
-            this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
+            this.gl = this.canvas.getContext("webgl", {alpha: false});
             this.copier = new Webvs.CopyProgram(this.gl, {dynamicBlend: true});
             this.buffers = new Webvs.FrameBufferManager(this.gl, this.copier, true, 0);
         } catch(e) {
@@ -185,6 +185,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
     },
 
     notifyResize: function() {
+        this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
         this.buffers.resize();
         this.trigger("resize", this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
     },

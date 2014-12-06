@@ -356,7 +356,9 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     handleResize: function() {
-        this.code.updateDimVars(this.gl);
+        _.each(this.code, function(code) {
+            code.updateDimVars(this.gl);
+        }, this);
     }
 });
 
