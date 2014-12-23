@@ -1,0 +1,3 @@
++ Sync CodeInstance width and height on resize
++ Revisit opt change events. why not use ModeLike events to trigger changes?
++ Fadeout logic. Someway to avoid flicker? alpha blending every frame has floating point approx. issues.

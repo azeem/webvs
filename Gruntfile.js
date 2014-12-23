@@ -142,16 +142,24 @@ module.exports = function(grunt) {
             },
         },
 
+        concat: {
+            build: {
+                files: {
+                    "build/webvs.js": jsFiles
+                }
+            }
+        },
+
         uglify: {
             dist: {
                 files: {
-                    "dist/webvs.min.js": jsFiles
+                    "build/webvs.min.js": "build/webvs.js"
                 }
             }
         },
 
         clean: {
-            dist: ["dist/*"],
+            build: ["build/*"],
             doc: ["doc/*"]
         }
     });
@@ -161,11 +169,12 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-uglify");
     grunt.loadNpmTasks("grunt-contrib-clean");
     grunt.loadNpmTasks("grunt-contrib-connect");
+    grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-peg");
     grunt.loadNpmTasks("grunt-karma");
     grunt.loadNpmTasks("grunt-jsdoc");
 
-    grunt.registerTask('default', ['jshint', 'peg']);
+    grunt.registerTask('default', ['jshint', 'peg', 'concat']);
     grunt.registerTask('dist', ["clean:dist", "default", 'uglify']);
     grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
 
