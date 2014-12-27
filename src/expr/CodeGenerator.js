@@ -126,12 +126,12 @@ function processAst(codeAst, jsFuncs, glslFuncs, extraNonUniforms) {
         tables.register[name] = _.uniq(tables.register[name]);
     }
 
-    tables.jsVars   = _.chain(tables.variable).pick(jsFuncs  ).flatten().uniq().value();
-    tables.glslVars = _.chain(tables.variable).pick(glslFuncs).flatten().uniq().value();
+    tables.jsVars   = _.chain(tables.variable).pick(jsFuncs  ).values().flatten().uniq().value();
+    tables.glslVars = _.chain(tables.variable).pick(glslFuncs).values().flatten().uniq().value();
     tables.nonUniforms = _.chain(tables.glslVars).difference(tables.jsVars).union(extraNonUniforms).uniq().value();
     tables.uniforms = _.intersection(tables.glslVars, tables.jsVars);
-    tables.glslUsedFuncs = _.chain(tables.funcCall).pick(glslFuncs).flatten().uniq().value();
-    tables.glslRegisters = _.chain(tables.register).pick(glslFuncs).flatten().uniq().value();
+    tables.glslUsedFuncs = _.chain(tables.funcCall).pick(glslFuncs).values().flatten().uniq().value();
+    tables.glslRegisters = _.chain(tables.register).pick(glslFuncs).values().flatten().uniq().value();
 
     return tables;
 }
