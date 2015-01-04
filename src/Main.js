@@ -72,7 +72,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
 
         this.canvas.addEventListener("webglcontextlost", function(event) {
             event.preventDefault();
-            _this.stop();
+           _this.stop();
         });
 
         this.canvas.addEventListener("webglcontextrestored", function(event) {
@@ -215,6 +215,20 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         preset.resources = this.rsrcMan.toJSON();
         preset.meta = _.clone(this.meta);
         return preset;
+    },
+
+    destroy: function() {
+        this.stop();
+        this.rootComponent.destroy();
+        this.rootComponent = null;
+        if(this.stats) {
+            var statsDomElement = this.stats.domElement;
+            statsDomElement.parentNode.removeChild(statsDomElement);
+            this.stats = null;
+        }
+        this.rsrcMan.destroy();
+        this.rsrcMan = null;
+        this.stopListening();
     },
 
     // event handlers

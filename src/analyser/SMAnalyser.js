@@ -54,10 +54,14 @@ Webvs.SMAnalyser = Webvs.defineClass(SMAnalyser, Webvs.AnalyserAdapter, {
      * @returns {SMSound} the new sound object
      */
     createSound: function(options) {
-        options.useWaveformData = true;
-        options.useEQData = true;
-        this.sound = soundManager.createSound(options);
+        options.usewaveformdata = true;
+        options.useeqdata = true;
+        this.setSound(soundManager.createSound(options));
         return this.sound;
+    },
+
+    setSound: function(sound) {
+        this.sound = sound;
     },
 
     update: function() {

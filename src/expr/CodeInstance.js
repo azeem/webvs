@@ -135,7 +135,8 @@ CodeInstance.clone = function(clones, count) {
     var clonesLength = clones.length;
     if(clonesLength < count) {
         _.times(count-clonesLength, function(index) {
-            var clone = _.clone(clones[0]);
+            var clone = Object.create(CodeInstance.prototype);
+            _.extend(clone, clones[0]);
             clone.cid = index+clonesLength;
             clones.push(clone);
         });

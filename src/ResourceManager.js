@@ -80,6 +80,10 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
         this.ready = true;
     },
 
+    destroy: function() {
+        this.stopListening();
+    },
+
     _getUri: function(fileName) {
         var uri = this.uris[fileName];
         if(uri) {
@@ -152,7 +156,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
         if(error) {
             image.onError = function() {
                 if(error.call(context)) { 
-                    // if the error callback returns true 
+    
                     // then we treat this load as complete
                     // and handled properly
                     this_._loadEnd();
