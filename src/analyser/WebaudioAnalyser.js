@@ -23,7 +23,9 @@ function WebAudioAnalyser(options) {
         decay: 0.02
     });
 
-    if(window.webkitAudioContext) {
+    if(options.context) {
+        this.context = options.context;
+    } else if(window.webkitAudioContext) {
         this.context = new webkitAudioContext();
     } else if(window.AudioContext) {
         this.context = new AudioContext();
@@ -51,6 +53,8 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
      * @param {AudioNode} sourceNode - node which will give audio data to this analyzer
      */
     connectToNode: function(sourceNode) {
+        this.source = sourceNode;
+
         // this gain node simply up/down mixes input source to stereo output
         this.gain = this.context.createGain();
         this.gain.channelCountMode = "explicit";
@@ -131,21 +135,22 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
         var element;
         if(source instanceof HTMLMediaElement) {
             element = source;
+            this.source = this.context.createMediaElementSource(element);
         } else {
             element = new Audio();
             element.src = source;
+            this.source = this.context.createMediaElementSource(element);
         }
 
-        var this_ = this;
-        var onCanPlay = function() {
-            this_.source = this_.context.createMediaElementSource(element);
-            this_.connectToNode(this_.source);
-            this_.source.connect(this_.context.destination);
+        var onCanPlay = _.bind(function() {
+            this.connectToNode(this.source);
 
             if(readyFunc) {
                 readyFunc(element);
             }
-        };
+
+            element.removeEventListener("canplay", onCanPlay);
+        }, this);
         if(element.readyState < 3) {
             element.addEventListener("canplay", onCanPlay);
         } else {
