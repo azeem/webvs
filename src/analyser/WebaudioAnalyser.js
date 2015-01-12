@@ -144,6 +144,7 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
 
         var onCanPlay = _.bind(function() {
             this.connectToNode(this.source);
+            this.source.connect(this.context.destination);
 
             if(readyFunc) {
                 readyFunc(element);
