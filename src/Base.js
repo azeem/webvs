@@ -208,8 +208,9 @@ Webvs.BlendModes = {
     SUBTRACTIVE1: 5,
     SUBTRACTIVE2: 6,
     MULTIPLY: 7,
-    ADJUSTABLE: 8,
-    ALPHA: 9
+    MULTIPLY2: 8,
+    ADJUSTABLE: 9,
+    ALPHA: 10
 };
 _.extend(Webvs, Webvs.BlendModes);
 

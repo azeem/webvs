@@ -239,6 +239,11 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
+            case Webvs.MULTIPLY2:
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
             case Webvs.ADJUSTABLE:
                 gl.enable(gl.BLEND);
                 gl.blendColor(0, 0, 0, this.blendValue);
