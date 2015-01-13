@@ -94,6 +94,9 @@ Webvs.defineClass(BufferSave, Webvs.Component, {
     },
 
     updateBuffer: function(value, key, oldValue) {
+        // buffer names in FrameBufferManager have to be string
+        // converting to string to maintain backward compatibility
+        this.opts.bufferId = this.opts.bufferId + "";
         if(oldValue) {
             this.main.buffers.removeTexture(oldValue);
         }
