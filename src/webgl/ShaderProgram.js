@@ -129,12 +129,13 @@ function ShaderProgram(gl, opts) {
 // these are blend modes not supported with gl.BLEND
 // and the formula to be used inside shader
 ShaderProgram.shaderBlendEq = _.object([
-    [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"]
+    [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"],
+    [Webvs.MULTIPLY, "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)"]
 ]);
 
 Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
     _isShaderBlend: function(mode) {
-        return (mode == Webvs.MAXIMUM);
+        return (mode in ShaderProgram.shaderBlendEq);
     },
 
     _compile: function() {
@@ -233,11 +234,6 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_SUBTRACT);
                 break;
-            case Webvs.MULTIPLY:
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.DST_COLOR, gl.ZERO);
-                gl.blendEquation(gl.FUNC_ADD);
-                break;
             case Webvs.ALPHA:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -257,6 +253,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 break;
             // shader blending cases
             case Webvs.REPLACE:
+            case Webvs.MULTIPLY:
             case Webvs.MAXIMUM:
                 gl.disable(gl.BLEND);
                 break;
