@@ -62,9 +62,9 @@ CanvasTestWithFM(
 );
 
 CanvasTestWithFM(
-    "ShaderProgram BlendTest", 20,
+    "ShaderProgram BlendTest", 22,
     {
-        images: imagesRange("ShaderProgramBlend", 10)
+        images: imagesRange("ShaderProgramBlend", 11)
     },
     function(canvas, gl, fm, copier, images) {
         var testData = [
@@ -75,6 +75,7 @@ CanvasTestWithFM(
             [Webvs.SUBTRACTIVE1, 0.5],
             [Webvs.SUBTRACTIVE2, 0.5],
             [Webvs.MULTIPLY, 0.5],
+            [Webvs.MULTIPLY2, 0.5],
             [Webvs.ADJUSTABLE, 0.5],
             [Webvs.ADJUSTABLE, 0.25],
             [Webvs.ADJUSTABLE, 1]
