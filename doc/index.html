@@ -297,9 +297,19 @@
 
     <a class="toc_title" href="#basic-usage">Basic Usage</a>
 
+    <a class="toc_title" href="#events">Events</a>
+
     <a class="toc_title" href="#webvs-main">Webvs.Main</a>
     <ul class="toc_section">
       <li>&raquo; <a href="#webvs-main-loadpreset">loadPreset</a></li>
+      <li>&raquo; <a href="#webvs-main-start">start</a></li>
+      <li>&raquo; <a href="#webvs-main-stop">stop</a></li>
+      <li>&raquo; <a href="#webvs-main-get">get</a></li>
+      <li>&raquo; <a href="#webvs-main-set">set</a></li>
+      <li>&raquo; <a href="#webvs-resetcanvas">resetCanvas</a></li>
+      <li>&raquo; <a href="#webvs-notifyresize">notifyResize</a></li>
+      <li>&raquo; <a href="#webvs-tojson">toJSON</a></li>
+      <li>&raquo; <a href="#webvs-destroy">destroy</a></li>
     </ul>
 
   </div>
@@ -317,10 +327,12 @@
       and discussions, please use the <a href="https://github.com/azeem/webvs/issues">Github Issues page</a>.
     </p>
     <p>
-      Webvs' at runtime depends on <a href="http://underscorejs.org/">Underscore.js (>= 1.5.0)</a>,
-      and <a href="https://github.com/azeem/backbone-events">Backbone-Events</a>. For FPS stat display,
-      include <a href="https://github.com/mrdoob/stats.js">Stats.js</a>. Support for audio playback with HTML5 audio
-      and <a href="http://www.schillmania.com/projects/soundmanager2/">SoundManager2</a> is currently supported.
+      Webvs in runtime at minimum depends on <a href="http://underscorejs.org/">Underscore.js (>= 1.5.0)</a>. Webvs also
+      depends on <a href="http://backbonejs.org/#Events">Backbone Events Module</a>. If your application does not already
+      use Backbone then you must include <a href="https://github.com/azeem/backbone-events">Backbone-Events</a>, which contains
+      a stand alone version of the Backbone Events module. For FPS stat display, include
+      <a href="https://github.com/mrdoob/stats.js">Stats.js</a>. Support for audio playback with HTML5 audio and
+      <a href="http://www.schillmania.com/projects/soundmanager2/">SoundManager2</a> is currently supported.
     </p>
 
 
@@ -380,14 +392,109 @@ analyser.load("music.ogg");
 analyser.play();
     </pre>
 
+    <h2 id="events">Events</h2>
+    <p>
+      Many object in Webvs generate and or listen to events. Webvs uses the 
+      <a href="http://backbonejs.org/#Events">Backbone Events module</a> for this.
+      All backbone event module functions such as <b>on</b>, <b>off</b>, <b>trigger</b>,
+      <b>listenTo</b> etc. are available on these objects. Additionally most objects
+      also have <b>get</b>, <b>set</b> methods for some parameters. These methods fire
+      <tt>change</tt> event just like Backbone models.
+    </p>
+    <p id="catalaog-of-events">
+      <b class="header">Catalog of Events</b><br/>
+      Here is the complete list of events in Main, ResourceManager and Components.
+    </p>
+
+   <!-- Webvs.Main -->
+
     <h2 id="webvs-main">Webvs.Main</h2>
     <p>
-      Hello World
+      Main object is the primary interface that controls loading of presets, starting
+      stopping animations, etc. It maintains the root Component and the hierarchy of
+      components under it.
     </p>
     <p id="webvs-main-loadpreset">
       <b class="header">loadPreset</b>
       <code>main.loadPreset(preset)</code><br/>
-      Hello World
+      Loads a preset into this webvs instance. <b>preset</b> is an object hash that
+      contains the preset. The root object should have a <b>components</b> property
+      which will contain an Array for component configurations for all the components.
+      All component configurations should have a <b>type</b> property containing the string
+      name of the Component. Other properties are specific to each component.
     </p>
+    <p>
+      If you want to clear every frame of the preset, then set <b>clearFrame</b> to true
+      in the root object hash.
+    </p>
+    <pre>
+webvs.loadPreset({
+    "clearFrame": true,
+    "components": [
+        {
+            "type": "SuperScope",
+            "source": "WAVEFORM",
+            "code": {
+                "perPoint": "x=i*2-1;y=v;"
+            },
+            "colors": ["#ffffff"]
+        }
+    ]
+});      
+    </pre>
+
+    <p id="webvs-main-start">
+      <b class="header">start</b>
+      <code>main.start()</code><br/>
+      Starts running the animation when ready. The animation may not start playing 
+      immediately because preset may use external resources which needs to be 
+      loaded asynchronously by the resource manager.
+    </p>
+
+    <p id="webvs-main-stop">
+      <b class="header">stop</b>
+      <code>main.stop()</code><br/>
+      Stops the animation.
+    </p>
+
+    <p id="webvs-main-set">
+      <b class="header">set</b>
+      <code>main.set(attribute, value)</code><br/>
+      Sets the current value of a preset property. Currently <tt>meta</tt> is the
+      only supported attribute. This value can be used to store metadata, such as
+      preset name or author. Eg. <tt>main.set("meta", {name: "presetname"})</tt>
+    </p>
+
+    <p id="webvs-main-get">
+      <b class="header">get</b>
+      <code>main.get(attribute)</code><br/>
+      Gets the current value of a preset property. Eg. <tt>main.get("meta")</tt>
+    </p>
+
+    <p id="webvs-resetcanvas">
+      <b class="header">resetCanvas</b>
+      <code>main.resetCanvas()</code><br/>
+      Resets and reinitializes all the components and canvas.
+    </p>
+
+    <p id="webvs-notifyresize">
+      <b class="header">notifyResize</b>
+      <code>main.notifyResize()</code><br/>
+      This function should be called if the canvas element's <tt>width</tt> or <tt>height</tt>
+      attribute has changed. This allows Webvs to update and resize all the buffers.
+    </p>
+
+    <p id="webvs-tojson">
+      <b class="header">toJSON</b>
+      <code>main.toJSON()</code><br/>
+      Returns a JSON representation of the currently loaded preset.
+    </p>
+
+    <p id="webvs-destroy">
+      <b class="header">destroy</b>
+      <code>main.destroy()</code><br/>
+      Frees up all resource.
+    </p>
+
   </div>
 </html>
