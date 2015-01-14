@@ -171,7 +171,7 @@ module.exports = function(grunt) {
     grunt.registerTask('dist', ["clean:dist", "default", 'uglify']);
     grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
 
-    grunt.registerTask("serve", ["connect", "watch:build"]);
+    grunt.registerTask("debug", ["connect", "watch:build"]);
 
     grunt.registerTask('test', ["connect", "default", 'karma:test']);
     grunt.registerTask('debug_test', ["connect", "default", "karma:debug:start", "watch:test"]);

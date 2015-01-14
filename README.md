@@ -23,7 +23,7 @@ Webvs uses grunt for build and bower for dependencies. Run the following command
 	npm install
     bower install
 
-To build the code run `grunt` or `grunt dist`. This generates `webvs.js` and `libs.js` in the `build` directory or the minified files in the `dist` directory respectively.
+To build the code run `grunt` or `grunt dist`. This generates `webvs.js` in the `build` directory or the minified files in the `dist` directory respectively.
 
 To run the tests, use `grunt test` command. To debug the code/examples, run `grunt debug`. This runs a webserver at 8000 and a live re-build of the source files.
 To debug tests, run `grunt debug_test`. This is same as `grunt debug` but also runs karma test server and opens up the test page where you can do debugging with 
@@ -31,8 +31,7 @@ the browser code inspector.
 
 ## Contributing
 
-Webvs is still in a very infant stage. Lot of work is required to get things into shape. Any help is greatly appreciated. If you have fixes, improvements or features, please 
-[fork](https://github.com/azeem/webvs/fork) and submit pull requests. If you have suggestions or criticism please post them at the [Github/Issues](https://github.com/azeem/webvs/issues) or at the [Winamp Forum thread](http://forums.winamp.com/showthread.php?t=364566)
+[Fork](https://github.com/azeem/webvs/fork) and submit pull requests. For suggestions/bug fixes use [Github/Issues](https://github.com/azeem/webvs/issues).
 
 ## Documentation
 
@@ -43,21 +42,17 @@ API and internals documentation can be found here: [Code Documentation](http://a
 All classes are available inside the `Webvs` global namespace. The `Webvs.Main` is the main entry point that lets you place visualizations into the page. A short example is given below.
 
 ```js
-var dancer = new Dancer();
+var analyser = new Webvs.WebAudioAnalyser();
 var webvs = new Webvs.Main({
     canvas: document.getElementById("canvas"),
-    analyser: new Webvs.DancerAdapter(dancer),
+    analyser: analyser,
     showStat: true
 });
 webvs.loadPreset(samplePreset);
 webvs.start();
-dancer.load({src: "music.ogg"}); // start playing musc
-dancer.play();
+analyser.load("music.ogg"); // start playing musc
+analyser.play();
 ```
-
-## Preset JSON format
-
-Visualization preset is represented as JSON object. The json is passed as the `options` argument for each Component constructor. See documentation of each Component class for detailed information.
 
 ## Component Checklist
 
@@ -84,7 +79,6 @@ The following components are implemented currently. These components try to matc
     + Invert
     + Mirror
     + Mosaic
-    + Movement
     + UniqueTone
 
 ## See Also
