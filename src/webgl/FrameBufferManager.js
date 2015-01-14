@@ -179,6 +179,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
     },
 
     resize: function() {
+        // TODO: investigate chrome warning: INVALID_OPERATION: no texture
         var gl = this.gl;
         for(var i = 0;i < this.textures.length;i++) {
             gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
