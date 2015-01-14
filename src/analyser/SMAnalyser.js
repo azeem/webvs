@@ -1,32 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * SMAnalyser connects SoundManager2 waveform and eqData to Webvs
- *
- * @example
- * soundManager.setup({
- *   url: "./soundmanager2/swf",
- *   flashVersion: 9,
- *   preferFlash: true
- * });
- * var analyser = new SMAnalyser();
- * analyser.createSound({
- *   autoPlay: true,
- *   url: json.stream_url + "?client_id=" + clientId
- * });
- *
- * @param {object} [options] - option object
- * @param {number} [options.threshold=0.125] - 0-1 threshold amplitude which will be treated as a beat
- * @param {number} [options.decay=0.02] - decay for a moving threshold 
- * @memberof Webvs
- * @constructor
- */
+// SMAnalyser connects SoundManager2 waveform and eqData to Webvs
 function SMAnalyser(options) {
     options = _.defaults(options||{}, {
         threshold: 0.125,
@@ -47,12 +26,7 @@ function SMAnalyser(options) {
     }
 }
 Webvs.SMAnalyser = Webvs.defineClass(SMAnalyser, Webvs.AnalyserAdapter, {
-    /**
-     * Creates a new SMSound object and attaches it to this analyser
-     * @memberof Webvs.SMAnalyser
-     * @param {object} options - soundManager.createSound options
-     * @returns {SMSound} the new sound object
-     */
+    // Creates a new SMSound object and attaches it to this analyser
     createSound: function(options) {
         options.usewaveformdata = true;
         options.useeqdata = true;
@@ -101,23 +75,13 @@ Webvs.SMAnalyser = Webvs.defineClass(SMAnalyser, Webvs.AnalyserAdapter, {
         }
     },
 
-    /**
-     * Returns array of waveform values
-     * @abstract
-     * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter#
-     */
+    // Returns array of waveform values
     getWaveform: function(channel) {
         channel = _.isUndefined(channel)?0:channel;
         return this.waveformData[channel];
     },
 
-    /**
-     * Returns array of spectrum values
-     * @abstract
-     * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter#
-     */
+    // Returns array of spectrum values
     getSpectrum: function(channel) {
         channel = _.isUndefined(channel)?0:channel;
         return this.eqData[channel];

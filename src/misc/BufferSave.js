@@ -1,25 +1,12 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A components that saves or restores a copy of the current
- * frame buffer.
- *
- * @param {object} options - options object
- * @param {string} [options.action="SAVE"] - the action to be performed. viz. "SAVE",
- *     "RESTORE", "RESTORESAVE", "SAVERESTORE"
- * @param {number} [options.bufferId=1] - an identifying number for the buffer. This number
- *     is used to share buffer between different instances of BufferSave
- * @param {string} [options.blendMode="REPLACE"] - blending mode when restoring buffers
- * @constructor
- * @augments Webvs.Component
- * @memberof Webvs
- */
+// A components that saves or restores a copy of the current
+// frame buffer.
 function BufferSave(gl, main, parent, opts) {
     BufferSave.super.constructor.call(this, gl, main, parent, opts);
 }

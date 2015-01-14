@@ -1,23 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that clears the screen
- *
- * @param {object} options - options object
- * @param {number} [options.n=0] - beat counter, screen will be cleared for every n beats.
- *      use 0 to clear all frames.
- * @param {string} [options.color="#000000"] - color to which screen is to be cleared
- * @param {string} [options.blendMode="REPLACE"] - blend clearing onto previous buffer
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
+// A component that clears the screen
 function ClearScreen(gl, main, parent, opts) {
     ClearScreen.super.constructor.call(this, gl, main, parent, opts);
 }

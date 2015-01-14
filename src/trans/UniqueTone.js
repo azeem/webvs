@@ -1,28 +1,18 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Component that applies a unique color tone
- * @param {object} options - options object
- * @param {string} [options.color="#FFFFFF"] - the color tone
- * @param {boolean} [options.invert=false] - if set then tone is inverted
- * @param {string} [options.blendMode="REPLACE"] - blending mode for this component
- * @augments Webvs.Component
- * @memberof Webvs
- * @constructor
- */
+// A Component that applies a unique color tone
 function UniqueTone(gl, main, parent, opts) {
     UniqueTone.super.constructor.call(this, gl, main, parent, opts);
 }
 
 Webvs.registerComponent(UniqueTone, {
     name: "UniqueTone",
-    menu: "Trans",
+    menu: "Trans"
 });
 
 Webvs.defineClass(UniqueTone, Webvs.Component, {

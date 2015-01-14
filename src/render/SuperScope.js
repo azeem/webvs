@@ -1,46 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A generic scope, that can draw points or lines based on user code
- *
- * #### Code variables
- *
- * The following variables are available in the code
- *
- * + n (default: 100) - the number of points.
- * + i - 0-1 normalized loop counter
- * + v - the value of the superscope at current position (-1 to +1)
- * + x - x position of the dot (-1 to +1)
- * + y - y position of the dot (-1 to +1)
- * + w - width of the screen
- * + h - height of the screen
- * + b - 1 if a beat has occured else 0
- * + red (default: set from colors option) - red component of color (0-1)
- * + green (default: set from colors option) - green component of color (0-1)
- * + blue (default: set from colors option) - blue component of color (0-1)
- * + cid - the clone id of this component. if it is a clone
- *
- * @param {object} options - options object
- * @param {string} [options.code.init] - code to be run at startup
- * @param {string} [options.code.onBeat] - code to be run when a beat occurs
- * @param {string} [options.code.perFrame] - code to be run on every frame
- * @param {string} [options.code.perPoint] - code that will be run once for every point. should set 
- *       `x`, `y` variables to specify point location. set `red`, `green` or `blue` variables
- *       to specify point color
- * @param {string} [options.source="SPECTRUM"] - the scope data source viz. `SPECTRUM`, `WAVEFORM`
- * @param {string} [options.drawMode="LINES"] - switch between drawing `LINES` or `DOTS`
- * @param {Array.<String>} [options.colors=["#FFFFFF"]] - rendering color cycles through these colors
- * @param {number} [options.thickness] - thickenss of line or dot
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
+// A generic scope, that can draw points or lines based on user code
 function SuperScope(gl, main, parent, opts) {
     SuperScope.super.constructor.call(this, gl, main, parent, opts);
 }
@@ -52,7 +17,7 @@ Webvs.registerComponent(SuperScope, {
 
 var DrawModes = {
     "LINES": 1,
-    "DOTS": 2,
+    "DOTS": 2
 };
 SuperScope.DrawModes = DrawModes;
 

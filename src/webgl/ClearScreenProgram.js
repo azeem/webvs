@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Shader that clears the screen to a given color
- * @param {number} blendMode - blending mode for this shader
- * @augments Webvs.QuadBoxProgram
- * @memberof Webvs
- * @constructor
- */
+// A Shader that clears the screen to a given color
 function ClearScreenProgram(gl, blendMode) {
     ClearScreenProgram.super.constructor.call(this, gl, {
         fragmentShader: [
@@ -25,11 +18,7 @@ function ClearScreenProgram(gl, blendMode) {
     });
 }
 Webvs.ClearScreenProgram = Webvs.defineClass(ClearScreenProgram, Webvs.QuadBoxProgram, {
-    /**
-     * Renders this shader
-     * @param {Array.<number>} color - color to which the screen will be cleared
-     * @memberof Webvs.ClearScreenProgram#
-     */
+    // Renders this shader
     draw: function(color) {
         this.setUniform.apply(this, ["u_color", "3f"].concat(color));
         ClearScreenProgram.super.draw.call(this);

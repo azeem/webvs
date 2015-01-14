@@ -8,12 +8,10 @@ function logGLCall(functionName, args) {
       WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");   
 } 
 
-/**
- * Create a Shader Test
- * this setsup a scaffold canvas for the test to
- * be run on. The canvas and the webgl context are passed
- * to the test function
- */
+// Create a Shader Test
+// this setsup a scaffold canvas for the test to
+// be run on. The canvas and the webgl context are passed
+// to the test function
 function CanvasTest() {
     var testFunc = arguments[arguments.length-1];
     var extraOptions = arguments[arguments.length-2];
@@ -240,10 +238,8 @@ var imageFuzzyOkErrorTemplate = _.template([
     "</table>"
 ].join(""));
 
-/**
- * Checks if the framebuffer image is equal to target image
- * within threshold
- */
+// Checks if the framebuffer image is equal to target image
+// within threshold
 function imageFuzzyOk(message, gl, canvas, targetImage, mismatchThreshold, distanceThreshold) {
     mismatchThreshold = _.isNumber(mismatchThreshold)?mismatchThreshold:1;
     distanceThreshold = _.isNumber(distanceThreshold)?(Math.pow(distanceThreshold*255, 2)*3):10; // scale to 255*sqrt(3) and square

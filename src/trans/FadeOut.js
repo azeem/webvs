@@ -1,22 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that slowly fades the screen to a specified color
- *
- * @param {object} options - options object
- * @param {number} [speed=1] - speed at which the screen is faded 0 (never) - 1 (fastest)
- * @param {string} [color="#000000"] - fade color
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- * @constructor
- */
+// A component that slowly fades the screen to a specified color
 function FadeOut(gl, main, parent, opts) {
     FadeOut.super.constructor.call(this, gl, main, parent, opts);
 }

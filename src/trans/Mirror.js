@@ -1,29 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that mirror between quandrants
- *
- * @param {WebGLContext} gl - a webgl context
- * @param {Webvs.Main} main - the main object for this component
- * @param {Webvs.Container} parent - this components parent
- * @param {object} opts - the options object
- * @param {boolean} [opts.onBeatRandom=false] - if set then the mirror flips (between the enabled ones) are randomized
- * @param {boolean} [opts.topToBottom=true] - if set then top half is mirrored to bottom
- * @param {boolean} [opts.bottomToTop=false] - if set then bottom half is mirrored to top
- * @param {boolean} [opts.leftRight=false] - if set then left half is mirrored to right
- * @param {boolean} [opts.rightToLeft=false] - if set then right half is mirrored to left
- * @param {boolean} [opts.smoothTransition=false] - if set then mirror flip changes are animated
- * @param {boolean} [opts.transitionDuration=4] - the number of frames for a flip transition animation
- * @constructor
- * @augments Webvs.Component
- * @memberof Webvs
- */
+// A component that mirror between quandrants
 function Mirror(gl, main, parent, opts) {
     Mirror.super.constructor.call(this, gl, main, parent, opts);
 }
@@ -161,28 +143,26 @@ Webvs.defineClass(Mirror, Webvs.Component, {
     }
 });
 
-/**
- * Working:
- * The program accepts a mode and 4 mix vectors, one for each of the 4 quadrants.
- * The mode decides between two scenarios Case 1. a simple
- * mapping ie. one quadrant is copied over to another.
- * In this case the first value of each vec4 will contain the
- * id of the quadrant from where the pixels will be copied
- * Case 2. This is used during transition animation. Here, the
- * final color of pixels in each quadrant is a weighted mix
- * of colors of corresponding mirrored points in all quadrants.
- * Each of the vec4 contains a mix weight for each 4 quadrants. As
- * the animation proceeds, one of the 4 in the vec4 becomes 1 while others
- * become 0. This two mode allows to make fewer texture sampling when
- * not doing transition animation.
- *
- * The quadrant ids are as follows
- *       |
- *    0  |  1
- *  -----------
- *    2  |  3
- *       |
- */
+// Working:
+// The program accepts a mode and 4 mix vectors, one for each of the 4 quadrants.
+// The mode decides between two scenarios Case 1. a simple
+// mapping ie. one quadrant is copied over to another.
+// In this case the first value of each vec4 will contain the
+// id of the quadrant from where the pixels will be copied
+// Case 2. This is used during transition animation. Here, the
+// final color of pixels in each quadrant is a weighted mix
+// of colors of corresponding mirrored points in all quadrants.
+// Each of the vec4 contains a mix weight for each 4 quadrants. As
+// the animation proceeds, one of the 4 in the vec4 becomes 1 while others
+// become 0. This two mode allows to make fewer texture sampling when
+// not doing transition animation.
+//
+// The quadrant ids are as follows
+//       |
+//    0  |  1
+//  -----------
+//    2  |  3
+//       |
 function MirrorProgram(gl) {
     MirrorProgram.super.constructor.call(this, gl, {
         swapFrame: true,

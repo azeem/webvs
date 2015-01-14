@@ -1,32 +1,18 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
 
-/**
- * @class
- * A base class for all components that can have sub components.
- * Manages, cloning and component tree operations
- * @memberof Webvs
- * @constructor
- * @param {object} options - options object
- * @param {Array.<object>} options.components - options array for all the subcomponents
- * @param {Array.<Webvs.ComponentFactory>} subFactories - factories for subcomponents. If
- *     provided then subcomponents are added from this factory and options.components is ignored.
- *     useful when moving existing subcomponent instances into new container.
- */
+// A base class for all components that can have sub components.
+// Manages, cloning and component tree operations
 function Container(gl, main, parent, opts) {
     Container.super.constructor.call(this, gl, main, parent, opts);
     delete this.opts.components;
 }
 Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
-    /**
-     * initializes all the subcomponents
-     * @memberof Webvs.Container#
-     */
     init: function(gl, main, parent) {
         var components = [];
         if(this.opts.components) {
@@ -39,10 +25,6 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         this.components = components;
     },
 
-    /**
-     * destroys all subcomponents
-     * @memberof Webvs.Container#
-     */
     destroy: function() {
         for(var i = 0;i < this.components.length;i++) {
             this.components[i].destroy();
@@ -53,19 +35,8 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         return (new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts));
     },
     
-    /**
-     * Adds a component as child of the given parent that
-     * resides under this containers subtree
-     * @param {string} parentId - id of the parent under which the component is
-     *     to be added
-     * @param {Webvs.ComponentFactory} factory - factory from which component should be
-     *      created. If an options object is passed then a Webvs.ComponentFactory
-     *      is implicitly created from it
-     * @param {number} [pos] - position at which the component will be inserted.
-     *     default is the end of the list
-     * @returns {string} - id of the new component
-     * @memberof Webvs.Container#
-     */
+    // Adds a component as child of the given parent that
+    // resides under this containers subtree
     addComponent: function(componentOpts, pos, options) {
         var component;
         if(componentOpts instanceof Webvs.Component) {
@@ -128,12 +99,8 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         }
     },
 
-    /**
-     * Constructs complete options object for this container and its
-     * subtree
-     * @returns {object} - the options object
-     * @memberof Webvs.Container#
-     */
+    // Constructs complete options object for this container and its
+    // subtree
     toJSON: function() {
         var opts = Container.super.toJSON.call(this);
 
@@ -143,14 +110,6 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         }
         return opts;
     }
-
-    /**
-     * This function is called once for each component in the tree
-     * @callback Webvs.Container~traverseCallback
-     * @param {string} id - id of the component
-     * @param {string} parentId - id of the parent. Undefined for root
-     * @param {object} options - the options for this component.
-     */
 });
 
 })(Webvs);

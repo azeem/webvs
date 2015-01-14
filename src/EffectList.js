@@ -1,31 +1,12 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * Effectlist is a container that renders components to a separate buffer. and blends
- * it in with the parent buffer. Its also used as the root component in Webvs.Main
- *
- * @param {object} options - options object
- * @param {Array.<object>} options.components - the constructor options object for each subcomponent
- *     in this effectlist.
- * @param {string} options.components[i].type - the component class name
- * @param {number} [options.components[i].clone] - the number of times this component should be cloned
- * @param {string} [options.output="REPLACE"] - the output blend mode
- * @param {string} [options.input="IGNORE"] - the input blend mode
- * @param {boolean} [options.clearFrame=false] - if set then the buffer is cleared for each frame
- * @param {boolean} [options.enableOnBeat=false] - if set then the subcomponents are rendered only
- *     for a fixed number of frames on beat
- * @param {number} [options.enableOnBeatFor=1] - the number frames for enableOnBeat setting
- *
- * @augments Webvs.Component
- * @memberof Webvs
- * @constructor
- */
+// Effectlist is a container that renders components to a separate buffer. and blends
+// it in with the parent buffer. Its also used as the root component in Webvs.Main
 function EffectList(gl, main, parent, opts) {
     EffectList.super.constructor.call(this, gl, main, parent, opts);
 }

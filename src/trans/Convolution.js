@@ -1,24 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that applies a convolution kernel
- *
- * @param {object} options - options object
- * @param {Array.<Array.<number>>} options.kernel - an NxN array of numbers
- * @param {number} [options.bias=0] - bias value to be added
- * @param {number} [options.scale] - scale for the kernel. default is sum of kernel values
- * @param {object} [options.edgeMode="EXTEND"] - how the frame edge cases should be handled viz. `WRAP`, `EXTEND`
- *
- * @constructor
- * @augments Webvs.Component
- * @memberof Webvs
- */
+// A component that applies a convolution kernel
 function Convolution(gl, main, parent, opts) {
     Convolution.super.constructor.call(this, gl, main, parent, opts);
 }

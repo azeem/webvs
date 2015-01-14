@@ -1,28 +1,12 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that clips colors to a different color depending
- * on whether the source colors are above or below a reference color.
- * 
- * @see r_contrast.cpp
- * @param {object} options - options object
- * @param {string} [options.mode="BELOW"] - comparison mode viz. `BELOW`, `ABOVE`, `NEAR`
- * @param {string} [options.color="#202020"] - reference color against which the
- *     the screen colors are compared
- * @param {string} [options.outColor="#202020"] - output color for clipped pixels
- * @param {number} [options.level=0] - when mode is `NEAR`, this value decides the distance
- *     between source and reference colors below which pixels would be clipped. 0-1 normalized
- *
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
+// A component that clips colors to a different color depending
+// on whether the source colors are above or below a reference color.
 function ColorClip(gl, main, parent, opts) {
     ColorClip.super.constructor.call(this, gl, main, parent, opts);
 }

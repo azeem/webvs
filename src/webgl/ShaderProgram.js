@@ -1,56 +1,36 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class 
- * Base class for Webgl Shaders. This provides an abstraction
- * with support for blended output, easier variable bindings
- * etc.
- *
- * For outputblending, we try to use GL blendEq and blendFunc
- * if possible, otherwise we fallback to shader based blending,
- * where we swap the frame, sample the previous texture, and blend
- * the colors in the shader itself. To do this seamlessly, shader code in subclasses
- * should use a set of macros. eg: setFragColor instead of
- * setting gl_FragColor directly. The proper macro implementation
- * is inserted based on the blending modes.
- *
- * #### glsl utilities
- *
- * The following utilities are usable inside the shader code in subclasses
- *
- * + `setPosition(vec2 pos)` - sets gl_Position
- * + `getSrcColorAtPos(vec2 pos)` - pixel value at pos in u_srcTexture
- * + `getSrcColor(vec2 pos)` - same as above, but uses v_position
- * + `setFragColor(vec4 color)` - sets the correctly blended fragment color
- * + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
- *     when swapFrame is set to true
- * + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
- *     passed to {@link Webvs.ShaderProgram.run} call
- * + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
- *     when varyingPos option is used
- *
- * @param {object} options - refer class description
- * @param {string} options.vertexShader - the source for the vertex shader
- * @param {string} options.fragmentShader - the source for the fragment shader
- * @param {string} [options.blendMode="REPLACE"] - the output blending mode.
- * @param {boolean} [options.dynamicBlend=false] - when set to true, blending mode can be changed
- *     at runtime even after shader compilation
- * @param {boolean} [options.swapFrame=false] - if set then a render target swap is done on the 
- *     framebuffermanager, before rendering. This is used
- *     by programs where the previous rendering need to be
- *     sampled
- * @param {boolean} [options.copyOnSwap=false] - if set to true then on swap, a copyOver is done on
- *     the framebuffermanager. This is used to maintain
- *     consistency during shader based blending in shaders
- *     that do not touch all the pixels
- * @memberof Webvs
- * @constructor
- */
+// Base class for Webgl Shaders. This provides an abstraction
+// with support for blended output, easier variable bindings
+// etc.
+
+// For outputblending, we try to use GL blendEq and blendFunc
+// if possible, otherwise we fallback to shader based blending,
+// where we swap the frame, sample the previous texture, and blend
+// the colors in the shader itself. To do this seamlessly, shader code in subclasses
+// should use a set of macros. eg: setFragColor instead of
+// setting gl_FragColor directly. The proper macro implementation
+// is inserted based on the blending modes.
+
+// #### glsl utilities
+
+// The following utilities are usable inside the shader code in subclasses
+
+// + `setPosition(vec2 pos)` - sets gl_Position
+// + `getSrcColorAtPos(vec2 pos)` - pixel value at pos in u_srcTexture
+// + `getSrcColor(vec2 pos)` - same as above, but uses v_position
+// + `setFragColor(vec4 color)` - sets the correctly blended fragment color
+// + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
+//     when swapFrame is set to true
+// + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
+//     passed to {@link Webvs.ShaderProgram.run} call
+// + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
+//     when varyingPos option is used
 function ShaderProgram(gl, opts) {
     opts = _.defaults(opts, {
         blendMode: Webvs.REPLACE,
@@ -168,21 +148,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return shader;
     },
 
-    /**
-     * Performs the actual drawing and any further bindings and calculations if required.
-     * @param {...any} extraParams - the extra parameters passed to {@link Webvs.ShaderProgram.run}
-     * @abstract
-     * @memberof Webvs.ShaderProgram#
-     */
+    // Performs the actual drawing and any further bindings and calculations if required.
     draw: function() {},
 
-    /**
-     * Runs this shader program
-     * @param {Webvs.FrameBufferManager} fm - frame manager. pass null, if no fm is required
-     * @param {Webvs.blendModes} outputBlendMode - overrides the blendmode. pass null to use default
-     * @param {...any} extraParams - remaining parameters are passed to the draw function
-     * @memberof Webvs.ShaderProgram#
-     */
+    // Runs this shader program
     run: function(fm, blendMode) {
         var gl = this.gl;
         var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
@@ -267,13 +236,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
     },
 
-    /**
-     * returns the location of a uniform or attribute. locations are cached.
-     * @param {string} name - name of the variable
-     * @param {boolean} [attrib] - pass true if variable is attribute
-     * @returns {location}
-     * @memberof Webvs.ShaderProgram#
-     */
+    // returns the location of a uniform or attribute. locations are cached.
     getLocation: function(name, attrib) {
         var location = this._locations[name];
         if(_.isUndefined(location)) {
@@ -287,12 +250,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return location;
     },
 
-    /**
-     * returns the index of a texture. assigns id if not already assigned.
-     * @param {string} name - name of the varaible
-     * @returns {number} index of the texture
-     * @memberof Webvs.ShaderProgram#
-     */
+    // returns the index of a texture. assigns id if not already assigned.
     getTextureId: function(name) {
         var id = _.indexOf(this._textureVars, name);
         if(id === -1) {
@@ -302,13 +260,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return id;
     },
 
-    /**
-     * binds value of a uniform variable in this program
-     * @param {string} name - name of the variable
-     * @param {string} type - type of the variable (texture2D, [1234]f, [1234]i, [1234]fv, [1234]iv)
-     * @param {...any} values - values to be assigned
-     * @memberof Webvs.ShaderProgram#
-     */
+    // binds value of a uniform variable in this program
     setUniform: function(name, type, value) {
         var location = this.getLocation(name);
         var gl = this.gl;
@@ -331,17 +283,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
     },
 
-    /**
-     * binds the vertex attribute array
-     * @param {string} name - name of the variable
-     * @param {Array} array - array of vertex data
-     * @param {number} [size=2] - size of each item
-     * @param [type=gl.FLOAT]
-     * @param [normalized=false]
-     * @param [stride=0]
-     * @param [offset=0]
-     * @memberof Webvs.ShaderProgram#
-     */
+    // binds the vertex attribute array
     setVertexAttribArray: function(name, array, size, type, normalized, stride, offset) {
         var gl = this.gl;
         size = size || 2;
@@ -376,11 +318,8 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array, gl.STATIC_DRAW);
     },
 
-    /**
-     * destroys webgl resources consumed by this program.
-     * call in component destroy
-     * @memberof Webvs.ShaderProgram#
-     */
+    // destroys webgl resources consumed by this program.
+    // call in component destroy
     destroy: function() {
         var gl = this.gl;
         _.each(this._buffers, function(buffer) {
@@ -389,7 +328,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.deleteProgram(this.program);
         gl.deleteShader(this.vertexShader);
         gl.deleteShader(this.fragmentShader);
-    },
+    }
 
 });
 

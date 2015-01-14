@@ -1,23 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that swizzles the color component
- *
- * @param {object} options - options object
- * @param {string} [options.channel="RGB"] - the component combination 
- *     viz. `RGB`, `RBG`, `BRG`, `BGR`, `GBR`, `GRB`
- * @param {boolean} [options.onBeatRandom=false] - if set then the color components
- *     combination is changed randomly on beat
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
+// A component that swizzles the color component
 function ChannelShift(gl, main, parent, opts) {
     ChannelShift.super.constructor.call(this, gl, main, parent, opts);
 }

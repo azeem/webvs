@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * FrameBufferManager maintains a set of render targets
- * and can switch between them.
- *
- * @param {WebGLRenderingContext} gl - the webgl context to be used
- * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
- *                                     when a frame copyOver is required
- * @param {boolean} textureOnly - if set then only textures maintained
- * @constructor
- * @memberof Webvs
- */
+// FrameBufferManager maintains a set of render targets
+// and can switch between them.
 function FrameBufferManager(gl, copier, textureOnly, texCount) {
     this.gl = gl;
     this.copier = copier;
@@ -85,11 +75,8 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         delete this.names[arg];
     },
 
-    /**
-     * Saves the current render target and sets this
-     * as the render target
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Saves the current render target and sets this
+    // as the render target
     setRenderTarget: function(texName) {
         var gl = this.gl;
         var curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
@@ -117,11 +104,8 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         }
     },
 
-    /**
-     * Restores the render target previously saved with
-     * a {@link Webvs.FrameBufferManager.setRenderTarget} call
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Restores the render target previously saved with
+    // a Webvs.FrameBufferManager.setRenderTarget call
     restoreRenderTarget: function() {
         var gl = this.gl;
         if(this.textureOnly) {
@@ -137,11 +121,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         this.isRenderTarget = false;
     },
 
-    /**
-     * Returns the texture that is currently being used
-     * @returns {WebGLTexture}
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Returns the texture that is currently being used
     getCurrentTexture: function() {
         return this.textures[this.curTex];
     },
@@ -151,20 +131,14 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         return this.textures[index];
     },
 
-    /**
-     * Copies the previous texture into the current texture
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Copies the previous texture into the current texture
     copyOver: function() {
         var texCount = this.textures.length;
         var prevTexture = this.textures[(texCount+this.curTex-1)%texCount];
         this.copier.run(null, null, prevTexture);
     },
 
-    /**
-     * Swaps the current texture
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Swaps the current texture
     switchTexture: function(arg) {
         if(!this.isRenderTarget) {
             throw new Error("Cannot switch texture when not set as rendertarget");
@@ -188,10 +162,7 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
         }
     },
 
-    /**
-     * cleans up all webgl resources
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // cleans up all webgl resources
     destroy: function() {
         var gl = this.gl;
         for(var i = 0;i < this.textures.length;i++) {

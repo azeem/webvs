@@ -1,29 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A particle that moves around depending on beat changes
- *
- * @param {WebGLContext} gl - the webgl context
- * @param {Webvs.Main} main - the Webvs Main object
- * @param {Webvs.Container} parent - this parent for this component
- * @param {object} options - the options object
- * @param {string} [options.color="#FFFFFF"] - color of the particle
- * @param {number} [options.distance=0.7] - maximum distance of particle from center. 0 being center and 1 the screen edge.
- * @param {number} [options.particleSize=10] - radius of the particle in pixels
- * @param {boolean} [options.onBeatSizeChange=false] - if set, then the particle size changes on beat
- * @param {number} [options.onBeatParticleSize=10] - radius of the particle in pixels during beats. ignored if onBeatSizeChange is false
- * @param {string} [options.blendMode="REPLACE"] - blending mode
- *
- * @memberof Webvs
- * @augments Webvs.Component
- * @constructor
- */
+// A particle that moves around depending on beat changes
 function MovingParticle(gl, main, parent, opts) {
     MovingParticle.super.constructor.call(this, gl, main, parent, opts);
 }

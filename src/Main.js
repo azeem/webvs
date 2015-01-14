@@ -1,33 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * Main Webvs object, that represents a running webvs instance.
- *
- * @example
- * var dancer = new Dancer();
- * var webvs = new Webvs.Main({
- *     canvas: document.getElementById("canvas"),
- *     analyser: new Webvs.DancerAdapter(dancer),
- *     showStat: true
- * });
- * webvs.loadPreset(samplePreset);
- * webvs.start();
- * dancer.load({src: "music.ogg"}); // start playing musc
- * dancer.play();
- *
- * @param {object} options - options object
- * @param {HTMLCanvasElement} options.canvas - canvas element on which the visualization will be rendered
- * @param {Webvs.AnalyserAdapter} options.analyser  - a music analyser instance
- * @param {boolean} [options.showStat=false] - if set, then a framerate status indicator is inserted into the page
- * @memberof Webvs
- * @constructor
- */
+// Main Webvs object, that represents a running webvs instance.
 function Main(options) {
     Webvs.checkRequiredOptions(options, ["canvas", "analyser"]);
     options = _.defaults(options, {
@@ -120,10 +98,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         cancelAnimationFrame(this.animReqId);
     },
 
-    /**
-     * Starts the animation if not already started
-     * @memberof Webvs.Main#
-     */
+    // Starts the animation if not already started
     start: function() {
         if(this.isStarted) {
             return;
@@ -134,10 +109,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         }
     },
 
-    /**
-     * Stops the animation
-     * @memberof Webvs.Main#
-     */
+    // Stops the animation
     stop: function() {
         if(!this.isStarted) {
             return;
@@ -148,12 +120,8 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         }
     },
 
-    /**
-     * Loads a preset JSON. If a preset is already loaded and running, then
-     * the animation is stopped, and the new preset is loaded.
-     * @param {object} preset - JSON representation of the preset
-     * @memberof Webvs.Main#
-     */
+    // Loads a preset JSON. If a preset is already loaded and running, then
+    // the animation is stopped, and the new preset is loaded.
     loadPreset: function(preset) {
         preset = _.clone(preset); // use our own copy
         preset.id = "root";
@@ -171,10 +139,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         this._setupRoot(preset);
     },
 
-    /**
-     * Reset all the components.
-     * @memberof Webvs.Main#
-     */
+    // Reset all the components.
     resetCanvas: function() {
         var preset = this.rootComponent.generateOptionsObj();
         this.rootComponent.destroy();
@@ -204,12 +169,8 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         }
     },
 
-    /**
-     * Generates and returns the instantaneous preset JSON 
-     * representation
-     * @returns {object} preset json
-     * @memberof Webvs.Main#
-     */
+    // Generates and returns the instantaneous preset JSON 
+    // representation
     toJSON: function() {
         var preset = this.rootComponent.toJSON();
         preset.resources = this.rsrcMan.toJSON();

@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
- * Adapters extend this class and define the required methods.
- * @param {object} [options] - option object
- * @param {number} [options.fftSize=512 - fft bucket size
- * @param {number} [options.threshold=0.125] - 0-1 threshold amplitude which will be treated as a beat
- * @param {number} [options.decay=0.02] - decay for a moving threshold 
- * @memberof Webvs
- * @constructor
- */
+// AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
+// Adapters extend this class and define the required methods.
 function WebAudioAnalyser(options) {
     options = _.defaults(options||{}, {
         fftSize: 512,
@@ -47,11 +38,7 @@ function WebAudioAnalyser(options) {
     }
 }
 Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapter, {
-    /**
-     * Connect this analyser to any WebAudio Node
-     * @memberof Webvs.WebAudioAnalyser#
-     * @param {AudioNode} sourceNode - node which will give audio data to this analyzer
-     */
+    // Connect this analyser to any WebAudio Node
     connectToNode: function(sourceNode) {
         this.source = sourceNode;
 
@@ -122,15 +109,8 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
         }
     },
 
-    /**
-     * Helper for @link{Webvs.WebAudioAnalyser#connectToNode}. This creates Audio object
-     * for the audio file and connects this analyser to its mediaElementSource
-     * @memberof Webvs.WebAudioAnalyser#
-     * @param {string|HTMLMediaElement} source - location of audio file or a media DOM
-     * @param {boolean} [autoplay=false] - automatically starts playing the Audio when its ready
-     * @param {function} [readyFunc] - this function is called when the Audio is ready to be played
-     * @returns {HTMLMediaElement} the DOM media object. Use this to play/pause the audio
-     */
+    // Helper for Webvs.WebAudioAnalyser#connectToNode. This creates Audio object
+    // for the audio file and connects this analyser to its mediaElementSource
     load: function(source, readyFunc) {
         var element;
         if(source instanceof HTMLMediaElement) {
@@ -161,23 +141,13 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
         return element;
     },
 
-    /**
-     * Returns array of waveform values
-     * @abstract
-     * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter#
-     */
+    // Returns array of waveform values
     getWaveform: function(channel) {
         channel = _.isUndefined(channel)?0:channel;
         return this.visData[channel].waveform;
     },
 
-    /**
-     * Returns array of spectrum values
-     * @abstract
-     * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter#
-     */
+    // Returns array of spectrum values
     getSpectrum: function(channel) {
         channel = _.isUndefined(channel)?0:channel;
         return this.visData[channel].spectrum;

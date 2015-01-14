@@ -1,16 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
-
  */
 
 (function(window) {
 
-/**
- * Webvs namespace that contains all classes
- * @alias Webvs
- * @namespace
- */
+// Webvs namespace that contains all classes
 var Webvs = {};
 
 window.Webvs = Webvs;
@@ -67,13 +62,7 @@ Webvs.ModelLike = _.extend(_.clone(Webvs.Events), {
     }
 });
 
-/**
- * A wrapper around Object.create to help with class definition
- * @param {function} constructor - constructor function for which the prototype is to be defined
- * @param {function} baseConstructor - base constructor whose prototype will be extended
- * @param {...object} [properties] - additional properties to be added to the prototype
- * @returns {function} the constructor
- */
+// A wrapper around Object.create to help with class definition
 Webvs.defineClass = function(constructor, baseConstructor) {
     constructor.prototype = Object.create(baseConstructor.prototype);
     constructor.prototype.constructor = constructor; // fix the constructor reference
@@ -95,16 +84,9 @@ Webvs.registerComponent = function(componentClass, meta) {
     Webvs.ComponentRegistry[meta.name] = componentClass;
 };
 
-/**
- * An empty function
- */
 Webvs.noop = function() {};
 
-/**
- * Checks if an object contains the required properties
- * @param {object} options - object to be checked
- * @param {Array.<string>} - properties to be checked
- */
+// Checks if an object contains the required properties
 Webvs.checkRequiredOptions = function(options, requiredOptions) {
     for(var i in requiredOptions) {
         var key =  requiredOptions[i];
@@ -114,21 +96,13 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
     }
 };
 
-/**
- * Returns a floating point value representation of a number
- * embeddable in glsl shader code
- * @param {number} val - value to be converted
- * @returns {string} float represntation
- */
+// Returns a floating point value representation of a number
+// embeddable in glsl shader code
 Webvs.glslFloatRepr = function(val) {
     return val + (val%1 === 0?".0":"");
 };
 
-/**
- * Parse css color string #RRGGBB or rgb(r, g, b)
- * @param {string} color - color to be parsed
- * @returns {Array.<number>} triple of color values in 0-255 range
- */
+// Parse css color string #RRGGBB or rgb(r, g, b)
 Webvs.parseColor = function(color) {
     if(_.isArray(color) && color.length == 3) {
         return color;
@@ -153,18 +127,12 @@ Webvs.parseColor = function(color) {
     throw new Error("Invalid Color Format");
 };
 
-/**
- * 0-1 normalized version of {@link Webvs.parseColor}
- */
+// 0-1 normalized version of Webvs.parseColor
 Webvs.parseColorNorm = function(color) {
     return _.map(Webvs.parseColor(color), function(value) { return value/255; });
 };
 
-/**
- * Pretty prints a shader compilation error
- * @param {string} - shader source code
- * @param {string} - error message from gl.getShaderInfoLog
- */
+// Pretty prints a shader compilation error
 Webvs.logShaderError = function(src, error) {
     var lines = src.split("\n");
     var ndigits = lines.length.toString().length;
@@ -197,9 +165,7 @@ Webvs.logShaderError = function(src, error) {
 
 _.flatMap = _.compose(_.flatten, _.map);
 
-/**
- * Blend mode constants
- */
+// Blend mode constants
 Webvs.BlendModes = {
     REPLACE: 1,
     MAXIMUM: 2,
@@ -227,6 +193,8 @@ Webvs.Source = {
 };
 _.extend(Webvs, Webvs.Source);
 
+// Returns an enumeration(plain object with numeric values)
+// value or throws an exception if it doesnt exists
 Webvs.getEnumValue = function(key, enumeration) {
     key = key.toUpperCase();
     if(!(key in enumeration)) {
@@ -235,13 +203,7 @@ Webvs.getEnumValue = function(key, enumeration) {
     return enumeration[key];
 };
 
-/**
- * Returns a random string of given length
- * @param {number} count - the number of characters required
- * @param {string} chars - a string containing the characters 
- *                         from which to choose
- * @returns {string} a random string
- */
+// Returns a random string of given length
 Webvs.randString = function(count, chars) {
     var string = [];
     chars = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -251,22 +213,12 @@ Webvs.randString = function(count, chars) {
     return string.join("");
 };
 
-/**
- * Clamps a number between two given numbers
- * @param {number} num - number to be clamped
- * @param {number} min - clamp min edge
- * @returns {number} max - clamp max edge
- */
+// Clamps a number between two given numbers
 Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };
 
-/**
- * Returns the component class with the given name. Throws
- * and Error if it doesnt exist
- * @param {string} name - name of the class
- * @returns {function} - constructor for the component
- */
+// Returns the component class with the given name. Throws
 Webvs.getComponentClass = function(name) {
     var componentClass = Webvs.ComponentRegistry[name];
     if(!componentClass) {
@@ -275,12 +227,7 @@ Webvs.getComponentClass = function(name) {
     return componentClass;
 };
 
-/**
- * Returns the value of property given its (dot separated) path in an object
- * @param {object} obj - the object
- * @param {string} name - path to the property
- * @returns the value of the property, undefined if it doesnt exist
- */
+// Returns the value of property given its (dot separated) path in an object
 Webvs.getProperty = function(obj, name) {
     if(_.isString(name)) {
         name = name.split(".");
@@ -295,12 +242,7 @@ Webvs.getProperty = function(obj, name) {
     }
 };
 
-/**
- * Sets a property, given its (dot separated) path in an object
- * @param {object} obj - the object
- * @param {string} name - path to the property
- * @param value - value to be set
- */
+// Sets a property, given its (dot separated) path in an object
 Webvs.setProperty = function(obj, name, value) {
     if(_.isString(name)) {
         name = name.split(".");
