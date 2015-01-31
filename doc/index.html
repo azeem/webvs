@@ -312,6 +312,28 @@
       <li>&raquo; <a href="#webvs-destroy">destroy</a></li>
     </ul>
 
+    <a class="toc_title" href="#webvs-webaudioanalyser">Webvs.WebAudioAnalyser</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-analyseradapter-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-analyseradapter-connecttonode">connectToNode</a></li>
+      <li>&raquo; <a href="#webvs-analyseradapter-load">load</a></li>
+    </ul>
+
+    <a class="toc_title" href="#webvs-smanalyser">Webvs.SMAnalyser</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-smanalyser-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-smanalyser-createsound">createSound</a></li>
+      <li>&raquo; <a href="#webvs-smanalyser-setsound">setSound</a></li>
+    </ul>
+
+    <a class="toc_title" href="#webvs-analyseradapter">Webvs.AnalyserAdapter</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-analyseradapter-beat">beat</a></li>
+      <li>&raquo; <a href="#webvs-analyseradapter-update">update</a></li>
+      <li>&raquo; <a href="#webvs-analyseradapter-getWaveform">getWaveForm</a></li>
+      <li>&raquo; <a href="#webvs-analyseradapter-getSpectrum">getSpectrum</a></li>
+    </ul>
+
   </div>
 
   <div class="container">
@@ -496,13 +518,219 @@ webvs.loadPreset({
       Frees up all resource.
     </p>
 
+  <!-- Webvs.WebAudioAnalyser-->
+  <h2 id="webvs-webaudioanalyser">Webvs.WebAudioAnalyser</h2>
+  <p>
+    WebAudioAnalyser connects webaudio sources to Webvs. This includes audio
+    elements, or AudioNode objects.
+  </p>
+  <p id="webvs-webaudioanalyser-constructor">
+    <b class="header">constructor</b>
+    <code>new Webvs.WebAudioAnalyser([options])</code><br/>
+    When creating WebAudioAnalyser objects you can pass in an options hash containing parameters
+    for the analyser. The <b>fftSize</b> field sets the size of the fft samples in the WebAudio
+    Analyser node. Use the <b>threshold</b> and <b>decay</b> fields to configure the beat detection
+    algorithm.
+  </p>
+  <p id="webvs-webaudioanalyser-connecttonode">
+    <b class="header">connectToNode</b>
+    <code>analyser.connectToNode(sourceNode)</code><br/>
+    Connects the analyser to <b>sourceNode</b> which should be an AudioNode in a WebAudio graph.
+  </p>
+  <p id="webvs-webaudioanalyser-load">
+    <b class="header">load</b>
+    <code>analyser.load(sourcem readyFunc)</code><br/>
+    This is a helper that sets up a WebAudio AudioNode graph and connects the audio analyser to
+    the source. <b>source</b> can be either a string url to audio file or it can be an Audio tag
+    DOM element. <b>readyFunc</b> is a callback that, if provided, will be called when the audio
+    source is ready to play.
+  </p>
+
+  <!-- Webvs.SMAnalyser -->
+  <h2 id="webvs-analyseradapter">Webvs.SMAnalyser</h2>
+  <p>
+    SMAnalyser connects <a href="http://www.schillmania.com/projects/soundmanager2/">SoundManager2</a>
+    sounds to Webvs. The following soundManager setup is recommended for use with Webvs.
+  </p>
+  <pre>
+soundManager.setup({
+    url: "/location/of/soundmanager2/swf",
+    flashVersion: 9,
+    preferFlash: true,
+    useHighPerformance: true,
+    useFastPolling: true
+});
+  </pre>
+  <p id="webvs-smanalyser-constructor">
+    <b class="header">constructor</b>
+    <code>new Webvs.SMAnalyser([options])</code><br/>
+    When creating SMAnalyser objects you can pass in an options hash containing parameters
+    for the analyser. The <b>threshold</b> and <b>decay</b> fields to configure the beat detection.
+    algorithm.
+  </p>
+  <p id="webvs-smanalyser-createsound">
+    <b class="header">createSound</b>
+    <code>analyser.createSound(options)</code><br/>
+    Creates a SoundManager sound object passing <b>options</b> as arguments and then
+    connects this analyser to the sound.
+  </p>
+  <p id="webvs-smanalyser-setsound">
+    <b class="header">setSound</b>
+    <code>analyser.setSound(sound)</code><br/>
+    Connects the analyser to the SoundManager sound object <b>sound</b> to this analyser.
+    Make sure the sound is created with <tt>usewaveformdata: true</tt> and <tt>useeqdata: true</tt>
+    options. This allows the analyser to retrieve the waveform and eq data from SoundManager.
+  </p>
+
+
   <!-- Webvs.AnalyserAdapter -->
-  <h2 id="webvs-main">Analyser.Adapter</h2>
+  <h2 id="webvs-analyseradapter">Webvs.AnalyserAdapter</h2>
   <p>
     Analysers separate the sound source from the Webvs visualization engine.
     <b>AnalyserAdapter</b> is a generic interface that any analyser has to implement. Several
     builtin analysers for usual sound sources such as WebAudio or SoundManager2 are already packaged
     with Webvs, however this interface is useful when you may want to write a custom analyser.
+  </p>
+  <p id="webvs-analyseradapter-beat">
+    <b class="header">beat</b>
+    <code>beat</code><br/>
+    boolean value that should be set to true when a beat is detected.
+  </p>
+  <p id="webvs-analyseradapter-update">
+    <b class="header">update</b>
+    <code>update</code><br/>
+    Update is called every frame. Analysers should implement code that analyses
+    sound data in this function.
+  </p>
+  <p id="webvs-analyseradapter-getwaveform">
+    <b class="header">getWaveForm</b>
+    <code>getWaveForm</code><br/>
+    This function should return a Float32Array of waveform samples. Each value should
+    be in a -1 to 1 range.
+  </p>
+  <p id="webvs-analyseradapter-getSpectrum">
+    <b class="header">getSpectrum</b>
+    <code>getSpectrum</code><br/>
+    This function should return a Float32Array of spectrum samples. Each value should
+    be in a 0 to 1 range.
+  </p>
+
+  <!-- Webvs.Component -->
+  <h2 id="webvs-component">Webvs.Component</h2>
+  <p>
+    Component is the base class for all components in Webvs. It provides some basic functionalities
+    and specifies an interface to be implemented by other components. Here is a simple example
+  </p>
+  <pre>
+function TriangleComponent(gl, main, parent, opts) {
+    TriangleComponent.super.constructor.apply(this, arguments);
+}
+Webvs.defineClass(TriangleComponent, Webvs.Component, {
+    defaultOptions: {
+        x: 0, y: 0, color: "#FF0000"
+    },
+
+    onChange: {
+        color: "updateProgram"
+    },
+
+    init: function() {
+        this.updateProgram();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null,
+                         this.opts.x, this.opts.y);
+    },
+
+    destroy: function() {
+        this.program.destroy()
+        this.super.destroy.call(this);
+    },
+
+    updateProgram: function() {
+        var gl = this.gl;
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = new PolygonProgram(this.gl, this.opts.color);
+    }
+});
+
+var PolygonProgram = function(gl, options) {
+    var color = _.map(
+        Webvs.parseColorNorm(options.color || [1,1,1]),
+        function(value) { return Webvs.glslFloatRepr(value); }
+    );
+    PolygonProgram.super.constructor.call(this, gl, {
+        copyOnSwap: true,
+        vertexShader: [
+            "attribute vec2 a_position;",
+            "uniform vec2 u_offset;",
+            "void main() {",
+            "   gl_PointSize = 1.0;",
+            "   setPosition(a_position + u_offset);",
+            "}"
+        ],
+        fragmentShader: [
+            "void main() {",
+            "   setFragColor(vec4("+color.join(",")+", 1.0));",
+            "}"
+        ]
+    });
+};
+PolygonProgram = Webvs.defineClass(
+    PolygonProgram, Webvs.ShaderProgram, {
+    draw: function(x, y) {
+        this.setVertexAttribArray(
+            "a_position",
+            new Float32Array([-0.8,-0.6, 0.46,-0.5, -0.7,0.7])
+        );
+        this.setUniform("u_offset", "2f", x, y);
+        this.gl.drawArrays(mode, 0, points.length/2);
+    }
+});
+  </pre>
+  <p id="webvs-component-constructor">
+    <b class="header">constructor</b>
+    <code>new Component(gl, main, parent, options)</code><br/>
+    All components are expected to follow the same constructor prototype.
+    Components rarely have to be initialized directly with constructor. They are
+    usually initialized with options from the preset JSON by a container such as an EffectList.
+    <b>gl</b> is the webgl context connected to this instance of webvs. <b>main</b>
+    is a reference to the <b>Webvs.Main</b> instance that contains this component.
+    <b>parent</b> is the parent Component of this Component. <b>options</b> is a hash 
+    of paramters for the component.
+  </p>
+  <p id="webvs-component-opts">
+    <b class="header">opts</b>
+    <code>component.opts</code><br/>
+    A Hash containing the component options. This hash Read-Only. Component options have to be
+    modified with the <b>set</b> method.
+  </p>
+  <p id="webvs-component-onChange">
+    <b class="header">onChange</b>
+    <code>component.onChange</code><br/>
+    A hash mapping option names to method names. The method will be called when the corresponding
+    option changes value. Components can use this hash to listen for changes to options and change
+    the state of the component appropirately. A special <tt>"*"</tt> can be used to listen to changes
+    in any options.
+  </p>
+  <p id="webvs-component-get">
+    <b class="header">get</b>
+    <code>component.get(key)</code><br/>
+    Returns the option <b>key</b>
+  </p>
+  <p id="webvs-component-set">
+    <b class="header">set</b>
+    <code>component.get(key, value, [options])</code><br/>
+    Sets the options <b>key</b> with the value <b>value</b>.
+  </p>
+  <p id="webvs-component-tojson">
+    <b class="header">toJSON</b>
+    <code>component.toJSON()</code><br/>
+    Returns a JSON representation of the component's options. This object can be
+    is put into preset JSONs.
   </p>
 
   </div>
