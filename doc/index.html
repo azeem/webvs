@@ -334,6 +334,28 @@
       <li>&raquo; <a href="#webvs-analyseradapter-getSpectrum">getSpectrum</a></li>
     </ul>
 
+    <a class="toc_title" href="#webvs-component">Webvs.Component</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-component-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-component-opts">opts</a></li>
+      <li>&raquo; <a href="#webvs-component-onChange">onChange</a></li>
+      <li>&raquo; <a href="#webvs-component-get">get</a></li>
+      <li>&raquo; <a href="#webvs-component-set">set</a></li>
+      <li>&raquo; <a href="#webvs-component-setparent">setParent</a></li>
+      <li>&raquo; <a href="#webvs-component-destroy">destroy</a></li>
+      <li>&raquo; <a href="#webvs-component-init">init</a></li>
+      <li>&raquo; <a href="#webvs-component-draw">draw</a></li>
+    </ul>
+
+    <a class="toc_title" href="#webvs-container">Webvs.Container</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-container-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-container-components">components</a></li>
+      <li>&raquo; <a href="#webvs-container-addcomponent">addComponent</a></li>
+      <li>&raquo; <a href="#webvs-component-detachcomponent">detachComponent</a></li>
+      <li>&raquo; <a href="#webvs-component-findcomponent">findComponent</a></li>
+    </ul>
+
   </div>
 
   <div class="container">
@@ -731,6 +753,81 @@ PolygonProgram = Webvs.defineClass(
     <code>component.toJSON()</code><br/>
     Returns a JSON representation of the component's options. This object can be
     is put into preset JSONs.
+  </p>
+  <p id="webvs-component-setparent">
+    <b class="header">setParent</b>
+    <code>component.setParent(newParent)</code><br/>
+    Sets <b>newParent</b> as the parent of this component. This is useful when moving
+    a component around in the component hierarchy.
+  </p>
+  <p id="webvs-component-destroy">
+    <b class="header">destroy</b>
+    <code>component.destory()</code><br/>
+    Cleans up componenet. Override this function to implement additional cleanup
+    tasks. Remember to call the super destroy function.
+  </p>
+  <p id="webvs-component-init">
+    <b class="header">init</b>
+    <code>component.init()</code><br/>
+    This function is called once when the component is initialized. Override and implement
+    initializations. Most of the component initialization code is typically implemented here
+    instead of the constructor.
+  </p>
+  <p id="webvs-component-draw">
+    <b class="header">draw</b>
+    <code>component.draw()</code><br/>
+    This function is called once every frame. Override this function and implement rendering
+    code.
+  </p>
+
+
+  <!-- Webvs.Container -->
+  <h2 id="webvs-container">Webvs.Container</h2>
+  <p>
+    Containers are derived from Components are meant to be used as base classes for components
+    that may contain subcomponents. It provides basic functionality to maintain subcomponents.
+  </p>
+  <p id="webvs-container-constructor">
+    <b class="header">constructor</b>
+    <code>new Webvs.Container(gl, main, parent, opts)</code><br/>
+    Webvs Container initializes all the sub-components using the <b>opts.component</b>
+    field. This field must be an array containing hashes. Each of these hash should have
+    a <b>type</b> field, that contains the string name of the Component type. The
+    sub-components are initialized using their corresponding hash as the <b>opts</b> argument.
+  </p>
+  <p id="webvs-container-components">
+    <b class="header">components</b>
+    <code>container.components</code><br/>
+    This is a list containing all the sub-components. Should be treated as read-only. Use <b>addComponent</b>
+    or <b>detachComponent</b> methods to manipulate the sub-components.
+  </p>
+  <p id="webvs-container-addcomponent">
+    <b class="header">addComponent</b>
+    <code>container.addComponent(componentOpts, [pos], [options])</code><br/>
+    Adds a new component into this container. <b>componentOpts</b> is the options hash
+    for the new component. If an integer <b>pos</b> is given then the component will
+    be added at the specified position in <tt>components</tt> list. The <b>options</b>
+    hash if provided, will be passed to the <tt>addComponent</tt> event handlers.
+  </p>
+  <p id="webvs-container-detachcomponent">
+    <b class="header">detachComponent</b>
+    <code>container.detachComponent(pos, [options])</code><br/>
+    Detaches a sub-component from this container and returns it. <b>pos</b> should be the
+    index in the <tt>components</tt> array or the string id of the component to be detached.
+  </p>
+  <p id="webvs-container-findcomponent">
+    <b class="header">findComponent</b>
+    <code>container.findComponent(id)</code><br/>
+    Searches for a component with the given <b>id</b> in the component sub-tree rooted
+    at this Container.
+  </p>
+
+
+  <!-- Webvs.ShaderProgram -->
+  <h2 id="webvs-container">Webvs.ShaderProgram</h2>
+  <p>
+    Webvs components draw directly using shaders. ShaderProgram provides a featureful
+    abstraction for writing shaders in Webvs.
   </p>
 
   </div>
