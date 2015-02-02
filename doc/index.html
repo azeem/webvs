@@ -355,6 +355,28 @@
       <li>&raquo; <a href="#webvs-component-detachcomponent">detachComponent</a></li>
       <li>&raquo; <a href="#webvs-component-findcomponent">findComponent</a></li>
     </ul>
+    
+    <a class="toc_title" href="#webvs-shaderprogram">Webvs.ShaderProgram</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-shaderprogram-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-run">run</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-draw">draw</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-setuniform">setUniform</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-setvertexattribarray">setVertexAttribArray</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-setelementarray">setElementArray</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-destroy">destroy</a></li>
+    </ul>
+
+    <a class="toc_title" href="#webvs-shaderprogram-glsl">Webvs.ShaderProgram GLSL Reference</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-shaderprogram-glsl-u_resolution">u_resolution</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-glsl-v_positon">v_position</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-glsl-u_srctexture">u_srcTexture</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-glsl-setposition">setPosition</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-glsl-getsrccoloratpos">getSrcColorAtPos</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-glsl-getsrccolor">getSrcColor</a></li>
+      <li>&raquo; <a href="#webvs-shaderprogram-glsl-setfragcolor">setFragColor</a></li>
+    </ul>
 
   </div>
 
@@ -822,13 +844,121 @@ PolygonProgram = Webvs.defineClass(
     at this Container.
   </p>
 
-
   <!-- Webvs.ShaderProgram -->
-  <h2 id="webvs-container">Webvs.ShaderProgram</h2>
+  <h2 id="webvs-shaderprogram">Webvs.ShaderProgram</h2>
   <p>
     Webvs components draw directly using shaders. ShaderProgram provides a featureful
-    abstraction for writing shaders in Webvs.
+    abstraction for writing shaders in Webvs. All Shaders extend ShaderProgram or one of
+    its subclasses.
   </p>
+  <p id="webvs-shaderprogram-constructor">
+    <b class="header">constructor</b>
+    <code>new Webvs.ShaderProgram(gl, opts)</code><br/>
+    <b>gl</b> is the WebGLContext on which the shader will be rendering. The fragment
+    shader and vertex shader shources should be passed as an array of strings in the
+    <b>opts.fragmentShader</b> and <b>opts.vertexShader</b> fields. Pass <b>opts.blendMode</b>
+    to set how the output of this shader is blended with exisitng output. Set <b>opts.swapFrame</b>
+    to true to trigger a frame swap before rendering. This option can be used if the shaders
+    wants to access the current buffer (particularly trans effects). Set <b>opts.copyOnSwap</b>
+    option to true to trigger a copy before frame swaps. This may be required by shaders which do
+    not touch all the pixels eg: rendering polygons. The <b>opts.blendValue</b> value specifies
+    the blend amount in ADJUSTABLE blend mode. ShaderProgram tries to compiles the blending
+    equations intor the shader program when possible, this means blending modes are not always
+    changeable after instantiation. Setting <b>opts.dynamicBlend</b> to true ensures that
+    blending modes are changeable after instantiation.
+  </p>
+  <p id="webvs-shaderprogram-run">
+    <b class="header">run</b>
+    <code>shader.run([fm], [blendMode], [args, ...])</code><br/>
+    Runs this shader. If FrameBuffer manager instance is passed in <b>fm</b>, then it is used
+    for this rendering. Otherwise the currently set render targets are used.
+    <b>blendMode</b> can be used if a different blending mode should be used for this rendering.
+    This works only if <b>dynamicBlend</b> is enabled. <b>args</b> are passed to the draw
+    function and may include shader specific drawing options.
+  </p>
+  <p id="webvs-shaderprogram-draw">
+    <b class="header">draw</b>
+    <code>shader.draw([args, ...])</code><br/>
+    This function should never be called directly, it is called implicitly whenver a call
+    to run function is made. Subclasses should implement drawing operations in this function.
+  </p>
+  <p id="webvs-shaderprogram-setuniform">
+    <b class="header">setUniform</b>
+    <code>shader.setUniform(name, type, value, [...])</code><br/>
+    Helper function to bind value to a uniform. <b>name</b> is the name of the variable.
+    <b>type</b> should be a string indicating the type of the shader variable. Currently
+    supported types are <tt>"texture2D"</tt>,
+    <tt>"1f"</tt>, <tt>"2f"</tt>, <tt>"3f"</tt>, <tt>"4f"</tt>,
+    <tt>"1i"</tt>, <tt>"2i"</tt>, <tt>"3i"</tt>, <tt>"4i"</tt>,
+    <tt>"1fv"</tt>, <tt>"2fv"</tt>, <tt>"3fv"</tt>, <tt>"4fv"</tt>,
+    <tt>"1iv"</tt>, <tt>"2iv"</tt>, <tt>"3iv"</tt>, <tt>"4iv"</tt>.
+  </p>
+  <p id="webvs-shaderprogram-setvertexattribarray">
+    <b class="header">setVertexAttribArray</b>
+    <code>shader.setVertexAttribArray(name, array, size, type, stride, offset)</code><br/>
+    Binds data to the vertex attribute array. <b>name</b> is the name of the attribute variable.
+    <b>array</b> should be and array of values containing the data to be bound. <b>size</b>,
+    <b>type</b>, <b>normalized</b>, <b>stride</b> and  <b>offset</b> have the same meaning
+    as the arguments to the WebGL <tt>vertexAttribPointer</tt> function.
+  </p>
+  <p id="webvs-shaderprogram-setelementarray">
+    <b class="header">setElementArray</b>
+    <code>shader.setElementArray(array)</code><br/>
+    Binds the element array buffer. <b>array</b> should be an array of values.
+  </p>
+  <p id="webvs-shaderprogram-destroy">
+    <b class="header">destroy</b>
+    <code>shader.destroy()</code><br/>
+    Cleans up all resources used by this shader.
+  </p>
+
+  <!-- ShaderProram GLSL reference -->
+  <h2 id="webvs-shaderprogram-glsl">Webvs.ShaderProgram GLSL Reference</h2>
+  <p>
+    ShaderProgram inserts additional GLSL code into shaders in order to provide consistent
+    interface and additional features. Here we discuss some of these macros and variables.
+  </p>
+  <p id="webvs-shaderprogram-glsl-u_resolution">
+    <b class="header">u_resolution</b>
+    <code>vec2 u_resolution</code><br/>
+    Uniform variable containing the screen resolution
+  </p>
+  <p id="webvs-shaderprogram-glsl-v_position">
+    <b class="header">v_position</b>
+    <code>vec2 v_position</code><br/>
+    A 0-1 normalized varying of the vertex position.
+  </p>
+  <p id="webvs-shaderprogram-glsl-u_srctexture">
+    <b class="header">u_srcTexture</b>
+    <code>sampler2D u_srcTexture</code><br/>
+    The source texture from the swapped out frame. Enabled only when <b>swapFrame</b> is
+    set to true in the ShaderProgram initialization.
+  </p>
+  <p id="webvs-shaderprogram-glsl-setposition">
+    <b class="header">setPosition</b>
+    <code>setPosition(vec2 pos)</code><br/>
+    Sets the <tt>gl_Position</tt> and the <tt>v_position</tt> variable. This macro is accessible only inside
+    vertex shader.
+  </p>
+  <p id="webvs-shaderprogram-glsl-getsrccoloratpos">
+    <b class="header">getSrcColorAtPos</b>
+    <code>getSrcColorAtPos(vec2 pos)</code><br/>
+    Returns the pixel value at the corresponding position in u_srcTexture.
+  </p>
+  <p id="webvs-shaderprogram-glsl-getsrccolor">
+    <b class="header">getSrcColor</b>
+    <code>getSrcColor()</code><br/>
+    Same as <b>getSrcColor</b> but returns the color at v_position. This macro is
+    accessible only inside the fragment shader.
+  </p>
+  <p id="webvs-shaderprogram-glsl-setfragcolor">
+    <b class="header">setFragColor</b>
+    <code>setFragColor(vec4 color)</code><br/>
+    Sets the correctly blended color value in <tt>gl_FragColor</tt>. This macro/function
+    should be used instead of setting value in gl_FragColor directly. Accessible only inside
+    fragment shader.
+  </p>
+
 
   </div>
 </html>
