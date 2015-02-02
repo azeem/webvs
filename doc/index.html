@@ -23,7 +23,7 @@
       position: fixed;
       z-index: 10;
       top: 0; left: 0; bottom: 0;
-      width: 200px;
+      width: 230px;
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
@@ -66,7 +66,7 @@
     div.container {
       position: relative;
       width: 550px;
-      margin: 40px 0 50px 260px;
+      margin: 40px 0 50px 290px;
     }
     img#logo {
       width: 450px;
@@ -337,6 +337,10 @@
     <a class="toc_title" href="#webvs-component">Webvs.Component</a>
     <ul class="toc_section">
       <li>&raquo; <a href="#webvs-component-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-component-id">id</a></li>
+      <li>&raquo; <a href="#webvs-component-main">main</a></li>
+      <li>&raquo; <a href="#webvs-component-parent"parent</a></li>
+      <li>&raquo; <a href="#webvs-component-gl">gl</a></li>
       <li>&raquo; <a href="#webvs-component-opts">opts</a></li>
       <li>&raquo; <a href="#webvs-component-onChange">onChange</a></li>
       <li>&raquo; <a href="#webvs-component-get">get</a></li>
@@ -376,6 +380,26 @@
       <li>&raquo; <a href="#webvs-shaderprogram-glsl-getsrccoloratpos">getSrcColorAtPos</a></li>
       <li>&raquo; <a href="#webvs-shaderprogram-glsl-getsrccolor">getSrcColor</a></li>
       <li>&raquo; <a href="#webvs-shaderprogram-glsl-setfragcolor">setFragColor</a></li>
+    </ul>
+
+    <a class="toc_title" href="#webvs-quadboxprogram">Webvs.QuadBoxProgram</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-quadboxprogram-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-quadboxprogram-draw">draw</a></li>
+    </ul>
+
+    <a class="toc_title" href="#webvs-framebuffermanager">Webvs.FrameBufferManager</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-framebuffermanager-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-addTexture">addTexture</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-removeTexture">removeTexture</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-setRenderTarget">setRenderTarget</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-restoreRenderTarget">restoreRenderTarget</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-getCurrentTexture">getCurrentTexture</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-copyOver">copyOver</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-switchTexture">switchTexture</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-resize">resize</a></li>
+      <li>&raquo; <a href="#webvs-framebuffermanager-destroy">destroy</a></li>
     </ul>
 
   </div>
@@ -744,7 +768,29 @@ PolygonProgram = Webvs.defineClass(
     <b>gl</b> is the webgl context connected to this instance of webvs. <b>main</b>
     is a reference to the <b>Webvs.Main</b> instance that contains this component.
     <b>parent</b> is the parent Component of this Component. <b>options</b> is a hash 
-    of paramters for the component.
+    of paramters for the component. Pass <b>options.id</b> to initialize the component
+    with a unique id.
+  </p>
+  <p id="webvs-component-id">
+    <b class="header">id</b>
+    <code>component.id</code><br/>
+    A unique string identifier for this component. If not initialized from <b>opts.id</b>
+    a random unique id is generated.
+  </p>
+  <p id="webvs-component-main">
+    <b class="header">main</b>
+    <code>component.id</code><br/>
+    Reference to the <b>Webvs.Main</b> that manages this component.
+  </p>
+  <p id="webvs-component-parent">
+    <b class="header">parent</b>
+    <code>component.id</code><br/>
+    Reference to the <b>Webvs.Main</b> that manages this component.
+  </p>
+  <p id="webvs-component-gl">
+    <b class="header">gl</b>
+    <code>component.gl</code><br/>
+    Reference to the WebGLContext.
   </p>
   <p id="webvs-component-opts">
     <b class="header">opts</b>
@@ -957,6 +1003,110 @@ PolygonProgram = Webvs.defineClass(
     Sets the correctly blended color value in <tt>gl_FragColor</tt>. This macro/function
     should be used instead of setting value in gl_FragColor directly. Accessible only inside
     fragment shader.
+  </p>
+
+  <!-- ShaderProram GLSL reference -->
+  <h2 id="webvs-quadboxprogram">Webvs.QuadBoxProgram</h2>
+  <p>
+    A common kind of shader in Webvs is one where the vertices only make two triangles
+    that span the entire screen and the bulk of the shader code is in the fragment shader.
+    QuadBoxProgram is a base class for shaders that makes it easy to write such shaders.
+    QuadBoxProgram itself is derived from ShaderProgram.
+  </p>
+  <p id="webvs-quadboxprogram-constructor">
+    <b class="header">constructor</b>
+    <code>new Webvs.QuadBoxProgram(gl, options)</code><br/>
+    All the parameters are the same as <b>ShaderProgram</b>. The <b>options.vertexShader</b>
+    can be omitted a default vertex shader that draws the box will be supplied.
+  </p>
+  <p id="webvs-quadboxprogram-draw">
+    <b class="header">draw</b>
+    <code>program.draw([args, ...])</code><br/>
+    The draw method sets the vertex attribute array with a Box spanning the entire screen.
+    Override this and implement additional drawing code. Remember to call the super draw
+    function.
+  </p>
+
+
+  <!-- Webvs.FrameBufferManager -->
+  <h2 id="webvs-framebuffermanager">Webvs.FrameBufferManager</h2>
+  <p>
+    FrameBuffer manager maintains a set of named/unnamed render targets and enables
+    switching between them. Many Webvs Components have to read pixels from previous
+    frames or from the output of other components. WebGL doesnt allow reading and writing
+    to the same render target at the same time. To overcome this, Webvs maintains two sets
+    of render targets and then switches between them for each frame, using the previous render
+    target as source for the second. FrameBufferManager provides the functionality to perform
+    this switching. Additionally FrameBufferManager is also used for Buffers and offscreen
+    rendering in EffectLists.
+  </p>
+  <p>
+    FrameBufferManager has a current texture which is used as the render target by default.
+    Switching textures changes the current texture. In most cases a framebuffer manager
+    reference can be obtained from the Component parent <tt>component.parent.fm</tt>.
+  </p>
+  <p id="webvs-framebuffermanager-constructor">
+    <b class="header">constructor</b>
+    <code>new Webvs.FrameBufferManager(gl, copier, [textureOnly], [texCount])</code><br/>
+    Instantiates a new FrameBufferManager. <b>gl</b> should be a reference to the WebGl
+    Context. <b>copier</b> should be an instance of a <b>Webvs.CopyProgram</b> to be used
+    when copying over textures. Pass <b>textureOnly</b> with true to prevent creation of
+    FrameBuffers. ie. only textures will be maintained. Pass an integer in <b>texCount</b>
+    to indicate the number of textures to be created initially, by default 2 textures are
+    create on initialization.
+  </p>
+  <p id="webvs-framebuffermanager-addTexture">
+    <b class="header">addTexture</b>
+    <code>fm.addTexture([name])</code><br/>
+    Adds a new texture to the FrameBufferManager. If a string <b>name</b> is passed then
+    the texture created will be associated with the name. If a texture with the same name
+    already exists then a new texture is not created. However, a reference count is incremented
+    so that textures that go out of use can be cleaned up.
+  </p>
+  <p id="webvs-framebuffermanager-removeTexture">
+    <b class="header">removeTexture</b>
+    <code>fm.removeTexture(arg)</code><br/>
+    Removes and cleans up a texture maintained by the FrameBufferManger. If <b>arg</b> is
+    an integer then the texture with that index is removed. If it is a string then the texture
+    with that name is removed (if it is not being references elsewhere).
+  </p>
+  <p id="webvs-framebuffermanager-setrendertarget">
+    <b class="header">setRenderTarget</b>
+    <code>fm.setRenderTarget([texName])</code><br/>
+    Saves the current render target and sets the current texture in this FrameBufferManager as the
+    render traget. If the FM has a FrameBuffer then a FrameBuffer switch is also performed.
+    Pass <b>texName</b> to set a specific texture as the target instead of the current texture.
+  </p>
+  <p id="webvs-framebuffermanager-restorerendertarget">
+    <b class="header">restoreRenderTarget</b>
+    <code>fm.restoreRenderTarget()</code><br/>
+    Restores the render target previously saved with a call to <b>setRenderTarget</b>
+  </p>
+  <p id="webvs-framebuffermanager-getcurrenttexture">
+    <b class="header">getCurrentTexture</b>
+    <code>fm.getCurrentTexture()</code><br/>
+    Returns the current texture set in the framebuffer manager.
+  </p>
+  <p id="webvs-framebuffermanager-copyover">
+    <b class="header">copyOver</b>
+    <code>fm.copyOver()</code><br/>
+    Copies the previous texture to the current texture.
+  </p>
+  <p id="webvs-framebuffermanager-switchtexture">
+    <b class="header">switchTexture</b>
+    <code>fm.switchTexture()</code><br/>
+    Changes the current texture to the next texture in the framebuffer manager.
+  </p>
+  <p id="webvs-framebuffermanager-resize">
+    <b class="header">resize</b>
+    <code>fm.resize()</code><br/>
+    Resizes the all the texture to <tt>gl.drawingBufferWidth</tt> and <tt>gl.drawingBufferHeight</tt>.
+    This is typically called when components recieve a resize event.
+  </p>
+  <p id="webvs-framebuffermanager-destroy">
+    <b class="header">destroy</b>
+    <code>fm.destroy()</code><br/>
+    Cleans up all textures and FrameBuffers maintained by this FrameBufferManager.
   </p>
 
 
