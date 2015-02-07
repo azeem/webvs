@@ -56,6 +56,7 @@ Webvs.defineClass(ClearScreen, Webvs.Component, {
     },
 
     destroy: function() {
+        ClearScreen.super.destroy.call(this);
         this.program.destroy();
     },
 

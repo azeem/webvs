@@ -68,6 +68,7 @@ Webvs.defineClass(BufferSave, Webvs.Component, {
     },
 
     destroy: function() {
+        BufferSave.super.destroy.call(this);
         this.main.buffers.removeTexture(this.opts.bufferId);
     },
     

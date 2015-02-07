@@ -73,6 +73,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
     },
 
     destroy: function() {
+        SuperScope.super.destroy.call(this);
         this.program.destroy();
     },
 

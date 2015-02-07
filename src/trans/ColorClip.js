@@ -48,6 +48,7 @@ Webvs.defineClass(ColorClip, Webvs.Component,  {
     },
 
     destroy: function() {
+        ColorClip.super.destroy.call(this);
         this.program.destroy();
     },
 

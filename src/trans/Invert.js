@@ -25,6 +25,7 @@ Webvs.defineClass(Invert, Webvs.Component, {
     },
 
     destroy: function() {
+        Invert.super.destroy.call(this);
         this.program.destroy();
     }
 });

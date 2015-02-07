@@ -71,6 +71,7 @@ Webvs.defineClass(ColorMap, Webvs.Component, {
     },
 
     destroy: function() {
+        ColorMap.super.destroy.call(this);
         this.program.destroy();
         _.each(this.colorMaps, function(tex) {
             this.gl.deleteTexture(tex);

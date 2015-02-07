@@ -58,6 +58,7 @@ Webvs.defineClass(Mosaic, Webvs.Component, {
     },
 
     destroy: function() {
+        Mosaic.super.destroy.call(this);
         this.program.destroy();
     },
 

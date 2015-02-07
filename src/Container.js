@@ -26,6 +26,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     },
 
     destroy: function() {
+        Container.super.destroy.call(this);
         for(var i = 0;i < this.components.length;i++) {
             this.components[i].destroy();
         }

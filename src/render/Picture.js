@@ -38,6 +38,7 @@ Webvs.defineClass(Picture, Webvs.Component, {
     },
 
     destroy: function() {
+        Picture.super.destroy.call(this);
         this.program.destroy();
         this.gl.deleteTexture(this.texture);
     },

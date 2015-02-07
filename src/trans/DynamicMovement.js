@@ -77,6 +77,7 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
     },
 
     destroy: function() {
+        DynamicMovement.super.destroy.call(this);
         this.program.destroy();
     },
 

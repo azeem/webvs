@@ -37,6 +37,7 @@ Webvs.defineClass(UniqueTone, Webvs.Component, {
     },
 
     destroy: function() {
+        UniqueTone.super.destroy.call(this);
         this.program.destroy();
     },
 

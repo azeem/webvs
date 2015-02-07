@@ -108,6 +108,7 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
     },
 
     destroy: function() {
+        MovingParticle.super.destroy.call(this);
         this.program.destroy();
     }
 });

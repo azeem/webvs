@@ -55,6 +55,7 @@ Webvs.defineClass(Texer, Webvs.Component, {
     },
 
     destroy: function() {
+        Texer.super.destroy.call(this);
         this.program.destroy();
         this.gl.deleteTexture(this.texture);
     },

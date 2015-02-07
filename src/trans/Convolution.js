@@ -50,6 +50,7 @@ Webvs.defineClass(Convolution, Webvs.Component, {
     },
 
     destroy: function() {
+        Convolution.super.destroy.call(this);
         this.program.destroy();
     },
 
