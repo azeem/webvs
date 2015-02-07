@@ -1,8 +1,26 @@
+var isFF = !!window.sidebar; // check for firefox. http://browserhacks.com/#hack-bc74b0938bafbf5176b9430961353b77
+if(isFF) { 
+    soundManager.setup({
+        url: "/bower_components/soundmanager2/swf",
+        flashVersion: 9,
+        preferFlash: true,
+        useHighPerformance: true,
+        useFastPolling: true
+    });
+}
+
 var webvsMain;
 window.onload = function () {
     // initialize dancer and webvs
     var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
-    var analyser = new Webvs.WebAudioAnalyser();
+
+    var analyser;
+    if(isFF) { 
+        analyser = new Webvs.SMAnalyser();
+    } else {
+        analyser = new Webvs.WebAudioAnalyser();
+    }
+
     webvsMain = new Webvs.Main({
         canvas: document.getElementById("canvas"),
         analyser: analyser,
@@ -22,12 +40,16 @@ window.onload = function () {
     });
 
     // load and play the track
-    var trackUrl = "https://soundcloud.com/kartell/kartell-minimum-move";
+    var trackUrl = "https://soundcloud.com/gigamesh/fleetwood-mac-dreams-gigamesh";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4 && xhr.status == 200) {
             var json = JSON.parse(xhr.responseText);
-            analyser.load(json.stream_url + "?client_id=" + clientId).play();
+            if(isFF) {
+                analyser.createSound({url: json.stream_url + "?client_id=" + clientId}).play();
+            } else {
+                analyser.load(json.stream_url + "?client_id=" + clientId).play();
+            }
         }
     };
     var apiUrl = "http://api.soundcloud.com/resolve.json?url="+encodeURI(trackUrl)+"&client_id="+clientId

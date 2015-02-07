@@ -173,6 +173,7 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
     // representation
     toJSON: function() {
         var preset = this.rootComponent.toJSON();
+        preset = _.pick(preset, "clearFrame", "components");
         preset.resources = this.rsrcMan.toJSON();
         preset.meta = _.clone(this.meta);
         return preset;

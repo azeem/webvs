@@ -28,8 +28,8 @@ function SMAnalyser(options) {
 Webvs.SMAnalyser = Webvs.defineClass(SMAnalyser, Webvs.AnalyserAdapter, {
     // Creates a new SMSound object and attaches it to this analyser
     createSound: function(options) {
-        options.usewaveformdata = true;
-        options.useeqdata = true;
+        options.useWaveformData = true;
+        options.useEQData = true;
         this.setSound(soundManager.createSound(options));
         return this.sound;
     },
@@ -41,7 +41,7 @@ Webvs.SMAnalyser = Webvs.defineClass(SMAnalyser, Webvs.AnalyserAdapter, {
     update: function() {
         if(!this.sound || 
            this.sound.eqData.left.length === 0 || 
-           this.sound.waveformData.length === 0) {
+           this.sound.waveformData.left.length === 0) {
             return; // no sound. nothing to update
         }
         var i;

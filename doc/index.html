@@ -297,6 +297,8 @@
 
     <a class="toc_title" href="#basic-usage">Basic Usage</a>
 
+    <a class="toc_title" href="#examples">Examples</a>
+
     <a class="toc_title" href="#webvs-main">Webvs.Main</a>
     <ul class="toc_section">
       <li>&raquo; <a href="#webvs-main-loadpreset">loadPreset</a></li>
@@ -412,7 +414,9 @@
       <li>&raquo; <a href="#webvs-resourcemanager-getimage">getImage</a></li>
     </ul>
 
-    <a class="toc_title" href="#webvs-changelog">Change Log</a>
+    <a class="toc_title" href="#links">Links</a>
+
+    <a class="toc_title" href="#changelog">Change Log</a>
 
   </div>
 
@@ -493,6 +497,20 @@ webvs.start();
 analyser.load("music.ogg");
 analyser.play();
     </pre>
+
+   <!-- Webvs.Main -->
+   <h2 id="examples">Examples</h2>
+   <p>
+     Here are some example music visualizations rendered using Webvs.
+   </p>
+   <ul>
+     <li><a href="examples/JelloCube.html">Jello Cube</a></li>
+     <li><a href="examples/PillowFight.html">Pillow Fight</a></li>
+     <li><a href="examples/RandomAnja.html">Random Anja</a></li>
+     <li><a href="examples/SilkString.html">Silk String</a></li>
+     <li><a href="examples/SuperscopeScience.html">Superscope Science</a></li>
+   </ul>
+
 
    <!-- Webvs.Main -->
 
@@ -615,7 +633,7 @@ webvs.loadPreset({
   </p>
 
   <!-- Webvs.SMAnalyser -->
-  <h2 id="webvs-analyseradapter">Webvs.SMAnalyser</h2>
+  <h2 id="webvs-smanalyser">Webvs.SMAnalyser</h2>
   <p>
     SMAnalyser connects <a href="http://www.schillmania.com/projects/soundmanager2/">SoundManager2</a>
     sounds to Webvs. The following soundManager setup is recommended for use with Webvs.
@@ -1179,7 +1197,28 @@ PolygonProgram = Webvs.defineClass(
   </p>
 
   <!-- ChangeLog -->
-  <h2 id="webvs-changelog">Change Log</h2>
+  <h2 id="links">Links and Suggested Reading</h2>
+  <ul>
+    <li>
+      <a href="http://avstudio.azeemarshad.in/">AVStudio</a> - An online Music Visualization
+      authoring and sharing app. Built using Webvs, Webvsed and TinyPlayer
+    </li>
+    <li>
+      <a href="https://github.com/azeem/webvsed">WebvsEd</a> - A HTML/Javascript editor
+      for Webvs presets
+    </li>
+    <li>
+      <a href="https://github.com/grandchild/AVS-File-Decoder">AVS-File-Decoder</a> - A decoder
+      that converts AVS presets to JSON format accepted in Webvs
+    </li>
+    <li>
+      <a href="https://github.com/grandchild/AVS-File-Decoder-Qt">AVS-File-Decoder-Qt</a> - A Qt port
+      of AVS File Decoder.
+    </li>
+  </ul>
+
+  <!-- ChangeLog -->
+  <h2 id="-changelog">Change Log</h2>
   <b class="header">1.5.0</b> - <small>Feb 6, 2014</small>
   <p>
     This release is a major overhaul since the last release. So many things have changed that
