@@ -23,7 +23,7 @@
       position: fixed;
       z-index: 10;
       top: 0; left: 0; bottom: 0;
-      width: 230px;
+      width: 250px;
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
@@ -66,7 +66,7 @@
     div.container {
       position: relative;
       width: 550px;
-      margin: 40px 0 50px 290px;
+      margin: 40px 0 50px 310px;
     }
     img#logo {
       width: 450px;
@@ -297,8 +297,6 @@
 
     <a class="toc_title" href="#basic-usage">Basic Usage</a>
 
-    <a class="toc_title" href="#events">Events</a>
-
     <a class="toc_title" href="#webvs-main">Webvs.Main</a>
     <ul class="toc_section">
       <li>&raquo; <a href="#webvs-main-loadpreset">loadPreset</a></li>
@@ -334,12 +332,14 @@
       <li>&raquo; <a href="#webvs-analyseradapter-getSpectrum">getSpectrum</a></li>
     </ul>
 
+    <a class="toc_title" href="#events">Events</a>
+
     <a class="toc_title" href="#webvs-component">Webvs.Component</a>
     <ul class="toc_section">
       <li>&raquo; <a href="#webvs-component-constructor">constructor</a></li>
       <li>&raquo; <a href="#webvs-component-id">id</a></li>
       <li>&raquo; <a href="#webvs-component-main">main</a></li>
-      <li>&raquo; <a href="#webvs-component-parent"parent</a></li>
+      <li>&raquo; <a href="#webvs-component-parent">parent</a></li>
       <li>&raquo; <a href="#webvs-component-gl">gl</a></li>
       <li>&raquo; <a href="#webvs-component-opts">opts</a></li>
       <li>&raquo; <a href="#webvs-component-onChange">onChange</a></li>
@@ -401,6 +401,18 @@
       <li>&raquo; <a href="#webvs-framebuffermanager-resize">resize</a></li>
       <li>&raquo; <a href="#webvs-framebuffermanager-destroy">destroy</a></li>
     </ul>
+
+    <a class="toc_title" href="#webvs-resourcemanager">Webvs.ResourceManager</a>
+    <ul class="toc_section">
+      <li>&raquo; <a href="#webvs-resourcemanager-constructor">constructor</a></li>
+      <li>&raquo; <a href="#webvs-resourcemanager-registeruri">registerUri</a></li>
+      <li>&raquo; <a href="#webvs-resourcemanager-toJSON">toJSON</a></li>
+      <li>&raquo; <a href="#webvs-resourcemanager-clear">clear</a></li>
+      <li>&raquo; <a href="#webvs-resourcemanager-destroy">destroy</a></li>
+      <li>&raquo; <a href="#webvs-resourcemanager-getimage">getImage</a></li>
+    </ul>
+
+    <a class="toc_title" href="#webvs-changelog">Change Log</a>
 
   </div>
 
@@ -482,20 +494,6 @@ analyser.load("music.ogg");
 analyser.play();
     </pre>
 
-    <h2 id="events">Events</h2>
-    <p>
-      Many object in Webvs generate and or listen to events. Webvs uses the 
-      <a href="http://backbonejs.org/#Events">Backbone Events module</a> for this.
-      All backbone event module functions such as <b>on</b>, <b>off</b>, <b>trigger</b>,
-      <b>listenTo</b> etc. are available on these objects. Additionally most objects
-      also have <b>get</b>, <b>set</b> methods for some parameters. These methods fire
-      <tt>change</tt> event just like Backbone models.
-    </p>
-    <p id="catalaog-of-events">
-      <b class="header">Catalog of Events</b><br/>
-      Here is the complete list of events in Main, ResourceManager and Components.
-    </p>
-
    <!-- Webvs.Main -->
 
     <h2 id="webvs-main">Webvs.Main</h2>
@@ -511,7 +509,9 @@ analyser.play();
       contains the preset. The root object should have a <b>components</b> property
       which will contain an Array for component configurations for all the components.
       All component configurations should have a <b>type</b> property containing the string
-      name of the Component. Other properties are specific to each component.
+      name of the Component. Other properties are specific to each component. The <b>resources.uris</b>
+      property in preset is used to register resources with Webvs.ResourceManager and has
+      the same format accepted by the registerUri.
     </p>
     <p>
       If you want to clear every frame of the preset, then set <b>clearFrame</b> to true
@@ -554,36 +554,36 @@ webvs.loadPreset({
       only supported attribute. This value can be used to store metadata, such as
       preset name or author. Eg. <tt>main.set("meta", {name: "presetname"})</tt>
     </p>
-
     <p id="webvs-main-get">
       <b class="header">get</b>
       <code>main.get(attribute)</code><br/>
       Gets the current value of a preset property. Eg. <tt>main.get("meta")</tt>
     </p>
-
-    <p id="webvs-resetcanvas">
+    <p id="webvs-main-resetcanvas">
       <b class="header">resetCanvas</b>
       <code>main.resetCanvas()</code><br/>
       Resets and reinitializes all the components and canvas.
     </p>
-
-    <p id="webvs-notifyresize">
+    <p id="webvs-main-notifyresize">
       <b class="header">notifyResize</b>
       <code>main.notifyResize()</code><br/>
       This function should be called if the canvas element's <tt>width</tt> or <tt>height</tt>
       attribute has changed. This allows Webvs to update and resize all the buffers.
     </p>
-
-    <p id="webvs-tojson">
+    <p id="webvs-main-tojson">
       <b class="header">toJSON</b>
       <code>main.toJSON()</code><br/>
       Returns a JSON representation of the currently loaded preset.
     </p>
-
-    <p id="webvs-destroy">
+    <p id="webvs-main-destroy">
       <b class="header">destroy</b>
       <code>main.destroy()</code><br/>
       Frees up all resource.
+    </p>
+    <p id="webvs-main-rsrcMan">
+      <b class="header">rsrcMan</b>
+      <code>main.rsrcMan</code><br/>
+      An instance of Webvs.ResourceManager that manages external file resources.
     </p>
 
   <!-- Webvs.WebAudioAnalyser-->
@@ -682,6 +682,31 @@ soundManager.setup({
     This function should return a Float32Array of spectrum samples. Each value should
     be in a 0 to 1 range.
   </p>
+
+    <!-- Events -->
+    <h2 id="events">Events</h2>
+    <p>
+      Many object in Webvs generate and or listen to events. Webvs uses the 
+      <a href="http://backbonejs.org/#Events">Backbone Events module</a> for this.
+      All backbone event module functions such as <b>on</b>, <b>off</b>, <b>trigger</b>,
+      <b>listenTo</b> etc. are available on these objects. Additionally most objects
+      also have <b>get</b>, <b>set</b> methods for some parameters. These methods fire
+      <tt>change</tt> event just like Backbone models.
+    </p>
+    <p id="catalaog-of-events">
+      <b class="header">Catalog of Events</b><br/>
+      Here is the complete list of events in Main, ResourceManager and Components.
+    </p>
+    <ul>
+      <li><b>"resize"</b> - after Main finishes a resize on notifyResize call</li>
+      <li><b>"wait"</b> - when ResourceManager goes into a wait for one or more resources to be loaded</li>
+      <li><b>"ready"</b> - when ResourceManager is ready with all resources</li>
+      <li><b>"ready"</b> - when ResourceManager is ready with all resources</li>
+      <li><b>"change"</b> - when a model like object's (e.g. Component, ResourceManager, Main) parameters changes</li>
+      <li><b>"change:[attribute]"</b> - when a specific model like object's (Component, ResourceManager, Main) parameters changes</li>
+      <li><b>"error:[attribute]"</b> - when a Component's option change resulted in an error</li>
+    </ul>
+
 
   <!-- Webvs.Component -->
   <h2 id="webvs-component">Webvs.Component</h2>
@@ -1109,6 +1134,60 @@ PolygonProgram = Webvs.defineClass(
     Cleans up all textures and FrameBuffers maintained by this FrameBufferManager.
   </p>
 
+  <!-- Webvs.ResourceManger -->
+  <h2 id="webvs-framebuffermanager">Webvs.ResourceManager</h2>
+  <p>
+    ResourceManager manages external file resources that maybe used by the preset. ResourceManager
+    maintains name to uri mapping. The URI could point to a remote file, in which case the file will
+    be loaded asynchronously or it could be a base64 encoded data.
+  </p>
+  <p id="webvs-resourcemanager-constructor">
+    <b class="header">constructor</b>
+    <code>new Webvs.ResourceManager([packs])</code><br/>
+    Initializes a resource manager. Pass <b>packs</b> is an array of resource packs to register
+    with the ResourceManager. <b>packs[i].name</b> should be the name of the pack, <b>packs[i].prefix</b>, a prefix
+    that will be appended to filenames and <b>packs[i].fileNames</b> should be an array of file names in the pack.
+  </p>
+  <p id="webvs-resourcemanager-registeruri">
+    <b class="header">registerUri</b>
+    <code>rsrcMan.registerUri(fileName, uri)</code><br/>
+    <b>fileName</b> is the name of the resource, by which it will be references in the presets.
+    <b>uri</b> is the uri to the resource.
+  </p>
+  <p id="webvs-resourcemanager-tojson">
+    <b class="header">toJSON</b>
+    <code>rsrcMan.toJSON()</code><br/>
+    Returns a JSON representation of the resources.
+  </p>
+  <p id="webvs-resourcemanager-clear">
+    <b class="header">clear</b>
+    <code>rsrcMan.clear()</code><br/>
+    Clears the state, uri mappings and caches of the ResourceManager.
+  </p>
+  <p id="webvs-resourcemanager-destroy">
+    <b class="header">destroy</b>
+    <code>rsrcMan.destroy()</code><br/>
+    Cleans up all resources.
+  </p>
+  <p id="webvs-resourcemanager-getimage">
+    <b class="header">getImage</b>
+    <code>rsrcMan.getImage(filename, [success], [error], [context])</code><br/>
+    Loads an image resource in the ResourceManager. <b>filename</b> is a registered
+    filename in the resource manager. <b>success</b> and <b>error</b> are callback
+    that will be called when the image load is successfull and errored respectively.
+    <b>context</b> is the <tt>this</tt> context for the callbacks.
+  </p>
+
+  <!-- ChangeLog -->
+  <h2 id="webvs-changelog">Change Log</h2>
+  <b class="header">1.5.0</b> - <small>Feb 6, 2014</small>
+  <ul>
+    <li>Major Code Overhaul</li>
+    <li>Live Update in Components</li>
+    <li>Resource Manager</li>
+    <li>ShaderProgram overhaul</li>
+    <li>WebAudio and SoundManager2 Analysers</li>
+  </ul>
 
   </div>
 </html>
