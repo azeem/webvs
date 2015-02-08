@@ -1,26 +1,68 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(window) {
 
-/**
- * Webvs namespace that contains all classes
- * @alias Webvs
- * @namespace
- */
+// Webvs namespace that contains all classes
 var Webvs = {};
 
 window.Webvs = Webvs;
 
-/**
- * A wrapper around Object.create to help with class definition
- * @param {function} constructor - constructor function for which the prototype is to be defined
- * @param {function} baseConstructor - base constructor whose prototype will be extended
- * @param {...object} [properties] - additional properties to be added to the prototype
- * @returns {function} the constructor
- */
+// Events mixin. Use Backbone Events if available
+// else we expect a global Events mixin with similar
+// API to be present
+Webvs.Events = (window.Backbone && Backbone.Events) || window.Events;
+Webvs.ModelLike = _.extend(_.clone(Webvs.Events), {
+    get: function(key) {
+        throw new Error("get not implemented");
+    },
+
+    toJSON: function(key) {
+        throw new Error("toJSON not implemented");
+    },
+
+    setAttribute: function(key) {
+        throw new Error("setAttribute not implemented");
+    },
+
+    set: function(key, value, options) {
+        var success, silent;
+
+        if(!_.isString(key) && arguments.length <= 2) {
+            // if map of key values are passed
+            // then set each value separately
+            silent = value.silent;
+            options = _.defaults({silent:true}, value);
+            value = _.clone(key);
+
+            success = false;
+            for(key in value) {
+                if(this.setAttribute(key, value[key], options)) {
+                    success = true;
+                    if(!silent) {
+                        this.trigger("change:" + key, this, value[key], options); 
+                    }
+                }
+            }
+            if(success && !silent) {
+                this.trigger("change", this, options); 
+            }
+        } else {
+            options = options || {};
+            success = this.setAttribute(key, value, options);
+            if(success && !options.silent) {
+                this.trigger("change:" + key, this, value, options); 
+                this.trigger("change", this, options); 
+            }
+        }
+
+        return success;
+    }
+});
+
+// A wrapper around Object.create to help with class definition
 Webvs.defineClass = function(constructor, baseConstructor) {
     constructor.prototype = Object.create(baseConstructor.prototype);
     constructor.prototype.constructor = constructor; // fix the constructor reference
@@ -34,16 +76,17 @@ Webvs.defineClass = function(constructor, baseConstructor) {
     return constructor;
 };
 
-/**
- * An empty function
- */
+Webvs.ComponentRegistry = {};
+Webvs.registerComponent = function(componentClass, meta) {
+    Webvs.checkRequiredOptions(meta, ["name"]);
+    componentClass.Meta = meta;
+    Webvs[meta.name] = componentClass;
+    Webvs.ComponentRegistry[meta.name] = componentClass;
+};
+
 Webvs.noop = function() {};
 
-/**
- * Checks if an object contains the required properties
- * @param {object} options - object to be checked
- * @param {Array.<string>} - properties to be checked
- */
+// Checks if an object contains the required properties
 Webvs.checkRequiredOptions = function(options, requiredOptions) {
     for(var i in requiredOptions) {
         var key =  requiredOptions[i];
@@ -53,21 +96,13 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
     }
 };
 
-/**
- * Returns a floating point value representation of a number
- * embeddable in glsl shader code
- * @param {number} val - value to be converted
- * @returns {string} float represntation
- */
+// Returns a floating point value representation of a number
+// embeddable in glsl shader code
 Webvs.glslFloatRepr = function(val) {
     return val + (val%1 === 0?".0":"");
 };
 
-/**
- * Parse css color string #RRGGBB or rgb(r, g, b)
- * @param {string} color - color to be parsed
- * @returns {Array.<number>} triple of color values in 0-255 range
- */
+// Parse css color string #RRGGBB or rgb(r, g, b)
 Webvs.parseColor = function(color) {
     if(_.isArray(color) && color.length == 3) {
         return color;
@@ -92,18 +127,12 @@ Webvs.parseColor = function(color) {
     throw new Error("Invalid Color Format");
 };
 
-/**
- * 0-1 normalized version of {@link Webvs.parseColor}
- */
+// 0-1 normalized version of Webvs.parseColor
 Webvs.parseColorNorm = function(color) {
     return _.map(Webvs.parseColor(color), function(value) { return value/255; });
 };
 
-/**
- * Pretty prints a shader compilation error
- * @param {string} - shader source code
- * @param {string} - error message from gl.getShaderInfoLog
- */
+// Pretty prints a shader compilation error
 Webvs.logShaderError = function(src, error) {
     var lines = src.split("\n");
     var ndigits = lines.length.toString().length;
@@ -134,115 +163,47 @@ Webvs.logShaderError = function(src, error) {
     console.log("Shader Error : \n" + numberedLines);
 };
 
-
-/**
- * @class
- * A simple promise object to notify async init of
- * components
- * @memberof Webvs
- * @constructor
- */
-var Promise = function() {
-    this.resolved = false;
-    this.listeners = [];
-};
-Webvs.Promise = Webvs.defineClass(Promise, Object, {
-    /**
-     * resolves the promise object and runs all
-     * the callbacks
-     * @memberof Webvs.Promise#
-     */
-    resolve: function() {
-        if(!this.resolved) {
-            this.resolved = true;
-            _.each(this.listeners, function(cb) {
-                cb();
-            });
-        }
-    },
-
-    /**
-     * register a callback which should be called
-     * when the promise resolves
-     * @param {function} cb - callback
-     * @memberof Webvs.Promise#
-     */
-    onResolve : function(cb) {
-        if(this.resolved) {
-            cb();
-        } else {
-            this.listeners.push(cb);
-        }
-    }
-});
-
-/**
- * Combines several promises into one promise
- * @param {Array.<Webvs.Promise>} promises - promises to be combined
- * @returns {Webvs.Promise}
- */
-Webvs.joinPromises = function(promises) {
-    var joinedPromise = new Promise();
-    promises = _.filter(promises, function(p) {return !_.isUndefined(p);});
-    if(promises.length === 0) {
-        joinedPromise.resolve();
-    } else {
-        var counter = promises.length;
-        var onResolveCb = function() {
-            counter--;
-            if(counter === 0) {
-                joinedPromise.resolve();
-            }
-        };
-        _.each(promises, function(promise) {
-            if(promise.resolved) {
-                onResolveCb();
-            } else {
-                promise.onResolve(onResolveCb);
-            }
-        });
-    }
-
-    return joinedPromise;
-};
-
 _.flatMap = _.compose(_.flatten, _.map);
 
-/**
- * Blend mode constants
- */
-Webvs.blendModes = {
+// Blend mode constants
+Webvs.BlendModes = {
     REPLACE: 1,
     MAXIMUM: 2,
     AVERAGE: 3,
     ADDITIVE: 4,
     SUBTRACTIVE1: 5,
     SUBTRACTIVE2: 6,
-    MULTIPLY: 7
+    MULTIPLY: 7,
+    MULTIPLY2: 8,
+    ADJUSTABLE: 9,
+    ALPHA: 10
 };
-_.extend(Webvs, Webvs.blendModes);
+_.extend(Webvs, Webvs.BlendModes);
 
-/**
- * Returns the blendmode constant. Throws an error if its
- * an invalid blend mode
- * @param {string} name - the blend mode in string
- * @returns {number} the code for the blend mode
- */
-Webvs.getBlendMode = function(name) {
-    var mode = Webvs.blendModes[name];
-    if(!mode) {
-        throw new Error("Unknown blendMode " + name);
+Webvs.Channels = {
+    CENTER: 0,
+    LEFT: 1,
+    RIGHT: 2
+};
+_.extend(Webvs, Webvs.Channels);
+
+Webvs.Source = {
+    SPECTRUM: 1,
+    WAVEFORM: 2
+};
+_.extend(Webvs, Webvs.Source);
+
+// Returns an enumeration(plain object with numeric values)
+// value or throws an exception if it doesnt exists
+Webvs.getEnumValue = function(key, enumeration) {
+    key = key.toUpperCase();
+    if(!(key in enumeration)) {
+        throw new Error("Unknown key " + key + ", expecting one of " + _.keys(enumeration).join(","));
     }
-    return mode;
+    return enumeration[key];
 };
 
-/**
- * Returns a random string of given length
- * @param {number} count - the number of characters required
- * @param {string} chars - a string containing the characters 
- *                         from which to choose
- * @returns {string} a random string
- */
+// Returns a random string of given length
 Webvs.randString = function(count, chars) {
     var string = [];
     chars = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -252,127 +213,267 @@ Webvs.randString = function(count, chars) {
     return string.join("");
 };
 
-/**
- * Clamps a number between two given numbers
- * @param {number} num - number to be clamped
- * @param {number} min - clamp min edge
- * @returns {number} max - clamp max edge
- */
+// Clamps a number between two given numbers
 Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };
 
+// Returns the component class with the given name. Throws
 Webvs.getComponentClass = function(name) {
-    var componentClass = Webvs[name];
+    var componentClass = Webvs.ComponentRegistry[name];
     if(!componentClass) {
         throw new Error("Unknown Component class " + name);
     }
     return componentClass;
 };
 
+// Returns the value of property given its (dot separated) path in an object
+Webvs.getProperty = function(obj, name) {
+    if(_.isString(name)) {
+        name = name.split(".");
+    }
+    var value = obj[name.shift()];
+    if(value) {
+        if(name.length > 0) {
+            return Webvs.getProperty(value, name);
+        } else {
+            return value;
+        }
+    }
+};
+
+// Sets a property, given its (dot separated) path in an object
+Webvs.setProperty = function(obj, name, value) {
+    if(_.isString(name)) {
+        name = name.split(".");
+    }
+    var propertyName = name.shift();
+    if(name.length === 0) {
+        obj[propertyName] = value;
+    } else {
+        Webvs.setProperty(obj[propertyName], name, value);
+    }
+};
+
 })(window);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-
-Webvs.Resources = {
-    "avsres_texer_circle_edgeonly_19x19.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAMAAABFjsb+AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAhFBMVEUAAAADAwMvLy9dXV1tbW0CAgJaWlrR0dH8/Pz+/v79/f1bW1sKCgqlpaXT09Nubm4xMTEeHh7S0tKCgoIGBgaBgYEuLi5sbGxeXl4cHBwbGxtvb29fX19ra2swMDDU1NQFBQV/f3+np6eoqKgLCwvQ0NBqamoEBAQyMjJhYWFxcXH///8GRExTAAAAAWJLR0QrJLnkCAAAAAlwSFlzAAALEgAACxIB0t1+/AAAAK1JREFUGNN1kMkSgyAQRBViGMc1SpCYBYl7/v8Do2gocpBDF/Wqa3qmPe/w+YSeKPEdEpwZhBgCi4IfihNMs/ySZwUm8e5KoOTmx0tINmeEpZ1yxciMTwtuGS/SNUhA5cRVQBaVSBwmUC6a4c1hNd6NT/z5HosSeDrsCa81V7HGooYpcyBFbZlGut3xBr1t2Gho9x66FvtB1GLose1sU1KZXpR02xqn+TNP43HBX4kJCUk5wyykAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwOS0wNC0yOVQwMTo0OTozMCswNTowMPYYqoAAAAAASUVORK5CYII=",
-    "avsres_texer_circle_edgeonly_29x29.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAdCAMAAABhTZc9AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAA3lBMVEUAAAANDQ0/Pz9xcXGRkZGbm5tycnIfHx+IiIjg4OD7+/v+/v7///8EBARoaGjn5+f8/Pzl5eXHx8e7u7sICAiXl5f6+vrx8fGVlZU4ODgKCgoBAQEJCQm+vr4oKCi9vb39/f2YmJikpKQLCwujo6NpaWmJiYknJyeKiorh4eE3Nzc2NjZAQEDk5ORzc3OSkpLGxsacnJy6urq5ubmdnZ3FxcWTk5M1NTWUlJTw8PDo6Oi8vLwgICCioqJqamqZmZmamprj4+PExMS4uLiLi4sODg5BQUF0dHSenp4PDw8GiJKZAAAAAWJLR0QMgbNRYwAAAAlwSFlzAAALEgAACxIB0t1+/AAAATRJREFUKM+tkltXgkAUhUczL+xBQGNAwEuRKVlpNxC8oGZa//8PRRoIjqsnz9M561tnZu+zNiFnqVz+onBZKOZzJ1ipXBEACgiVcumIiVUJVFZq9ZoiU0hVMQ2vVAZNbxgmMY2GroGpVmpTldFsJWOrjc71YbvKcGOnnrJvwbqJIAlNOyPDbkOKpd1Ba5Fs9TT0/3xWqM4Z1Kmz950X5HuODmThYdcUoRgctR7xtGuGGJkcNUcY7ppn+nLisq/07Z/dd7jxvxZHk38jzQOOerHmnEPHHB3HfkkfWu/4Vn58K1IKMMk6NuoIpvHQZZilsTEDmyeTGHYwOTzem6ATptJhhQy+61m/2fBcH2yR8SjOgyhXy9XHahnlKphnchXVdO3I+0w66ynh63Ozdb/c7eabnKV+AJulHNGcTEkjAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwOS0wNC0yOVQwMTo0OTozMCswNTowMPYYqoAAAAAASUVORK5CYII=",
-    "avsres_texer_circle_fade_13x13.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAMAAABFNRROAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAA9lBMVEUAAAADAwMGBgYICAgCAgIKCgoVFRUeHh4hISEdHR0JCQkODg4jIyM4ODhISEhNTU1HR0c3NzcNDQ0LCwskJCRGRkZoaGh/f3+Hh4d+fn5lZWVEREQXFxc6OjppaWmSkpKtra22trarq6uPj49mZmYHBwcgICBLS0uCgoKurq7Kysrd3d3JycmsrKxRUVGMjIy4uLjf39/+/v63t7eIiIhMTEyDg4Ovr6/MzMzLy8uAgIBJSUkEBAQYGBg8PDxsbGyVlZWwsLC5ubmTk5M5OTkWFhYMDAwmJiZKSkqEhIRqamoQEBA9PT1SUlI7OzsPDw8BAQH///+Cg4ycAAAAAWJLR0RRlGl8KgAAAAlwSFlzAAALEgAACxIB0t1+/AAAAKRJREFUCNcljukWgVAAhO9tvRKVEhGyhISEspWsZef9n0bL/Jo5c+bMB0AsiOEYBJkIkqJRjmKINOTZQpHjBVRKoiiV5UpVqdURGW/URrOltTvdnkBBoPcHQ2NkjidKkcYAI02tmT03F0sO4UBHjrta2xttu4s7z98Hh+PJOMuXa/wZRrfgbrkPnhUTkGf04t7OR/qm9zD0kYRUkcjQfh7O6F7i/uybEULrc6ImAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwMy0xMC0wN1QwMzoxNzoxMiswNjowMNF3hcgAAAAASUVORK5CYII=",
-    "avsres_texer_circle_heavyblur_19x19.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAMAAABFjsb+AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABVlBMVEUAAAACAgIHBwcNDQ0RERETExMBAQEICAgVFRUiIiItLS01NTU3NzcgICA0NDRGRkZVVVVeXl5hYWEjIyM9PT1XV1dubm6BgYGMjIyQkJAfHx9dXV19fX2YmJirq6u2tra6uroDAwMUFBQzMzNWVlafn5+7u7vPz8/b29vf398hISFFRUVtbW2Xl5fY2Njr6+v09PT39/cMDAwsLCxTU1OAgICpqanOzs7q6ur4+Pj8/Pz+/v6qqqoQEBBcXFyKioq0tLTa2tr9/f3///+1tbWLi4sSEhJfX1+NjY24uLje3t729vYyMjKJiYnZ2dnz8/MLCwsrKytSUlJ+fn6oqKjNzc3p6ekGBgZDQ0Nra2uVlZXV1dXy8vL19fUxMTFUVFR5eXmcnJzMzMzc3NwdHR06OjpaWlqUlJSnp6eysrJqamp8fHyIiIgwMDBCQkJRUVEqKioPDw8hvXKsAAAAAWJLR0RDZ9ANYgAAAAlwSFlzAAALEgAACxIB0t1+/AAAAU5JREFUGNM9kFVbwmAARr9tMEpKUhghoyRHCQyHhMTI0SnlSMn/f6OI+l6+z7k5B4DrIBjhcDkIDIG/oTy+QCi6EwkFfB56uyBELJHK5PdymVQiRn5QFFEoVWqN9kGrUauUCuRK8nRKPWYwmswmowHTK3U8AB4tuBWz2R3OJ6fDbsOsuAUCsMvt8Zp9fiJA+H12r8ftgkEwFI48R2NxMkHGY9GXSDgUBBSefE2liUwimyCJ9FsuiVMgLyoU6VI5k81mE+USXSyI8oCqJKupWp28cvVaqpqsUIBpNFvtTjdAZshAt9NuNRsM6In7gyE96o7fx90RPRz0xT0AcSfT2Zxe+D58C3o+m0643yIwu1zN1putabtZz1ZLFr76Bl3L8O5zn9tju/DSxdxSMezheFrpV6fjgWV+Y6FwXnee4JOzLg+j/1WhHnOhLkzv1vkLuBJAlyODjrgAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMjNUMTg6MDk6NDErMDY6MDDn3a6/AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDA5LTA0LTI5VDAxOjQ5OjMwKzA1OjAw9hiqgAAAAABJRU5ErkJggg==",
-    "avsres_texer_circle_heavyblur_21x21.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABfVBMVEUAAAADAwMICAgNDQ0QEBASEhIBAQELCwsWFhYhISEqKiovLy8yMjIFBQUiIiJBQUFNTU1UVFRXV1cUFBQoKCg+Pj5TU1NlZWV0dHR9fX2AgIBmZmYRERFCQkJdXV13d3eNjY2cnJylpaWoqKgKCgqampqvr6/AwMDKysrNzc0VFRUxMTF2dnaZmZm2trbOzs7e3t7o6Ojr6+sHBwcfHx9AQECMjIzl5eXy8vL4+Pj6+voMDAxMTExzc3Obm5u/v7/d3d39/f3+/v4PDw8uLi58fHykpKTIyMjn5+f///8wMDBVVVV+fn6mpqbLy8vp6en5+fktLS1SUlJ7e3ujo6PHx8fm5ub39/dKSkpxcXG9vb3c3Nzx8fEGBgY/Pz9jY2OKioqtra3j4+NQUFCWlpazs7Pb29sCAgIJCQkgICA8PDxaWlp6enqsrKy8vLzGxsbJyckmJiaJiYmhoaEEBAQ7OztiYmJwcHB5eXlJSUkTExMeHh4sLCwdHR0ODg7+hS0uAAAAAWJLR0RJhwXkfAAAAAlwSFlzAAALEgAACxIB0t1+/AAAAZhJREFUGNNFkfs3wnAYxr9jkynXXSqyXLZpGMXShWhbRWFCmUvlslgql1Xk/rdbEc+Pn/Oezznv8wDQDtTVDSNwdxfUA/4CWXrRPqvN2of2WqAO7EcGbINDwyPDQ4O2AaT/F2I4QdodzlGnY4wkcKyNIRc+TrknJqempyYn3NQ47mpJaJSgnAw74+E8MyzjpAiUNk9n58h5fmHR61vyebkFfp6cm4XAsuC3r7BcIBgKh4IBjl2x+4VlsIqvRdY3osGwKInhYHRjPbKGW4AcI+OJza2QmEwmxdDWZiJOxmQAp7Z3dpW9tGRSKb2n7O5sp2Ag7x8cZrJHqiglJVE9ymYOD/ZlYMGPT5jTs1zbmzs7ZU6OTW9eKJxfXCpXOTWt5q6Uy4vzgpAHEJbSHMVrz03AF7hRrosOLYXpAJRuy5Vq8e7+4fHh/q5YrZRvS+bHOmwUKpEaX0/U+Vqk4jdgvVVPAzGetOfmS/yl+aw9GUjjp8qGLFiJV43UXgmrIDc6teult3fjI/ZhfL6V9P+JgJ6nv+QvOv+7zzdrwFa1yCl9GAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAxMy0xMC0yM1QxODowOTo0MSswNjowMOfdrr8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMDktMDQtMjlUMDE6NDk6MzArMDU6MDD2GKqAAAAAAElFTkSuQmCC",
-    "avsres_texer_circle_heavyblur_29x29.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAdCAMAAABhTZc9AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAACSVBMVEUAAAABAQEDAwMGBgYJCQkLCwsNDQ0ODg4EBAQPDw8WFhYcHBwgICAjIyMkJCQCAgIHBwcQEBAaGhosLCwzMzM4ODg8PDw9PT0ICAgiIiIuLi46OjpERERNTU1TU1NXV1dZWVkMDAwYGBgnJyc2NjZFRUVSUlJeXl5oaGhwcHB1dXV2dnZfX18KCgooKChMTExdXV1sbGx7e3uHh4ePj4+Tk5OVlZWUlJQVFRUmJiZOTk5iYmKIiIiXl5eioqKqqqqvr6+xsbEhISE1NTVLS0t5eXmhoaG8vLzExMTJycnLy8u7u7stLS1cXFykpKS2trbGxsbT09Pb29vh4eHj4+MZGRk5OTlRUVGgoKDKysra2trm5ubu7u7y8vLz8/Nra2sFBQUUFBQqKipDQ0N6enqWlpbZ2dno6Oj4+Pj6+vr7+/vp6ekxMTFnZ2eGhoa6urrR0dHl5eX5+fn8/Pz9/f3+/v7S0tIeHh5ubm6NjY2oqKjCwsLt7e339/f///9VVVVycnKRkZGtra3Hx8ff39/x8fGSkpI7Ozt0dHSurq6srKze3t4dHR1tbW2MjIynp6fBwcHs7OwwMDBKSkplZWWEhISfn5+5ubnQ0NDk5OQpKSlBQUFbW1t3d3fDw8PX19fn5+c3NzdPT09paWmFhYWdnZ2zs7Pr6+vw8PAXFxcrKyuLi4vPz8/Y2Njd3d0fHx9ISEirq6u3t7fAwMDFxcW4uLgTExNxcXGenp6mpqaCgoKKiopaWlpkZGRAQEBJSUkvLy80NDQSEhJl1IWqAAAAAWJLR0R+P7hBcwAAAAlwSFlzAAALEgAACxIB0t1+/AAAAvpJREFUKM9dk/k/2gEcxr/VN+UrlcRKoRJRvs4awrTE2NxHzuZu1RzTMWdEGpqbXLly39mY+9xfNpnZ7Pn1/Xqe1+f1ep4PADwKgUSBaCeMExpEIRHAcyGwoDPkgnPFu+JcIGcQ+4wTiG4kV3eyh+cLTw+yuyvJjUL4C5FoiOpFo3v7+DJ8fbzpNC8qhEY+QSbLj+0fwAkM4vK4QYHBAf5sPxbzERNgVggtNCw8IpIveBnFj4wIDwulhbDgh3AEJTqGJozlxcW/ShC9FiW8io/jxQppMdFEx2lYZ3GiJDaJnyx6k5L6NjXlnSiZnxQrSRQ7Yx1WVho9ncvPyMzKzsnNy83JzsrM4HPT6Wn5FASAxFClBeFxhZlFxSWlsvey0pLioszCuLICKRWDBMorKqs41TWiLPkHmUKpUipkH+VZoppqTlVldDlAIdVK6uqTGz41ytQarU6rUcsaPzck19dJaklEAG5iBzS3tLYVt+s1uo6ODp1G317c1trSHMBuggEmjtZp6Oo29piU2g6HtEpTj7H7i6GThmMCTHGvb5+gPzVXptI9UJ1KlpvaL+jz7aUyATROeu81G7+a1NqHZK363mvuMnRKcWgAHmAXDA4Nj8hH9RoH1mr0o/KR4aHBAvYADBDzx8YnLJNT0zMmher+ZpXCNDM9NWmZGB/LJwLYilnr3HyUeWFxyaRXK9V609Ligjlqfs46W4EFCE5i2/LK6tq6cTFvY9O0uZG3aFxfW11Ztomd7luibG1bGYadwvWF3b39nv293YX1wh0Dw7q9RXR0j7GTDzjcnbVv3w+PjEeHP8xrO9zgA7Id89A/6hhvG+ecWASnZwnmhLNTgeWEI7HhK1C/9whCMbYDRiDv/ILfxb845wUyDmwxEIj4Mx0IT7YKL6/Kgk6Cyq4uhVYyHoKfVkkAj+2V7OubZZ9On+Wba3al/Rj8Z7IIFGbLHnJ75yG13d2G2CEM6vk7IInMY5aLHWd3Yf1kEpHA/yJgUSCMhkEUlvBk/AXCBOhMJK+/nwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAxMy0xMC0yM1QxODowOTo0MSswNjowMOfdrr8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMDMtMTAtMDZUMjI6MDc6NDYrMDY6MDA+xvzGAAAAAElFTkSuQmCC",
-    "avsres_texer_circle_sharp_09x09.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAMAAACecocUAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAOVBMVEUAAAACAgJhYWG+vr7b29tiYmKoqKj+/v7///9jY2PBwcHf39/CwsJlZWUDAwOsrKxmZmbDw8Pg4ODJk53hAAAAAWJLR0QIht6VegAAAAlwSFlzAAAOwwAADsMBx2+oZAAAAElJREFUCNdVzUsSwCAIA1CtVakfUO9/WINlY1YvM0xw7op/whuiP0yZiHLSEpUoH1zoT4GrucLN3OBu9x1mOTvCOspjrjn4froBkegClm06guAAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMjNUMTg6MDk6NDErMDY6MDDn3a6/AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDAzLTA2LTI5VDE5OjA5OjMyKzA2OjAw50C8rwAAAABJRU5ErkJggg==",
-    "avsres_texer_circle_sharp_19x19.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAe1BMVEUAAAAFBQVBQUGGhoaurq68vLyvr68GBgYBAQFNTU3Ozs78/Pz+/v7///+Kior6+vr9/f2Li4vR0dFCQkJDQ0OIiIiJiYmzs7PBwcG0tLRERETT09NRUVH7+/uQkJCRkZFTU1PU1NRUVFQHBwdHR0eMjIy1tbXDw8NISEjxdmZoAAAAAWJLR0QN9rRh9QAAAAlwSFlzAAALEgAACxIB0t1+/AAAAJ5JREFUGNN9ke0SgiAUBUUrQbhA9qGpWGZa7/+EgZoCNu7PnTPALEGwAQqj3f4QhbHlMEkoAwBGE4LnIRfwQ3A0LbmEBXkc10SAjSBGxim4pObKE/UsPWt7YZ5lV20z8Mm0zVc2/7u9actX53JtC+lZWZj3lp4th0SVcqSqxg6106GeqqF6Wav7nBg/Gjn0lc0TW93bV9e/++7Tbn3YF1ESEZb9e6HrAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwOS0wNC0yOVQwMTo0OTozMCswNTowMPYYqoAAAAAASUVORK5CYII=",
-    "avsres_texer_circle_slightblur_13x13.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAMAAABFNRROAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAASFBMVEUAAAABAQEODg4jIyMtLS0EBARsbGyZmZmoqKiKiorT09Py8vL4+Pj7+/v+/v7///8kJCRtbW3U1NSLi4uampqpqakPDw8uLi7NF0qwAAAAAWJLR0QPGLoA2QAAAAlwSFlzAAALEgAACxIB0t1+/AAAAGhJREFUCNdljkcOwCAMBCmmF9NC/v/TGJBySHwbjXbXjH2PCwlS8AMKtLFGg9oGnA8xeAfLCu1Txpy8FkTShIyIORhJBDbiumiBqLyurFxtO9d2jkNv1Nn67qS9Oq5Rzx7ZWe4y+e/HB1hhBEsscYLrAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwMy0xMC0wNlQyMTozODowMCswNTowMB7KOaoAAAAASUVORK5CYII=",
-    "avsres_texer_circle_slightblur_21x21.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAvVBMVEUAAAACAgIDAwMEBAQQEBAgICAsLCwwMDABAQEODg5MTExnZ2d5eXl+fn4TExM9PT1tbW2Xl5e0tLTFxcXKysqvr6/W1tbs7Oz19fX4+Pjg4OD39/f9/f3+/v6YmJj///8RERFoaGi1tbV6enrGxsb29vYxMTGAgIDLy8t/f38tLS0hISG2trbt7e1NTU2ZmZnX19dubm6xsbHh4eGwsLAPDw8+Pj57e3sUFBRvb2/MzMxpaWmBgYEiIiIyMjK3SG45AAAAAWJLR0QfBQ0QvQAAAAlwSFlzAAALEgAACxIB0t1+/AAAAPNJREFUGNN9ketygjAQhZVLCpgKagEjRAKC2nAVC2itvv9jOcRI0Rk9P7/ZOXv27GDwXkNh+IxESQYfQJbEHlNUoI3gJxxpQFU6ONaNyXT2NZtODH18p6oOTcueo7ltmVBXuScwzIXjYoxdZ2Ea4OYtaUvLwV4r7FhLjTAq+4Hteje5duDLLCdYhRHmFEchBG1uYb3Zoo6i7fdaaGfp4+yKshtjP0k73zTwY7aNZHnBLTAq8ozwvLtyj1hetP/ZUd5FVTdlkUYoSouyqat7D4f6mCfhb5jkx/rwX09Fs1Pz15wyWim9LkVyphcak36/r37xpCumwx2LqyXT8gAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAxMy0xMC0yM1QxODowOTo0MSswNjowMOfdrr8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMDMtMTAtMDZUMjA6NDA6MjIrMDU6MDAsCqMMAAAAAElFTkSuQmCC",
-    "avsres_texer_hexagon-h_blur_123x123.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHsAAAB7AgMAAAApqRfsAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAADFBMVEUAAACIiIjMzMz///+lqQOCAAAAAWJLR0QDEQxM8gAAAAlwSFlzAAALEgAACxIB0t1+/AAAAXJJREFUSMft17FVwzAURuHgwhSMQKERvEI2ygh4BK1BltAKjECREVxAIQSH4MTvSfpvKhpQe8/J8efY0vNu979+Y90dzXr2/b6Y9eH7g+1l73pwfXb94PqL68n1k7t8l8ub7YPv75JXAT3PA0PVLfBQdQtMVTfAiueAQ92z5DngY90NMDR6lDwLTI2+ATZ4Bji0epY8A2zxtsCp2aPkbYGp2U+StwEO7Z4lbwNs867AqdNX4FOnv0peKYvkXYBjr2fJuwB7vBU4dXuUvBWYun2RvB/g2O9Z8r6Ae8k7AyfRo+SdgUn0RfK+gaPqubUzWmBQvXCn36frIx/dH7y/k+jxhv+Xng96vuj5pOcb348+MN70ftL7TfsD7S+0P+H+1gOu+yPtr7Q/0/5O5wOdL3g+tYHX843ORzpf6Xym853mA5wvguTxfEPzEc1XNJ/RfIfzYQ2cTaf5lOZbmo9pvqb5HOd7D5xdp+8L+j6h75u/uj4BxUT7mSYYfpEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMjNUMTg6MDk6NDErMDY6MDDn3a6/AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDExLTA0LTExVDAwOjM0OjU4KzA1OjAwAHKiyQAAAABJRU5ErkJggg==",
-    "avsres_texer_square_edgeonly_24x24.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYAQMAAADaua+7AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEX///8AAABVwtN+AAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABJJREFUCNdjYEAC8v9/UAUjAQD7uCWNIgeQwQAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAxMy0xMC0yM1QxODowOTo0MSswNjowMOfdrr8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMDMtMTAtMDZUMjE6NTc6NDYrMDU6MDDg7pOkAAAAAElFTkSuQmCC",
-    "avsres_texer_square_edgeonly_28x28.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcAQMAAABIw03XAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEX///8AAABVwtN+AAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABNJREFUCNdjYEAF8v//N9CPQAUArWA5f2D2DX0AAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMjNUMTg6MDk6NDErMDY6MDDn3a6/AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDAzLTEwLTA2VDIxOjU4OjQ0KzA1OjAwhnrZAAAAAABJRU5ErkJggg==",
-    "avsres_texer_square_edgeonly_30x30.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeAQMAAAAB/jzhAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEX///8AAABVwtN+AAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABRJREFUCNdjYEAF8v//PxgIAhUAAOmGR7lQ6SOhAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwMy0xMC0wNlQyMTo1OToxOCswNTowMOb41i4AAAAASUVORK5CYII=",
-    "avsres_texer_square_sharp_20x20.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYAQMAAADaua+7AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABJJREFUCNdjYIAC+/9/qIqhAABLlCyJ9A7ihwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAxMy0xMC0yM1QxODowOTo0MSswNjowMOfdrr8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMDMtMDYtMjlUMTk6Mzg6MDQrMDU6MDBuiiynAAAAAElFTkSuQmCC",
-    "avsres_texer_square_sharp_32x32.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoAQMAAAC2MCouAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABVJREFUCNdjYMAB+P////9hCJM4AACQJX+BjmWyDAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAxMy0xMC0yM1QxODowOTo0MSswNjowMOfdrr8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMDktMTAtMDhUMDE6NTM6NTYrMDU6MDBzUO7GAAAAAElFTkSuQmCC",
-    "avsres_texer_square_sharp_48x48.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAAA4AQMAAACSSKldAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABZJREFUGNNjYCAA+P+DwIdReoBoAgAAldYe8LB8aUoAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMjNUMTg6MDk6NDErMDY6MDDn3a6/AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDA5LTEwLTA4VDAxOjUzOjI4KzA1OjAwKaqcggAAAABJRU5ErkJggg==",
-    "avsres_texer_square_sharp_60x60.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABEAQMAAAAC3QHxAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAALEgAACxIB0t1+/AAAABdJREFUKM9jYCAS8P+HgFHWKIuaLCIBAH8IpfBELmrmAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwOS0xMC0wOFQwMTo1NDozMiswNTowMKOs2CsAAAAASUVORK5CYII=",
-    "avsres_texer_square_sharp_64x64.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQAQMAAAC032DuAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABdJREFUKM9jYKAV+A8Fo8xR5lBk0gYAAMbE/hBbX3sVAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwOS0xMC0wOFQwMjoxODowMCswNjowML8mns0AAAAASUVORK5CYII=",
-    "avsres_texer_square_sharp_72x72.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFQAAABUAQMAAAAmpYKCAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABpJREFUKM9jYKASYP4PBX9G2aPsUTa12VQCABpBhZc9Qe3KAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwOS0xMC0wOFQwMjowMjoxNiswNjowMMbw5GAAAAAASUVORK5CYII=",
-    "avsres_texer_square_sharp_96x96.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAABwAQMAAAD8LmYIAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAAOwwAADsMBx2+oZAAAAB1JREFUOMtjYBgo8B8JjHJHuaPcUe4od/BwBwYAAB86e71LirdOAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTIzVDE4OjA5OjQxKzA2OjAw592uvwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAwOS0xMC0wOFQwMjoxODo0NiswNjowMFi8pQ0AAAAASUVORK5CYII=",
-    "avsres_texer_square_sharp_250x250.bmp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQoAAAEKAQMAAADQBYmKAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAD///+l2Z/dAAAAAWJLR0QB/wIt3gAAAAlwSFlzAAALEgAACxIB0t1+/AAAADlJREFUaN7tykENAAAIBCD7p7KZFrgZwMGbKrK5taIoiqIoiqIoiqIoiqIoiqIoiqIoiqIoivKpkCyUd+T92W3T7QAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAxMy0xMC0yM1QxODowOTo0MSswNjowMOfdrr8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMTEtMDEtMDVUMTg6NTk6NTQrMDU6MDBwiLErAAAAAElFTkSuQmCC",
+Webvs.ResourcePack = {
+    name: "Builtin",
+    prefix: "./resources/",
+    fileNames: [
+        "avsres_texer_circle_edgeonly_19x19.bmp",
+        "avsres_texer_circle_edgeonly_29x29.bmp",
+        "avsres_texer_circle_fade_13x13.bmp",
+        "avsres_texer_circle_heavyblur_19x19.bmp",
+        "avsres_texer_circle_heavyblur_21x21.bmp",
+        "avsres_texer_circle_heavyblur_29x29.bmp",
+        "avsres_texer_circle_sharp_09x09.bmp",
+        "avsres_texer_circle_sharp_19x19.bmp",
+        "avsres_texer_circle_slightblur_13x13.bmp",
+        "avsres_texer_circle_slightblur_21x21.bmp",
+        "avsres_texer_hexagon-h_blur_123x123.bmp",
+        "avsres_texer_square_edgeonly_24x24.bmp",
+        "avsres_texer_square_edgeonly_28x28.bmp",
+        "avsres_texer_square_edgeonly_30x30.bmp",
+        "avsres_texer_square_sharp_20x20.bmp",
+        "avsres_texer_square_sharp_32x32.bmp",
+        "avsres_texer_square_sharp_48x48.bmp",
+        "avsres_texer_square_sharp_60x60.bmp",
+        "avsres_texer_square_sharp_64x64.bmp",
+        "avsres_texer_square_sharp_72x72.bmp",
+        "avsres_texer_square_sharp_96x96.bmp",
+        "avsres_texer_square_sharp_250x250.bmp"
+    ]
 };
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
- * Adapters extend this class and define the required methods.
- * @memberof Webvs
- * @constructor
- */
-function AnalyserAdapter() {}
-Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
-    /**
-     * boolean value indicating whether a beat
-     * is in progress or not
-     * @type boolean
-     * @memberof Webvs.AnalyserAdapter#
-     */
-    beat: false,
+// ResourceManager manages async loading and caching of resources.
+// Basically, it maintains a map of fileNames to URI for the resource.
+// When a request for resource fileName is received, the uri is looked up
+// and the file is either async loaded or served from cache. This also manages
+// a ready state with callbacks that tells when one or more resources are being loaded and
+// when all resources are ready.
+function ResourceManager(packs) {
+    if(packs) {
+        if(!_.isArray(packs)) {
+            packs = [packs];
+        }
+        this.packs = packs;
+    } else {
+        this.packs = [];
+    }
+    this.clear();
+}
+Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLike, {
+    // Register a filename and a URI in the resource manager.
+    registerUri: function(fileName, uri) {
+        if(_.isString(fileName) && _.isString(uri)) {
+            this.uris[fileName] = uri;
+        } else {
+            _.extend(this.uris, fileName);
+        }
+    },
 
-    /**
-     * returns whether song is being played or not.
-     * @abstract
-     * @returns {boolean}
-     * @memberof Webvs.AnalyserAdapter#
-     */
-    isPlaying: function() {return false;},
+    get: function(key, value) {
+        if(key == "uris") {
+            return this.uris;
+        } else if(key == "packs") {
+            return this.packs;
+        }
+    },
 
-    /**
-     * Returns array of waveform values
-     * @abstract
-     * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter#
-     */
-    getWaveform: function() {return new Float32Array(0);},
+    setAttribute: function(key, value, options) {
+        if(key == "uris") {
+            this.uris = value;
+            return true;
+        }
+        return false;
+    },
 
-    /**
-     * Returns array of spectrum values
-     * @abstract
-     * @returns {Float32Array}
-     * @memberof Webvs.AnalyserAdapter#
-     */
-    getSpectrum: function() {return new Float32Array(0);}
+    toJSON: function() {
+        return {
+            uris: _.clone(this.uris)
+        };
+    },
+
+    // Clears state, uri mappings and caches. Browser caches still apply.
+    clear: function() {
+        this.uris = {};
+        this.images = {};
+        this.waitCount = 0;
+        this.ready = true;
+    },
+
+    destroy: function() {
+        this.stopListening();
+    },
+
+    _getUri: function(fileName) {
+        var uri = this.uris[fileName];
+        if(uri) {
+            return uri;
+        }
+        for(var i = this.packs.length-1;i >= 0;i--) {
+            var pack = this.packs[i];
+            if(pack.fileNames.indexOf(fileName) != -1) {
+                return pack.prefix + fileName;
+            }
+        }
+    },
+
+    _loadStart: function() {
+        this.waitCount++;
+        if(this.waitCount == 1) {
+            this.ready = false;
+            this.trigger("wait");
+        }
+    },
+
+    _loadEnd: function() {
+        this.waitCount--;
+        if(this.waitCount === 0) {
+            this.ready = true;
+            this.trigger("ready");
+        }
+    },
+    
+    // Loads an Image resource
+    getImage: function(fileName, success, error, context) {
+        context = context || this;
+        var this_ = this;
+        var image = this.images[fileName];
+        if(image) { // check in cache
+            if(success) {
+                success.call(context, image);
+            }
+            return;
+        }
+
+        // load file
+        var uri = this._getUri(fileName);
+        if(!uri) {
+            throw new Error("Unknown image file " + fileName);
+        }
+        image = new Image();
+        if(uri.indexOf("data:") !== 0) {
+            // add cross origin attribute for
+            // remote images
+            image.crossOrigin = "anonymous";
+        }
+        image.onload = function() {
+            this_.images[fileName] = image;
+            if(success) {
+                success.call(context, image);
+            }
+            this_._loadEnd();
+        };
+        if(error) {
+            image.onError = function() {
+                if(error.call(context)) { 
+    
+                    // then we treat this load as complete
+                    // and handled properly
+                    this_._loadEnd();
+                }
+            };
+        }
+        this._loadStart();
+        image.src = uri;
+    }
 });
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
+// AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
+// Adapters extend this class and define the required methods.
+function AnalyserAdapter() {}
+Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
+    // boolean value indicating whether a beat
+    // is in progress or not
+    beat: false,
+
+    // Called every frame. Override and implement analyser code
+    update: function() {},
+
+    // Returns array of waveform values
+    getWaveform: function(channel) {return new Float32Array(0);},
+
+    // Returns array of spectrum values
+    getSpectrum: function(channel) {return new Float32Array(0);}
+});
+
+})(Webvs);
+
 /**
- * @class
- * Analyser adapter that adapts the Dancer library.
- * @param dancer
- * @augments Webvs.AnalyserAdapter
- * @constructor
- * @memberof Webvs
+ * Copyright (c) 2013-2015 Azeem Arshad
+ * See the file license.txt for copying permission.
  */
+
+(function(Webvs) {
+
+// Analyser adapter that adapts the Dancer library.
 function DancerAdapter(dancer) {
     this.dancer = dancer;
     this.beat = false;
@@ -390,29 +491,12 @@ function DancerAdapter(dancer) {
     this.kick.on();
 }
 Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
-    /**
-     * returns whether song is being played or not.
-     * @returns {boolean}
-     * @memberof Webvs.DancerAdapter#
-     */
-    isPlaying: function() {
-        return this.dancer.isPlaying();
-    },
-
-    /**
-     * returns array of waveform values
-     * @returns {Float32Array}
-     * @memberof Webvs.DancerAdapter#
-     */
+    // returns array of waveform values
     getWaveform: function() {
         return this.dancer.getWaveform();
     },
 
-    /**
-     * Returns array of spectrum values
-     * @returns {Float32Array}
-     * @memberof Webvs.DancerAdapter#
-     */
+    // Returns array of spectrum values
     getSpectrum: function() {
         return this.dancer.getSpectrum();
     }
@@ -421,41 +505,270 @@ Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
+// SMAnalyser connects SoundManager2 waveform and eqData to Webvs
+function SMAnalyser(options) {
+    options = _.defaults(options||{}, {
+        threshold: 0.125,
+        decay: 0.02
+    });
+
+    this.threshold = options.threshold;
+    this.movingThreshold = 0;
+    this.decay = options.decay;
+
+    this.eqData = [];
+    this.waveformData = [];
+
+    // initialize with empty data
+    for(var ch = 0;ch < 3;ch++) {
+        this.eqData[ch] = new Float32Array(256);
+        this.waveformData[ch] = new Float32Array(256);
+    }
+}
+Webvs.SMAnalyser = Webvs.defineClass(SMAnalyser, Webvs.AnalyserAdapter, {
+    // Creates a new SMSound object and attaches it to this analyser
+    createSound: function(options) {
+        options.useWaveformData = true;
+        options.useEQData = true;
+        this.setSound(soundManager.createSound(options));
+        return this.sound;
+    },
+
+    setSound: function(sound) {
+        this.sound = sound;
+    },
+
+    update: function() {
+        if(!this.sound || 
+           this.sound.eqData.left.length === 0 || 
+           this.sound.waveformData.left.length === 0) {
+            return; // no sound. nothing to update
+        }
+        var i;
+
+        this.eqData[1] = new Float32Array(this.sound.eqData.left);
+        this.eqData[2]= new Float32Array(this.sound.eqData.right);
+
+        this.waveformData[1] = new Float32Array(this.sound.waveformData.left);
+        this.waveformData[2] = new Float32Array(this.sound.waveformData.right);
+
+        for(i = 0;i < 256;i++) {
+            // compute center channel
+            this.eqData[0][i] = this.eqData[1][i]/2 + this.eqData[2][i]/2;
+            this.waveformData[0][i] = this.waveformData[1][i]/2 + this.waveformData[2][i]/2;
+        }
+
+        // Simple kick detection 
+        this.beat = false;
+        var peak_left = 0, peak_right = 0;
+        for(i = 0;i < 256;i++) {
+            peak_left += Math.abs(this.waveformData[1][i]);
+            peak_right += Math.abs(this.waveformData[2][i]);
+        }
+        var peak = Math.max(peak_left, peak_right)/256;
+
+        if(peak >= this.movingThreshold && peak >= this.threshold) {
+            this.movingThreshold = peak;
+            this.beat = true;
+        } else {
+            this.movingThreshold = this.movingThreshold*(1-this.decay)+peak*this.decay;
+        }
+    },
+
+    // Returns array of waveform values
+    getWaveform: function(channel) {
+        channel = _.isUndefined(channel)?0:channel;
+        return this.waveformData[channel];
+    },
+
+    // Returns array of spectrum values
+    getSpectrum: function(channel) {
+        channel = _.isUndefined(channel)?0:channel;
+        return this.eqData[channel];
+    }
+});
+
+})(Webvs);
+
 /**
- * @class
- * Main Webvs object, that represents a running webvs instance.
- *
- * @example
- * var dancer = new Dancer();
- * var webvs = new Webvs.Main({
- *     canvas: document.getElementById("canvas"),
- *     analyser: new Webvs.DancerAdapter(dancer),
- *     showStat: true
- * });
- * webvs.loadPreset(samplePreset);
- * webvs.start();
- * dancer.load({src: "music.ogg"}); // start playing musc
- * dancer.play();
- *
- * @param {object} options - options object
- * @param {HTMLCanvasElement} options.canvas - canvas element on which the visualization will be rendered
- * @param {Webvs.AnalyserAdapter} options.analyser  - a music analyser instance
- * @param {boolean} [options.showStat=false] - if set, then a framerate status indicator is inserted into the page
- * @memberof Webvs
- * @constructor
+ * Copyright (c) 2013-2015 Azeem Arshad
+ * See the file license.txt for copying permission.
  */
+
+(function(Webvs) {
+
+// AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
+// Adapters extend this class and define the required methods.
+function WebAudioAnalyser(options) {
+    options = _.defaults(options||{}, {
+        fftSize: 512,
+        threshold: 0.125,
+        decay: 0.02
+    });
+
+    if(options.context) {
+        this.context = options.context;
+    } else if(window.webkitAudioContext) {
+        this.context = new webkitAudioContext();
+    } else if(window.AudioContext) {
+        this.context = new AudioContext();
+    } else {
+        throw new Error("Cannot create webaudio context");
+    }
+
+    this.fftSize = options.fftSize;
+
+    this.threshold = options.threshold;
+    this.movingThreshold = 0;
+    this.decay = options.decay;
+
+    this.visData = [];
+    for(var ch = 0;ch < 3;ch++) {
+        var spectrum = new Float32Array(this.fftSize/2);
+        var waveform = new Float32Array(this.fftSize);
+        this.visData[ch] = {spectrum: spectrum, waveform: waveform};
+    }
+}
+Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapter, {
+    // Connect this analyser to any WebAudio Node
+    connectToNode: function(sourceNode) {
+        this.source = sourceNode;
+
+        // this gain node simply up/down mixes input source to stereo output
+        this.gain = this.context.createGain();
+        this.gain.channelCountMode = "explicit";
+        this.gain.channelCount = 2;
+        this.source.connect(this.gain);
+
+        // split the stereo output into respective mono channels
+        this.channelSplit = this.context.createChannelSplitter(2);
+        this.gain.connect(this.channelSplit);
+
+        // analser node for each channel
+        this.analysers = [];
+        for(var ch = 0;ch < 2;ch++) {
+            var analyser = this.context.createAnalyser();
+            analyser.fftSize = this.fftSize;
+            this.channelSplit.connect(analyser, ch);
+            this.analysers[ch] = analyser;
+        }
+    },
+
+    update: function() {
+        if(!this.analysers) {
+            return; // analysers not ready. nothing update
+        }
+        var i;
+        var byteBuffer = new Uint8Array(this.fftSize);
+        for(var ch = 0;ch < 2;ch++) {
+            var visData = this.visData[ch+1];
+            var analyser = this.analysers[ch];
+
+            analyser.getByteFrequencyData(byteBuffer);
+            for(i = 0;i < visData.spectrum.length;i++) { // scale to 0-1 range
+                visData.spectrum[i] = byteBuffer[i]/255;
+            }
+
+            analyser.getByteTimeDomainData(byteBuffer);
+            for(i = 0;i < visData.waveform.length;i++) { // scale to -1 to 1 range
+                visData.waveform[i] = (byteBuffer[i]/255)*2-1;
+            }
+        }
+
+        // center channel is average of left and right
+        var centerVisData = this.visData[0];
+        for(i = 0;i < centerVisData.spectrum.length;i++) {
+            centerVisData.spectrum[i] = (this.visData[1].spectrum[i]/2+this.visData[2].spectrum[i]/2);
+        }
+        for(i = 0;i < centerVisData.waveform.length;i++) {
+            centerVisData.waveform[i] = (this.visData[1].waveform[i]/2+this.visData[2].waveform[i]/2);
+        }
+
+        // Simple kick detection 
+        this.beat = false;
+        var peak_left = 0, peak_right = 0;
+        for(i = 0;i < this.fftSize;i++) {
+            peak_left += Math.abs(this.visData[1].waveform[i]);
+            peak_right += Math.abs(this.visData[2].waveform[i]);
+        }
+        var peak = Math.max(peak_left, peak_right)/this.fftSize;
+
+        if(peak >= this.movingThreshold && peak >= this.threshold) {
+            this.movingThreshold = peak;
+            this.beat = true;
+        } else {
+            this.movingThreshold = this.movingThreshold*(1-this.decay)+peak*this.decay;
+        }
+    },
+
+    // Helper for Webvs.WebAudioAnalyser#connectToNode. This creates Audio object
+    // for the audio file and connects this analyser to its mediaElementSource
+    load: function(source, readyFunc) {
+        var element;
+        if(source instanceof HTMLMediaElement) {
+            element = source;
+            this.source = this.context.createMediaElementSource(element);
+        } else {
+            element = new Audio();
+            element.src = source;
+            this.source = this.context.createMediaElementSource(element);
+        }
+
+        var onCanPlay = _.bind(function() {
+            this.connectToNode(this.source);
+            this.source.connect(this.context.destination);
+
+            if(readyFunc) {
+                readyFunc(element);
+            }
+
+            element.removeEventListener("canplay", onCanPlay);
+        }, this);
+        if(element.readyState < 3) {
+            element.addEventListener("canplay", onCanPlay);
+        } else {
+            onCanPlay();
+        }
+
+        return element;
+    },
+
+    // Returns array of waveform values
+    getWaveform: function(channel) {
+        channel = _.isUndefined(channel)?0:channel;
+        return this.visData[channel].waveform;
+    },
+
+    // Returns array of spectrum values
+    getSpectrum: function(channel) {
+        channel = _.isUndefined(channel)?0:channel;
+        return this.visData[channel].spectrum;
+    }
+});
+
+})(Webvs);
+
+/**
+ * Copyright (c) 2013-2015 Azeem Arshad
+ * See the file license.txt for copying permission.
+ */
+
+(function(Webvs) {
+
+// Main Webvs object, that represents a running webvs instance.
 function Main(options) {
     Webvs.checkRequiredOptions(options, ["canvas", "analyser"]);
     options = _.defaults(options, {
         showStat: false
     });
     this.canvas = options.canvas;
+    this.msgElement = options.msgElement;
     this.analyser = options.analyser;
     this.isStarted = false;
     if(options.showStat) {
@@ -467,18 +780,33 @@ function Main(options) {
         document.body.appendChild(stats.domElement);
         this.stats = stats;
     }
-    this.resources = {};
-    this.rootComponent = new Webvs.EffectList({id:"root"});
+
+    this.meta = {};
+    this._initResourceManager(options.resourcePrefix);
     this._registerContextEvents();
     this._initGl();
+    this._setupRoot({id: "root"});
 }
-Webvs.Main = Webvs.defineClass(Main, Object, {
+Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
+    _initResourceManager: function(prefix) {
+        var builtinPack = Webvs.ResourcePack;
+        if(prefix) {
+            builtinPack = _.clone(builtinPack);
+            builtinPack.prefix = prefix;
+        }
+        this.rsrcMan = new Webvs.ResourceManager(builtinPack);
+        this.listenTo(this.rsrcMan, "wait", this.handleRsrcWait);
+        this.listenTo(this.rsrcMan, "ready", this.handleRsrcReady);
+
+        var this_ = this;
+    },
+
     _registerContextEvents: function() {
         var _this = this;
 
         this.canvas.addEventListener("webglcontextlost", function(event) {
             event.preventDefault();
-            _this.stop();
+           _this.stop();
         });
 
         this.canvas.addEventListener("webglcontextrestored", function(event) {
@@ -488,67 +816,29 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
     _initGl: function() {
         try {
-            this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
-
-            this.copier = new Webvs.CopyProgram({dynamicBlend: true});
-            this.copier.init(this.gl);
-
-            this.resolution = {
-                width: this.canvas.width,
-                height: this.canvas.height
-            };
+            this.gl = this.canvas.getContext("webgl", {alpha: false});
+            this.copier = new Webvs.CopyProgram(this.gl, {dynamicBlend: true});
+            this.buffers = new Webvs.FrameBufferManager(this.gl, this.copier, true, 0);
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
         }
     },
 
-    /**
-     * Loads a preset JSON. If a preset is already loaded and running, then
-     * the animation is stopped, and the new preset is loaded.
-     * @param {object} preset - JSON representation of the preset
-     * @memberof Webvs.Main#
-     */
-    loadPreset: function(preset) {
-        preset = _.clone(preset); // use our own copy
-        preset.id = "root";
-        var newRoot = new Webvs.EffectList(preset);
-        this.stop();
-        this.rootComponent.destroy();
-        this.rootComponent = newRoot;
-        this.resources = preset.resources || {};
+    _setupRoot: function(preset) {
+        this.registerBank = {};
+        this.bootTime = (new Date()).getTime();
+        this.rootComponent = new Webvs.EffectList(this.gl, this, null, preset);
     },
 
-    /**
-     * Reset all the components. Call this when canvas dimensions changes
-     * @memberof Webvs.Main#
-     */
-    resetCanvas: function() {
-        this.stop();
-        var preset = this.rootComponent.getOptions();
-        this.rootComponent.destroy();
-        this.copier.cleanup();
-        this._initGl();
-        this.rootComponent = new Webvs.EffectList(preset);
-    },
-
-    /**
-     * Starts the animation if not already started
-     * @memberof Webvs.Main#
-     */
-    start: function() {
-        if(this.isStarted) {
-            return;
-        }
-
+    _startAnimation: function() {
         var _this = this;
         var drawFrame = function() {
-            if(_this.analyser.isPlaying()) {
-                _this.rootComponent.update();
-            }
+            _this.analyser.update();
+            _this.rootComponent.draw();
             _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
-        // wrap drawframe in stats collection if required
+        // Wrap drawframe in stats collection if required
         if(this.stats) {
             var oldDrawFrame = drawFrame;
             drawFrame = function() {
@@ -557,183 +847,121 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
                 _this.stats.end();
             };
         }
-
-        if(!this.rootComponent.componentInited) {
-            this.registerBank = {};
-            this.bootTime = (new Date()).getTime();
-            this.rootComponent.init(this.gl, this);
-        }
         this.animReqId = requestAnimationFrame(drawFrame);
-        this.isStarted = true;
     },
 
-    /**
-     * Stops the animation
-     * @memberof Webvs.Main#
-     */
-    stop: function() {
-        if(!_.isUndefined(this.animReqId)) {
-            cancelAnimationFrame(this.animReqId);
-            this.isStarted = false;
+    _stopAnimation: function() {
+        cancelAnimationFrame(this.animReqId);
+    },
+
+    // Starts the animation if not already started
+    start: function() {
+        if(this.isStarted) {
+            return;
+        }
+        this.isStarted = true;
+        if(this.rsrcMan.ready) {
+            this._startAnimation();
         }
     },
 
-    /**
-     * Generates and returns the instantaneous preset JSON 
-     * representation
-     * @returns {object} preset json
-     * @memberof Webvs.Main#
-     */
-    getPreset: function() {
-        var preset = this.rootComponent.getOptions();
-        preset.resources = this.resources;
+    // Stops the animation
+    stop: function() {
+        if(!this.isStarted) {
+            return;
+        }
+        this.isStarted = false;
+        if(this.rsrcMan.ready) {
+            this._stopAnimation();
+        }
+    },
+
+    // Loads a preset JSON. If a preset is already loaded and running, then
+    // the animation is stopped, and the new preset is loaded.
+    loadPreset: function(preset) {
+        preset = _.clone(preset); // use our own copy
+        preset.id = "root";
+        this.rootComponent.destroy();
+
+        // setup resources
+        this.rsrcMan.clear();
+        if("resources" in preset && "uris" in preset.resources) {
+            this.rsrcMan.registerUri(preset.resources.uris);
+        }
+
+        // load meta
+        this.meta = _.clone(preset.meta);
+
+        this._setupRoot(preset);
+    },
+
+    // Reset all the components.
+    resetCanvas: function() {
+        var preset = this.rootComponent.generateOptionsObj();
+        this.rootComponent.destroy();
+        this.copier.cleanup();
+        this.buffers.destroy();
+        this._initGl();
+        this._setupRoot(preset);
+    },
+
+    notifyResize: function() {
+        this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+        this.buffers.resize();
+        this.trigger("resize", this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+    },
+
+    setAttribute: function(key, value, options) {
+        if(key == "meta") {
+            this.meta = value;
+            return true;
+        }
+        return false;
+    },
+
+    get: function(key, value) {
+        if(key == "meta") {
+            return this.meta;
+        }
+    },
+
+    // Generates and returns the instantaneous preset JSON 
+    // representation
+    toJSON: function() {
+        var preset = this.rootComponent.toJSON();
+        preset = _.pick(preset, "clearFrame", "components");
+        preset.resources = this.rsrcMan.toJSON();
+        preset.meta = _.clone(this.meta);
         return preset;
     },
 
-    /**
-     * Adds a component under the given parent. Root has the id "root".
-     * @param {string} parentId - id of the parent under which the component is
-     *     to be added
-     * @param {object} options - options for the new component
-     * @param {number} [pos] - position at which the component will be inserted.
-     *     default is the end of the list
-     * @returns {string} id of the new component
-     * @memberof Webvs.Main#
-     */
-    addComponent: function(parentId, options, pos) {
-        options = _.clone(options); // use our own copy
-        this.rootComponent.addComponent(parentId, options, pos);
-        return res;
+    destroy: function() {
+        this.stop();
+        this.rootComponent.destroy();
+        this.rootComponent = null;
+        if(this.stats) {
+            var statsDomElement = this.stats.domElement;
+            statsDomElement.parentNode.removeChild(statsDomElement);
+            this.stats = null;
+        }
+        this.rsrcMan.destroy();
+        this.rsrcMan = null;
+        this.stopListening();
     },
 
-    /**
-     * Updates a component.
-     * @param {string} id - id of the component
-     * @param {object} options - options to be updated.
-     * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main#
-     */
-    updateComponent: function(id, options) {
-        options = _.clone(options); // use our own copy
-        options.id = id;
-        if(id == "root") {
-            var subComponents = this.rootComponent.detachAllComponents();
-            options = _.defaults(options, this.rootComponent.options);
-            this.rootComponent.destroy();
-            this.rootComponent = new Webvs.EffectList(options, subComponents);
-            this.rootComponent.init(this.gl, this);
-            return true;
-        } else {
-            return this.rootComponent.updateComponent(id, options);
+    // event handlers
+    handleRsrcWait: function() {
+        if(this.isStarted) {
+            this._stopAnimation();
         }
     },
-
-
-    /**
-     * Removes a component
-     * @param {string} id - id of the component to be removed
-     * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main#
-     */
-    removeComponent: function(id) {
-        var component = this.rootComponent.detachComponent(id);
-        if(component) {
-            component.destroy();
-            return true;
-        } else {
-            return false;
+    
+    handleRsrcReady: function() {
+        if(this.isStarted) {
+            this._startAnimation();
         }
-    },
-
-    /**
-     * Moves a component to a different parent
-     * @param {string} id - id of the component to be moved
-     * @param {string} newParentId - id of the new parent
-     * @param {number} pos - position in the new parent
-     * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main#
-     */
-    moveComponent: function(id, newParentId, pos) {
-        var component = this.rootComponent.detachComponent(id);
-        if(component) {
-            return this.rootComponent.addComponent(newParentId, component, pos);
-        } else {
-            return false;
-        }
-    },
-
-    /**
-     * Returns resource data. If resource is not defined
-     * at preset level, its searched in the global resources
-     * object
-     * @param {string} name - name of the resource
-     * @returns resource data. if resource is not found then name itself is returned
-     * @memberof Webvs.Main#
-     */
-    getResource: function(name) {
-        var resource;
-        resource = this.resources[name];
-        if(!resource) {
-            resource = Webvs.Resources[name];
-        }
-        if(!resource) {
-            resource = name;
-        }
-        return resource;
-    },
-
-    /**
-     * Sets a preset level resource
-     * @param {string} name - name of the resource
-     * @param data - resource data
-     * @memberof Webvs.Main#
-     */
-    setResource: function(name, data) {
-        this.resources[name] = data;
-    },
-
-    /**
-     * Traverses a callback over the component tree
-     * @param {Webvs.Main~traverseCallback} callback - callback.
-     * @memberof Webvs.Main#
-     */
-    traverse: function(callback) {
-        this.rootComponent.traverse(callback);
     }
-
-    /**
-     * This function is called once for each component in the tree
-     * @callback Webvs.Main~traverseCallback
-     * @param {string} id - id of the component
-     * @param {string} parentId - id of the parent. Undefined for root
-     * @param {object} options - the options for this component.
-     */
 });
-
-Main.ui = {
-    leaf: false,
-    disp: "Main",
-    schema: {
-        name: {
-            type: "string",
-            title: "Name"
-        },
-        author: {
-            type: "string",
-            title: "Author"
-        },
-        description: {
-            type: "string",
-            title: "Description"
-        },
-        clearFrame: {
-            type: "boolean",
-            title: "Clear every frame",
-            default: false,
-            required: true
-        }
-    },
-};
 
 })(Webvs);
 
@@ -742,106 +970,107 @@ Main.ui = {
 
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A base class that all Webvs effects extend from.
- * @memberof Webvs
- * @constructor
- * @param {object} options - options object
- * @param {object} [options.id] - id for this component. Default is a random string.
- */
-function Component(options) {
-    this.id = options.id;
+function Component(gl, main, parent, options) {
+    this.gl = gl;
+    this.main = main;
+    this.parent = parent;
+
+    this.id = options.id; // TODO: check for id uniqueness
+    if(!this.id) {
+        this.id = _.uniqueId(this.constructor.Meta.name + "_");
+    }
     this.enabled = _.isUndefined(options.enabled)?true:options.enabled;
-    this.componentInited = false;
-    this.options = options;
+
+    this.opts = _.omit(options, ["id", "enabled"]);
+    if(this.defaultOptions) {
+        this.opts = _.defaults(this.opts, this.defaultOptions);
+    }
+
+    this.init();
 }
-Webvs.Component = Webvs.defineClass(Component, Object, {
-    /**
-     * String name of the component class. Used to generate
-     * id strings.
-     * @memberof Webvs.Component
-     */
-    componentName: "Component",
+Webvs.Component = Webvs.defineClass(Component, Object, Webvs.ModelLike, {
+    init: function() {},
 
-    /**
-     * Initialize component. Called once before animation starts.
-     * Override and implement initialization code
-     * @abstract
-     * @param {WebGLContext} gl - webgl context
-     * @param {Webvs.Main} main - container main object for this component
-     * @param {Webvs.Component} - parent component
-     * @memberof Webvs.Component#
-     */
-    init: function(gl, main, parent) {
-        this.gl = gl;
-        this.main = main;
-        this.parent = parent;
-        this.componentInited = true;
+    draw: function() {},
+
+    destroy: function() {
+        this.stopListening();
     },
 
-    /**
-     * Adopts or initializes this component, depending on whether
-     * it is already initialized
-     * @param {WebGLContext} gl - webgl context
-     * @param {Webvs.Main} main - container main object for this component
-     * @param {Webvs.Component} - parent component
-     * @memberof Webvs.Component#
-     */
-    adoptOrInit: function(gl, main, parent) {
-        if(this.componentInited) {
-            return this.adopt(parent);
-        } else {
-            return this.init(gl, main, parent);
-        }
-    },
-
-    /**
-     * Called when the component is moved to a different
-     * parent. Default implementation simply resets the parent reference.
-     * Override and implement additional logic if required
-     * @param {Webvs.Component} newParent - the new parent of this component
-     * @memberof Webvs.Component#
-     */
-    adopt: function(newParent) {
+    setParent: function(newParent) {
         this.parent = newParent;
     },
 
-    /**
-     * Render a frame. Called once for every frame,
-     * Override and implement rendering code
-     * @abstract
-     * @memberof Webvs.Component#
-     */
-    update: function() {},
-
-    /**
-     * Release any Webgl resources. Called during
-     * reinitialization. Override and implement cleanup code
-     * @abstract
-     * @memberof Webvs.Component#
-     */
-    destroy: function() {},
-
-    /**
-     * Returns the component's options
-     * @memberof Webvs.Component#
-     */
-    getOptions: function() {
-        return this.options;
+    toJSON: function() {
+        var opts = _.clone(this.opts);
+        opts.id = this.id;
+        opts.type = this.constructor.Meta.name;
+        opts.enabled = this.enabled;
+        return opts;
     },
 
-    /**
-     * Generates a printable path of this component
-     * @returns {string} printable path generated from the parent hierarchy
-     * @memberof Webvs.Component#
-     */
+    setAttribute: function(key, value, options) {
+        var oldValue = this.get(key);
+        if(key == "type" || _.isEqual(value, oldValue)) {
+            return false;
+        }
+
+        // set the property
+        if(key == "enabled") {
+            this.enabled = value;
+        } else if(key == "id") {
+            this.id = value;
+        } else {
+            this.opts[key] = value;
+        }
+
+        // call all onchange handlers
+        // we just call these manually here no need to
+        // go through event triggers
+        if(this.onChange) {
+            try {
+                var onChange = _.flatten([
+                    this.onChange[key] || [],
+                    this.onChange["*"] || []
+                ]);
+
+                for(var i = 0;i < onChange.length;i++) {
+                    this[onChange[i]].call(this, value, key, oldValue);
+                }
+            } catch(e) {
+                // restore old value in case any of the onChange handlers fail
+                if(key == "enabled") {
+                    this.enabled = oldValue;
+                } else if(key == "id") {
+                    this.id = oldValue;
+                } else {
+                    this.opts[key] = oldValue;
+                }
+
+                this.lastError = e;
+                this.trigger("error:" + key, this, value, options, e);
+            }
+        }
+
+        return true;
+    },
+
+    get: function(key) {
+        if(key == "enabled") {
+            return this.enabled;
+        } else if(key == "id") {
+            return this.id;
+        } else {
+            return this.opts[key];
+        }
+    },
+
     getPath: function() {
         if(!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
             return this.parent.getIdString() + "/" + this.componentName + "#" + this.id;
@@ -854,53 +1083,32 @@ Webvs.Component = Webvs.defineClass(Component, Object, {
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
 
-/**
- * @class
- * A base class for all components that can have sub components.
- * Manages, cloning and component tree operations
- * @memberof Webvs
- * @constructor
- * @param {object} options - options object
- * @param {Array.<object>} options.components - options array for all the subcomponents
- * @param {Array.<Webvs.ComponentFactory>} subFactories - factories for subcomponents. If
- *     provided then subcomponents are added from this factory and options.components is ignored.
- *     useful when moving existing subcomponent instances into new container.
- */
-function Container(options, subComponents) {
-    Container.super.constructor.call(this, options);
-
-    this.components = [];
-
-    // add all the sub components
-    _.each(subComponents || options.components || [], function(component) {
-        this.addComponent(this.id, component);
-    }, this);
-
+// A base class for all components that can have sub components.
+// Manages, cloning and component tree operations
+function Container(gl, main, parent, opts) {
+    Container.super.constructor.call(this, gl, main, parent, opts);
+    delete this.opts.components;
 }
 Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
-    /**
-     * initializes all the subcomponents
-     * @memberof Webvs.Container#
-     */
     init: function(gl, main, parent) {
-        Container.super.init.call(this, gl, main, parent);
-
-        for(var i = 0;i < this.components.length;i++) {
-            this.components[i].adoptOrInit(gl, main, this);
+        var components = [];
+        if(this.opts.components) {
+            for(var i = 0;i < this.opts.components.length;i++) {
+                var opts = this.opts.components[i];
+                var component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
+                components.push(component);
+            }
         }
+        this.components = components;
     },
 
-    /**
-     * destroys all subcomponents
-     * @memberof Webvs.Container#
-     */
     destroy: function() {
         Container.super.destroy.call(this);
         for(var i = 0;i < this.components.length;i++) {
@@ -908,275 +1116,162 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         }
     },
     
-    /**
-     * Adds a component as child of the given parent that
-     * resides under this containers subtree
-     * @param {string} parentId - id of the parent under which the component is
-     *     to be added
-     * @param {Webvs.ComponentFactory} factory - factory from which component should be
-     *      created. If an options object is passed then a Webvs.ComponentFactory
-     *      is implicitly created from it
-     * @param {number} [pos] - position at which the component will be inserted.
-     *     default is the end of the list
-     * @returns {string} - id of the new component
-     * @memberof Webvs.Container#
-     */
-    addComponent: function(parentId, options, pos) {
-        if(!(options instanceof Webvs.Component)) {
-            options.id = options.id || Webvs.randString(5);
-        }
-
+    createComponent: function(opts) {
+        return (new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts));
+    },
+    
+    // Adds a component as child of the given parent that
+    // resides under this containers subtree
+    addComponent: function(componentOpts, pos, options) {
         var component;
-        if(parentId == this.id) {
-            if(options instanceof Webvs.Component) {
-                component = options;
-            } else {
-                component = new (Webvs.getComponentClass(options.type))(options);
-            }
-            if(this.componentInited) {
-                component.adoptOrInit(this.gl, this.main, this);
-            }
-
-            if(_.isNumber(pos)) {
-                this.components.splice(pos, 0, component);
-            } else {
-                this.components.push(component);
-            }
-            return component.id;
+        if(componentOpts instanceof Webvs.Component) {
+            component = componentOpts;
+            component.setParent(this);
         } else {
-            for(var i = 0;i < this.components.length;i++) {
-                component = this.components[i];
-                if(component instanceof Container) {
-                    var id = component.addComponent(parentId, options, pos);
-                    if(id) {
-                        return id;
-                    }
+            component = this.createComponent(componentOpts);
+        }
+        if(!_.isNumber(pos)) {
+            pos = this.components.length;
+        }
+        this.components.splice(pos, 0, component);
+
+        options = _.defaults({pos: pos}, options);
+        this.trigger("addComponent", component, this, options);
+        return component;
+    },
+
+    detachComponent: function(pos, options) {
+        if(_.isString(pos)) {
+            var id = pos;
+            var i;
+            for(i = 0;i < this.components.length;i++) {
+                if(this.components[i].id == id) {
+                    pos = i;
+                    break;
                 }
             }
-        }
-    },
-
-    /**
-     * Updates a component under this container's subtree
-     * @param {string} id - id of the component
-     * @param {object} options - options to be updated.
-     * @returns {boolean} - true if update succeeded else false
-     * @memberof Webvs.Container#
-     */
-    updateComponent: function(id, options) {
-        var component, i;
-        // find the component in this container
-        for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
-            if(component.id != id) {
-                continue;
-            }
-
-            options = _.defaults(options, component.options);
-            options.id = id;
-            var subComponents = component instanceof Container?component.detachAllComponents():undefined;
-            var newComponent = new (Webvs.getComponentClass(options.type))(options, subComponents);
-
-            if(this.componentInited) {
-                newComponent.adoptOrInit(this.gl, this.main, this);
-            }
-
-            this.components[i] = newComponent;
-            component.destroy();
-            return true;
-        }
-
-        for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
-            if(component instanceof Container) {
-                if(component.updateComponent(id, options)) {
-                    return true;
-                }
+            if(i == this.components.length) {
+                return;
             }
         }
+        var component = this.components[pos];
+        this.components.splice(pos, 1);
+
+        options = _.defaults({pos: pos}, options);
+        this.trigger("detachComponent", component, this, options);
+        return component;
     },
 
-    /**
-     * Detaches all components in this container
-     * @returns {Array.<Webvs.ComponentFactory>} factories for each subcomponent
-     * @memberof Webvs.Container#
-     */
-    detachAllComponents: function() {
-        var components = this.components;
-        this.components = [];
-        return components;
-    },
-
-    /**
-     * Detaches a given component under this container's subtree
-     * @param {string} id - id of the component to be detached
-     * @returns {Webvs.ComponentFactory} - factory containing the detached component
-     * @memberof Webvs.Container#
-     */
-    detachComponent: function(id) {
-        var component, i;
-        // search for the component in this container
+    findComponent: function(id) {
+        var i;
         for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
+            var component = this.components[i];
             if(component.id == id) {
-                this.components.splice(i, 1);
                 return component;
             }
         }
 
-        // try detaching from any of the subcontainers
-        // aggregating results, in case they are cloned.
+        // search in any subcontainers
         for(i = 0;i < this.components.length;i++) {
-            component = this.components[i];
-            if(component instanceof Container) {
-                var detached = component.detachComponent(id);
-                if(detached) {
-                    return detached;
-                }
+            var container = this.components[i];
+            if(!(container instanceof Container)) {
+                continue;
+            }
+            var subComponent = container.findComponent(id);
+            if(subComponent) {
+                return subComponent;
             }
         }
     },
 
-    /**
-     * Constructs complete options object for this container and its
-     * subtree
-     * @returns {object} - the options object
-     * @memberof Webvs.Container#
-     */
-    getOptions: function() {
-        var options = this.options;
-        options.components = [];
-        for(var i = 0;i < this.components.length;i++) {
-            options.components.push(this.components[i].getOptions());
-        }
-        return options;
-    },
+    // Constructs complete options object for this container and its
+    // subtree
+    toJSON: function() {
+        var opts = Container.super.toJSON.call(this);
 
-    /**
-     * Traverses a callback over this subtree, starting with this container
-     * @param {Webvs.Container~traverseCallback} callback - callback.
-     * @memberof Webvs.Container#
-     */
-    traverse: function(callback) {
-        callback.call(this, this.id, (this.parent?this.parent.id:undefined), this.options);
+        opts.components = [];
         for(var i = 0;i < this.components.length;i++) {
-            var component = this.components[i];
-            if(component instanceof Container) {
-                component.traverse(callback);
-            } else {
-                var parentId = component.parent?component.parent.id:undefined;
-                var id = component.id;
-                var options = component.options;
-                callback.call(component, id, parentId, options);
-            }
+            opts.components.push(this.components[i].toJSON());
         }
+        return opts;
     }
-
-    /**
-     * This function is called once for each component in the tree
-     * @callback Webvs.Container~traverseCallback
-     * @param {string} id - id of the component
-     * @param {string} parentId - id of the parent. Undefined for root
-     * @param {object} options - the options for this component.
-     */
 });
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * Effectlist is a container that renders components to a separate buffer. and blends
- * it in with the parent buffer. Its also used as the root component in Webvs.Main
- *
- * @param {object} options - options object
- * @param {Array.<object>} options.components - the constructor options object for each subcomponent
- *     in this effectlist.
- * @param {string} options.components[i].type - the component class name
- * @param {number} [options.components[i].clone] - the number of times this component should be cloned
- * @param {string} [options.output="REPLACE"] - the output blend mode
- * @param {string} [options.input="IGNORE"] - the input blend mode
- * @param {boolean} [options.clearFrame=false] - if set then the buffer is cleared for each frame
- * @param {boolean} [options.enableOnBeat=false] - if set then the subcomponents are rendered only
- *     for a fixed number of frames on beat
- * @param {number} [options.enableOnBeatFor=1] - the number frames for enableOnBeat setting
- *
- * @augments Webvs.Component
- * @memberof Webvs
- * @constructor
- */
-function EffectList(options) {
-    options = _.defaults(options, {
+// Effectlist is a container that renders components to a separate buffer. and blends
+// it in with the parent buffer. Its also used as the root component in Webvs.Main
+function EffectList(gl, main, parent, opts) {
+    EffectList.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(EffectList, {
+    name: "EffectList"
+});
+
+var ELBlendModes = _.extend({
+    "IGNORE": 50
+}, Webvs.BlendModes);
+EffectList.ELBlendModes = ELBlendModes;
+
+Webvs.defineClass(EffectList, Webvs.Container, {
+    defaultOptions: {
+        code: {
+            init: "",
+            perFrame: ""
+        },
         output: "REPLACE",
         input: "IGNORE",
         clearFrame: false,
         enableOnBeat: false,
         enableOnBeatFor: 1
-    });
-
-    this.output = options.output=="IGNORE"?-1:Webvs.blendModes[options.output];
-    this.input = options.input=="IGNORE"?-1:Webvs.blendModes[options.input];
-    this.clearFrame = options.clearFrame;
-    this.enableOnBeat = options.enableOnBeat;
-    this.enableOnBeatFor = options.enableOnBeatFor;
-    this.first = true;
-    this._frameCounter = 0;
-    this._inited = false;
-
-    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["beat", "enabled", "clear", "w", "h", "cid"]);
-    this.code = codeGen.generateJs(["init", "perFrame"]);
-
-    EffectList.super.constructor.apply(this, arguments);
-}
-Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
-    componentName: "EffectList",
-
-    /**
-     * Initializes the effect list
-     * @memberof Webvs.EffectList#
-     */
-    init: function(gl, main, parent) {
-        EffectList.super.init.call(this, gl, main, parent);
-
-        this.code.setup(main, this);
-
-        // create a framebuffer manager for this effect list
-        this.fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, parent?true:false);
     },
 
-    /**
-     * Renders a frame of the effect list, by running
-     * all the subcomponents.
-     * @memberof Webvs.EffectList#
-     */
-    update: function() {
-        EffectList.super.update.call(this);
-        var gl = this.gl;
+    onChange: {
+        code: "updateCode",
+        output: "updateBlendMode",
+        input: "updateBlendMode"
+    },
 
-        if(this.enableOnBeat) {
+    init: function() {
+        EffectList.super.init.call(this);
+        this.fm = new Webvs.FrameBufferManager(this.gl, this.main.copier, this.parent?true:false);
+        this.updateCode();
+        this.updateBlendMode(this.opts.input, "input");
+        this.updateBlendMode(this.opts.output, "output");
+        this.frameCounter = 0;
+        this.first = true;
+        this.listenTo(this.main, "resize", this.handleResize);
+    },
+
+    draw: function() {
+        var opts = this.opts;
+
+        if(opts.enableOnBeat) {
             if(this.main.analyser.beat) {
-                this._frameCounter = this.enableOnBeatFor;
-            } else if(this._frameCounter > 0) {
-                this._frameCounter--;
+                this.frameCounter = opts.enableOnBeatFor;
+            } else if(this.frameCounter > 0) {
+                this.frameCounter--;
             }
 
             // only enable for enableOnBeatFor # of frames
-            if(this._frameCounter === 0) {
+            if(this.frameCounter === 0) {
                 return;
             }
         }
 
         this.code.beat = this.main.analyser.beat?1:0;
         this.code.enabled = 1;
-        this.code.clear = this.clearFrame;
-        if(!this._inited) {
-            this._inited = true;
+        this.code.clear = opts.clearFrame;
+        if(!this.inited) {
+            this.inited = true;
             this.code.init();
         }
         this.code.perFrame();
@@ -1188,14 +1283,14 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         this.fm.setRenderTarget();
 
         // clear frame
-        if(this.clearFrame || this.first || this.code.clear) {
-            gl.clearColor(0,0,0,1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+        if(opts.clearFrame || this.first || this.code.clear) {
+            this.gl.clearColor(0,0,0,1);
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
             this.first = false;
         }
 
         // blend input texture onto internal texture
-        if(this.input !== -1) {
+        if(this.input !== ELBlendModes.IGNORE) {
             var inputTexture = this.parent.fm.getCurrentTexture();
             this.main.copier.run(this.fm, this.input, inputTexture);
         }
@@ -1203,7 +1298,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         // render all the components
         for(var i = 0;i < this.components.length;i++) {
             if(this.components[i].enabled) {
-                this.components[i].update();
+                this.components[i].draw();
             }
         }
 
@@ -1211,7 +1306,7 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         this.fm.restoreRenderTarget();
 
         // blend current texture to the output framebuffer
-        if(this.output != -1) {
+        if(this.output != ELBlendModes.IGNORE) {
             if(this.parent) {
                 this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
             } else {
@@ -1220,10 +1315,6 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
         }
     },
 
-    /**
-     * Releases resources.
-     * @memberof Webvs.EffectList#
-     */
     destroy: function() {
         EffectList.super.destroy.call(this);
         if(this.fm) {
@@ -1231,295 +1322,149 @@ Webvs.EffectList = Webvs.defineClass(EffectList, Webvs.Container, {
             this.fm.destroy();
         }
     },
-});
 
-EffectList.ui = {
-    disp: "Effect List",
-    type: "EffectList",
-    leaf: false,
-    schema: {
-        clearFrame: {
-            type: "boolean",
-            title: "Clear Frame",
-            default: false,
-            required: true
-        },
-        enableOnBeat: {
-            type: "boolean",
-            title: "Enable on beat",
-            default: false,
-        },
-        enableOnBeatFor: {
-            type: "number",
-            title: "Enable on beat for frames",
-            default: 1
-        },
-        output: {
-            type: "string",
-            title: "Output",
-            default: "REPLACE",
-            enum: _.keys(Webvs.blendModes)
-        },
-        input: {
-            type: "string",
-            title: "Input",
-            default: "IGNORE",
-            enum: _.union(_.keys(Webvs.blendModes), ["IGNORE"])
-        }
+    updateCode: function() {
+        this.code = Webvs.compileExpr(this.opts.code, ["init", "perFrame"]).codeInst;
+        this.code.setup(this.main, this);
+        this.inited = false;
+    },
+
+    updateBlendMode: function(value, name) {
+        this[name] = Webvs.getEnumValue(value, ELBlendModes);
+    },
+
+    handleResize: function() {
+        this.fm.resize();
+        this.code.updateDimVars(this.gl);
     }
-};
+});
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class 
- * Base class for Webgl Shaders. This provides an abstraction
- * with support for blended output, easier variable bindings
- * etc.
- *
- * For outputblending, we try to use GL blendEq and blendFunc
- * if possible, otherwise we fallback to shader based blending,
- * where we swap the frame, sample the previous texture, and blend
- * the colors in the shader itself. To do this seamlessly, shader code in subclasses
- * should use a set of macros. eg: setFragColor instead of
- * setting gl_FragColor directly. The proper macro implementation
- * is inserted based on the blending modes.
- *
- * #### glsl utilities
- *
- * The following utilities are usable inside the shader code in subclasses
- *
- * + `setPosition(vec2 pos)` - sets gl_Position
- * + `getSrcColorAtPos(vec2 pos)` - pixel value at pos in u_srcTexture
- * + `getSrcColor(vec2 pos)` - same as above, but uses v_position
- * + `setFragColor(vec4 color)` - sets the correctly blended fragment color
- * + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
- *     when swapFrame is set to true
- * + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
- *     passed to {@link Webvs.ShaderProgram.run} call
- * + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
- *     when varyingPos option is used
- *
- * @param {object} options - refer class description
- * @param {string} options.vertexShader - the source for the vertex shader
- * @param {string} options.fragmentShader - the source for the fragment shader
- * @param {boolean} [options.forceShaderBlend=false] - force the use of shader based blending mode
- * @param {string} [options.oututBlendMode="REPLACE"] - the output blending mode.
- * @param {boolean} [options.dynamicBlend=false] - when set to true, blending mode can be changed
- *     at runtime even after shader compilation
- * @param {boolean} [options.swapFrame=false] - if set then a render target swap is done on the 
- *     framebuffermanager, before rendering. This is used
- *     by programs where the previous rendering need to be
- *     sampled
- * @param {boolean} [options.copyOnSwap=false] - if set to true then on swap, a copyOver is done on
- *     the framebuffermanager. This is used to maintain
- *     consistency during shader based blending in shaders
- *     that do not touch all the pixels
- * @param {boolean} [options.varyingPos=false] - if true then a varying called v_position is added
- *     automatically
- * @param {function} [options.draw ] - override the draw function
- * @memberof Webvs
- * @constructor
- */
-function ShaderProgram(options) { 
-    options = _.defaults(options, {
-        forceShaderBlend: false,
-        outputBlendMode: Webvs.REPLACE,
-        varyingPos: false,
-        dynamicBlend: false,
+// Base class for Webgl Shaders. This provides an abstraction
+// with support for blended output, easier variable bindings
+// etc.
+
+// For outputblending, we try to use GL blendEq and blendFunc
+// if possible, otherwise we fallback to shader based blending,
+// where we swap the frame, sample the previous texture, and blend
+// the colors in the shader itself. To do this seamlessly, shader code in subclasses
+// should use a set of macros. eg: setFragColor instead of
+// setting gl_FragColor directly. The proper macro implementation
+// is inserted based on the blending modes.
+
+// #### glsl utilities
+
+// The following utilities are usable inside the shader code in subclasses
+
+// + `setPosition(vec2 pos)` - sets gl_Position
+// + `getSrcColorAtPos(vec2 pos)` - pixel value at pos in u_srcTexture
+// + `getSrcColor(vec2 pos)` - same as above, but uses v_position
+// + `setFragColor(vec4 color)` - sets the correctly blended fragment color
+// + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
+//     when swapFrame is set to true
+// + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
+//     passed to {@link Webvs.ShaderProgram.run} call
+// + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
+//     when varyingPos option is used
+function ShaderProgram(gl, opts) {
+    opts = _.defaults(opts, {
+        blendMode: Webvs.REPLACE,
         swapFrame: false,
-        copyOnSwap: false
+        copyOnSwap: false,
+        dynamicBlend: false,
+        blendValue: 0.5
     });
+
+    var vsrc = [
+        "precision mediump float;",
+        "varying vec2 v_position;",
+        "uniform vec2 u_resolution;",
+        "uniform sampler2D u_srcTexture;",
+
+        "#define PI "+Math.PI,
+        "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))",
+        "#define setPosition(pos) (v_position = (((pos)+1.0)/2.0),gl_Position = vec4((pos), 0, 1))"
+    ];
+
     var fsrc = [
         "precision mediump float;",
+        "varying vec2 v_position;",
         "uniform vec2 u_resolution;",
-        "#define PI "+Math.PI
+        "uniform sampler2D u_srcTexture;",
+
+        "#define PI "+Math.PI,
+        "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))",
+        "#define getSrcColor() (texture2D(u_srcTexture, v_position))"
     ];
-    var vsrc = _.clone(fsrc);
 
-    if(_.isFunction(options.draw)) {
-        this.draw = options.draw;
-    }
-    this.copyOnSwap = options.copyOnSwap;
-    this.varyingPos = options.varyingPos;
-    this.dynamicBlend = options.dynamicBlend;
+    this.gl = gl;
+    this.swapFrame = opts.swapFrame;
+    this.copyOnSwap = opts.copyOnSwap;
+    this.blendValue = opts.blendValue;
+    this.blendMode = opts.blendMode;
+    this.dynamicBlend = opts.dynamicBlend;
 
-    // select the blend equation
-    this.outputBlendMode = options.outputBlendMode;
-
-    if(options.swapFrame || this.dynamicBlend || options.forceShaderBlend || !_.contains(this.glBlendModes, this.outputBlendMode)) {
-        this.swapFrame = true;
-        this.glBlendMode = false;
-        this.varyingPos = true;
-    } else {
-        this.swapFrame = false;
-        this.glBlendMode = true;
-    }
-
-    // varying position and macros
-    if(this.varyingPos) {
-        fsrc.push("varying vec2 v_position;");
-        vsrc.push(
-            "varying vec2 v_position;",
-            "#define setPosition(pos) (v_position = (((pos)+1.0)/2.0),gl_Position = vec4((pos), 0, 1))"
-        );
-    } else {
-        vsrc.push("#define setPosition(pos) (gl_Position = vec4((pos), 0, 1))");
-    }
-
-    // source teture uniform variable and macors
-    if(this.swapFrame) {
-        vsrc.push(
-            "uniform sampler2D u_srcTexture;",
-            "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))"
-        );
-
-        fsrc.push(
-            "uniform sampler2D u_srcTexture;",
-            "#define getSrcColor() (texture2D(u_srcTexture, v_position))",
-            "#define getSrcColorAtPos(pos) (texture2D(u_srcTexture, pos))"
-        );
-    }
-
-    // color blend macro/function
     if(this.dynamicBlend) {
         fsrc.push(
             "uniform int u_blendMode;",
             "void setFragColor(vec4 color) {"
         );
-        _.each(this.blendEqs, function(eq, mode) {
+        _.each(ShaderProgram.shaderBlendEq, function(eq, mode) {
             fsrc.push(
                 "   if(u_blendMode == "+mode+") {",
                 "       gl_FragColor = ("+eq+");",
-                "   }"
+                "   }",
+                "   else"
             );
-        });
+        }, this);
         fsrc.push(
+            "   {",
+            "       gl_FragColor = color;",
+            "   }",
             "}"
         );
     } else {
-        var blendEq = this.blendEqs[this.glBlendMode?Webvs.REPLACE:this.outputBlendMode];
-        if(_.isUndefined(blendEq)) {
-            throw new Error("Blend Mode " + this.outputBlendMode + " not supported");
+        if(this._isShaderBlend(this.blendMode)) {
+            var eq = ShaderProgram.shaderBlendEq[this.blendMode];
+            fsrc.push("#define setFragColor(color) (gl_FragColor = ("+eq+"))");
+        } else {
+            fsrc.push("#define setFragColor(color) (gl_FragColor = color)");
         }
-        fsrc.push("#define setFragColor(color) (gl_FragColor = ("+blendEq+"))");
     }
 
-    this.fragmentSrc = fsrc.join("\n") + "\n" + options.fragmentShader.join("\n");
-    this.vertexSrc = vsrc.join("\n") + "\n" + options.vertexShader.join("\n");
+    this.fragmentSrc = fsrc.join("\n") + "\n" + opts.fragmentShader.join("\n");
+    this.vertexSrc = vsrc.join("\n") + "\n" + opts.vertexShader.join("\n");
     this._locations = {};
     this._textureVars = [];
     this._arrBuffers = {};
+
+    this._compile();
 }
 
+// these are blend modes not supported with gl.BLEND
+// and the formula to be used inside shader
+ShaderProgram.shaderBlendEq = _.object([
+    [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"],
+    [Webvs.MULTIPLY, "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)"]
+]);
+
 Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
-    // these are blend modes supported with gl.BLEND
-    // all other modes have to implemented with shaders
-    glBlendModes: [
-        Webvs.REPLACE,
-        Webvs.AVERAGE,
-        Webvs.ADDITIVE,
-        Webvs.SUBTRACTIVE1,
-        Webvs.SUBTRACTIVE2,
-        Webvs.MULTIPLY
-    ],
-
-    // the blending formulas to be used inside shaders
-    blendEqs: _.object([
-        [Webvs.REPLACE, "color"],
-        [Webvs.MAXIMUM, "max(color, texture2D(u_srcTexture, v_position))"],
-        [Webvs.AVERAGE, "(color+texture2D(u_srcTexture, v_position))/2.0"],
-        [Webvs.ADDITIVE, "color+texture2D(u_srcTexture, v_position)"],
-        [Webvs.SUBTRACTIVE1, "texture2D(u_srcTexture, v_position)-color"],
-        [Webvs.SUBTRACTIVE2, "color-texture2D(u_srcTexture, v_position)"],
-        [Webvs.MULTIPLY, "color*texture2D(u_srcTexture, v_position)"]
-    ]),
-
-    /**
-     * initializes and compiles the shaders
-     * @memberof Webvs.ShaderProgram#
-     */
-	init: function(gl) {
-		this.gl = gl;
-        try {
-            this._compileProgram(this.vertexSrc, this.fragmentSrc);
-        } catch(e) {
-            throw e;
-        }
-	},
-
-    /**
-     * Sets the output blend mode for this shader
-     * @param {Webvs.blendModes} mode - the blending mode
-     * @memberof Webvs.ShaderProgram#
-     */
-    setOutputBlendMode: function(mode) {
-        this.outputBlendMode = mode;
+    _isShaderBlend: function(mode) {
+        return (mode in ShaderProgram.shaderBlendEq);
     },
 
-    /**
-     * Runs this shader program
-     * @param {Webvs.FrameBufferManager} fm - frame manager. pass null, if no fm is required
-     * @param {Webvs.blendModes} outputBlendMode - overrides the blendmode. pass null to use default
-     * @param {...any} extraParams - remaining parameters are passed to the draw function
-     * @memberof Webvs.ShaderProgram#
-     */
-    run: function(fm, outputBlendMode) {
+    _compile: function() {
         var gl = this.gl;
-        var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
-        gl.useProgram(this.program);
-
-        if(fm) {
-            this.setUniform("u_resolution", "2f", fm.width, fm.height);
-            if(this.swapFrame) {
-                this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
-                fm.swapAttachment();
-                if(this.copyOnSwap) {
-                    fm.copyOver();
-                }
-            }
-        }
-
-        if(outputBlendMode && !this.dynamicBlend) {
-            throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
-        }
-        outputBlendMode = outputBlendMode || this.outputBlendMode;
-        if(this.dynamicBlend) {
-            this.setUniform("u_blendMode", "1i", outputBlendMode);
-        }
-
-        if(this.glBlendMode && outputBlendMode != Webvs.REPLACE) {
-            gl.enable(gl.BLEND);
-            this._setGlBlendMode(gl, outputBlendMode);
-        } else {
-            gl.disable(gl.BLEND);
-        }
-
-        this.draw.apply(this, _.drop(arguments, 2));
-
-        gl.disable(gl.BLEND);
-        gl.useProgram(oldProgram);
-    },
-
-    /**
-     * Performs the actual drawing and any further bindings and calculations if required.
-     * @param {...any} extraParams - the extra parameters passed to {@link Webvs.ShaderProgram.run}
-     * @abstract
-     * @memberof Webvs.ShaderProgram#
-     */
-    draw: function() {},
-
-    _compileProgram: function(vertexSrc, fragmentSrc) {
-        var gl = this.gl;
-        var vertex = this._compileShader(vertexSrc, gl.VERTEX_SHADER);
-        var fragment = this._compileShader(fragmentSrc, gl.FRAGMENT_SHADER);
+        var vertex = this._compileShader(this.vertexSrc, gl.VERTEX_SHADER);
+        var fragment = this._compileShader(this.fragmentSrc, gl.FRAGMENT_SHADER);
         var program = gl.createProgram();
         gl.attachShader(program, vertex);
         gl.attachShader(program, fragment);
@@ -1546,40 +1491,95 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return shader;
     },
 
-    _setGlBlendMode: function(gl, mode) {
+    // Performs the actual drawing and any further bindings and calculations if required.
+    draw: function() {},
+
+    // Runs this shader program
+    run: function(fm, blendMode) {
+        var gl = this.gl;
+        var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
+        gl.useProgram(this.program);
+
+        if(blendMode && !this.dynamicBlend) {
+            throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
+        }
+        blendMode = blendMode || this.blendMode;
+
+        if(fm) {
+            this.setUniform("u_resolution", "2f", gl.drawingBufferWidth, gl.drawingBufferHeight);
+            if(this.swapFrame || this._isShaderBlend(blendMode)) {
+                this.setUniform("u_srcTexture", "texture2D", fm.getCurrentTexture());
+                fm.switchTexture();
+                if(this.copyOnSwap) {
+                    fm.copyOver();
+                }
+            } else if(this.dynamicBlend) {
+                this.setUniform("u_srcTexture", "texture2D", null);
+            }
+        }
+
+        if(this.dynamicBlend) {
+            this.setUniform("u_blendMode", "1i", blendMode);
+        }
+
+        this._setGlBlendMode(blendMode);
+        this.draw.apply(this, _.drop(arguments, 2));
+        gl.disable(gl.BLEND);
+        gl.useProgram(oldProgram);
+    },
+
+    _setGlBlendMode: function(mode) {
+        var gl = this.gl;
         switch(mode) {
             case Webvs.ADDITIVE:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             case Webvs.SUBTRACTIVE1:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
                 break;
             case Webvs.SUBTRACTIVE2:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_SUBTRACT);
                 break;
-            case Webvs.MULTIPLY:
+            case Webvs.ALPHA:
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
+            case Webvs.MULTIPLY2:
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.DST_COLOR, gl.ZERO);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
+            case Webvs.ADJUSTABLE:
+                gl.enable(gl.BLEND);
+                gl.blendColor(0, 0, 0, this.blendValue);
+                gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
+                gl.blendEquation(gl.FUNC_ADD);
+                break;
             case Webvs.AVERAGE:
+                gl.enable(gl.BLEND);
                 gl.blendColor(0.5, 0.5, 0.5, 1);
                 gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            default: throw new Error("Invalid blend mode");
+            // shader blending cases
+            case Webvs.REPLACE:
+            case Webvs.MULTIPLY:
+            case Webvs.MAXIMUM:
+                gl.disable(gl.BLEND);
+                break;
+            default:
+                throw new Error("Unknown blend mode " + mode + " in shader");
         }
     },
 
-    /**
-     * returns the location of a uniform or attribute. locations are cached.
-     * @param {string} name - name of the variable
-     * @param {boolean} [attrib] - pass true if variable is attribute
-     * @returns {location}
-     * @memberof Webvs.ShaderProgram#
-     */
+    // returns the location of a uniform or attribute. locations are cached.
     getLocation: function(name, attrib) {
         var location = this._locations[name];
         if(_.isUndefined(location)) {
@@ -1593,12 +1593,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return location;
     },
 
-    /**
-     * returns the index of a texture. assigns id if not already assigned.
-     * @param {string} name - name of the varaible
-     * @returns {number} index of the texture
-     * @memberof Webvs.ShaderProgram#
-     */
+    // returns the index of a texture. assigns id if not already assigned.
     getTextureId: function(name) {
         var id = _.indexOf(this._textureVars, name);
         if(id === -1) {
@@ -1608,13 +1603,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return id;
     },
 
-    /**
-     * binds value of a uniform variable in this program
-     * @param {string} name - name of the variable
-     * @param {string} type - type of the variable (texture2D, [1234]f, [1234]i, [1234]fv, [1234]iv)
-     * @param {...any} values - values to be assigned
-     * @memberof Webvs.ShaderProgram#
-     */
+    // binds value of a uniform variable in this program
     setUniform: function(name, type, value) {
         var location = this.getLocation(name);
         var gl = this.gl;
@@ -1637,17 +1626,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
     },
 
-    /**
-     * binds the vertex attribute array
-     * @param {string} name - name of the variable
-     * @param {Array} array - array of vertex data
-     * @param {number} [size=2] - size of each item
-     * @param [type=gl.FLOAT]
-     * @param [normalized=false]
-     * @param [stride=0]
-     * @param [offset=0]
-     * @memberof Webvs.ShaderProgram#
-     */
+    // binds the vertex attribute array
     setVertexAttribArray: function(name, array, size, type, normalized, stride, offset) {
         var gl = this.gl;
         size = size || 2;
@@ -1682,12 +1661,9 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array, gl.STATIC_DRAW);
     },
 
-    /**
-     * destroys webgl resources consumed by this program.
-     * call in component destroy
-     * @memberof Webvs.ShaderProgram#
-     */
-    cleanup: function() {
+    // destroys webgl resources consumed by this program.
+    // call in component destroy
+    destroy: function() {
         var gl = this.gl;
         _.each(this._buffers, function(buffer) {
             gl.deleteBuffer(buffer);
@@ -1695,46 +1671,34 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.deleteProgram(this.program);
         gl.deleteShader(this.vertexShader);
         gl.deleteShader(this.fragmentShader);
-    },
+    }
 
 });
-
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Base for shaders that provides a vertexShader and vertices
- * for a rectangle that fills the entire screen
- * @param {object} options - the options object. passed along to {@link Webvs.ShaderProgram}
- * @augments Webvs.QuadBoxProgram
- * @memberof Webvs
- * @constructor
- */
-function QuadBoxProgram(options) {
+// A Base for shaders that provides a vertexShader and vertices
+// for a rectangle that fills the entire screen
+function QuadBoxProgram(gl, options) {
     options = _.defaults(options, {
         vertexShader: [
             "attribute vec2 a_position;",
             "void main() {",
             "   setPosition(a_position);",
             "}"
-        ],
-        varyingPos: true
+        ]
     });
-    QuadBoxProgram.super.constructor.call(this, options);
+    QuadBoxProgram.super.constructor.call(this, gl, options);
 }
 Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
-    /**
-     * Sets the vertices for the quad box
-     * @memberof Webvs.QuadBoxProgram#
-     */
+    // Sets the vertices for the quad box
     draw: function() {
         this.setVertexAttribArray(
             "a_position", 
@@ -1754,21 +1718,14 @@ Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Shader that copies given texture onto current buffer
- * @param {object} options - the options object. passed along to {@link Webvs.ShaderProgram}
- * @augments Webvs.QuadBoxProgram
- * @memberof Webvs
- * @constructor
- */
-function CopyProgram(options) {
+// A Shader that copies given texture onto current buffer
+function CopyProgram(gl, options) {
     options = _.defaults(options||{}, {
         fragmentShader: [
             "uniform sampler2D u_copySource;",
@@ -1777,14 +1734,10 @@ function CopyProgram(options) {
             "}"
         ]
     });
-    CopyProgram.super.constructor.call(this, options);
+    CopyProgram.super.constructor.call(this, gl, options);
 }
 Webvs.CopyProgram = Webvs.defineClass(CopyProgram, Webvs.QuadBoxProgram, {
-    /**
-     * Renders this shader
-     * @param {WebGLTexture} srcTexture - the texture to be copied to the screen
-     * @memberof Webvs.CopyProgram#
-     */
+    // Renders this shader
     draw: function(srcTexture) {
         this.setUniform("u_copySource", "texture2D", srcTexture);
         CopyProgram.super.draw.call(this);
@@ -1794,32 +1747,18 @@ Webvs.CopyProgram = Webvs.defineClass(CopyProgram, Webvs.QuadBoxProgram, {
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * FrameBufferManager maintains a set of render targets
- * and can switch between them.
- *
- * @param {number} width - the width of the textures to be initialized
- * @param {number} height - the height of the textures to be initialized
- * @param {WebGLRenderingContext} gl - the webgl context to be used
- * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
- *                                     when a frame copyOver is required
- * @param {boolean} textureOnly - if set then only texture's and renderbuffers are maintained
- * @constructor
- * @memberof Webvs
- */
-function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
+// FrameBufferManager maintains a set of render targets
+// and can switch between them.
+function FrameBufferManager(gl, copier, textureOnly, texCount) {
     this.gl = gl;
-    this.width = width;
-    this.height = height;
     this.copier = copier;
-    this.texCount = texCount || 2;
+    this.initTexCount = _.isNumber(texCount)?texCount:2;
     this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
@@ -1831,153 +1770,193 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             this.framebuffer = gl.createFramebuffer();
         }
 
-        var attachments = [];
-        for(var i = 0;i < this.texCount;i++) {
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
+        this.names = {};
+        this.textures = [];
+        for(var i = 0;i < this.initTexCount;i++) {
+            this.addTexture();
+        }
+        this.curTex = 0;
+        this.isRenderTarget = false;
+    },
 
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
-                0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-            var renderbuffer = gl.createRenderbuffer();
-            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-
-            attachments[i] = {
-                texture: texture,
-                renderbuffer: renderbuffer
+    addTexture: function(name) {
+        if(name && name in this.names) {
+            this.names[name].refCount++;
+            return this.names[name];
+        }
+        var gl = this.gl;
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
+                      gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        this.textures.push(texture);
+        if(name) {
+            this.names[name] = {
+                refCount: 1,
+                index: this.textures.length-1
             };
         }
-
-        this.frameAttachments = attachments;
-        this.currAttachment = 0;
+        return this.textures.length-1;
     },
 
-    /**
-     * Saves the current render target and sets this
-     * as the render target
-     * @memberof Webvs.FrameBufferManager#
-     */
-    setRenderTarget: function() {
-        var gl = this.gl;
-        if(this.textureOnly) {
-            this.oldAttachment = this._getFBAttachment();
-        } else {
-            this.oldFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-            gl.viewport(0, 0, this.width, this.height);
+    removeTexture: function(arg) {
+        if(_.isString(arg) && arg in this.names) {
+            if(this.names[arg].refCount > 1) {
+                this.names[arg].refCount--;
+                return;
+            }
         }
-        this._setFBAttachment();
+        var index = this._findIndex(arg);
+        if(index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
+            throw new Error("Cannot remove current texture when set as render target");
+        }
+        var gl = this.gl;
+        gl.deleteTexture(this.textures[index]);
+        this.textures.splice(index, 1);
+        if(this.curTex >= this.textures.length) {
+            this.curTex = this.textures.lenght-1;
+        }
+        delete this.names[arg];
     },
 
-    /**
-     * Restores the render target previously saved with
-     * a {@link Webvs.FrameBufferManager.setRenderTarget} call
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Saves the current render target and sets this
+    // as the render target
+    setRenderTarget: function(texName) {
+        var gl = this.gl;
+        var curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+        if(this.textureOnly) {
+            if(!curFrameBuffer) {
+                throw new Error("Cannot use textureOnly when current rendertarget is the default FrameBuffer");
+            }
+            this.oldTexture = gl.getFramebufferAttachmentParameter(
+                                  gl.FRAMEBUFFER,
+                                  gl.COLOR_ATTACHMENT0,
+                                  gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+        } else {
+            this.oldFrameBuffer = curFrameBuffer;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        }
+        this.isRenderTarget = true;
+        if(!_.isUndefined(texName)) {
+            this.switchTexture(texName);
+        } else {
+            var texture = this.textures[this.curTex];
+            gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                    gl.COLOR_ATTACHMENT0,
+                                    gl.TEXTURE_2D,
+                                    texture, 0);
+        }
+    },
+
+    // Restores the render target previously saved with
+    // a Webvs.FrameBufferManager.setRenderTarget call
     restoreRenderTarget: function() {
         var gl = this.gl;
         if(this.textureOnly) {
-            this._setFBAttachment(this.oldAttachment);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                    gl.COLOR_ATTACHMENT0,
+                                    gl.TEXTURE_2D,
+                                    this.oldTexture, 0);
+            this.oldTexture = null;
         } else {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.oldFrameBuffer);
+            this.oldFrameBuffer = null;
         }
+        this.isRenderTarget = false;
     },
 
-    /**
-     * Returns the texture that is currently being used
-     * @returns {WebGLTexture}
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Returns the texture that is currently being used
     getCurrentTexture: function() {
-        return this.frameAttachments[this.currAttachment].texture;
+        return this.textures[this.curTex];
     },
 
-    /**
-     * Copies the previous texture into the current texture
-     * @memberof Webvs.FrameBufferManager#
-     */
+    getTexture: function(arg) {
+        var index = this._findIndex(arg);
+        return this.textures[index];
+    },
+
+    // Copies the previous texture into the current texture
     copyOver: function() {
-        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount].texture;
+        var texCount = this.textures.length;
+        var prevTexture = this.textures[(texCount+this.curTex-1)%texCount];
         this.copier.run(null, null, prevTexture);
     },
 
-    /**
-     * Swaps the current texture
-     * @memberof Webvs.FrameBufferManager#
-     */
-    swapAttachment : function() {
-        this.currAttachment = (this.currAttachment + 1) % this.texCount;
-        this._setFBAttachment();
+    // Swaps the current texture
+    switchTexture: function(arg) {
+        if(!this.isRenderTarget) {
+            throw new Error("Cannot switch texture when not set as rendertarget");
+        }
+        var gl = this.gl;
+        this.curTex = _.isUndefined(arg)?(this.curTex+1):this._findIndex(arg);
+        this.curTex %= this.textures.length;
+        var texture = this.textures[this.curTex];
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                gl.COLOR_ATTACHMENT0,
+                                gl.TEXTURE_2D, texture, 0);
     },
 
-    /**
-     * cleans up all webgl resources
-     * @memberof Webvs.FrameBufferManager#
-     */
-    destroy: function() {
+    resize: function() {
+        // TODO: investigate chrome warning: INVALID_OPERATION: no texture
         var gl = this.gl;
-        for(var i = 0;i < this.texCount;i++) {
-            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
-            gl.deleteTexture(this.frameAttachments[i].texture);
+        for(var i = 0;i < this.textures.length;i++) {
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
+                          gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
     },
 
-
-    _getFBAttachment: function() {
+    // cleans up all webgl resources
+    destroy: function() {
         var gl = this.gl;
-        return {
-            texture: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME),
-            renderbuffer: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME)
-        };
+        for(var i = 0;i < this.textures.length;i++) {
+            gl.deleteTexture(this.textures[i]);
+        }
+        if(!this.textureOnly) {
+            gl.deleteFramebuffer(this.frameBuffer);
+        }
     },
 
-    _setFBAttachment: function(attachment) {
-        attachment = attachment || this.frameAttachments[this.currAttachment];
-        var gl = this.gl;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
-    },
+    _findIndex: function(arg) {
+        var index;
+        if(_.isString(arg) && arg in this.names) {
+            index = this.names[arg].index;
+        } else if(_.isNumber(arg) && arg >=0 && arg < this.textures.length) {
+            index = arg;
+        } else {
+            throw new Error("Unknown texture '" + arg + "'");
+        }
+        return index;
+    }
 });
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Shader that clears the screen to a given color
- * @param {number} blendMode - blending mode for this shader
- * @augments Webvs.QuadBoxProgram
- * @memberof Webvs
- * @constructor
- */
-function ClearScreenProgram(blendMode) {
-    ClearScreenProgram.super.constructor.call(this, {
+// A Shader that clears the screen to a given color
+function ClearScreenProgram(gl, blendMode) {
+    ClearScreenProgram.super.constructor.call(this, gl, {
         fragmentShader: [
             "uniform vec3 u_color;",
             "void main() {",
             "   setFragColor(vec4(u_color, 1));",
             "}"
         ],
-        outputBlendMode: blendMode
+        blendMode: blendMode
     });
 }
 Webvs.ClearScreenProgram = Webvs.defineClass(ClearScreenProgram, Webvs.QuadBoxProgram, {
-    /**
-     * Renders this shader
-     * @param {Array.<number>} color - color to which the screen will be cleared
-     * @memberof Webvs.ClearScreenProgram#
-     */
+    // Renders this shader
     draw: function(color) {
         this.setUniform.apply(this, ["u_color", "3f"].concat(color));
         ClearScreenProgram.super.draw.call(this);
@@ -1987,29 +1966,17 @@ Webvs.ClearScreenProgram = Webvs.defineClass(ClearScreenProgram, Webvs.QuadBoxPr
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * Base class for AVS expression Syntax Tree
- * @memberof Webvs
- */
+// Base class for AVS expression Syntax Tree
 function AstBase() {}
 Webvs.AstBase = Webvs.defineClass(AstBase, Object);
 
-/**
- * @class
- * Binary Expression
- * @augments Webvs.AstBase
- * @param {string} operator
- * @param {string} leftOperand
- * @param {string} rightOperand
- * @memberof Webvs
- */
+// Binary Expression
 function AstBinaryExpr(operator, leftOperand, rightOperand) {
     this.operator = operator;
     this.leftOperand = leftOperand;
@@ -2017,68 +1984,34 @@ function AstBinaryExpr(operator, leftOperand, rightOperand) {
 }
 Webvs.AstBinaryExpr = Webvs.defineClass(AstBinaryExpr, AstBase);
 
-/**
- * @class
- * Unary Expression
- * @augments Webvs.AstBase
- * @param {string} operator
- * @param {string} operand
- * @memberof Webvs
- */
+// Unary Expression
 function AstUnaryExpr(operator, operand) {
     this.operator = operator;
     this.operand = operand;
 }
 Webvs.AstUnaryExpr = Webvs.defineClass(AstUnaryExpr, AstBase);
 
-/**
- * @class
- * Function call
- * @augments Webvs.AstBase
- * @param {string} funcName - function identifier
- * @param {Array.<AstBase>} args - argument expressions
- * @memberof Webvs
- */
+// Function call
 function AstFuncCall(funcName, args) {
     this.funcName = funcName;
     this.args = args;
 }
 Webvs.AstFuncCall = Webvs.defineClass(AstFuncCall, AstBase);
 
-/**
- * @class
- * Variable assignment
- * @augments Webvs.AstBase
- * @param {string} lhs - identifier
- * @param {Array.<AstBase>} expr - expression being assigned
- * @memberof Webvs
- */
+// Variable assignment
 function AstAssignment(lhs, expr) {
     this.lhs = lhs;
     this.expr = expr;
 }
 Webvs.AstAssignment = Webvs.defineClass(AstAssignment, AstBase);
 
-/**
- * @class
- * Code start symbol
- * @augments Webvs.AstBase
- * @param {Array.<AstBase>} statements - statements in the program
- * @memberof Webvs
- */
+// Code start symbol
 function AstProgram(statements) {
     this.statements = statements;
 }
 Webvs.AstProgram = Webvs.defineClass(AstProgram, AstBase);
 
-/**
- * @class
- * Atomic expression
- * @augments Webvs.AstBase
- * @param value
- * @param {String} type - type of the atom viz. "ID", "CONST", "REG", "VALUE"
- * @memberof Webvs
- */
+// Atomic expression
 function AstPrimaryExpr(value, type) {
     this.value = value;
     this.type = type;
@@ -4252,34 +4185,23 @@ Webvs.PegExprParser = (function(){
   return result;
 })();
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * An object that encapsulates the generated executable code
- * and its state values. Also contains implementations of
- * functions callable from expressions
- * @constructor
- * @memberof Webvs
- */
+// An object that encapsulates the generated executable code
+// and its state values. Also contains implementations of
+// functions callable from expressions
 function CodeInstance() {}
 Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
-    /**
-     * avs expression rand function
-     * @memberof Webvs.CodeInstance#
-     */
+    // avs expression rand function
     rand: function(max) { 
         return Math.floor(Math.random() * max) + 1;
     },
 
-    /**
-     * avs expression gettime function
-     * @memberof Webvs.CodeInstance#
-     */
+    // avs expression gettime function
     gettime: function(startTime) {
         switch(startTime) {
             case 0:
@@ -4289,10 +4211,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         }
     },
 
-    /**
-     * avs expression getosc function
-     * @memberof Webvs.CodeInstance#
-     */
+    // avs expression getosc function
     getosc: function(band, width, channel) {
         var osc = this._analyser.getWaveform();
         var pos = Math.floor((band - width/2)*(osc.length-1));
@@ -4305,42 +4224,27 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         return sum/(end-pos+1);
     },
 
-    /**
-     * bind state values to uniforms
-     * @param {Webvs.ShaderProgram} program - program to which the state values 
-     *                                        should be bound
-     * @memberof Webvs.CodeInstance#
-     */
+    // bind state values to uniforms
     bindUniforms: function(program) {
-        var that = this;
         // bind all values
-        var toBeBound = _.difference(_.keys(this), this._treatAsNonUniform);
-        _.each(toBeBound, function(name) {
-            var value = that[name];
-            if(typeof value !== "number") { return; }
-            program.setUniform(name, "1f", value);
-        });
+        _.each(this._uniforms, function(name) {
+            program.setUniform(name, "1f", this[name]);
+        }, this);
 
         // bind registers
-        _.each(this._registerUsages, function(name) {
+        _.each(this._glslRegisters, function(name) {
             program.setUniform(name, "1f", this._registerBank[name]);
-        });
+        }, this);
 
         // bind random step value if there are usages of random
-        if(this.hasRandom) {
+        if(this._hasRandom) {
             var step = [Math.random()/100, Math.random()/100];
             program.setUniform("__randStep", "2fv", step);
         }
 
-        // bind time values for gettime calls
-        if(this.hasGettime) {
-            var time0 = ((new Date()).getTime()-this._bootTime)/1000;
-            program.setUniform("__gettime0", "1f", time0);
-        }
-
         // bind precomputed values
-        _.each(this._preCompute, function(item, index) {
-            var args = _.map(_.last(item, item.length-2), function(arg) {
+        _.each(this._preCompute, function(entry, name) {
+            var args = _.map(_.drop(entry), function(arg) {
                 if(_.isString(arg)) {
                     if(arg.substring(0, 5) == "__REG") {
                         return this._registerBank[arg];
@@ -4350,25 +4254,18 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
                 } else {
                     return arg;
                 }
-            });
-            var result = this[item[0]].apply(this, args);
-            program.setUniform(item[1], "1f", result);
-        });
+            }, this);
+            var result = this[entry[0]].apply(this, args);
+            program.setUniform(name, "1f", result);
+        }, this);
     },
 
-    /**
-     * initializes this codeinstance
-     * @param {Webvs.Main} main - webvs main instance
-     * @param {Webvs.Component} parent - the component thats using this codeinstance
-     * @memberof Webvs.CodeInstance#
-     */
+    // initializes this codeinstance
     setup: function(main, parent) {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
-
-        this.w = main.canvas.width;
-        this.h = main.canvas.height;
+        this.updateDimVars(parent.gl);
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {
@@ -4376,437 +4273,254 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
                 main.registerBank[name] = 0;
             }
         });
+    },
+
+    updateDimVars: function(gl) {
+        this.w = gl.drawingBufferWidth;
+        this.h = gl.drawingBufferHeight;
     }
 });
 
-CodeInstance.clone = function(codeInst, count) {
-    codeInst.cid = 0;
-    var clones = [codeInst];
-    if(count > 1) {
-        _.times(count-1, function(index) {
-            var clone = _.clone(codeInst);
-            clone.cid = index+1;
+// creates an array of clones of code instances
+CodeInstance.clone = function(clones, count) {
+    if(!_.isArray(clones)) {
+        clones.cid = 0;
+        clones = [codeInst];
+    }
+
+    var clonesLength = clones.length;
+    if(clonesLength < count) {
+        _.times(count-clonesLength, function(index) {
+            var clone = Object.create(CodeInstance.prototype);
+            _.extend(clone, clones[0]);
+            clone.cid = index+clonesLength;
             clones.push(clone);
         });
+    } else if(clonesLength > count) {
+        clones = _.first(this.clones, count);
     }
     return clones;
+};
+
+// copies instance values from one code instance to another
+CodeInstance.copyValues = function(dest, src) {
+    _.each(src, function(name, value) {
+        if(!_.isFunction(value) && name.charAt(0) !== "_") {
+            dest[name] = value;
+        }
+    });
 };
 
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * AVS expression parser and code generator.
- * Generates JS and GLSL code from avs expressions
- * @param {object.<string, string>} codeSrc - object containing avs expression code string
- * @param {Array.<string>} externalVars - list of variables that will be supplied externally.
- * @memberof Webvs
- * @constructor
- */
-function ExprCodeGenerator(codeSrc, externalVars) {
-    this.codeSrc = {};
-    for(var key in codeSrc) {
-        var code = codeSrc[key];
+
+Webvs.compileExpr = function(codeSrc, jsFuncs, glslFuncs, nonUniforms) {
+    jsFuncs = jsFuncs || [];
+    glslFuncs = glslFuncs || [];
+    nonUniforms = nonUniforms || [];
+
+    // cleanup code source
+    codeSrc = _.chain(codeSrc).map(function(code, name) {
         if(_.isArray(code)) {
             code = code.join("\n");
         }
         code = code.trim();
-        if(code !== "") {
-            this.codeSrc[key] = code;
+        return [name, code];
+    }).filter(function(code) { 
+        return code[1].length > 0;
+    }).object().value();
+
+    // 1) Parse the code
+    var codeAst = parseCode(codeSrc);
+    // 2) Process the AST
+    var tables = processAst(codeAst, jsFuncs, glslFuncs, nonUniforms);
+    // 3) Generate code
+    var codeInst = generateJs(codeAst, tables, jsFuncs);
+    var glslCode = generateGlsl(codeAst, tables, glslFuncs);
+
+    return {codeInst: codeInst, glslCode: glslCode};
+};
+
+
+function parseCode(codeSrc) {
+    var codeAst = {}; // abstract syntax tree
+    for(var name in codeSrc) {
+        try {
+            codeAst[name] = Webvs.PegExprParser.parse(codeSrc[name]);
+        } catch(e) {
+            throw new Error("Error parsing " + name + " (" + e.line + ":" + e.column + ")" + " : " + e);
         }
     }
-    this.externalVars = _.union(externalVars || [], ["w", "h", "cid"]);
-    this._parseSrc();
+    return codeAst;
 }
-Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
-    _parseSrc: function() {
-        // Generate AST and find variables usages in all the expressions
-        var codeAst = {};
-        var variables = [];
-        var funcUsages = {};
-        var registerUsages = [];
-        for(var name in this.codeSrc) {
-            try {
-                var codeSrc = this.codeSrc[name];
-                codeAst[name] = Webvs.PegExprParser.parse(codeSrc);
-                var vars = [];
-                var fu = [];
-                this._getVars(codeAst[name], variables, fu, registerUsages);
-                funcUsages[name] = fu;
-            } catch(e) {
-                throw new Error("Error parsing " + name + "(" + e.line + ":" + e.column + ")" + " : " + e);
-            }
-        }
-        this.codeAst = codeAst;
-        this.funcUsages = funcUsages;
 
-        // find instance variables
-        this.instanceVars = _.uniq(this.externalVars.concat(variables));
+function processAst(codeAst, jsFuncs, glslFuncs, extraNonUniforms) {
+    var tables = {
+        funcCall: {},
+        variable: {},
+        register: {},
+        preCompute: {}
+    };
 
-        // find register variable usages
-        this.registerUsages = _.uniq(registerUsages);
-    },
+    var preComputeCounter = 0;
 
-    /**
-     * Generates js and glsl executable code for each expression code string
-     * @param {Array.<string>} jsFuncs - functions to be generated as javascript
-     * @param {Array.<string>} jsFuncs - functions to be generated as glsl
-     * @param {Array.<string>} treatAsNonUniform - variables to be treated as 
-     *                                             uniform variables in the glsl code
-     * @returns {Array} pair containing {@link Webvs.CodeInstance} and a glsl code
-     * @memberof Webvs.ExprCodeGenerator#
-     */
-    generateJs: function(jsFuncs) {
-        var codeInst = new Webvs.CodeInstance();
-
-        _.each(this.instanceVars, function(ivar) {
-            codeInst[ivar] = 0;
-        });
-
-        var jsFuncList = _.intersection(_.keys(this.codeAst), jsFuncs);
-        var missingJsFuncList = _.difference(jsFuncs, jsFuncList);
-
-        // generate javascript functions and assign to code instance
-        _.each(jsFuncList, function(name) {
-            var ast = this.codeAst[name];
-            var codeString = this._generateJs(ast);
-            codeInst[name] = new Function(codeString);
-        }, this);
-        // add noops for missing expressions
-        _.each(missingJsFuncList, function(name) {
-            codeInst[name] = Webvs.noop;
-        });
-
-        codeInst._registerUsages = this.registerUsages;
-
-        return codeInst;
-    },
-
-    generateGlsl: function(glslFuncs, treatAsNonUniform, codeInst) {
-        var glsl = [];
-        treatAsNonUniform = treatAsNonUniform || [];
-
-        _.each(this.instanceVars, function(ivar) {
-            // create declarations for instance variables in glsl
-            var prefix = "";
-            if(!_.contains(treatAsNonUniform, ivar)) {
-                prefix = "uniform ";
-            }
-            glsl.push(prefix + "float " + ivar + ";");
-        });
-
-        var glslFuncList = _.intersection(_.keys(this.codeAst), glslFuncs);
-        var missingGlslFuncList = _.difference(glslFuncs, glslFuncList);
-        var glsFuncUsages = _.uniq(
-            _.flatMap(glslFuncList, function(name) { return this.funcUsages[name]; }, this)
-        );
-
-        // include required functions in glsl
-        _.each(glsFuncUsages, function(usage) {
-            var code = this.glslFuncCode[usage];
-            if(!code) {
-                return;
-            }
-            glsl.push(code);
-        }, this);
-        var preCompute = []; // list of precomputed bindings
-        var generatedGlslFuncs = [];
-        // generate glsl functions
-        _.each(glslFuncList, function(name) {
-            var ast = this.codeAst[name];
-            var codeString = this._generateGlsl(ast, preCompute);
-            generatedGlslFuncs.push("void " + name + "() {");
-            generatedGlslFuncs.push(codeString);
-            generatedGlslFuncs.push("}");
-        }, this);
-        // add the uniform declarations for precomputed functions
-        glsl = glsl.concat(_.map(preCompute, function(item) {
-            return "uniform float " + item[1] + ";";
-        }));
-        glsl = glsl.concat(generatedGlslFuncs);
-
-        // generate noops for missing functions
-        _.each(missingGlslFuncList, function(name) {
-            glsl.push("void " + name + "() {}");
-        });
-
-        // create required bindings in the code instance
-        codeInst._preCompute = preCompute;
-        if(_.contains(glslFuncList, "rand")) {
-            codeInst.hasRandom = true;
-        }
-        if(_.contains(glslFuncList, "gettime")) {
-            codeInst.hasGettime = true;
-        }
-        codeInst._treatAsNonUniform = treatAsNonUniform;
-
-        return glsl.join("\n");
-    },
-
-    funcArgLengths: {
-        "above": 2,
-        "below": 2,
-        "equal": 2,
-        "pow": 2,
-        "sqr": 1,
-        "sqrt": 1,
-        "invsqrt": 1,
-        "floor" : 1,
-        "ceil" : 1,
-        "abs": 1,
-        "if": 3,
-        "min": 2,
-        "max": 2,
-        "sin": 1,
-        "cos": 1,
-        "tan": 1,
-        "asin": 1,
-        "acos": 1,
-        "atan": 1,
-        "atan2": 2,
-        "log": 1,
-        "band": 2,
-        "bor": 2,
-        "bnot": 1,
-        "rand": 1,
-        "gettime": 1,
-        "getosc": 3,
-        "select": {min: 2}
-    },
-
-    jsMathFuncs: ["min", "max", "sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"],
-
-    glslFuncCode: {
-        "rand": [
-            "uniform vec2 __randStep;",
-            "vec2 __randSeed;",
-            "float rand(float max) {",
-            "   __randCur += __randStep;",
-            "   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);",
-            "   return (floor(val*max)+1);",
-            "}"
-        ].join("\n"),
-        "gettime": [
-            "uniform float __gettime0;",
-            "int gettime(int startTime) {",
-            "   int time = 0;",
-            "   if(startTime == 0) {",
-            "       time = __gettime0;",
-            "   }",
-            "   return time;",
-            "}"
-        ].join("\n")
-    },
-
-    _checkFunc: function(ast) {
-        var requiredArgLength = this.funcArgLengths[ast.funcName];
-        if(requiredArgLength === undefined) {
-            throw Error("Unknown function " + ast.funcName);
-        }
-        if(_.isNumber(requiredArgLength)) {
-            if(ast.args.length != requiredArgLength) {
-                throw Error(ast.funcName + " accepts " + requiredArgLength + " arguments");
-            }
-        } else if(requiredArgLength.min) {
-            if(ast.args.length < requiredArgLength.min) {
-                throw Error(ast.funcName + " accepts atleast " + requiredArgLength.min + " arguments");
-            }
-        }
-    },
-
-    _generateGlsl: function(ast, preCompute) {
-
-        if(ast instanceof Webvs.AstBinaryExpr) {
-            return "(" + this._generateGlsl(ast.leftOperand, preCompute) + ast.operator + this._generateGlsl(ast.rightOperand, preCompute) + ")";
-        }
-        if(ast instanceof Webvs.AstUnaryExpr) {
-            return "(" + ast.operator + this._generateGlsl(ast.operand, preCompute) + ")";
-        }
-        if(ast instanceof Webvs.AstFuncCall) {
-            this._checkFunc(ast);
-            switch(ast.funcName) {
-                case "above":
-                    return [
-                        "(",
-                        this._generateGlsl(ast.args[0], preCompute),
-                        ">",
-                        this._generateGlsl(ast.args[1], preCompute),
-                        "?1.0:0.0)"
-                    ].join("");
-                case "below":
-                    return [
-                        "(",
-                        this._generateGlsl(ast.args[0], preCompute),
-                        "<",
-                        this._generateGlsl(ast.args[1], preCompute),
-                        "?1.0:0.0)"
-                    ].join("");
-                case "equal":
-                    return [
-                        "(",
-                        this._generateGlsl(ast.args[0], preCompute),
-                        "==",
-                        this._generateGlsl(ast.args[1], preCompute),
-                        "?1.0:0.0)"
-                    ].join("");
-                case "if":
-                    return [
-                        "(",
-                        this._generateGlsl(ast.args[0], preCompute),
-                        "!=0.0?",
-                        this._generateGlsl(ast.args[1], preCompute),
-                        ":",
-                        this._generateGlsl(ast.args[2], preCompute),
-                        ")"
-                    ].join("");
-                case "select":
-                    var selectExpr = this._generateGlsl(ast.args[0], preCompute);
-                    var that = this;
-                    var generateSelect = function(args, i) {
-                        if(args.length == 1) {
-                            return that._generateGlsl(args[0], preCompute);
-                        }
-                        else {
-                            return [
-                                "(("+selectExpr+" === "+i+")?",
-                                "("+that._generateGlsl(args[0], preCompute)+"):",
-                                "("+generateSelect(_.last(args, args.length-1), i+1)+"))"
-                            ].join("");
-                        }
-                    };
-                    return generateSelect(_.last(ast.args, ast.args.length-1), 0);
-                case "sqr":
-                    return "(pow((" + this._generateGlsl(ast.args[0], preCompute) + "), 2))";
-                case "band":
-                    return "(float(("+this._generateGlsl(ast.args[0], preCompute)+")&&("+this._generateGlsl(ast.args[1], preCompute)+")))";
-                case "bor":
-                    return "(float(("+this._generateGlsl(ast.args[0], preCompute)+")||("+this._generateGlsl(ast.args[1], preCompute)+")))";
-                case "bnot":
-                    return "(float(!("+this._generateGlsl(ast.args[0], preCompute)+")))";
-                case "invsqrt":
-                    return "(1/sqrt("+this._generateGlsl(ast.args[0], preCompute)+"))";
-                case "atan2":
-                    return "(atan(("+this._generateGlsl(ast.args[0], preCompute)+"),("+this._generateGlsl(ast.args[1], preCompute)+"))";
-                case "getosc":
-                    var allStatic = _.every(ast.args, function(arg) {
-                        return arg instanceof Webvs.AstPrimaryExpr;
-                    });
-                    if(!allStatic) {
-                        throw new Error("Non Pre-Computable arguments for getosc in shader code, use variables or constants");
-                    }
-                    var uniformName = "__PC_" +  ast.funcName + "_" + pos;
-                    var item = [ast.funcName, uniformName].concat(_.map(ast.args, function(arg) {return arg.value;}));
-                    var pos = _.indexOf(preCompute, item);
-                    if(pos == -1) {
-                        preCompute.push(item);
-                        pos = preCompute.length-1;
-                    }
-                    return uniformName;
-                default:
-                    var args = _.map(ast.args, function(arg) {return this._generateGlsl(arg, preCompute);}, this).join(",");
-                    var funcName = ast.funcName;
-                    if(_.contains(this.varArgFuncs, ast.funcName)) {
-                        funcName += ast.args.length;
-                    }
-                    return "(" + funcName + "(" + args + "))";
-            }
-        }
-        if(ast instanceof Webvs.AstAssignment) {
-            return this._generateGlsl(ast.lhs, preCompute) + "=" + this._generateGlsl(ast.expr, preCompute);
-        }
+    function processNode(ast, name) {
+        var i;
         if(ast instanceof Webvs.AstProgram) {
-            var stmts = _.map(ast.statements, function(stmt) {return this._generateGlsl(stmt, preCompute);}, this);
-            return stmts.join(";\n")+";";
+            for(i = 0;i < ast.statements.length;i++) {
+                processNode(ast.statements[i], name);
+            }
+        } else if(ast instanceof Webvs.AstBinaryExpr) {
+            processNode(ast.leftOperand, name);
+            processNode(ast.rightOperand, name);
         }
-        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
-            return Webvs.glslFloatRepr(ast.value);
+        else if(ast instanceof Webvs.AstUnaryExpr) {
+            processNode(ast.operand, name);
         }
-        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "CONST") {
-            return this._translateConstants(ast.value).toString();
-        }
-        if(ast instanceof Webvs.AstPrimaryExpr && (ast.type === "ID" || ast.type === "REG")) {
-            return ast.value;
-        }
-    },
+        else if(ast instanceof Webvs.AstFuncCall) {
+            checkFunc(ast);
 
-    _generateJs: function(ast) {
-        var prefix;
+            // if its a precomputable function to be generated in glsl
+            // then build a table entry
+            if(_.contains(glslFuncs, name) && _.contains(glslPreComputeFuncs, ast.funcName)) {
+                var allStatic = _.every(ast.args, function(arg) {
+                    return arg instanceof Webvs.AstPrimaryExpr;
+                });
+                if(!allStatic) {
+                    throw new Error("Non Pre-Computable arguments for "+ast.funcName+" in shader code, use variables or constants");
+                }
+                var entry = [ast.funcName].concat(_.map(ast.args, function(arg) {return arg.value;}));
+                var uniformName;
+                for(var key in tables.preCompute) {
+                    if(tables.preCompute[key] == entry) {
+                        break;
+                    }
+                }
+                if(!uniformName) {
+                    uniformName = "__PC_" +  ast.funcName + "_" + preComputeCounter++;
+                    tables.preCompute[uniformName] = entry;
+                }
 
+                ast.preComputeUniformName = uniformName;
+            }
+
+            tables.funcCall[name].push(ast.funcName);
+            for(i = 0;i < ast.args.length;i++) {
+               processNode(ast.args[i], name);
+            }
+        }
+        else if(ast instanceof Webvs.AstAssignment) {
+            processNode(ast.lhs, name);
+            processNode(ast.expr, name);
+        }
+        else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "ID") {
+            tables.variable[name].push(ast.value);
+        }
+        else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "REG") {
+            tables.register[name].push(ast.value);
+        }
+    }
+
+
+    for(var name in codeAst) {
+        tables.funcCall[name] = [];
+        tables.variable[name] = [];
+        tables.register[name] = [];
+
+        processNode(codeAst[name], name);
+
+        tables.funcCall[name] = _.uniq(tables.funcCall[name]);
+        tables.variable[name] = _.uniq(tables.variable[name]);
+        tables.register[name] = _.uniq(tables.register[name]);
+    }
+
+    tables.jsVars   = _.chain(tables.variable).pick(jsFuncs  ).values().flatten().uniq().value();
+    tables.glslVars = _.chain(tables.variable).pick(glslFuncs).values().flatten().uniq().value();
+    tables.nonUniforms = _.chain(tables.glslVars).difference(tables.jsVars).union(extraNonUniforms).uniq().value();
+    tables.uniforms = _.intersection(tables.glslVars, tables.jsVars);
+    tables.glslUsedFuncs = _.chain(tables.funcCall).pick(glslFuncs).values().flatten().uniq().value();
+    tables.glslRegisters = _.chain(tables.register).pick(glslFuncs).values().flatten().uniq().value();
+
+    return tables;
+}
+
+function generateJs(codeAst, tables, jsFuncs) {
+    function generateNode(ast) {
         if(ast instanceof Webvs.AstBinaryExpr) {
-            return "(" + this._generateJs(ast.leftOperand) + ast.operator + this._generateJs(ast.rightOperand) + ")";
+            return "(" + generateNode(ast.leftOperand) + ast.operator + generateNode(ast.rightOperand) + ")";
         }
         if(ast instanceof Webvs.AstUnaryExpr) {
-            return "(" + ast.operator + this._generateJs(ast.operand) + ")";
+            return "(" + ast.operator + generateNode(ast.operand) + ")";
         }
         if(ast instanceof Webvs.AstFuncCall) {
-            this._checkFunc(ast);
             switch(ast.funcName) {
                 case "above":
                     return [
                         "(",
-                        this._generateJs(ast.args[0]),
+                        generateNode(ast.args[0]),
                         ">",
-                        this._generateJs(ast.args[1]),
+                        generateNode(ast.args[1]),
                         "?1:0)"
                     ].join("");
                 case "below":
                     return [
                         "(",
-                        this._generateJs(ast.args[0]),
+                        generateNode(ast.args[0]),
                         "<",
-                        this._generateJs(ast.args[1]),
+                        generateNode(ast.args[1]),
                         "?1:0)"
                     ].join("");
                 case "equal":
                     return [
                         "(",
-                        this._generateJs(ast.args[0]),
+                        generateNode(ast.args[0]),
                         "==",
-                        this._generateJs(ast.args[1]),
+                        generateNode(ast.args[1]),
                         "?1:0)"
                     ].join("");
                 case "if":
                     return [
                         "(",
-                        this._generateJs(ast.args[0]),
+                        generateNode(ast.args[0]),
                         "!==0?",
-                        this._generateJs(ast.args[1]),
+                        generateNode(ast.args[1]),
                         ":",
-                        this._generateJs(ast.args[2]),
+                        generateNode(ast.args[2]),
                         ")"
                     ].join("");
                 case "select":
                     var code = ["((function() {"];
-                    code.push("switch("+this._generateJs(ast.args[0])+") {");
+                    code.push("switch("+generateNode(ast.args[0])+") {");
                     _.each(_.last(ast.args, ast.args.length-1), function(arg, i) {
-                        code.push("case "+i+": return "+this._generateJs(arg)+";");
-                    }, this);
+                        code.push("case "+i+": return "+generateNode(arg)+";");
+                    });
                     code.push("default : throw new Error('Unknown selector value in select');");
                     code.push("}}).call(this))");
                     return code.join("");
                 case "sqr":
-                    return "(Math.pow((" + this._generateJs(ast.args[0]) + "),2))";
+                    return "(Math.pow((" + generateNode(ast.args[0]) + "),2))";
                 case "band":
-                    return "((("+this._generateJs(ast.args[0])+")&&("+this._generateJs(ast.args[1])+"))?1:0)";
+                    return "((("+generateNode(ast.args[0])+")&&("+generateNode(ast.args[1])+"))?1:0)";
                 case "bor":
-                    return "((("+this._generateJs(ast.args[0])+")||("+this._generateJs(ast.args[1])+"))?1:0)";
+                    return "((("+generateNode(ast.args[0])+")||("+generateNode(ast.args[1])+"))?1:0)";
                 case "bnot":
-                    return "((!("+this._generateJs(ast.args[0])+"))?1:0)";
+                    return "((!("+generateNode(ast.args[0])+"))?1:0)";
                 case "invsqrt":
-                    return "(1/Math.sqrt("+this._generateJs(ast.args[0])+"))";
+                    return "(1/Math.sqrt("+generateNode(ast.args[0])+"))";
                 case "atan2":
-                    return "(Math.atan(("+this._generateJs(ast.args[0])+")/("+this._generateJs(ast.args[1])+")))";
+                    return "(Math.atan(("+generateNode(ast.args[0])+")/("+generateNode(ast.args[1])+")))";
                 default:
-                    var args = _.map(ast.args, function(arg) {return this._generateJs(arg);}, this).join(",");
-                    if(_.contains(this.jsMathFuncs, ast.funcName)) {
+                    var prefix;
+                    var args = _.map(ast.args, function(arg) {return generateNode(arg);}).join(",");
+                    if(_.contains(jsMathFuncs, ast.funcName)) {
                         prefix = "Math.";
                     } else {
                         prefix = "this.";
@@ -4815,17 +4529,17 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
             }
         }
         if(ast instanceof Webvs.AstAssignment) {
-            return this._generateJs(ast.lhs) + "=" + this._generateJs(ast.expr);
+            return generateNode(ast.lhs) + "=" + generateNode(ast.expr);
         }
         if(ast instanceof Webvs.AstProgram) {
-            var stmts = _.map(ast.statements, function(stmt) {return this._generateJs(stmt);}, this);
+            var stmts = _.map(ast.statements, function(stmt) {return generateNode(stmt);});
             return stmts.join(";\n");
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
             return ast.value.toString();
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "CONST") {
-            return this._translateConstants(ast.value).toString();
+            return translateConstants(ast.value).toString();
         }
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "ID") {
             return "this." + ast.value;
@@ -4833,96 +4547,284 @@ Webvs.ExprCodeGenerator = Webvs.defineClass(ExprCodeGenerator, Object, {
         if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "REG") {
             return "this._registerBank[\"" + ast.value + "\"]";
         }
-    },
+    }
 
-    _getVars: function(ast, vars, funcUsages, regUsages) {
-        if(ast instanceof Webvs.AstBinaryExpr) {
-            this._getVars(ast.leftOperand, vars, funcUsages, regUsages);
-            this._getVars(ast.rightOperand, vars, funcUsages, regUsages);
-        }
+    var i;
+    var codeInst = new Webvs.CodeInstance();
 
-        else if(ast instanceof Webvs.AstUnaryExpr) {
-            this._getVars(ast.operand, vars, funcUsages, regUsages);
-        }
-        else if(ast instanceof Webvs.AstFuncCall) {
-            funcUsages.push(ast.funcName);
-            _.each(ast.args, function(arg) {
-               this._getVars(arg, vars, funcUsages, regUsages);
-            }, this);
-        }
-        else if(ast instanceof Webvs.AstAssignment) {
-            this._getVars(ast.lhs, vars, funcUsages, regUsages);
-            this._getVars(ast.expr, vars, funcUsages, regUsages);
-        }
-        else if(ast instanceof Webvs.AstProgram) {
-            _.each(ast.statements, function(stmt) {
-                this._getVars(stmt, vars, funcUsages, regUsages);
-            }, this);
-        }
-        else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "ID") {
-            vars.push(ast.value);
-        }
-        else if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "REG") {
-            regUsages.push(ast.value);
-        }
-    },
+    // clear all variables
+    for(i = 0;i < tables.jsVars.length;i++) {
+        codeInst[tables.jsVars[i]] = 0;
+    }
 
-    _translateConstants: function(value) {
-        switch(value) {
-            case "pi": return Math.PI;
-            case "e": return Math.E;
-            case "phi": return 1.6180339887;
-            default: throw new Error("Unknown constant " + value);
+    // generate code
+    for(i = 0;i < jsFuncs.length;i++) {
+        var name = jsFuncs[i];
+        var ast = codeAst[name];
+        if(ast) {
+            var jsCodeString = generateNode(ast);
+            codeInst[name] = new Function(jsCodeString);
+        } else {
+            codeInst[name] = Webvs.noop;
         }
     }
-});
+
+    codeInst._registerUsages = _.chain(tables.register).values().flatten().uniq().value();
+    codeInst._glslRegisters = tables.glslRegisters;
+    if(_.contains(tables.glslUsedFuncs, "rand")) {
+        codeInst._hasRandom = true;
+    }
+    codeInst._uniforms = tables.uniforms;
+    codeInst._preCompute = tables.preCompute;
+
+    return codeInst;
+}
+
+function generateGlsl(codeAst, tables, glslFuncs) {
+    function generateNode(ast) {
+        if(ast instanceof Webvs.AstBinaryExpr) {
+            return "(" + generateNode(ast.leftOperand) + ast.operator + generateNode(ast.rightOperand) + ")";
+        }
+        if(ast instanceof Webvs.AstUnaryExpr) {
+            return "(" + ast.operator + generateNode(ast.operand) + ")";
+        }
+        if(ast instanceof Webvs.AstFuncCall) {
+            if(ast.preComputeUniformName) {
+                return "(" + ast.preComputeUniformName + ")";
+            }
+            switch(ast.funcName) {
+                case "above":
+                    return [
+                        "(",
+                        generateNode(ast.args[0]),
+                        ">",
+                        generateNode(ast.args[1]),
+                        "?1.0:0.0)"
+                    ].join("");
+                case "below":
+                    return [
+                        "(",
+                        generateNode(ast.args[0]),
+                        "<",
+                        generateNode(ast.args[1]),
+                        "?1.0:0.0)"
+                    ].join("");
+                case "equal":
+                    return [
+                        "(",
+                        generateNode(ast.args[0]),
+                        "==",
+                        generateNode(ast.args[1]),
+                        "?1.0:0.0)"
+                    ].join("");
+                case "if":
+                    return [
+                        "(",
+                        generateNode(ast.args[0]),
+                        "!=0.0?",
+                        generateNode(ast.args[1]),
+                        ":",
+                        generateNode(ast.args[2]),
+                        ")"
+                    ].join("");
+                case "select":
+                    var selectExpr = generateNode(ast.args[0]);
+                    var generateSelect = function(args, i) {
+                        if(args.length == 1) {
+                            return generateNode(args[0]);
+                        }
+                        else {
+                            return [
+                                "(("+selectExpr+" === "+i+")?",
+                                "("+generateNode(args[0])+"):",
+                                "("+generateSelect(_.last(args, args.length-1), i+1)+"))"
+                            ].join("");
+                        }
+                    };
+                    return generateSelect(_.last(ast.args, ast.args.length-1), 0);
+                case "sqr":
+                    return "(pow((" + generateNode(ast.args[0]) + "), 2))";
+                case "band":
+                    return "(float(("+generateNode(ast.args[0])+")&&("+generateNode(ast.args[1])+")))";
+                case "bor":
+                    return "(float(("+generateNode(ast.args[0])+")||("+generateNode(ast.args[1])+")))";
+                case "bnot":
+                    return "(float(!("+generateNode(ast.args[0])+")))";
+                case "invsqrt":
+                    return "(1/sqrt("+generateNode(ast.args[0])+"))";
+                case "atan2":
+                    return "(atan(("+generateNode(ast.args[0])+"),("+generateNode(ast.args[1])+"))";
+                default:
+                    var args = _.map(ast.args, function(arg) {return generateNode(arg);}).join(",");
+                    return "(" + ast.funcName + "(" + args + "))";
+            }
+        }
+        if(ast instanceof Webvs.AstAssignment) {
+            return generateNode(ast.lhs) + "=" + generateNode(ast.expr);
+        }
+        if(ast instanceof Webvs.AstProgram) {
+            var stmts = _.map(ast.statements, function(stmt) {return generateNode(stmt);});
+            return stmts.join(";\n")+";";
+        }
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "VALUE") {
+            return Webvs.glslFloatRepr(ast.value);
+        }
+        if(ast instanceof Webvs.AstPrimaryExpr && ast.type === "CONST") {
+            return translateConstants(ast.value).toString();
+        }
+        if(ast instanceof Webvs.AstPrimaryExpr && (ast.type === "ID" || ast.type === "REG")) {
+            return ast.value;
+        }
+    }
+
+    var glslCode = [];
+    var i;
+
+    // glsl variable declarations
+    glslCode = glslCode.concat(_.map(tables.nonUniforms, function(name) {
+        return "float " + name + " = 0.0;";
+    }));
+    glslCode = glslCode.concat(_.map(tables.uniforms, function(name) {
+        return "uniform float " + name + ";";
+    }));
+    // include required functions in glsl
+    glslCode = glslCode.concat(_.chain(tables.glslUsedFuncs).map(function(name) {
+        return ((name in glslFuncCode)?(glslFuncCode[name]):[]);
+    }).flatten().value());
+
+    // declarations for precomputed functions
+    glslCode = glslCode.concat(_.chain(tables.preCompute).keys().map(function(name) {
+        return "uniform float " + name + ";";
+    }).value());
+
+    // add the functions
+    for(i = 0;i < glslFuncs.length;i++) {
+        var name = glslFuncs[i];
+        var ast = codeAst[name];
+        if(ast) {
+            var codeString = generateNode(ast);
+            glslCode.push("void " + name + "() {");
+            glslCode.push(codeString);
+            glslCode.push("}");
+        } else {
+            glslCode.push("void " + name + "() {}");
+        }
+    }
+
+    return glslCode.join("\n");
+}
+
+var funcArgLengths = {
+    "above": 2,
+    "below": 2,
+    "equal": 2,
+    "pow": 2,
+    "sqr": 1,
+    "sqrt": 1,
+    "invsqrt": 1,
+    "floor" : 1,
+    "ceil" : 1,
+    "abs": 1,
+    "if": 3,
+    "min": 2,
+    "max": 2,
+    "sin": 1,
+    "cos": 1,
+    "tan": 1,
+    "asin": 1,
+    "acos": 1,
+    "atan": 1,
+    "atan2": 2,
+    "log": 1,
+    "band": 2,
+    "bor": 2,
+    "bnot": 1,
+    "rand": 1,
+    "gettime": 1,
+    "getosc": 3,
+    "select": {min: 2}
+};
+
+var jsMathFuncs = ["min", "max", "sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"];
+
+var glslPreComputeFuncs = ["getosc", "gettime"];
+
+var glslFuncCode = {
+    "rand": [
+        "uniform vec2 __randStep;",
+        "vec2 __randSeed;",
+        "float rand(float max) {",
+        "   __randSeed += __randStep;",
+        "   float val = fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);",
+        "   return (floor(val*max)+1);",
+        "}"
+    ].join("\n")
+};
+
+function checkFunc(ast) {
+    var requiredArgLength = funcArgLengths[ast.funcName];
+    if(requiredArgLength === undefined) {
+        throw Error("Unknown function " + ast.funcName);
+    }
+    if(_.isNumber(requiredArgLength)) {
+        if(ast.args.length != requiredArgLength) {
+            throw Error(ast.funcName + " accepts " + requiredArgLength + " arguments");
+        }
+    } else if(requiredArgLength.min) {
+        if(ast.args.length < requiredArgLength.min) {
+            throw Error(ast.funcName + " accepts atleast " + requiredArgLength.min + " arguments");
+        }
+    }
+}
+
+function translateConstants(value) {
+    switch(value) {
+        case "pi": return Math.PI;
+        case "e": return Math.E;
+        case "phi": return 1.6180339887;
+        default: throw new Error("Unknown constant " + value);
+    }
+}
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that simply runs some avs expressions.
- * Useful to maintain global state
- *
- * @param {object} options - options object
- * @param {string} [options.code.init] - code to be run at startup
- * @param {string} [options.code.onBeat] - code to be run when a beat occurs
- * @param {string} [ptions.code.perFrame]- code to be run on every frame
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function GlobalVar(options) {
-	Webvs.checkRequiredOptions(options, ["code"]);
-	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
-    this.inited = false;
-
-    GlobalVar.super.constructor.apply(this, arguments);
+// A component that simply runs some avs expressions.
+// Useful to maintain global state
+function GlobalVar(gl, main, parent, opts) {
+    GlobalVar.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
-    /**
-     * initializes the globalvar component
-     * @memberof Webvs.GlobalVar#
-     */
-	init: function(gl, main, parent) {
-		GlobalVar.super.init.call(this, gl, main, parent);
 
-        this.code.setup(main, this);
-	},
+Webvs.registerComponent(GlobalVar, {
+    name: "GlobalVar",
+    menu: "Misc"
+});
 
-    /**
-     * Runs the code
-     * @memberof Webvs.GlobalVar#
-     */
-	update: function() {
+Webvs.defineClass(GlobalVar, Webvs.Component, {
+    defaultOptions: {
+        code: {
+            init: "",
+            onBeat: "",
+            perFrame: ""
+        }
+    },
+
+    onChange: {
+        "code": "updateCode"
+    },
+
+    init: function() {
+        this.updateCode();
+        this.listenTo(this.main, "resize", this.handleResize);
+    },
+
+    draw: function() {
 		var code = this.code;
 		code.b = this.main.analyser.beat?1:0;
 
@@ -4936,220 +4838,156 @@ Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
 		}
 
 		code.perFrame();
-	}
-});
+    },
 
-GlobalVar.ui = {
-    disp: "Global Var",
-    type: "GlobalVar",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                }
-            },
-        }
+    updateCode: function() {
+        this.code = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame"]).codeInst;
+        this.code.setup(this.main, this);
+        this.inited = false;
+    },
+
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
-};
+});
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A components that saves or restores a copy of the current
- * frame buffer.
- *
- * @param {object} options - options object
- * @param {string} [options.action="SAVE"] - the action to be performed. viz. "SAVE",
- *     "RESTORE", "RESTORESAVE", "SAVERESTORE"
- * @param {number} [options.bufferId=1] - an identifying number for the buffer. This number
- *     is used to share buffer between different instances of BufferSave
- * @param {string} [options.blendMode="REPLACE"] - blending mode when restoring buffers
- * @constructor
- * @augments Webvs.Component
- * @memberof Webvs
- */
-function BufferSave(options) {
-    options = _.defaults(options, {
-        action: "SAVE",
-        bufferId: 1,
-        blendMode: "REPLACE"
-    });
-    this.blendMode = Webvs.blendModes[options.blendMode];
-    this.action = this.actions[options.action];
-    if(!this.action) {
-        throw new Error("Unknown BufferSave action " + options.action);
-    }
-
-    if(this.action == this.actions.SAVERESTORE) {
-        this._nextAction = this.actions.SAVE;
-    } else if(this.action == this.actions.RESTORESAVE) {
-        this._nextAction = this.actions.RESTORE;
-    }
-    this._bufferId = "__BUFFERSAVE_" + options.bufferId;
-    BufferSave.super.constructor.apply(this, arguments);
+// A components that saves or restores a copy of the current
+// frame buffer.
+function BufferSave(gl, main, parent, opts) {
+    BufferSave.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.BufferSave  = Webvs.defineClass(BufferSave, Webvs.Component, {
-    actions: {
-        SAVE: 1,
-        RESTORE: 2,
-        SAVERESTORE: 3,
-        RESTORESAVE: 4
+
+Webvs.registerComponent(BufferSave, {
+    name: "BufferSave",
+    menu: "Misc"
+});
+    
+var Actions = {
+    "SAVE": 0,
+    "RESTORE": 1,
+    "SAVERESTORE": 2,
+    "RESTORESAVE": 3
+};
+BufferSave.Actions = Actions;
+
+Webvs.defineClass(BufferSave, Webvs.Component, {
+    defaultOptions: {
+        action: "SAVE",
+        bufferId: "buffer1",
+        blendMode: "REPLACE"
     },
 
-    /**
-     * Initializes the BufferSave component
-     * @memberof Webvs.BufferSave#
-     */
-    init: function(gl, main, parent) {
-        BufferSave.super.init.call(this, gl, main, parent);
-
-        // create frame buffer manager
-        if(!main.registerBank[this._bufferId]) {
-            var fm = new Webvs.FrameBufferManager(main.canvas.width, main.canvas.height, gl, main.copier, true, 1);
-            main.registerBank[this._bufferId] = fm;
-        }
+    onChange: {
+        "action": "updateAction",
+        "bufferId": "updateBuffer",
+        "blendMode": "updateBlendMode"
     },
 
-    /**
-     * Saves or Renders the current frame
-     * @memberof Webvs.BufferSave#
-     */
-    update: function() {
-        var gl = this.gl;
-        var fm = this.main.registerBank[this._bufferId];
+    init: function() {
+        this.updateAction();
+        this.updateBlendMode();
+        this.updateBuffer();
+    },
 
-        // find the current action
+    draw: function() {
         var currentAction;
-        if(this.action == this.actions.SAVERESTORE || this.action == this.RESTORESAVE) {
-            currentAction = this._nextAction;
-            // set the next action
-            if(this._nextAction == this.actions.SAVE) {
-                this._nextAction = this.actions.RESTORE;
-            } else {
-                this._nextAction = this.actions.SAVE;
-            }
+        if(this.action == Actions.SAVERESTORE ||
+           this.action == Actions.RESTORESAVE) {
+            currentAction = this.nextAction;
+            // toggle next action
+            this.nextAction = (this.nextAction == Actions.SAVE)?Actions.RESTORE:Actions.SAVE;
         } else {
             currentAction = this.action;
         }
 
+        var buffers = this.main.buffers;
         switch(currentAction) {
-            case this.actions.SAVE:
-                fm.setRenderTarget();
+            case Actions.SAVE:
+                buffers.setRenderTarget(this.opts.bufferId);
                 this.main.copier.run(null, null, this.parent.fm.getCurrentTexture());
-                fm.restoreRenderTarget();
+                buffers.restoreRenderTarget();
                 break;
-            case this.actions.RESTORE:
-                this.main.copier.run(this.parent.fm, this.blendMode, fm.getCurrentTexture());
+            case Actions.RESTORE:
+                this.main.copier.run(this.parent.fm, this.blendMode, buffers.getTexture(this.opts.bufferId));
                 break;
         }
     },
 
-    /**
-     * Releases resources.
-     * @memberof Webgl.BufferSave#
-     */
     destroy: function() {
         BufferSave.super.destroy.call(this);
-        // destroy the framebuffermanager
-        this.main.registerBank[this._bufferId].destroy();
+        this.main.buffers.removeTexture(this.opts.bufferId);
+    },
+    
+    updateAction: function() {
+        this.action = Webvs.getEnumValue(this.opts.action, Actions);
+        if(this.action == Actions.SAVERESTORE) {
+            this.nextAction = Actions.SAVE;
+        } else if(this.action == Actions.RESTORESAVE) {
+            this.nextAction = Actions.RESTORE;
+        }
+    },
+
+    updateBuffer: function(value, key, oldValue) {
+        // buffer names in FrameBufferManager have to be string
+        // converting to string to maintain backward compatibility
+        this.opts.bufferId = this.opts.bufferId + "";
+        if(oldValue) {
+            this.main.buffers.removeTexture(oldValue);
+        }
+        this.main.buffers.addTexture(this.opts.bufferId);
+    },
+
+    updateBlendMode: function() {
+        this.blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
     }
 });
-
-BufferSave.ui = {
-    disp: "Buffer Save",
-    type: "BufferSave",
-    schema: {
-        action: {
-            type: "string",
-            title: "Buffer save action",
-            enum: ["SAVE", "RESTORE", "SAVERESTORE", "RESTORESAVE"]
-        },
-        bufferId: {
-            type: "number",
-            title: "Buffer Id",
-            enum: [1,2,3,4,5,6,7,8]
-        },
-        blendMode: {
-            type: "string",
-            title: "Blend mode",
-            enum: _.keys(Webvs.blendModes)
-        }
-    }
-};
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that slowly fades the screen to a specified color
- *
- * @param {object} options - options object
- * @param {number} [speed=1] - speed at which the screen is faded 0 (never) - 1 (fastest)
- * @param {string} [color="#000000"] - fade color
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- * @constructor
- */
-function FadeOut(options) {
-    options = _.defaults(options, {
+// A component that slowly fades the screen to a specified color
+function FadeOut(gl, main, parent, opts) {
+    FadeOut.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(FadeOut, {
+    name: "FadeOut",
+    menu: "Trans"
+});
+
+Webvs.defineClass(FadeOut, Webvs.Component, {
+    defaultOptions: {
         speed: 1,
         color: "#000000"
-    });
-    this.color = Webvs.parseColorNorm(options.color);
-
-    this.frameCount = 0;
-    this.maxFrameCount = Math.floor(1/options.speed);
-    this.program = new Webvs.ClearScreenProgram(Webvs.AVERAGE);
-
-    FadeOut.super.constructor.apply(this, arguments);
-}
-Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
-    componentName: "FadeOut",
-
-    /**
-     * initializes the FadeOut component
-     * @memberof Webvs.FadeOut#
-     */
-    init: function(gl, main, parent) {
-        FadeOut.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
     },
 
-    /**
-     * fades the screen
-     * @memberof Webvs.FadeOut#
-     */
-    update: function() {
-        var gl = this.gl;
+    onChange: {
+        speed: "updateSpeed",
+        color: "updateColor"
+    },
+
+    init: function() {
+        this.program = new Webvs.ClearScreenProgram(this.gl, Webvs.AVERAGE);
+        this.updateSpeed();
+        this.updateColor();
+    },
+
+    draw: function() {
         this.frameCount++;
         if(this.frameCount == this.maxFrameCount) {
             this.frameCount = 0;
@@ -5157,162 +4995,116 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
         }
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.FadeOut#
-     */
     destroy: function() {
         FadeOut.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateSpeed: function() {
+        this.frameCount = 0;
+        this.maxFrameCount = Math.floor(1/this.opts.speed);
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
     }
 });
-
-FadeOut.ui = {
-    type: "FadeOut",
-    disp: "Fade Out",
-    schema: {
-        speed: {
-            type: "number",
-            title: "Speed",
-            maximum: 0,
-            minimum: 1,
-            default: 1
-        },
-        color: {
-            type: "string",
-            title: "Fadeout color",
-            format: "color",
-            default: "#FFFFFF"
-        }
-    },
-    form: [
-        {key: "speed", type: "range", step: "0.05"},
-        "color"
-    ]
-};
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that applies a convolution kernel
- *
- * @param {object} options - options object
- * @param {Array.<Array.<number>>} options.kernel - an NxN array of numbers
- * @param {number} [options.bias=0] - bias value to be added
- * @param {number} [options.scale] - scale for the kernel. default is sum of kernel values
- * @param {object} [options.edgeMode="EXTEND"] - how the frame edge cases should be handled viz. `WRAP`, `EXTEND`
- *
- * @constructor
- * @augments Webvs.Component
- * @memberof Webvs
- */
-function Convolution(options) {
-    Webvs.checkRequiredOptions(options, ["kernel"]);
-    options = _.defaults(options, {
-        edgeMode: "EXTEND",
-        bias: 0
-    });
-
-    var kernel;
-    if(options.kernel in Convolution.kernels) {
-        kernel = Convolution.kernels[options.kernel];
-    } else if(_.isArray(options.kernel) && options.kernel.length%2 === 1) {
-        kernel = options.kernel;
-    } else {
-        throw new Error("Invalid convolution kernel");
-    }
-
-    var kernelSize = Math.floor(Math.sqrt(kernel.length));
-    if(kernelSize*kernelSize != kernel.length) {
-        throw new Error("Invalid convolution kernel");
-    }
-
-    this.program = new Webvs.ConvolutionProgram(kernel, kernelSize, 
-                                                options.edgeMode, options.scale,
-                                                options.bias);
-
-    Convolution.super.constructor.apply(this, arguments);
+// A component that applies a convolution kernel
+function Convolution(gl, main, parent, opts) {
+    Convolution.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
-    componentName: "Convolution",
 
-    /**
-     * initializes the Convolution component
-     * @method
-     * @memberof Webvs.Convolution#
-     */
-    init: function(gl, main, parent) {
-        Convolution.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
+Webvs.registerComponent(Convolution, {
+    name: "Convolution",
+    menu: "Trans"
+});
+
+var EdgeModes = {
+    "EXTEND": 0,
+    "WRAP": 1,
+};
+Convolution.EdgeModes = EdgeModes;
+
+Webvs.defineClass(Convolution, Webvs.Component, {
+    defaultOptions: {
+        edgeMode: "EXTEND",
+        autoScale: true,
+        scale: 0,
+        kernel: [
+            0, 0, 0,
+            0, 1, 0,
+            0, 0, 0
+        ],
+        bias: 0
     },
 
-    /**
-     * applies the Convolution matrix
-     * @method
-     * @memberof Webvs.Convolution#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null);
+    onChange: {
+        "edgeMode": "updateProgram",
+        "kernel": ["updateProgram", "updateScale"],
+        "scale": "updateScale"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.Convolution#
-     */
+    init: function() {
+        this.updateProgram();
+        this.updateScale();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.scale, this.opts.bias);
+    },
+
     destroy: function() {
         Convolution.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateScale: function() {
+        var opts = this.opts;
+        if(opts.autoScale) {
+            this.scale = _.reduce(opts.kernel, function(memo, num){ return memo + num; }, 0);
+        } else {
+            this.scale = opts.scale;
+        }
+    },
+
+    updateProgram: function() {
+        var opts = this.opts;
+        if(!_.isArray(opts.kernel) || opts.kernel.length%2 !== 1) {
+            throw new Error("Invalid convolution kernel");
+        }
+        var kernelSize = Math.floor(Math.sqrt(opts.kernel.length));
+        if(kernelSize*kernelSize != opts.kernel.length) {
+            throw new Error("Invalid convolution kernel");
+        }
+
+        if(this.program) {
+            this.program.destroy();
+        }
+        var edgeMode = Webvs.getEnumValue(this.opts.edgeMode, EdgeModes);
+        this.program = new Webvs.ConvolutionProgram(this.gl, opts.kernel, kernelSize, edgeMode);
     }
 });
 
-Convolution.kernels = {
-    normal: [
-        0, 0, 0,
-        0, 1, 0,
-        0, 0, 0
-    ],
-    gaussianBlur: [
-        0.045, 0.122, 0.045,
-        0.122, 0.332, 0.122,
-        0.045, 0.122, 0.045
-    ],
-    unsharpen: [
-        -1, -1, -1,
-        -1,  9, -1,
-        -1, -1, -1
-    ],
-    emboss: [
-        -2, -1,  0,
-        -1,  1,  1,
-        0,  1,  2
-    ],
-    blur: [
-        1, 1, 1,
-        1, 1, 1,
-        1, 1, 1
-    ]
-};
-
-function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
+function ConvolutionProgram(gl, kernel, kernelSize, edgeMode) {
     // generate edge correction function
     var edgeFunc = "";
     switch(edgeMode) {
-        case "WRAP":
+        case EdgeModes.WRAP:
             edgeFunc = "pos = vec2(pos.x<0?pos.x+1.0:pos.x%1, pos.y<0?pos.y+1.0:pos.y%1);";
             break;
-        case "EXTEND":
+        case EdgeModes.EXTEND:
             edgeFunc = "pos = clamp(pos, vec2(0,0), vec2(1,1));";
             break;
-        default:
-            throw new Error("Invalid edge mode");
     }
 
     var i,j;
@@ -5326,129 +5118,140 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
             if(value === 0) {
                 continue;
             }
-            colorSumEq.push("pos = v_position + texel * vec2("+(i-mid)+","+(j-mid)+");");
+            colorSumEq.push("pos = v_position + texel * vec2("+(j-mid)+","+(mid-i)+");");
             colorSumEq.push(edgeFunc);
             colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+Webvs.glslFloatRepr(value)+";");
         }
     }
 
-    // compute kernel scaling factor
-    if(_.isUndefined(scale)) {
-        scale = _.reduce(kernel, function(memo, num){ return memo + num; }, 0);
-    }
-
-    ConvolutionProgram.super.constructor.call(this, {
+    ConvolutionProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
+            "uniform float u_scale;",
+            "uniform float u_bias;",
             "void main() {",
             "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
             "   vec2 pos;",
             "   vec4 colorSum = vec4(0,0,0,0);",
             colorSumEq.join("\n"),
-            "   setFragColor(vec4(((colorSum+"+Webvs.glslFloatRepr(bias)+") / "+Webvs.glslFloatRepr(scale)+").rgb, 1.0));",
+            "   setFragColor(vec4(((colorSum+u_bias)/u_scale).rgb, 1.0));",
             "}"
         ]
     });
 }
-Webvs.ConvolutionProgram = Webvs.defineClass(ConvolutionProgram, Webvs.QuadBoxProgram);
+Webvs.ConvolutionProgram = Webvs.defineClass(ConvolutionProgram, Webvs.QuadBoxProgram, {
+    draw: function(scale, bias) {
+        this.setUniform("u_scale", "1f", scale);
+        this.setUniform("u_bias", "1f", bias);
+        ConvolutionProgram.super.draw.call(this);
+    }
+});
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * a component that changes colors according to a gradient map using
- * a key generated from the source colors
- *
- * @param {object} options - options object
- * @param {Array.<Array.<object>>} options.maps - a set of color maps. each colormap consists of
- *     a set of keystones. The map is generated by interpolating colors between the keystones.
- * @param {string} options.maps[i][j].color - keystone color
- * @param {number} options.maps[i][j].index - position of keystone (0-255)
- * @param {object} options.maps - a set of color map
- * @param {string} [options.key="RED"] - the key function viz. `RED`, `GREEN`, `BLUE`, `(R+G+B)/2`, `(R+G+B)/3`, `MAX`
- * @param {string} [options.output="REPLACE"] - output blending mode
- * @param {string} [options.mapCycleMode="SINGLE"] - how to cycle between maps
- *
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function ColorMap(options) {
-    Webvs.checkRequiredOptions(options, ["maps"]);
-    options = _.defaults(options, {
+// a component that changes colors according to a gradient map using
+// a key generated from the source colors
+function ColorMap(gl, main, parent, opts) {
+    ColorMap.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(ColorMap, {
+    name: "ColorMap",
+    menu: "Trans"
+});
+
+var MapKey = {
+    "RED": 0,
+    "GREEN": 1,
+    "BLUE": 2,
+    "(R+G+B)/2": 3,
+    "(R+G+B)/3": 4,
+    "MAX": 5
+};
+ColorMap.MapKey = MapKey;
+
+var MapCycleModes = {
+    "SINGLE": 0,
+    "ONBEATRANDOM": 1,
+    "ONBEATSEQUENTIAL": 2
+};
+ColorMap.MapCycleModes = MapCycleModes;
+
+Webvs.defineClass(ColorMap, Webvs.Component, {
+    defaultOptions: {
         key: "RED",
         output: "REPLACE",
         mapCycleMode: "SINGLE",
-    });
-
-    var that = this;
-    this.maps = options.maps;
-    this.currentMap = 0;
-
-    this.mapCycleMode = this.mapCycleModes[options.mapCycleMode];
-    if(!this.mapCycleMode) {
-        throw new Error("Unknown mapCycleMode " + options.mapCycleMode);
-    }
-
-    this.program = new Webvs.ColorMapProgram(options.key, Webvs.getBlendMode(options.output));
-
-    ColorMap.super.constructor.apply(this, arguments);
-}
-Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
-    mapCycleModes: {
-        SINGLE: 1,
-        ONBEATRANDOM: 2,
-        ONBEATSEQUENTIAL: 3
+        maps: [
+            [
+                {index: 0, color: "#000000"},
+                {index: 255, color: "#FFFFFF"}
+            ]
+        ],
     },
 
-    /**
-     * initializes the ColorMap component
-     * @memberof Webvs.ColorMap#
-     */
-    init: function(gl, main, parent) {
-        ColorMap.super.init.call(this, gl, main, parent);
-
-        this.colorMaps = _.map(this.maps, function(map) {
-            return this._buildColorMap(map);
-        }, this);
-        this.currentMap = 0;
-
-        this.program.init(gl);
+    onChange: {
+        "maps": "updateMap",
+        "key": "updateProgram",
+        "mapCycleMode": "updateCycleMode",
+        "output": "updateProgram"
     },
 
-    /**
-     * maps the colors
-     * @memberof Webvs.ColorMap#
-     */
-    update: function() {
+    init: function() {
+        this.updateProgram();
+        this.updateMap();
+        this.updateCycleMode();
+    },
+
+    draw: function() {
         if(this.main.analyser.beat) {
-            switch(this.mapCycleMode) {
-                case this.mapCycleModes.ONBEATRANDOM:
-                    this.currentMap = Math.floor(Math.random()*this.colorMaps.length);
-                    break;
-                case this.mapCycleModes.ONBEATSEQUENTIAL:
-                    this.currentMap = (this.currentMap+1)%this.colorMaps.length;
-                    break;
+            if(this.mapCycleMode ==  MapCycleModes.ONBEATRANDOM) {
+                this.currentMap = Math.floor(Math.random()*this.opts.maps.length);
+            } else if(this.mapCycleMode == MapCycleModes.ONBEATSEQUENTIAL) {
+                this.currentMap = (this.currentMap+1)%this.colorMaps.length;
             }
         }
-
         this.program.run(this.parent.fm, null, this.colorMaps[this.currentMap]);
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ColorMap#
-     */
     destroy: function() {
         ColorMap.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+        _.each(this.colorMaps, function(tex) {
+            this.gl.deleteTexture(tex);
+        }, this);
+    },
+
+    updateProgram: function() {
+        if(this.program) {
+            this.program.cleanup();
+        }
+        var output = Webvs.getEnumValue(this.opts.output, Webvs.BlendModes);
+        var key = Webvs.getEnumValue(this.opts.key, MapKey);
+        this.program = new Webvs.ColorMapProgram(this.gl, key, output);
+    },
+
+    updateMap: function() {
+        if(this.colorMaps) {
+            _.each(this.colorMaps, function(tex) {
+                this.gl.deleteTexture(tex);
+            }, this);
+        }
+        this.colorMaps = _.map(this.opts.maps, function(map) {
+            return this._buildColorMap(map);
+        }, this);
+        this.currentMap = 0;
+    },
+
+    updateCycleMode: function() {
+        this.mapCycleMode = Webvs.getEnumValue(this.opts.mapCycleMode, MapCycleModes);
     },
 
     _buildColorMap: function(map) {
@@ -5486,9 +5289,9 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
             var second = pair[1];
             var steps = second.index - first.index;
             _.times(steps, function(i) {
-                colorMap[cmi++] = Math.floor((first.color[0]*(255-i) + second.color[0]*i)/255);
-                colorMap[cmi++] = Math.floor((first.color[1]*(255-i) + second.color[1]*i)/255);
-                colorMap[cmi++] = Math.floor((first.color[2]*(255-i) + second.color[2]*i)/255);
+                colorMap[cmi++] = Math.floor((first.color[0]*(steps-i) + second.color[0]*i)/steps);
+                colorMap[cmi++] = Math.floor((first.color[1]*(steps-i) + second.color[1]*i)/steps);
+                colorMap[cmi++] = Math.floor((first.color[2]*(steps-i) + second.color[2]*i)/steps);
             });
         });
         colorMap[cmi++] = last.color[0];
@@ -5507,20 +5310,19 @@ Webvs.ColorMap = Webvs.defineClass(ColorMap, Webvs.Component, {
     }
 });
 
-function ColorMapProgram(key, blendMode) {
+function ColorMapProgram(gl, key, blendMode) {
     var keyEq = "";
     switch(key) {
-        case "RED": keyEq = "srcColor.r"; break;
-        case "GREEN": keyEq = "srcColor.g"; break;
-        case "BLUE": keyEq = "srcColor.b"; break;
-        case "(R+G+B)/2": keyEq = "mod((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
-        case "(R+G+B)/3": keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
-        case "MAX": keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
-        default: throw new Error("Unknown colormap key function " + options.key);
+        case MapKey.RED: keyEq = "srcColor.r"; break;
+        case MapKey.GREEN: keyEq = "srcColor.g"; break;
+        case MapKey.BLUE: keyEq = "srcColor.b"; break;
+        case MapKey["(R+G+B)/2"]: keyEq = "min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
+        case MapKey["(R+G+B)/3"]: keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
+        case MapKey.MAX: keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
     }
 
-    ColorMapProgram.super.constructor.call(this, {
-        outputBlendMode: blendMode,
+    ColorMapProgram.super.constructor.call(this, gl, {
+        blendMode: blendMode,
         swapFrame: true,
         fragmentShader: [
             "uniform sampler2D u_colorMap;",
@@ -5538,137 +5340,74 @@ Webvs.ColorMapProgram = Webvs.defineClass(ColorMapProgram, Webvs.QuadBoxProgram,
     }
 });
 
-ColorMap.ui = {
-    disp: "Color Map",
-    type: "ColorMap",
-    schema: {
-        maps: {
-            type: "array",
-            items: {
-                type: "array",
-                title: "Map",
-                items: {
-                    type: "object",
-                    properties: {
-                        color: {
-                            type: "string",
-                            title: "Color",
-                            format: "color",
-                            default: "#FFFFFF"
-                        },
-                        index: {
-                            type: "number",
-                            title: "Index",
-                            minimum: 0,
-                            maximum: 255,
-                        }
-                    }
-                }
-            }
-        },
-        key: {
-            type: "string",
-            title: "Map key",
-            enum: ["RED", "GREEN", "BLUE", "(R+G+B)/2", "(R+G+B)/3", "MAX"],
-            default: "RED"
-        },
-        mapCycleMode: {
-            type: "string",
-            title: "Map Cycle Mode",
-            enum: ["SINGLE", "ONBEATRANDOM", "ONBEATSEQUENTIAL"],
-            default: "SINGLE"
-        },
-        output: {
-            type: "string",
-            title: "Output blend mode",
-            enum: _.keys(Webvs.blendModes),
-            default: "REPLACE"
-        }
-    }
-};
-
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that clips colors to a different color depending
- * on whether the source colors are above or below a reference color.
- * 
- * @see r_contrast.cpp
- * @param {object} options - options object
- * @param {string} [options.mode="BELOW"] - comparison mode viz. `BELOW`, `ABOVE`, `NEAR`
- * @param {string} [options.color="#202020"] - reference color against which the
- *     the screen colors are compared
- * @param {string} [options.outColor="#202020"] - output color for clipped pixels
- * @param {number} [options.level=0] - when mode is `NEAR`, this value decides the distance
- *     between source and reference colors below which pixels would be clipped. 0-1 normalized
- *
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function ColorClip(options) {
-    Webvs.checkRequiredOptions(options, ["mode", "color", "outColor"]);
-    options = _.defaults(options, {
+// A component that clips colors to a different color depending
+// on whether the source colors are above or below a reference color.
+function ColorClip(gl, main, parent, opts) {
+    ColorClip.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(ColorClip, {
+    name: "ColorClip",
+    menu: "Trans"
+});
+
+var ClipModes = {
+    "BELOW": 0,
+    "ABOVE": 1,
+    "NEAR": 2
+};
+ColorClip.ClipModes = ClipModes;
+
+Webvs.defineClass(ColorClip, Webvs.Component,  {
+    defaultOptions: {
         mode: "BELOW",
         color: "#202020",
         outColor: "#202020",
         level: 0
-    });
-
-    this.mode = _.indexOf(this.modes, options.mode);
-    if(this.mode == -1) {
-        throw new Error("ColorClip: invalid mode");
-    }
-    this.color = Webvs.parseColorNorm(options.color);
-    this.outColor = Webvs.parseColorNorm(options.outColor);
-    this.level = options.level;
-
-    this.program = new Webvs.ColorClipProgram();
-
-    ColorClip.super.constructor.apply(this, arguments);
-}
-Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
-    modes: ["BELOW", "ABOVE", "NEAR"],
-    componentName: "ChannelShift",
-
-    /**
-     * initializes the ColorClip component
-     * @memberof Webvs.ColorClip#
-     */
-    init: function(gl, main, parent) {
-        ColorClip.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
     },
 
-    /**
-     * clips the colors
-     * @memberof Webvs.ColorClip#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.level);
+    onChange: {
+        mode: "updateMode",
+        color: "updateColor",
+        outColor: "updateColor"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ColorClip#
-     */
+    init: function() {
+        this.program = new ColorClipProgram(this.gl);
+        this.updateColor();
+        this.updateMode();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.opts.level);
+    },
+
     destroy: function() {
         ColorClip.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateMode: function() {
+        this.mode = Webvs.getEnumValue(this.opts.mode, ClipModes);
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
+        this.outColor = Webvs.parseColorNorm(this.opts.outColor);
     }
 });
 
-function ColorClipProgram() {
-    ColorClipProgram.super.constructor({
+function ColorClipProgram(gl) {
+    ColorClipProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
             "uniform int u_mode;",
@@ -5711,113 +5450,133 @@ Webvs.ColorClipProgram = Webvs.defineClass(ColorClipProgram, Webvs.QuadBoxProgra
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that moves pixels according to user code.
- * 
- * #### Code variables
- *
- * The following variables are available in the code
- *
- * + x - x position of the pixel (-1 to +1)
- * + y - y position of the pixel (-1 to +1)
- * + d - length of pixel position vector (0 to 1)
- * + r - angle of the position vector with y axis in clockwise direction in radians
- * + w - width of the screen
- * + h - height of the screen
- * + b - 1 if a beat has occured else 0
- *
- * @param {object} options - options object
- * @param {string} [options.code.init] - code to be run at startup
- * @param {string} [options.code.onBeat] - code to be run when a beat occurs
- * @param {string} [options.code.perFrame] - code to be run on every frame
- * @param {string} [options.code.perPixel] - code that will be run once for every pixel. should set 
- *       `x`, `y` or `d`, `r` variables (depending on coord) to specify point location. Note: state 
- *        of this code does not persist.
- * @param {number} [options.gridW=16] - width of the interpolation grid
- * @param {number} [options.gridH=16] - height of the interpolation grid
- * @param {boolean} [options.noGrid=false] - if true, then interpolation grid is not used
- *      ie. movement will be pixel accurate
- * @param {boolean} [options.compat=false] - if true, then calculations are low precision.
- *      useful to map winamp AVS behaviour more closely
- * @param {boolean} [options.bFilter=true] - use bilinear interpolation for pixel sampling
- * @param {string} [options.coord="POLAR"] - coordinate system to be used viz. `POLAR`, `RECT`
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- * @constructor
- */
-function DynamicMovement(options) {
-    Webvs.checkRequiredOptions(options, ["code"]);
-    options = _.defaults(options, {
+// A component that moves pixels according to user code.
+function DynamicMovement(gl, main, parent, opts) {
+    DynamicMovement.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(DynamicMovement, {
+    name: "DynamicMovement",
+    menu: "Trans"
+});
+
+var CoordModes = {
+    "POLAR": 0,
+    "RECT": 1
+};
+DynamicMovement.CoordModes = CoordModes;
+
+Webvs.defineClass(DynamicMovement, Webvs.Component, {
+    defaultOptions: {
+        code: {
+            init: "",
+            onBeat: "",
+            perFrame: "",
+            perPixel: ""
+        },
         gridW: 16,
         gridH: 16,
+        blend: false,
         noGrid: false,
-        bFilter: true,
         compat: false,
+        bFilter: true,
         coord: "POLAR"
-    });
+    },
 
-    var codeSrc;
-    if(_.isObject(options.code)) {
-        codeSrc = options.code;
-    } else {
-        throw new Error("Invalid Dynamic movement code");
-    }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["x", "y", "r", "d", "b"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
-    var glslCode = codeGen.generateGlsl(["perPixel"], ["x", "y", "d", "r"], this.code);
+    onChange: {
+        "code": "updateCode",
+        "noGrid": ["updateProgram", "updateGrid"],
+        "compat": "updateProgram",
+        "bFilter": "updateProgram",
+        "coord": "updateProgram",
+        "blend": "updateProgram",
+        "gridW": "updateGrid",
+        "gridH": "updateGrid"
+    },
+    
+    init: function() {
+        this.updateCode();
+        this.updateGrid();
+        this.listenTo(this.main, "resize", this.handleResize);
+    },
 
-    this.inited = false;
+    draw: function() {
+        var code = this.code;
 
-    this.noGrid = options.noGrid;
-    this.gridW = options.gridW;
-    this.gridH = options.gridH;
+        // run init, if required
+        if(!this.inited) {
+            code.init();
+            code.inited = true;
+        }
 
-    this.coordMode = options.coord;
-    this.bFilter = options.bFilter;
-    this.compat = options.compat;
+        var beat = this.main.analyser.beat;
+        code.b = beat?1:0;
+        // run per frame
+        code.perFrame();
+        // run on beat
+        if(beat) {
+            code.onBeat();
+        }
 
-    if(this.noGrid) {
-        this.program = new Webvs.DMovProgramNG(this.coordMode, this.bFilter,
-                                               this.compat, this.code.hasRandom,
-                                               glslCode);
-    } else {
-        this.program = new Webvs.DMovProgram(this.coordMode, this.bFilter,
-                                             this.compat, this.code.hasRandom,
-                                             glslCode);
-    }
+        this.program.run(this.parent.fm, null, this.code, this.gridVertices, this.gridVerticesSize);
+    },
 
-    DynamicMovement.super.constructor.apply(this, arguments);
-}
-Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
-    componentName: "DynamicMovement",
+    destroy: function() {
+        DynamicMovement.super.destroy.call(this);
+        this.program.destroy();
+    },
 
-    /**
-     * initializes the DynamicMovement component
-     * @memberof Webvs.DynamicMovement#
-     */
-    init: function(gl, main, parent) {
-        DynamicMovement.super.init.call(this, gl, main, parent);
+    updateCode: function() {
+        var compileResult = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r", "alpha"]);
 
-        this.program.init(gl);
+        // js code
+        var code = compileResult.codeInst;
+        code.setup(this.main, this);
+        this.inited = false;
+        this.code = code;
 
-        this.code.setup(main, parent);
+        // glsl code
+        this.glslCode = compileResult.glslCode;
+        this.updateProgram();
+    },
 
-        // calculate grid vertices
-        if(!this.noGrid) {
-            var gridW = Webvs.clamp(this.gridW, 1, this.main.canvas.width);
-            var gridH = Webvs.clamp(this.gridH, 1, this.main.canvas.height);
-            var nGridW = (gridW/this.main.canvas.width)*2;
-            var nGridH = (gridH/this.main.canvas.height)*2;
-            var gridCountAcross = Math.ceil(this.main.canvas.width/gridW);
-            var gridCountDown = Math.ceil(this.main.canvas.height/gridH);
+    updateProgram: function() {
+        var opts = this.opts;
+        var program;
+        var coordMode = Webvs.getEnumValue(this.opts.coord, CoordModes);
+        if(opts.noGrid) {
+            program = new Webvs.DMovProgramNG(this.gl, coordMode, opts.bFilter,
+                                              opts.compat, this.code.hasRandom,
+                                              this.glslCode, opts.blend);
+        } else {
+            program = new Webvs.DMovProgram(this.gl, coordMode, opts.bFilter,
+                                            opts.compat, this.code.hasRandom,
+                                            this.glslCode, opts.blend);
+        }
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
+    },
+
+    updateGrid: function() {
+        var opts = this.opts;
+        if(opts.noGrid) {
+            this.gridVertices = undefined;
+            this.gridVerticesSize = undefined;
+        } else {
+            var gridW = Webvs.clamp(opts.gridW, 1, this.gl.drawingBufferWidth);
+            var gridH = Webvs.clamp(opts.gridH, 1, this.gl.drawingBufferHeight);
+            var nGridW = (gridW/this.gl.drawingBufferWidth)*2;
+            var nGridH = (gridH/this.gl.drawingBufferHeight)*2;
+            var gridCountAcross = Math.ceil(this.gl.drawingBufferWidth/gridW);
+            var gridCountDown = Math.ceil(this.gl.drawingBufferHeight/gridH);
             var gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
             var pbi = 0;
             var curx = -1;
@@ -5851,48 +5610,14 @@ Webvs.DynamicMovement = Webvs.defineClass(DynamicMovement, Webvs.Component, {
         }
     },
 
-    /**
-     * moves the pixels
-     * @memberof Webvs.DynamicMovement#
-     */
-    update: function() {
-        var code = this.code;
-
-        // run init, if required
-        if(!this.inited) {
-            code.init();
-            this.inited = true;
-        }
-
-        var beat = this.main.analyser.beat;
-        code.b = beat?1:0;
-        // run per frame
-        code.perFrame();
-        // run on beat
-        if(beat) {
-            code.onBeat();
-        }
-
-        if(this.noGrid) {
-            this.program.run(this.parent.fm, null, this.code);
-        } else {
-            this.program.run(this.parent.fm, null, this.code, this.gridVertices, this.gridVerticesSize);
-        }
-    },
-
-    /**
-     * releases resources
-     * @memberof Webvs.DynamicMovement#
-     */
-    destroy: function() {
-        DynamicMovement.super.destroy.call(this);
-        this.program.cleanup();
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
 });
 
 var GlslHelpers = {
     glslRectToPolar: function(coordMode) {
-        if(coordMode === "POLAR") {
+        if(coordMode === CoordModes.POLAR) {
             return [
                 "float ar = u_resolution.x/u_resolution.y;",
                 "x=x*ar;",
@@ -5905,7 +5630,7 @@ var GlslHelpers = {
     },
 
     glslPolarToRect: function(coordMode) {
-        if(coordMode === "POLAR") {
+        if(coordMode === CoordModes.POLAR) {
             return [
                 "d = d*sqrt(2.0);",
                 "x = d*sin(r)/ar;",
@@ -5971,7 +5696,7 @@ var GlslHelpers = {
     }
 };
 
-function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode) {
+function DMovProgramNG(gl, coordMode, bFilter, compat, randSeed, exprCode, blend) {
     var fragmentShader = [
         exprCode,
         this.glslFilter(bFilter, compat),
@@ -5980,14 +5705,16 @@ function DMovProgramNG(coordMode, bFilter, compat, randSeed, exprCode) {
         "   x = v_position.x*2.0-1.0;",
         "   y = -(v_position.y*2.0-1.0);",
         this.glslRectToPolar(coordMode),
+        "   alpha=0.5;",
         "   perPixel();",
         this.glslPolarToRect(coordMode),
-        "   setFragColor(vec4(filter(vec2(x, -y)), 1));",
+        "   setFragColor(vec4(filter(vec2(x, -y)), "+(blend?"alpha":"1.0")+"));",
         "}"
     ];
 
-    DMovProgramNG.super.constructor.call(this, {
+    DMovProgramNG.super.constructor.call(this, gl, {
         fragmentShader: fragmentShader,
+        blendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
         swapFrame: true
     });
 }
@@ -5998,10 +5725,11 @@ Webvs.DMovProgramNG = Webvs.defineClass(DMovProgramNG, Webvs.QuadBoxProgram, Gls
     }
 });
 
-function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode) {
+function DMovProgram(gl, coordMode, bFilter, compat, randSeed, exprCode, blend) {
     var vertexShader = [
         "attribute vec2 a_position;",
         "varying vec2 v_newPoint;",
+        "varying float v_alpha;",
         "uniform int u_coordMode;",
         exprCode,
         "void main() {",
@@ -6009,7 +5737,9 @@ function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode) {
         "   x = a_position.x;",
         "   y = -a_position.y;",
         this.glslRectToPolar(coordMode),
+        "   alpha = 0.5;",
         "   perPixel();",
+        "   v_alpha = alpha;",
         this.glslPolarToRect(coordMode),
         "   v_newPoint = vec2(x,-y);",
         "   setPosition(a_position);",
@@ -6018,13 +5748,15 @@ function DMovProgram(coordMode, bFilter, compat, randSeed, exprCode) {
 
     var fragmentShader = [
         "varying vec2 v_newPoint;",
+        "varying float v_alpha;",
         this.glslFilter(bFilter, compat),
         "void main() {",
-        "   setFragColor(vec4(filter(v_newPoint), 1));",
+        "   setFragColor(vec4(filter(v_newPoint), "+(blend?"v_alpha":"1.0")+"));",
         "}"
     ];
 
-    DMovProgram.super.constructor.call(this, {
+    DMovProgram.super.constructor.call(this, gl, {
+        blendMode: blend?Webvs.ALPHA:Webvs.REPLACE,
         fragmentShader: fragmentShader,
         vertexShader: vertexShader,
         swapFrame: true
@@ -6038,190 +5770,78 @@ Webvs.DMovProgram = Webvs.defineClass(DMovProgram, Webvs.ShaderProgram, GlslHelp
     }
 });
 
-DynamicMovement.ui = {
-    type: "DynamicMovement",
-    disp: "Dynamic Movement",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                },
-                perPixel: {
-                    type: "string",
-                    title: "Per Point",
-                }
-            },
-        },
-        gridW: {
-            type: "number",
-            title: "Grid Width",
-            default: 16,
-        },
-        gridH: {
-            type: "number",
-            title: "Grid Height",
-            default: 16,
-        },
-        coord: {
-            type: "string",
-            title: "Coordinate System",
-            enum: ["POLAR", "RECT"],
-            default: "POLAR"
-        }
-    },
-    form: [
-        { key: "code.init", type: "textarea" },
-        { key: "code.onBeat", type: "textarea" },
-        { key: "code.perFrame", type: "textarea" },
-        { key: "code.perPixel", type: "textarea" },
-        "gridW",
-        "gridH",
-        "coord"
-    ]
-};
-
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * An alias class for {@link Webvs.DynamicMovement} with noGrid=true option
- * @param {object} options - options object
- * @param {string} [options.code.perPixel] - code that will be run once for every pixel. should set 
- *       `x`, `y` or `d`, `r` variables (depending on coord) to specify point location. Note: state 
- *        of this code does not persist.
- * @param {boolean} [options.compat=false] - if true, then calculations are low precision.
- *      useful to map winamp AVS behaviour more closely
- * @param {boolean} [options.bFilter=true] - use bilinear interpolation for pixel sampling
- * @param {string} [options.coord="POLAR"] - coordinate system to be used viz. `POLAR`, `RECT`
- * @augments Webvs.DynamicMovement
- * @constructor
- * @memberof Webvs
- * @constructor
- */
-function Movement(options) {
-    options = _.defaults(options, {
-        bFilter: true,
-        coord: "POLAR",
-        compat: false
-    });
-
-    Movement.super.constructor.call(this, {
-        noGrid: true,
-        bFilter: options.bFilter,
-        compat: options.compat,
-        coord: options.coord,
-        code: options.code
-    });
-    this.options = options;
+// A component that swizzles the color component
+function ChannelShift(gl, main, parent, opts) {
+    ChannelShift.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Movement = Webvs.defineClass(Movement, Webvs.DynamicMovement);
 
-})(Webvs);
+Webvs.registerComponent(ChannelShift, {
+    name: "ChannelShift",
+    menu: "Trans"
+});
 
-/**
- * Copyright (c) 2013 Azeem Arshad
- * See the file license.txt for copying permission.
- */
+var Channels = {
+    "RGB": 0,
+    "RBG": 1,
+    "BRG": 2,
+    "BGR": 3,
+    "GBR": 4,
+    "GRB": 5
+};
+ChannelShift.Channels = Channels;
 
-(function(Webvs) {
-
-var channels = ["RGB", "RBG", "BRG", "BGR", "GBR", "GRB"];
-
-/**
- * @class
- * A component that swizzles the color component
- *
- * @param {object} options - options object
- * @param {string} [options.channel="RGB"] - the component combination 
- *     viz. `RGB`, `RBG`, `BRG`, `BGR`, `GBR`, `GRB`
- * @param {boolean} [options.onBeatRandom=false] - if set then the color components
- *     combination is changed randomly on beat
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function ChannelShift(options) {
-    options = _.defaults(options, {
+Webvs.defineClass(ChannelShift, Webvs.Component, {
+    defaultOptions: {
         channel: "RGB",
         onBeatRandom: false
-    });
-
-    this.channel = channels.indexOf(options.channel);
-    if(this.channel == -1) {
-        throw new Error("Invalid Channel");
-    }
-    this.onBeatRandom = options.onBeatRandom;
-
-    this.program = new ChannelShiftProgram();
-
-    ChannelShift.super.constructor.apply(this, arguments);
-}
-Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
-    componentName: "ChannelShift",
-
-    /**
-     * initializes the ChannelShift component
-     * @memberof Webvs.ChannelShift#
-     */
-    init: function(gl, main, parent) {
-        ChannelShift.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
     },
 
-    /**
-     * shifts the colors
-     * @memberof Webvs.ChannelShift#
-     */
-    update: function() {
-        if(this.onBeatRandom && this.main.analyser.beat) {
-            this.channel = Math.floor(Math.random() * channels.length);
+    onChange: {
+        channel: "updateChannel"
+    },
+
+    init: function() {
+        this.program = new ChannelShiftProgram(this.gl);
+        this.updateChannel();
+    },
+
+    draw: function() {
+        if(this.opts.onBeatRandom && this.main.analyser.beat) {
+            this.channel = Math.floor(Math.random() * ChannelShift.channels.length);
         }
         this.program.run(this.parent.fm, null, this.channel);
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ChannelShift#
-     */
     destroy: function() {
         ChannelShift.super.destroy.call(this);
-        this.program.cleanup();
-    }
+        this.program.destroy();
+    },
 
+    updateChannel: function() {
+        this.channel = Webvs.getEnumValue(this.opts.channel, Channels);
+    }
 });
 
-function ChannelShiftProgram() {
-    ChannelShiftProgram.super.constructor.call(this, {
+function ChannelShiftProgram(gl) {
+    ChannelShiftProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
             "uniform int u_channel;",
             "void main() {",
             "   vec3 color = getSrcColor().rgb;",
 
-            _.flatMap(channels, function(channel, index) {
+            _.flatMap(_.keys(Channels), function(channel) {
                 return [
-                    "if(u_channel == "+index+") {",
+                    "if(u_channel == "+Channels[channel]+") {",
                     "   setFragColor(vec4(color." + channel.toLowerCase() + ",1));",
                     "}"
                 ];
@@ -6237,84 +5857,68 @@ Webvs.ChannelShiftProgram = Webvs.defineClass(ChannelShiftProgram, Webvs.QuadBox
     }
 });
 
-ChannelShift.ui = {
-    disp: "Channel Shift",
-    type: "ChannelShift",
-    schema: {
-        channel: {
-            type: "string",
-            title: "Channel",
-            enum: channels
-        },
-        onBeatRandom: {
-            type: "boolean",
-            title: "On beat random",
-        }
-    }
-};
-
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Component that applies a unique color tone
- * @param {object} options - options object
- * @param {string} [options.color="#FFFFFF"] - the color tone
- * @param {boolean} [options.invert=false] - if set then tone is inverted
- * @param {string} [options.blendMode="REPLACE"] - blending mode for this component
- * @augments Webvs.Component
- * @memberof Webvs
- * @constructor
- */
-function UniqueTone(options) {
-    options = _.defaults(options, {
+// A Component that applies a unique color tone
+function UniqueTone(gl, main, parent, opts) {
+    UniqueTone.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(UniqueTone, {
+    name: "UniqueTone",
+    menu: "Trans"
+});
+
+Webvs.defineClass(UniqueTone, Webvs.Component, {
+    defaultOptions: {
         color: "#ffffff",
         invert: false,
         blendMode: "REPLACE"
-    });
-
-    this.tone = Webvs.parseColorNorm(options.color);
-    this.invert = options.invert;
-    this.program = new UniqueToneProgram(Webvs.getBlendMode(options.blendMode));
-}
-Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
-    /**
-     * initializes the UniqueTone component
-     * @memberof Webvs.UniqueTone#
-     */
-    init: function(gl, main, parent) {
-        UniqueTone.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
     },
 
-    /**
-     * applies unique tone
-     * @memberof Webvs.UniqueTone#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.tone, this.invert);
+    onChange: {
+        color: "updateColor",
+        blendMode: "updateProgram"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.UniqueTone#
-     */
+    init: function() {
+        this.updateColor();
+        this.updateProgram();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.tone, this.opts.invert);
+    },
+
     destroy: function() {
         UniqueTone.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateColor: function() {
+        this.tone = Webvs.parseColorNorm(this.opts.color);
+    },
+
+    updateProgram: function() {
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new UniqueToneProgram(this.gl, blendMode);
+        if(this.program) {
+            this.program.cleanup();
+        }
+        this.program = program;
     }
 });
 
-function UniqueToneProgram(blendMode) {
-    UniqueToneProgram.super.constructor.call(this, {
-        outputBlendMode: blendMode,
+function UniqueToneProgram(gl, blendMode) {
+    UniqueToneProgram.super.constructor.call(this, gl, {
+        blendMode: blendMode,
         swapFrame: true,
         fragmentShader: [
             "uniform vec3 u_tone;",
@@ -6341,119 +5945,458 @@ Webvs.UniqueToneProgram = Webvs.defineClass(UniqueToneProgram, Webvs.QuadBoxProg
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A generic scope, that can draw points or lines based on user code
- *
- * #### Code variables
- *
- * The following variables are available in the code
- *
- * + n (default: 100) - the number of points.
- * + i - 0-1 normalized loop counter
- * + v - the value of the superscope at current position (-1 to +1)
- * + x - x position of the dot (-1 to +1)
- * + y - y position of the dot (-1 to +1)
- * + w - width of the screen
- * + h - height of the screen
- * + b - 1 if a beat has occured else 0
- * + red (default: set from colors option) - red component of color (0-1)
- * + green (default: set from colors option) - green component of color (0-1)
- * + blue (default: set from colors option) - blue component of color (0-1)
- * + cid - the clone id of this component. if it is a clone
- *
- * @param {object} options - options object
- * @param {string} [options.code.init] - code to be run at startup
- * @param {string} [options.code.onBeat] - code to be run when a beat occurs
- * @param {string} [options.code.perFrame] - code to be run on every frame
- * @param {string} [options.code.perPoint] - code that will be run once for every point. should set 
- *       `x`, `y` variables to specify point location. set `red`, `green` or `blue` variables
- *       to specify point color
- * @param {string} [options.source="SPECTRUM"] - the scope data source viz. `SPECTRUM`, `WAVEFORM`
- * @param {string} [options.drawMode="LINES"] - switch between drawing `LINES` or `DOTS`
- * @param {Array.<String>} [options.colors=["#FFFFFF"]] - rendering color cycles through these colors
- * @param {number} [options.thickness] - thickenss of line or dot
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function SuperScope(options) {
-    Webvs.checkRequiredOptions(options, ["code"]);
-    options = _.defaults(options, {
-        source: "SPECTRUM",
-        drawMode: "LINES",
-        colors: ["#ffffff"]
-    });
-
-    var codeSrc;
-    if(_.isObject(options.code)) {
-        codeSrc = options.code;
-    } else {
-        throw new Error("Invalid superscope");
-    }
-    var codeGen = new Webvs.ExprCodeGenerator(codeSrc, ["n", "v", "i", "x", "y", "b", "red", "green", "blue"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
-    this.code.n = 100;
-    this.clone = options.clone || 1;
-
-    this.spectrum = options.source == "SPECTRUM";
-    this.dots = options.drawMode == "DOTS";
-
-    this.colors = _.map(options.colors, Webvs.parseColorNorm);
-    this.currentColor = [];
-    this.maxStep = 100;
-
-    this.step = this.maxStep; // so that we compute steps, the first time
-    this.colorId = 0;
-    this.colorStep = [0,0,0];
-
-    this.thickness = options.thickness?options.thickness:1;
-
-    this.inited = false;
-
-    this.program = new SuperScopeShader();
-
-    SuperScope.super.constructor.apply(this, arguments);
+function Invert(gl, main, parent, opts) {
+    Invert.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
-    componentName: "SuperScope",
 
-    /**
-     * initializes the SuperScope component
-     * @memberof Webvs.SuperScope#
-     */
-    init: function(gl, main, parent) {
-        SuperScope.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
-        this.code.setup(main, this);
+Webvs.registerComponent(Invert, {
+    name: "Invert",
+    menu: "Trans"
+});
 
-        this.code = Webvs.CodeInstance.clone(this.code, this.clone);
+Webvs.defineClass(Invert, Webvs.Component, {
+    defaultOptions: {},
+    init: function() {
+        this.program = new InvertProgram(this.gl);
     },
 
-    update: function() {
-        this._stepColor();
+    draw: function() {
+        this.program.run(this.parent.fm, null);
+    },
+
+    destroy: function() {
+        Invert.super.destroy.call(this);
+        this.program.destroy();
+    }
+});
+
+function InvertProgram(gl) {
+    InvertProgram.super.constructor.call(this, gl, {
+        swapFrame: true,
+        fragmentShader: [
+            "void main() {",
+            "   setFragColor(vec4(1,1,1,1)-getSrcColor());",
+            "}"
+        ]
+    });
+}
+Webvs.InvertProgram = Webvs.defineClass(InvertProgram, Webvs.QuadBoxProgram);
+
+})(Webvs);
+
+/**
+ * Copyright (c) 2013-2015 Azeem Arshad
+ * See the file license.txt for copying permission.
+ */
+
+(function(Webvs) {
+
+function Mosaic(gl, main, parent, opts) {
+    Mosaic.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(Mosaic, {
+    name: "Mosaic",
+    menu: "Trans"
+});
+
+Webvs.defineClass(Mosaic, Webvs.Component, {
+    defaultOptions: {
+        blendMode: "REPLACE",
+        squareSize: 0.5,
+        onBeatSizeChange: false,
+        onBeatSquareSize: 1,
+        onBeatSizeDuration: 10
+    },
+
+    onChange: {
+        blendMode: "updateProgram"
+    },
+
+    init: function() {
+        this.frameCount = 0;
+        this.size = this.opts.squareSize;
+        this.updateProgram();
+    },
+
+    draw: function() {
+        if(this.opts.onBeatSizeChange && this.main.analyser.beat) {
+            this.size = this.opts.onBeatSquareSize;
+            this.frameCount = this.opts.onBeatSizeDuration;
+        }
+
+        if(this.size !== 0) {
+            var sizeX = 1/Math.floor(this.size*(this.gl.drawingBufferWidth-1)+1);
+            var sizeY = 1/Math.floor(this.size*(this.gl.drawingBufferHeight-1)+1);
+            this.program.run(this.parent.fm, null, sizeX, sizeY);
+        }
+
+        if(this.frameCount > 0) {
+            this.frameCount--;
+            if(this.frameCount === 0) {
+                this.size = this.opts.squareSize;
+            } else {
+                var incr = Math.abs(this.opts.squareSize-this.opts.onBeatSquareSize)/
+                           this.opts.onBeatSizeDuration;
+                this.size += incr * (this.opts.onBeatSquareSize>this.opts.squareSize?-1:1);
+            }
+        }
+    },
+
+    destroy: function() {
+        Mosaic.super.destroy.call(this);
+        this.program.destroy();
+    },
+
+    updateProgram: function() {
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new Webvs.MosaicProgram(this.gl, blendMode);
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
+    }
+});
+
+function MosaicProgram(gl, blendMode) {
+    MosaicProgram.super.constructor.call(this, gl, {
+        swapFrame: true,
+        blendMode: blendMode,
+        fragmentShader: [
+            "uniform vec2 u_size;",
+            "void main() {",
+            "    vec2 samplePos = u_size * ( floor(v_position/u_size) + vec2(0.5,0.5) );",
+            "    setFragColor(getSrcColorAtPos(samplePos));",
+            "}"
+        ]
+    });
+}
+Webvs.MosaicProgram = Webvs.defineClass(MosaicProgram, Webvs.QuadBoxProgram, {
+    draw: function(sizeX, sizeY) {
+        this.setUniform("u_size", "2f", sizeX, sizeY);
+        MosaicProgram.super.draw.call(this);
+    }
+});
+
+})(Webvs);
+
+/**
+ * Copyright (c) 2013-2015 Azeem Arshad
+ * See the file license.txt for copying permission.
+ */
+
+(function(Webvs) {
+
+// A component that mirror between quandrants
+function Mirror(gl, main, parent, opts) {
+    Mirror.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(Mirror, {
+    name: "Mirror",
+    menu: "Trans"
+});
+
+Webvs.defineClass(Mirror, Webvs.Component, {
+    defaultOptions: {
+        onBeatRandom: false,
+        topToBottom: true,
+        bottomToTop: false,
+        leftToRight: false,
+        rightToLeft: false,
+        smoothTransition: false,
+        transitionDuration: 4
+    },
+    
+    onChange: {
+        topToBottom: "updateMap",
+        bottomToTop: "updateMap",
+        leftToRight: "updateMap",
+        rightToLeft: "updateMap"
+    },
+
+    init: function() {
+        this.program = new MirrorProgram(this.gl);
+        this.animFrameCount = 0;
+        this.mix = [
+            [0, 0, 0, 0],
+            [1, 0, 0, 0],
+            [2, 0, 0, 0],
+            [3, 0, 0, 0]
+        ];
+        this.mixDelta = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ];
+        this.updateMap();
+    },
+    
+    draw: function() {
+        if(this.opts.onBeatRandom && this.main.analyser.beat) {
+            this._setQuadrantMap(true);
+        }
+
+        this.program.run(this.parent.fm, null, this._inTransition(), this.mix);
+
+        if(this._inTransition()) {
+            this.animFrameCount--;
+            if(this.animFrameCount === 0) {
+                this._setMix(true);
+            } else {
+                for(var i = 0;i < 4;i++) {
+                    for(var j = 0;j < 4;j++) {
+                        this.mix[i][j] += this.mixDelta[i][j];
+                    }
+                }
+            }
+        }
+    },
+    
+    updateMap: function(random) {
+        this._setQuadrantMap(false);
+    },
+
+    _inTransition: function() {
+        return (this.opts.smoothTransition && this.animFrameCount !== 0);
+    },
+
+    _setQuadrantMap: function(random) {
+        var map = [0, 1, 2, 3];
+        var mirrorOpts = this.opts;
+        if(random) {
+            var randVal = Math.floor(Math.random()*16);
+            mirrorOpts = {
+                topToBottom: (randVal & 1) && this.opts.topToBottom,
+                bottomToTop: (randVal & 2) && this.opts.bottomToTop,
+                leftToRight: (randVal & 4) && this.opts.leftToRight,
+                rightToLeft: (randVal & 8) && this.opts.rightToLeft
+            };
+        }
+        if(mirrorOpts.topToBottom) {
+            map[2] = map[0]; map[3] = map[1];
+        }
+        if(mirrorOpts.bottomToTop) {
+            map[0] = map[2]; map[1] = map[3];
+        }
+        if(mirrorOpts.leftToRight) {
+            map[1] = map[0]; map[3] = map[2];
+        }
+        if(mirrorOpts.rightToLeft) {
+            map[0] = map[1]; map[2] = map[3];
+        }
+        this.map = map;
+
+        this._setMix(false);
+    },
+
+    _setMix: function(noTransition) {
+        var i, j;
+        if(this.opts.smoothTransition && !noTransition) {
+            // set mix vectors to second format if we are not already
+            // in the middle of a transition
+            if(this.animFrameCount === 0) {
+                for(i = 0;i < 4;i++) {
+                    var quad = this.mix[i][0];
+                    this.mix[i][0] = 0;
+                    this.mix[i][quad] = 1;
+                }
+            }
+
+            // calculate the mix delta values
+            for(i = 0;i < 4;i++) {
+                for(j = 0;j < 4;j++) {
+                    var endValue = (j  == this.map[i])?1:0;
+                    this.mixDelta[i][j] = (endValue - this.mix[i][j])/this.opts.transitionDuration;
+                }
+            }
+
+            this.animFrameCount = this.opts.transitionDuration;
+        } else {
+            // set mix value to first format
+            for(i = 0;i < 4;i++) {
+                this.mix[i][0] = this.map[i];
+                for(j = 1;j < 4;j++) {
+                    this.mix[i][j] = 0;
+                }
+            }
+        }
+    }
+});
+
+// Working:
+// The program accepts a mode and 4 mix vectors, one for each of the 4 quadrants.
+// The mode decides between two scenarios Case 1. a simple
+// mapping ie. one quadrant is copied over to another.
+// In this case the first value of each vec4 will contain the
+// id of the quadrant from where the pixels will be copied
+// Case 2. This is used during transition animation. Here, the
+// final color of pixels in each quadrant is a weighted mix
+// of colors of corresponding mirrored points in all quadrants.
+// Each of the vec4 contains a mix weight for each 4 quadrants. As
+// the animation proceeds, one of the 4 in the vec4 becomes 1 while others
+// become 0. This two mode allows to make fewer texture sampling when
+// not doing transition animation.
+//
+// The quadrant ids are as follows
+//       |
+//    0  |  1
+//  -----------
+//    2  |  3
+//       |
+function MirrorProgram(gl) {
+    MirrorProgram.super.constructor.call(this, gl, {
+        swapFrame: true,
+        fragmentShader: [
+            "uniform int u_mode;",
+            "uniform vec4 u_mix0;",
+            "uniform vec4 u_mix1;",
+            "uniform vec4 u_mix2;",
+            "uniform vec4 u_mix3;",
+
+            "#define getQuadrant(pos) ( (pos.x<0.5) ? (pos.y<0.5?2:0) : (pos.y<0.5?3:1) )",
+            "#define check(a,b, c,d,e,f) ( ((a==c || a==d) && (b==e || b==f)) || ((a==e || a==f) && (b==c || b==d)) )",
+            "#define xFlip(qa, qb) (check(qa,qb, 0,2, 1,3)?-1:1)",
+            "#define yFlip(qa, qb) (check(qa,qb, 0,1, 2,3)?-1:1)",
+            "#define mirrorPos(pos,qa,qb) ((pos-vec2(0.5,0.5))*vec2(xFlip(qa,qb),yFlip(qa,qb))+vec2(0.5,0.5))",
+            "#define getMirrorColor(pos,qa,qb) (getSrcColorAtPos(mirrorPos(pos,qa,qb)))",
+
+            "void main() {",
+            "    int quadrant = getQuadrant(v_position);",
+            "    vec4 mix;",
+            "    if(quadrant == 0)      { mix = u_mix0; }",
+            "    else if(quadrant == 1) { mix = u_mix1; }",
+            "    else if(quadrant == 2) { mix = u_mix2; }",
+            "    else if(quadrant == 3) { mix = u_mix3; }",
+            "    if(u_mode == 0) {",
+            "        int otherQuadrant = int(mix.x);",
+            "        setFragColor(getMirrorColor(v_position, quadrant, otherQuadrant));",
+            "    } else {",
+            "        vec4 c0 = getMirrorColor(v_position, quadrant, 0);",
+            "        vec4 c1 = getMirrorColor(v_position, quadrant, 1);",
+            "        vec4 c2 = getMirrorColor(v_position, quadrant, 2);",
+            "        vec4 c3 = getMirrorColor(v_position, quadrant, 3);",
+
+            "        setFragColor(vec4(",
+            "            dot(vec4(c0.r,c1.r,c2.r,c3.r), mix),",
+            "            dot(vec4(c0.g,c1.g,c2.g,c3.g), mix),",
+            "            dot(vec4(c0.b,c1.b,c2.b,c3.b), mix),",
+            "            1.0",
+            "        ));",
+            "    }",
+            "}"
+        ]
+    });
+}
+Webvs.MirrorProgram = Webvs.defineClass(MirrorProgram, Webvs.QuadBoxProgram, {
+    draw: function(transition, mix) {
+        this.setUniform("u_mode", "1i", transition?1:0);
+        for(var i = 0;i < 4;i++) {
+            this.setUniform.apply(this, ["u_mix"+i, "4f"].concat(mix[i]));
+        }
+        MirrorProgram.super.draw.call(this);
+    }
+});
+
+    
+})(Webvs);
+
+/**
+ * Copyright (c) 2013-2015 Azeem Arshad
+ * See the file license.txt for copying permission.
+ */
+
+(function(Webvs) {
+
+// A generic scope, that can draw points or lines based on user code
+function SuperScope(gl, main, parent, opts) {
+    SuperScope.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(SuperScope, {
+    name: "SuperScope",
+    menu: "Render"
+});
+
+var DrawModes = {
+    "LINES": 1,
+    "DOTS": 2
+};
+SuperScope.DrawModes = DrawModes;
+
+Webvs.defineClass(SuperScope, Webvs.Component, {
+    defaultOptions: {
+        code: {
+            init: "n=800",
+            perFrame: "t=t-0.05",
+            onBeat: "",
+            perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d"
+        },
+        blendMode: "REPLACE",
+        channel: "CENTER",
+        source: "SPECTRUM",
+        drawMode: "LINES",
+        thickness: 1,
+        clone: 1,
+        colors: ["#ffffff"],
+        cycleSpeed: 0.01
+    },
+
+    onChange: {
+        code: ["updateCode", "updateClones"],
+        colors: "updateColors",
+        cycleSpeed: "updateSpeed",
+        clone: "updateClones",
+        channel: "updateChannel",
+        thickness: "updateThickness",
+        blendMode: "updateProgram",
+        drawMode: "updateDrawMode",
+        source: "updateSource",
+    },
+
+    init: function() {
+        this.updateDrawMode();
+        this.updateSource();
+        this.updateProgram();
+        this.updateCode();
+        this.updateClones();
+        this.updateSpeed();
+        this.updateColors();
+        this.updateChannel();
+        this.updateThickness();
+        this.listenTo(this.main, "resize", this.handleResize);
+    },
+
+    draw: function() {
+        var color = this._makeColor();
         _.each(this.code, function(code) {
-            this.drawScope(code, !this.inited);
+            this.drawScope(code, color, !this.inited);
         }, this);
         this.inited = true;
+    },
+
+    destroy: function() {
+        SuperScope.super.destroy.call(this);
+        this.program.destroy();
     },
 
     /**
      * renders the scope
      * @memberof Webvs.SuperScope#
      */
-    drawScope: function(code, runInit) {
+    drawScope: function(code, color, runInit) {
         var gl = this.gl;
 
-        code.red = this.currentColor[0];
-        code.green = this.currentColor[1];
-        code.blue = this.currentColor[2];
+        code.red = color[0];
+        code.green = color[1];
+        code.blue = color[2];
 
         if(runInit) {
             code.init();
@@ -6467,17 +6410,34 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
         }
 
         var nPoints = Math.floor(code.n);
-        var data = this.spectrum ? this.main.analyser.getSpectrum() : this.main.analyser.getWaveform();
+        var data;
+        if(this.source == Webvs.Source.SPECTRUM) {
+            data = this.main.analyser.getSpectrum(this.channel);
+        } else {
+            data = this.main.analyser.getWaveform(this.channel);
+        }
+        var dots = this.drawMode == DrawModes.DOTS;
         var bucketSize = data.length/nPoints;
         var pbi = 0;
         var cdi = 0;
 
-        var pointBufferData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 2);
-        var colorData = new Float32Array((this.dots?nPoints:(nPoints*2-2)) * 3);
+        var bufferSize, thickX, thickY;
+        var lastX, lastY, lastR, lastG, lastB;
+        if(this.veryThick) {
+            bufferSize = (dots?(nPoints*6):(nPoints*6-6));
+            thickX = this.opts.thickness/this.gl.drawingBufferWidth;
+            thickY = this.opts.thickness/this.gl.drawingBufferHeight;
+        } else {
+            bufferSize = (dots?nPoints:(nPoints*2-2));
+        }
+
+        var pointBufferData = new Float32Array(bufferSize * 2);
+        var colorData = new Float32Array(bufferSize * 3);
         for(var i = 0;i < nPoints;i++) {
             var value = 0;
             var size = 0;
-            for(var j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
+            var j;
+            for(j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
                 value += data[j];
             }
             value = value/size;
@@ -6486,67 +6446,202 @@ Webvs.SuperScope = Webvs.defineClass(SuperScope, Webvs.Component, {
             code.i = pos;
             code.v = value;
             code.perPoint();
-            pointBufferData[pbi++] = code.x;
-            pointBufferData[pbi++] = code.y*-1;
-            if(i !== 0 && i != nPoints-1 && !this.dots) {
-                pointBufferData[pbi++] = code.x;
-                pointBufferData[pbi++] = code.y*-1;
-            }
-            if(this.dots) {
-                colorData[cdi++] = code.red;
-                colorData[cdi++] = code.green;
-                colorData[cdi++] = code.blue;
-            } else if(i !== 0) {
-                colorData[cdi++] = code.red;
-                colorData[cdi++] = code.green;
-                colorData[cdi++] = code.blue;
-                colorData[cdi++] = code.red;
-                colorData[cdi++] = code.green;
-                colorData[cdi++] = code.blue;
-            }
-        }
+            code.y *= -1;
+            if(this.veryThick) {
+                if(dots) {
+                    // just a box at current point
+                    pointBufferData[pbi++] = code.x-thickX;
+                    pointBufferData[pbi++] = code.y-thickY;
 
-        this.program.run(this.parent.fm, null, pointBufferData, colorData, this.dots, this.thickness);
-    },
+                    pointBufferData[pbi++] = code.x+thickX;
+                    pointBufferData[pbi++] = code.y-thickY;
 
-    /**
-     * releases resources
-     * @memberof Webvs.SuperScope#
-     */
-    destroy: function() {
-        SuperScope.super.destroy.call(this);
-        this.program.cleanup();
-    },
+                    pointBufferData[pbi++] = code.x-thickX;
+                    pointBufferData[pbi++] = code.y+thickY;
 
-    _stepColor: function() {
-        var i;
-        if(this.colors.length > 1) {
-            if(this.step == this.maxStep) {
-                var curColor = this.colors[this.colorId];
-                this.colorId = (this.colorId+1)%this.colors.length;
-                var nextColor = this.colors[this.colorId];
-                for(i = 0;i < 3;i++) {
-                    this.colorStep[i] = (nextColor[i]-curColor[i])/this.maxStep;
-                }
-                this.step = 0;
-                for(i = 0;i < 3;i++) {
-                    this.currentColor[i] = curColor[i];
+                    pointBufferData[pbi++] = code.x+thickX;
+                    pointBufferData[pbi++] = code.y-thickY;
+
+                    pointBufferData[pbi++] = code.x-thickX;
+                    pointBufferData[pbi++] = code.y+thickY;
+
+                    pointBufferData[pbi++] = code.x+thickX;
+                    pointBufferData[pbi++] = code.y+thickY;
+
+                    for(j = 0;j < 6;j++) {
+                        colorData[cdi++] = code.red;
+                        colorData[cdi++] = code.green;
+                        colorData[cdi++] = code.blue;
+                    }
+                } else {
+                    if(i !== 0) {
+                        var xdiff = Math.abs(lastX-code.x);
+                        var ydiff = Math.abs(lastY-code.y);
+                        var xoff = (xdiff <= ydiff)?thickX:0;
+                        var yoff = (xdiff >  ydiff)?thickY:0;
+
+                        // a rectangle from last point to the current point
+                        pointBufferData[pbi++] = lastX+xoff;
+                        pointBufferData[pbi++] = lastY+yoff;
+
+                        pointBufferData[pbi++] = code.x+xoff;
+                        pointBufferData[pbi++] = code.y+yoff;
+
+                        pointBufferData[pbi++] = lastX-xoff;
+                        pointBufferData[pbi++] = lastY-yoff;
+
+                        pointBufferData[pbi++] = code.x+xoff;
+                        pointBufferData[pbi++] = code.y+yoff;
+
+                        pointBufferData[pbi++] = lastX-xoff;
+                        pointBufferData[pbi++] = lastY-yoff;
+
+                        pointBufferData[pbi++] = code.x-xoff;
+                        pointBufferData[pbi++] = code.y-yoff;
+
+                        for(j = 0;j < 6;j++) {
+                            colorData[cdi++] = code.red;
+                            colorData[cdi++] = code.green;
+                            colorData[cdi++] = code.blue;
+                        }
+                    }
+                    lastX = code.x;
+                    lastY = code.y;
+                    lastR = code.red;
+                    lastG = code.green;
+                    lastB = code.blue;
                 }
             } else {
-                for(i = 0;i < 3;i++) {
-                    this.currentColor[i] += this.colorStep[i];
+                if(dots) {
+                    // just a point at the current point
+                    pointBufferData[pbi++] = code.x;
+                    pointBufferData[pbi++] = code.y;
+
+                    colorData[cdi++] = code.red;
+                    colorData[cdi++] = code.green;
+                    colorData[cdi++] = code.blue;
+                } else {
+                    if(i !== 0) {
+                        // lines from last point to current point
+                        pointBufferData[pbi++] = lastX;
+                        pointBufferData[pbi++] = lastY;
+
+                        pointBufferData[pbi++] = code.x;
+                        pointBufferData[pbi++] = code.y;
+
+                        for(j = 0;j < 2;j++) {
+                            // use current color for both points because
+                            // we dont want color interpolation between points
+                            colorData[cdi++] = code.red;
+                            colorData[cdi++] = code.green;
+                            colorData[cdi++] = code.blue;
+                        }
+                    }
+                    lastX = code.x;
+                    lastY = code.y;
+                    lastR = code.red;
+                    lastG = code.green;
+                    lastB = code.blue;
                 }
-                this.step++;
             }
-        } else {
-            this.currentColor = this.colors[0];
         }
+
+        this.program.run(this.parent.fm, null, pointBufferData, colorData, dots, this.veryThick?1:this.opts.thickness, this.veryThick);
+    },
+
+    updateProgram: function() {
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new SuperScopeShader(this.gl, blendMode);
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
+    },
+
+    updateCode: function() {
+        var code = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame", "perPoint"]).codeInst;
+        code.n = 100;
+        code.setup(this.main, this);
+        this.inited = false;
+        this.code = [code];
+    },
+
+    updateClones: function() {
+        this.code = Webvs.CodeInstance.clone(this.code, this.opts.clone);
+    },
+
+    updateColors: function() {
+        this.colors = _.map(this.opts.colors, Webvs.parseColorNorm);
+        this.curColorId = 0;
+    },
+
+    updateSpeed: function() {
+        var oldMaxStep = this.maxStep;
+        this.maxStep = Math.floor(1/this.opts.cycleSpeed);
+        if(this.curStep) {
+            // curStep adjustment when speed changes
+            this.curStep = Math.floor((this.curStep/oldMaxStep)*this.maxStep);
+        } else {
+            this.curStep = 0;
+        }
+    },
+
+    updateChannel: function() {
+        this.channel = Webvs.getEnumValue(this.opts.channel, Webvs.Channels);
+    },
+
+    updateSource: function() {
+        this.source = Webvs.getEnumValue(this.opts.source, Webvs.Source);
+    },
+
+    updateDrawMode: function() {
+        this.drawMode = Webvs.getEnumValue(this.opts.drawMode, DrawModes);
+    },
+
+    updateThickness: function() {
+        var range;
+        if(this.drawMode == DrawModes.DOTS) {
+            range = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
+        } else {
+            range = this.gl.getParameter(this.gl.ALIASED_LINE_WIDTH_RANGE);
+        }
+        if(this.opts.thickness < range[0] || this.opts.thickness > range[1]) {
+            this.veryThick = true;
+        } else {
+            this.veryThick = false;
+        }
+    },
+
+    _makeColor: function() {
+        if(this.colors.length == 1) {
+            return this.colors[0];
+        } else {
+            var color = [];
+            var currentColor = this.colors[this.curColorId];
+            var nextColor = this.colors[(this.curColorId+1)%this.colors.length];
+            var mix = this.curStep/this.maxStep;
+            for(var i = 0;i < 3;i++) {
+                color[i] = currentColor[i]*(1-mix) + nextColor[i]*mix;
+            }
+            this.curStep = (this.curStep+1)%this.maxStep;
+            if(this.curStep === 0) {
+                this.curColorId = (this.curColorId+1)%this.colors.length;
+            }
+            return color;
+        }
+    },
+
+    handleResize: function() {
+        _.each(this.code, function(code) {
+            code.updateDimVars(this.gl);
+        }, this);
     }
 });
 
-function SuperScopeShader() {
-    SuperScopeShader.super.constructor.call(this, {
+function SuperScopeShader(gl, blendMode) {
+    SuperScopeShader.super.constructor.call(this, gl, {
         copyOnSwap: true,
+        blendMode: blendMode,
         vertexShader: [
             "attribute vec2 a_position;",
             "attribute vec3 a_color;",
@@ -6554,7 +6649,7 @@ function SuperScopeShader() {
             "uniform float u_pointSize;",
             "void main() {",
             "   gl_PointSize = u_pointSize;",
-            "   setPosition(clamp(a_position, vec2(-1,-1), vec2(1,1)));",
+            "   setPosition(a_position);",
             "   v_color = a_color;",
             "}"
         ],
@@ -6567,7 +6662,7 @@ function SuperScopeShader() {
     });
 }
 Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
-    draw: function(points, colors, dots, thickness) {
+    draw: function(points, colors, dots, thickness, triangles) {
         var gl = this.gl;
 
         this.setUniform("u_pointSize", "1f", thickness);
@@ -6580,7 +6675,15 @@ Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram
             gl.lineWidth(thickness);
         }
 
-        gl.drawArrays(dots?gl.POINTS:gl.LINES, 0, points.length/2);
+        var mode;
+        if(triangles) {
+            mode = gl.TRIANGLES;
+        } else if(dots) {
+            mode = gl.POINTS;
+        } else {
+            mode = gl.LINES;
+        }
+        gl.drawArrays(mode, 0, points.length/2);
 
         if(!dots) {
             gl.lineWidth(prevLineWidth);
@@ -6588,227 +6691,112 @@ Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram
     }
 });
 
-SuperScope.ui = {
-    disp: "SuperScope",
-    type: "SuperScope",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                },
-                perPoint: {
-                    type: "string",
-                    title: "Per Point",
-                }
-            },
-        },
-        source: {
-            type: "string",
-            title: "Source",
-            default: "WAVEFORM",
-            enum: ["WAVEFORM", "SPECTRUM"]
-        },
-        drawMode: {
-            type: "string",
-            title: "Draw Mode",
-            default: "LINES",
-            enum: ["DOTS", "LINES"]
-        },
-        colors: {
-            type: "array",
-            title: "Cycle Colors",
-            items: {
-                type: "string",
-                format: "color",
-                default: "#FFFFFF"
-            }
-        }
-    }
-};
-
-
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A simple scope that displays either waveform or spectrum data
- * @param {object} options - options object
- * @param {string} [options.drawMode="SOLID"] - draw mode viz. `SOLID`, `DOTS`, `LINES`
- * @param {string} [options.source="WAVEFORM"] - scope data source viz. `WAVEFORM`, `SPECTRUM`
- * @param {string} [options.align="CENTER"] - scope alignment viz. `TOP`, `CENTER`, `BOTTOM`
- * @param {Array.<String>} [options.colors=["#FFFFFF"]] - rendering color cycles through these colors
- * @augments Webvs.SuperScope
- * @constructor
- * @memberof Webvs
- */
-function Simple(options) {
-    options = _.defaults(options, {
-        drawMode: "SOLID",
-        source: "WAVEFORM",
-        align: "CENTER",
-        colors: ["#ffffff"]
-    });
-
-    var code = {};
-    if(options.drawMode != "SOLID") {
-        code.init = "n=w;";
-        code.perPoint = ({
-            "TOP":    "x=i*2-1; y=-v/2-0.5;",
-            "CENTER": "x=i*2-1; y=-v/2;",
-            "BOTTOM": "x=i*2-1; y=v/2+0.5;"
-        })[options.align];
-    } else {
-        code.init = "n=w*2;";
-        code.perFrame = "c=0;";
-        if(options.source == "SPECTRUM") {
-            code.perPoint = ({
-                "TOP":    "x=i*2-1; y=if(c%2,0,-v/2-0.5); c=c+1;",
-                "CENTER": "x=i*2-1; y=if(c%2,0.5,-v/2);   c=c+1;",
-                "BOTTOM": "x=i*2-1; y=if(c%2,0,v/2+0.5);  c=c+1;",
-            })[options.align];
-        } else {
-            code.perPoint = ({
-                "TOP":    "x=i*2-1; y=if(c%2,-0.5,-v/2-0.5); c=c+1;",
-                "CENTER": "x=i*2-1; y=if(c%2,0,-v/2);        c=c+1;",
-                "BOTTOM": "x=i*2-1; y=if(c%2,0.5,v/2+0.5);   c=c+1;",
-            })[options.align];
-        }
-    }
-
-    Simple.super.constructor.call(this, {
-        source: options.source,
-        drawMode: (options.drawMode=="SOLID"?"LINES":options.drawMode),
-        colors: options.colors,
-        code: code
-    });
-    this.options = options; // set Simple option instead of superscope options
+// A SuperScope like component that places images at points.
+function Texer(gl, main, parent, opts) {
+    Texer.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Simple = Webvs.defineClass(Simple, Webvs.SuperScope);
 
-})(Webvs);
+Webvs.registerComponent(Texer, {
+    name: "Texer",
+    menu: "Render"
+});
 
-/**
- * Copyright (c) 2013 Azeem Arshad
- * See the file license.txt for copying permission.
- */
-
-(function(Webvs) {
-
-/**
- * @class
- * A SuperScope like component that places images at points.
- *
- * The following variables are available in the code
- *
- * + n (default: 100) - the number of points.
- * + i - 0-1 normalized loop counter
- * + v - the value of the superscope at current position
- * + x - x position of the image (-1 to +1)
- * + y - y position of the image (-1 to +1)
- * + sizex - horizontal scale of the image. 1 = original size, 0.5 = half the size etc.
- * + sizey - vertical scale of the image. 1 = original size, 0.5 = half the size etc.
- * + y - y position of the image (-1 to +1)
- * + w - width of the screen
- * + h - height of the screen
- * + b - 1 if a beat has occured else 0
- * + red (default: 1) - red component of color (0-1)
- * + green (default: 1) - green component of color (0-1)
- * + blue (default: 1) - blue component of color (0-1)
- * + cid - the clone id of this component. if it is a clone
- *
- * @param {object} options - options object
- * @param {string} [options.code.init] - code to be run at startup
- * @param {string} [options.code.onBeat] - code to be run when a beat occurs
- * @param {string} [options.code.perFrame] - code to be run on every frame
- * @param {string} [options.code.perPoint] - code that will be run once for every point. should set 
- *       `x`, `y` variables to specify image location. set `red`, `green` or `blue` variables
- *       to specify color filter. set `sizex` or `sizey` for horizontal and vertical scaling.
- * @param {string} [options.source="SPECTRUM"] - the scope data source viz. `SPECTRUM`, `WAVEFORM`
- * @param {boolean} [options.wrapAround=false] - if set then images hanging off the edge wraps around
- *        from the other side
- * @param {boolean} [options.colorFiltering=false] - if set then color filter is applied to image
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function Texer(options) {
-    Webvs.checkRequiredOptions(options, ["code", "imageSrc"]);
-    options = _.defaults(options, {
+Webvs.defineClass(Texer, Webvs.Component, {
+    defaultOptions: {
+        code: {
+            init: "",
+            onBeat: "",
+            perFrame: "",
+            perPoint: ""
+        },
+        imageSrc: "avsres_texer_circle_edgeonly_19x19.bmp",
         source: "SPECTRUM",
         resizing: false,
         wrapAround: false,
+        clone: 1,
         colorFiltering: true
-    });
-
-    this.resizing = options.resizing;
-    this.colorFiltering = options.colorFiltering;
-    this.wrapAround = options.wrapAround;
-    this.imageSrc = options.imageSrc;
-
-    var codeGen = new Webvs.ExprCodeGenerator(options.code, ["n", "v", "i", "x", "y", "b", "sizex", "sizey", "red", "green", "blue"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame", "perPoint"]);
-    this.code.n = 100;
-    this.spectrum = options.source == "SPECTRUM";
-
-    this._inited = false;
-
-    this.program = new TexerProgram();
-
-    Texer.super.constructor.apply(this, arguments);
-}
-Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
-    componentName: "Texer",
-
-    /**
-     * initializes the Texer component
-     * @memberof Webvs.Texer#
-     */
-    init: function(gl, main, parent) {
-        Texer.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
-        this.code.setup(main, this);
-
-        var image = new Image();
-        image.src = main.getResource(this.imageSrc);
-        this.imagewidth = image.width;
-        this.imageHeight = image.height;
-        this.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     },
 
-    /**
-     * renders the scope
-     * @memberof Webvs.Texer#
-     */
-    update: function() {
-        var code = this.code;
-        if(!this._inited) {
+    onChange: {
+        code: "updateCode",
+        clone: "updateClone",
+        imageSrc: "updateImage",
+        source: "updateSource"
+    },
+
+    init: function() {
+        this.program = new TexerProgram(this.gl);
+        this.updateCode();
+        this.updateClone();
+        this.updateImage();
+        this.updateSource();
+        this.listenTo(this.main, "resize", this.handleResize);
+    },
+
+    draw: function() {
+        _.each(this.code, function(code) {
+            this._drawScope(code, !this.inited);
+        }, this);
+        this.inited = true;
+    },
+
+    destroy: function() {
+        Texer.super.destroy.call(this);
+        this.program.destroy();
+        this.gl.deleteTexture(this.texture);
+    },
+
+    updateCode: function() {
+        var code = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame", "perPoint"]).codeInst;
+        code.n = 100;
+        code.setup(this.main, this);
+        this.inited = false;
+        this.code = [code];
+    },
+
+    updateClone: function() {
+        this.code = Webvs.CodeInstance.clone(this.code, this.opts.clone);
+    },
+
+    updateImage: function() {
+        var gl = this.gl;
+        this.main.rsrcMan.getImage(
+            this.opts.imageSrc,
+            function(image) {
+                this.imagewidth = image.width;
+                this.imageHeight = image.height;
+                if(!this.texture) {
+                    this.texture = gl.createTexture();
+                    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                } else {
+                    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                }
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            },
+            null,
+            this
+        );
+    },
+
+    updateSource: function() {
+        this.source = Webvs.getEnumValue(this.opts.source, Webvs.Source);
+    },
+
+    _drawScope: function(code, runInit) {
+        if(runInit) {
             code.init();
         }
 
@@ -6820,13 +6808,18 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
         }
 
         var nPoints = Math.floor(code.n);
-        var data = this.spectrum ? this.main.analyser.getSpectrum() : this.main.analyser.getWaveform();
+        var data;
+        if(this.source == Webvs.Source.SPECTRUM) {
+            data = this.main.analyser.getSpectrum();
+        } else {
+            data = this.main.analyser.getWaveform();
+        }
         var bucketSize = data.length/nPoints;
 
         var vertexData = [];
         var texVertexData = [];
         var vertexIndices = [];
-        var colorData = this.colorFiltering?[]:null;
+        var colorData = this.opts.colorFiltering?[]:null;
         var index = 0;
         function addRect(cornx, corny, sizex, sizey, red, green, blue) {
             if(cornx < -1-sizex || cornx > 1||
@@ -6867,8 +6860,8 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
             index += 4;
         }
 
-        var imageSizex = (this.imagewidth/this.parent.fm.width)*2;
-        var imageSizey = (this.imageHeight/this.parent.fm.height)*2;
+        var imageSizex = (this.imagewidth/this.gl.drawingBufferWidth)*2;
+        var imageSizey = (this.imageHeight/this.gl.drawingBufferHeight)*2;
 
         for(var i = 0;i < nPoints;i++) {
             var value = 0;
@@ -6890,7 +6883,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
 
             var sizex = imageSizex;
             var sizey = imageSizey;
-            if(this.resizing) {
+            if(this.opts.resizing) {
                 sizex *= code.sizex;
                 sizey *= code.sizey;
             }
@@ -6898,7 +6891,7 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
             var corny = (-code.y)-sizey/2;
             
             addRect(cornx, corny, sizex, sizey, code.red, code.green, code.blue);
-            if(this.wrapAround) {
+            if(this.opts.wrapAround) {
                 // wrapped around x value is 1-(-1-cornx) or -1-(1-cornx)
                 // depending on the edge
                 // ie. 2+cornx or -2+cornx
@@ -6924,19 +6917,14 @@ Webvs.Texer = Webvs.defineClass(Texer, Webvs.Component, {
                          this.texture);
     },
 
-    /**
-     * release resource
-     * @memberof Webvs.Texer#
-     */
-    destroy: function() {
-        Texer.super.destroy.call(this);
-        this.gl.deleteTexture(this.texture);
-        this.program.cleanup();
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
 });
 
-function TexerProgram() {
-    TexerProgram.super.constructor.call(this, {
+function TexerProgram(gl) {
+    TexerProgram.super.constructor.call(this, gl, {
+        copyOnSwap: true,
         vertexShader: [
             "uniform bool u_colorFilter;",
             "attribute vec2 a_texVertex;",
@@ -6987,67 +6975,197 @@ Webvs.TexerProgram = Webvs.defineClass(TexerProgram, Webvs.ShaderProgram, {
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that clears the screen
- *
- * @param {object} options - options object
- * @param {number} [options.n=0] - beat counter, screen will be cleared for every n beats.
- *      use 0 to clear all frames.
- * @param {string} [options.color="#000000"] - color to which screen is to be cleared
- * @param {string} [options.blendMode="REPLACE"] - blend clearing onto previous buffer
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function ClearScreen(options) {
-    options = _.defaults(options, {
-        n: 0,
-        color: "#000000",
-        blendMode: "REPLACE"
-    });
-    this.n = options.n;
-    this.color = Webvs.parseColorNorm(options.color);
-
-    this.outputBlendMode = Webvs.blendModes[options.blendMode];
-
-    this.prevBeat = false;
-    this.beatCount = 0;
-
-    this.program = new Webvs.ClearScreenProgram(this.outputBlendMode);
-
-    ClearScreen.super.constructor.apply(this, arguments);
+// A particle that moves around depending on beat changes
+function MovingParticle(gl, main, parent, opts) {
+    MovingParticle.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
-    componentName: "ClearScreen",
 
-    /**
-     * initializes the ClearScreen component
-     * @memberof Webvs.ClearScreen#
-     */
-    init: function(gl, main, parent) {
-        ClearScreen.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
+Webvs.registerComponent(MovingParticle, {
+    name: "MovingParticle",
+    menu: "Render"
+});
+
+Webvs.defineClass(MovingParticle, Webvs.Component, {
+    defaultOptions: {
+        color: "#FFFFFF",
+        distance: 0.7,
+        particleSize: 10,
+        onBeatSizeChange: false,
+        onBeatParticleSize: 10,
+        blendMode: "REPLACE"
     },
 
-    /**
-     * clears the screen
-     * @memberof Webvs.ClearScreen#
-     */
-    update: function() {
+    onChange: {
+        color: "updateColor",
+        blendMode: "updateProgram"
+    },
+
+    init: function() {
+        this.centerX = 0;
+        this.centerY = 0;
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.posX = 0;
+        this.posY = 0;
+
+        this._computeGeometry();
+        this.updateProgram();
+        this.updateColor();
+    },
+
+    _computeGeometry: function() {
+        if(Webvs.MovingParticle.circleGeometry) {
+            return;
+        }
+        var pointCount = 100;
+        var points = new Float32Array((pointCount+2)*2);
+        var pbi = 0;
+        points[pbi++] = 0; // center
+        points[pbi++] = 0;
+        for(var i = 0;i < pointCount;i++) {
+            points[pbi++] = Math.sin(i*2*Math.PI/pointCount);
+            points[pbi++] = Math.cos(i*2*Math.PI/pointCount);
+        }
+        points[pbi++] = points[2]; // repeat last point again
+        points[pbi++] = points[3];
+        Webvs.MovingParticle.circleGeometry = points;
+    },
+
+    draw: function() {
+        if(this.main.analyser.beat) {
+            this.centerX = (Math.random()*2-1)*0.3;
+            this.centerY = (Math.random()*2-1)*0.3;
+        }
+
+        this.velocityX -= 0.004*(this.posX-this.centerX);
+        this.velocityY -= 0.004*(this.posY-this.centerY);
+
+        this.posX += this.velocityX;
+        this.posY += this.velocityY;
+
+        this.velocityX *= 0.991;
+        this.velocityY *= 0.991;
+        
+        var x = this.posX*this.opts.distance;
+        var y = this.posY*this.opts.distance;
+
+        var scaleX, scaleY;
+        if(this.opts.onBeatSizeChange && this.main.analyser.beat) {
+            scaleX = this.opts.onBeatParticleSize;
+            scaleY = this.opts.onBeatParticleSize;
+        } else {
+            scaleX = this.opts.particleSize;
+            scaleY = this.opts.particleSize;
+        }
+        scaleX = 2*scaleX/this.gl.drawingBufferWidth;
+        scaleY = 2*scaleY/this.gl.drawingBufferHeight;
+
+        this.program.run(this.parent.fm, null, Webvs.MovingParticle.circleGeometry,
+                         scaleX, scaleY, x, y, this.color);
+    },
+
+    updateProgram: function() {
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new MovingParticleShader(this.gl, blendMode);
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
+    },
+
+    destroy: function() {
+        MovingParticle.super.destroy.call(this);
+        this.program.destroy();
+    }
+});
+
+function MovingParticleShader(gl, blendMode) {
+    MovingParticleShader.super.constructor.call(this, gl, {
+        copyOnSwap: true,
+        blendMode: blendMode,
+        vertexShader: [
+            "attribute vec2 a_point;",
+            "uniform vec2 u_position;",
+            "uniform vec2 u_scale;",
+            "void main() {",
+            "   setPosition((a_point*u_scale)+u_position);",
+            "}"
+        ],
+        fragmentShader: [
+            "uniform vec3 u_color;",
+            "void main() {",
+            "   setFragColor(vec4(u_color, 1));",
+            "}"
+        ]
+    });
+}
+Webvs.MovingParticleShader = Webvs.defineClass(MovingParticleShader, Webvs.ShaderProgram, {
+    draw: function(points, scaleX, scaleY, x, y, color) {
+        this.setUniform("u_scale", "2f", scaleX, scaleY);
+        this.setUniform("u_position", "2f", x, y);
+        this.setUniform.apply(this, ["u_color", "3f"].concat(color));
+        this.setVertexAttribArray("a_point", points);
+        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, points.length/2);
+    }
+});
+
+})(Webvs);
+
+/**
+ * Copyright (c) 2013-2015 Azeem Arshad
+ * See the file license.txt for copying permission.
+ */
+
+(function(Webvs) {
+
+// A component that clears the screen
+function ClearScreen(gl, main, parent, opts) {
+    ClearScreen.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(ClearScreen, {
+    name: "ClearScreen",
+    menu: "Render"
+});
+
+Webvs.defineClass(ClearScreen, Webvs.Component, {
+    defaultOptions: {
+        beatCount: 0,
+        color: "#000000",
+        blendMode: "REPLACE"
+    },
+
+    onChange: {
+        color: "updateColor",
+        blendMode: "updateProgram"
+    },
+
+    init: function() {
+        this.prevBeat = false;
+        this.beatCount = 0;
+
+        this.updateColor();
+        this.updateProgram();
+    },
+
+    draw: function() {
         var clear = false;
-        if(this.n === 0) {
+        if(this.opts.beatCount === 0) {
             clear = true;
         } else {
             if(this.main.analyser.beat && !this.prevBeat) {
                 this.beatCount++;
-                if(this.beatCount == this.n) {
+                if(this.beatCount >= this.opts.beatCount) {
                     clear = true;
                     this.beatCount = 0;
                 }
@@ -7060,112 +7178,99 @@ Webvs.ClearScreen = Webvs.defineClass(ClearScreen, Webvs.Component, {
         }
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ClearScreen#
-     */
     destroy: function() {
-        this.program.cleanup();
+        ClearScreen.super.destroy.call(this);
+        this.program.destroy();
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
+    },
+
+    updateProgram: function() {
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new Webvs.ClearScreenProgram(this.gl, blendMode);
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
     }
 });
-
-ClearScreen.ui = {
-    type: "ClearScreen",
-    disp: "Clear Screen",
-    schema: {
-        n: {
-            type: "number",
-            title: "Clear on beat (0 = always clear)",
-            default: 0
-        },
-        color: {
-            type: "string",
-            title: "Clear color",
-            format: "color",
-            default: "#000000"
-        },
-        blendMode: {
-            type: "string",
-            title: "Blend Mode",
-            enum: _.keys(Webvs.blendModes)
-        }
-    }
-};
 
 })(Webvs);
 
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that renders an image onto the screen
- *
- * @param {object} options - options object
- * @param {string} src - image file source
- * @param {number} x - image x position
- * @param {number} y - image y position
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function Picture(options) {
-    Webvs.checkRequiredOptions(options, ["src", "x", "y"]);
-
-    this.x = options.x;
-    this.y = options.y;
-    this.src = options.src;
-
-    this.program = new Webvs.PictureProgram();
-    Picture.super.constructor.apply(this, arguments);
+// A component that renders an image onto the screen
+function Picture(gl, main, parent, opts) {
+    Picture.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Picture = Webvs.defineClass(Picture, Webvs.Component, {
-    /**
-     * initializes the ClearScreen component
-     * @memberof Webvs.Picture#
-     */
-    init: function(gl, main, parent) {
-        Picture.super.init.call(this, gl, main, parent);
 
-        this.program.init(gl);
+Webvs.registerComponent(Picture, {
+    name: "Picture",
+    menu: "Render"
+});
 
-        var image = new Image();
-        image.src = main.getResource(this.src);
-        this.width = image.width;
-        this.height = image.height;
-        this.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+Webvs.defineClass(Picture, Webvs.Component, {
+    defaultOptions: {
+        src: "avsres_texer_circle_edgeonly_19x19.bmp",
+        x: 0,
+        y: 0
     },
 
-    /**
-     * renders the image
-     * @memberof Webvs.Picture#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.x, this.y, this.texture, this.width, this.height);
+    onChange: {
+        src: "updateImage"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.Picture#
-     */
+    init: function() {
+        this.program = new Webvs.PictureProgram(this.gl);
+        this.updateImage();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, 
+                         this.opts.x, this.opts.y,
+                         this.texture, this.width, this.height);
+    },
+
     destroy: function() {
-        this.program.cleanup();
+        Picture.super.destroy.call(this);
+        this.program.destroy();
         this.gl.deleteTexture(this.texture);
+    },
+
+    updateImage: function() {
+        var gl = this.gl;
+        this.main.rsrcMan.getImage(
+            this.opts.src, 
+            function(image) {
+                this.width = image.width;
+                this.height = image.height;
+                if(!this.texture) {
+                    this.texture = gl.createTexture();
+                    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                } else {
+                    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                }
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            },
+            null,
+            this
+        );
     }
 });
 
-function PictureProgram() {
-    PictureProgram.super.constructor.call(this, {
+function PictureProgram(gl) {
+    PictureProgram.super.constructor.call(this, gl, {
         copyOnSwap: true,
         vertexShader: [
             "attribute vec2 a_texVertex;",
