@@ -152,8 +152,7 @@ module.exports = function(grunt) {
         },
 
         clean: {
-            build: ["build/*"],
-            doc: ["doc/*"]
+            build: ["build/*"]
         }
     });
 
@@ -168,8 +167,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-jsdoc");
 
     grunt.registerTask('default', ['jshint', 'peg', 'concat']);
-    grunt.registerTask('dist', ["clean:dist", "default", 'uglify']);
-    grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
+    grunt.registerTask('dist', ["clean", "default", 'uglify']);
 
     grunt.registerTask("debug", ["connect", "watch:build"]);
 
