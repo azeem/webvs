@@ -1,16 +1,6 @@
-var isFF = !!window.sidebar; // check for firefox. http://browserhacks.com/#hack-bc74b0938bafbf5176b9430961353b77
-if(isFF) { 
-    soundManager.setup({
-        url: "/bower_components/soundmanager2/swf",
-        flashVersion: 9,
-        preferFlash: true,
-        useHighPerformance: true,
-        useFastPolling: true
-    });
-}
-
 var webvsMain;
-window.onload = function () {
+var isFF = !!window.sidebar; // check for firefox. http://browserhacks.com/#hack-bc74b0938bafbf5176b9430961353b77
+var SMReady = function () {
     // initialize dancer and webvs
     var clientId = "e818e8c85bb8ec3e90a9bbca23ca5e2a";
 
@@ -25,7 +15,7 @@ window.onload = function () {
         canvas: document.getElementById("canvas"),
         analyser: analyser,
         showStat: true,
-        resourcePrefix: "/resources/"
+        resourcePrefix: "../resources/"
     });
     webvsMain.loadPreset(samplePreset);
     webvsMain.start();
@@ -46,7 +36,7 @@ window.onload = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
             var json = JSON.parse(xhr.responseText);
             if(isFF) {
-                analyser.createSound({url: json.stream_url + "?client_id=" + clientId}).play();
+                analyser.createSound({autoPlay: true, url: json.stream_url + "?client_id=" + clientId}).play();
             } else {
                 analyser.load(json.stream_url + "?client_id=" + clientId).play();
             }
@@ -56,3 +46,15 @@ window.onload = function () {
     xhr.open("GET", apiUrl, true);
     xhr.send();
 };
+if(isFF) { 
+    soundManager.setup({
+        debugMode: false,
+        url: "../bower_components/soundmanager2/swf",
+        flashVersion: 9,
+        preferFlash: true,
+        useHighPerformance: true,
+        useFastPolling: true,
+        onready: SMReady
+    });
+}
+
