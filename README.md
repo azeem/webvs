@@ -3,13 +3,9 @@
 A Winamp AVS like visualization tool for the browser. Webvs is a
 javascript library that can be used to run visualization presets.
 
-## Examples
+## Website
 
-+ [Dynamic Duo - Random Anja](http://azeemarshad.in/webvs/examples/RandomAnja.html)
-+ [Yathosho-Pillow Fight(re-feathered)](http://azeemarshad.in/webvs/examples/PilloFight.html)
-+ [UnConeD-Jello Cube](http://azeemarshad.in/webvs/examples/JelloCube.html)
-+ [UnConeD-Silk Strings](http://azeemarshad.in/webvs/examples/SilkString.html)
-+ [Marco-Science of Superscope](http://azeemarshad.in/webvs/examples/SuperscopeScience.html)
+For Documentation and detailed information, visit http://azeemarshad.in/webvs/
 
 ## Installation
 
@@ -23,7 +19,7 @@ Webvs uses grunt for build and bower for dependencies. Run the following command
 	npm install
     bower install
 
-To build the code run `grunt` or `grunt dist`. This generates `webvs.js` in the `build` directory or the minified files in the `dist` directory respectively.
+To build the code run `grunt` or `grunt dist`. This generates `webvs.js` and or `webvs.min.js`  in the `build` directory or the minified files in the `dist` directory.
 
 To run the tests, use `grunt test` command. To debug the code/examples, run `grunt debug`. This runs a webserver at 8000 and a live re-build of the source files.
 To debug tests, run `grunt debug_test`. This is same as `grunt debug` but also runs karma test server and opens up the test page where you can do debugging with 
@@ -32,58 +28,3 @@ the browser code inspector.
 ## Contributing
 
 [Fork](https://github.com/azeem/webvs/fork) and submit pull requests. For suggestions/bug fixes use [Github/Issues](https://github.com/azeem/webvs/issues).
-
-## Documentation
-
-API and internals documentation can be found here: [Code Documentation](http://azeemarshad.in/webvs)
-
-## Usage
-
-All classes are available inside the `Webvs` global namespace. The `Webvs.Main` is the main entry point that lets you place visualizations into the page. A short example is given below.
-
-```js
-var analyser = new Webvs.WebAudioAnalyser();
-var webvs = new Webvs.Main({
-    canvas: document.getElementById("canvas"),
-    analyser: analyser,
-    showStat: true
-});
-webvs.loadPreset(samplePreset);
-webvs.start();
-analyser.load("music.ogg"); // start playing musc
-analyser.play();
-```
-
-## Component Checklist
-
-The following components are implemented currently. These components try to match AVS functionality closely. They are however not exact port of AVS effects.
-
-+ EffectList
-+ Misc
-    + BufferSave
-    + GlobalVar
-+ Render
-    + ClearScreen
-    + Moving Particle
-    + Picture
-    + SuperScope
-    + Simple
-    + Texer
-+ Trans
-    + ChannelShift
-    + ColorClip
-    + ColorMap
-    + Convolution
-    + DynamicMovement
-    + FadeOut
-    + Invert
-    + Mirror
-    + Mosaic
-    + UniqueTone
-
-## See Also
-
-+ [Webvs discussion](http://forums.winamp.com/showthread.php?t=364566) at Winamp AVS Forum
-+ [AVS-File-Decoder](http://decoder.visbot.net/): AVS to Webvs JSON convertor. Source: [AVS-File-Decoder](https://github.com/grandchild/AVS-File-Decoder), [AVS-File-Decoder-Qt](https://github.com/grandchild/AVS-File-Decoder-Qt)
-+ Webvs Editors: Source: [qios-webvseditor](https://github.com/QOAL/qios-webvseditor), [webvsed](https://github.com/azeem/webvsed)
-+ [Visbot Network](http://visbot.net/): AVS Visualization Packs
