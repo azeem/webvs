@@ -1,0 +1,27 @@
+{
+  "name": "seedrandom",
+  "description": "Seeded random number generator for Javascript.",
+  "main": "seedrandom.js",
+  "license": "MIT",
+  "keywords": [
+    "random",
+    "seed",
+    "crypto"
+  ],
+  "ignore": [],
+  "devDependencies": {
+    "qunit": "latest",
+    "requirejs": "latest"
+  },
+  "homepage": "https://github.com/davidbau/seedrandom",
+  "version": "2.3.11",
+  "_release": "2.3.11",
+  "_resolution": {
+    "type": "version",
+    "tag": "2.3.11",
+    "commit": "818375a2ad557a4259bc175954590f8035481813"
+  },
+  "_source": "git://github.com/davidbau/seedrandom.git",
+  "_target": "~2.3.6",
+  "_originalSource": "seedrandom"
+}
