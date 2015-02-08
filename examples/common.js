@@ -56,5 +56,7 @@ if(isFF) {
         useFastPolling: true,
         onready: SMReady
     });
+} else {
+    window.addEventListener("load", SMReady);
 }
 
