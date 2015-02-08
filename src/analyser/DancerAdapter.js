@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * Analyser adapter that adapts the Dancer library.
- * @param dancer
- * @augments Webvs.AnalyserAdapter
- * @constructor
- * @memberof Webvs
- */
+// Analyser adapter that adapts the Dancer library.
 function DancerAdapter(dancer) {
     this.dancer = dancer;
     this.beat = false;
@@ -30,29 +23,12 @@ function DancerAdapter(dancer) {
     this.kick.on();
 }
 Webvs.DancerAdapter = Webvs.defineClass(DancerAdapter, Webvs.AnalyserAdapter, {
-    /**
-     * returns whether song is being played or not.
-     * @returns {boolean}
-     * @memberof Webvs.DancerAdapter#
-     */
-    isPlaying: function() {
-        return this.dancer.isPlaying();
-    },
-
-    /**
-     * returns array of waveform values
-     * @returns {Float32Array}
-     * @memberof Webvs.DancerAdapter#
-     */
+    // returns array of waveform values
     getWaveform: function() {
         return this.dancer.getWaveform();
     },
 
-    /**
-     * Returns array of spectrum values
-     * @returns {Float32Array}
-     * @memberof Webvs.DancerAdapter#
-     */
+    // Returns array of spectrum values
     getSpectrum: function() {
         return this.dancer.getSpectrum();
     }

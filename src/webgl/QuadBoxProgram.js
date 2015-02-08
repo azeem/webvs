@@ -1,36 +1,25 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Base for shaders that provides a vertexShader and vertices
- * for a rectangle that fills the entire screen
- * @param {object} options - the options object. passed along to {@link Webvs.ShaderProgram}
- * @augments Webvs.QuadBoxProgram
- * @memberof Webvs
- * @constructor
- */
-function QuadBoxProgram(options) {
+// A Base for shaders that provides a vertexShader and vertices
+// for a rectangle that fills the entire screen
+function QuadBoxProgram(gl, options) {
     options = _.defaults(options, {
         vertexShader: [
             "attribute vec2 a_position;",
             "void main() {",
             "   setPosition(a_position);",
             "}"
-        ],
-        varyingPos: true
+        ]
     });
-    QuadBoxProgram.super.constructor.call(this, options);
+    QuadBoxProgram.super.constructor.call(this, gl, options);
 }
 Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
-    /**
-     * Sets the vertices for the quad box
-     * @memberof Webvs.QuadBoxProgram#
-     */
+    // Sets the vertices for the quad box
     draw: function() {
         this.setVertexAttribArray(
             "a_position", 

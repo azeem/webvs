@@ -1,53 +1,38 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that slowly fades the screen to a specified color
- *
- * @param {object} options - options object
- * @param {number} [speed=1] - speed at which the screen is faded 0 (never) - 1 (fastest)
- * @param {string} [color="#000000"] - fade color
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- * @constructor
- */
-function FadeOut(options) {
-    options = _.defaults(options, {
+// A component that slowly fades the screen to a specified color
+function FadeOut(gl, main, parent, opts) {
+    FadeOut.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(FadeOut, {
+    name: "FadeOut",
+    menu: "Trans"
+});
+
+Webvs.defineClass(FadeOut, Webvs.Component, {
+    defaultOptions: {
         speed: 1,
         color: "#000000"
-    });
-    this.color = Webvs.parseColorNorm(options.color);
-
-    this.frameCount = 0;
-    this.maxFrameCount = Math.floor(1/options.speed);
-    this.program = new Webvs.ClearScreenProgram(Webvs.AVERAGE);
-
-    FadeOut.super.constructor.apply(this, arguments);
-}
-Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
-    componentName: "FadeOut",
-
-    /**
-     * initializes the FadeOut component
-     * @memberof Webvs.FadeOut#
-     */
-    init: function(gl, main, parent) {
-        FadeOut.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
     },
 
-    /**
-     * fades the screen
-     * @memberof Webvs.FadeOut#
-     */
-    update: function() {
-        var gl = this.gl;
+    onChange: {
+        speed: "updateSpeed",
+        color: "updateColor"
+    },
+
+    init: function() {
+        this.program = new Webvs.ClearScreenProgram(this.gl, Webvs.AVERAGE);
+        this.updateSpeed();
+        this.updateColor();
+    },
+
+    draw: function() {
         this.frameCount++;
         if(this.frameCount == this.maxFrameCount) {
             this.frameCount = 0;
@@ -55,38 +40,19 @@ Webvs.FadeOut = Webvs.defineClass(FadeOut, Webvs.Component, {
         }
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.FadeOut#
-     */
     destroy: function() {
         FadeOut.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateSpeed: function() {
+        this.frameCount = 0;
+        this.maxFrameCount = Math.floor(1/this.opts.speed);
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
     }
 });
-
-FadeOut.ui = {
-    type: "FadeOut",
-    disp: "Fade Out",
-    schema: {
-        speed: {
-            type: "number",
-            title: "Speed",
-            maximum: 0,
-            minimum: 1,
-            default: 1
-        },
-        color: {
-            type: "string",
-            title: "Fadeout color",
-            format: "color",
-            default: "#FFFFFF"
-        }
-    },
-    form: [
-        {key: "speed", type: "range", step: "0.05"},
-        "color"
-    ]
-};
 
 })(Webvs);

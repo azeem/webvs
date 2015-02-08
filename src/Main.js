@@ -1,39 +1,18 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * Main Webvs object, that represents a running webvs instance.
- *
- * @example
- * var dancer = new Dancer();
- * var webvs = new Webvs.Main({
- *     canvas: document.getElementById("canvas"),
- *     analyser: new Webvs.DancerAdapter(dancer),
- *     showStat: true
- * });
- * webvs.loadPreset(samplePreset);
- * webvs.start();
- * dancer.load({src: "music.ogg"}); // start playing musc
- * dancer.play();
- *
- * @param {object} options - options object
- * @param {HTMLCanvasElement} options.canvas - canvas element on which the visualization will be rendered
- * @param {Webvs.AnalyserAdapter} options.analyser  - a music analyser instance
- * @param {boolean} [options.showStat=false] - if set, then a framerate status indicator is inserted into the page
- * @memberof Webvs
- * @constructor
- */
+// Main Webvs object, that represents a running webvs instance.
 function Main(options) {
     Webvs.checkRequiredOptions(options, ["canvas", "analyser"]);
     options = _.defaults(options, {
         showStat: false
     });
     this.canvas = options.canvas;
+    this.msgElement = options.msgElement;
     this.analyser = options.analyser;
     this.isStarted = false;
     if(options.showStat) {
@@ -45,18 +24,33 @@ function Main(options) {
         document.body.appendChild(stats.domElement);
         this.stats = stats;
     }
-    this.resources = {};
-    this.rootComponent = new Webvs.EffectList({id:"root"});
+
+    this.meta = {};
+    this._initResourceManager(options.resourcePrefix);
     this._registerContextEvents();
     this._initGl();
+    this._setupRoot({id: "root"});
 }
-Webvs.Main = Webvs.defineClass(Main, Object, {
+Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
+    _initResourceManager: function(prefix) {
+        var builtinPack = Webvs.ResourcePack;
+        if(prefix) {
+            builtinPack = _.clone(builtinPack);
+            builtinPack.prefix = prefix;
+        }
+        this.rsrcMan = new Webvs.ResourceManager(builtinPack);
+        this.listenTo(this.rsrcMan, "wait", this.handleRsrcWait);
+        this.listenTo(this.rsrcMan, "ready", this.handleRsrcReady);
+
+        var this_ = this;
+    },
+
     _registerContextEvents: function() {
         var _this = this;
 
         this.canvas.addEventListener("webglcontextlost", function(event) {
             event.preventDefault();
-            _this.stop();
+           _this.stop();
         });
 
         this.canvas.addEventListener("webglcontextrestored", function(event) {
@@ -66,67 +60,29 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
 
     _initGl: function() {
         try {
-            this.gl = this.canvas.getContext("experimental-webgl", {alpha: false});
-
-            this.copier = new Webvs.CopyProgram({dynamicBlend: true});
-            this.copier.init(this.gl);
-
-            this.resolution = {
-                width: this.canvas.width,
-                height: this.canvas.height
-            };
+            this.gl = this.canvas.getContext("webgl", {alpha: false});
+            this.copier = new Webvs.CopyProgram(this.gl, {dynamicBlend: true});
+            this.buffers = new Webvs.FrameBufferManager(this.gl, this.copier, true, 0);
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
         }
     },
 
-    /**
-     * Loads a preset JSON. If a preset is already loaded and running, then
-     * the animation is stopped, and the new preset is loaded.
-     * @param {object} preset - JSON representation of the preset
-     * @memberof Webvs.Main#
-     */
-    loadPreset: function(preset) {
-        preset = _.clone(preset); // use our own copy
-        preset.id = "root";
-        var newRoot = new Webvs.EffectList(preset);
-        this.stop();
-        this.rootComponent.destroy();
-        this.rootComponent = newRoot;
-        this.resources = preset.resources || {};
+    _setupRoot: function(preset) {
+        this.registerBank = {};
+        this.bootTime = (new Date()).getTime();
+        this.rootComponent = new Webvs.EffectList(this.gl, this, null, preset);
     },
 
-    /**
-     * Reset all the components. Call this when canvas dimensions changes
-     * @memberof Webvs.Main#
-     */
-    resetCanvas: function() {
-        this.stop();
-        var preset = this.rootComponent.getOptions();
-        this.rootComponent.destroy();
-        this.copier.cleanup();
-        this._initGl();
-        this.rootComponent = new Webvs.EffectList(preset);
-    },
-
-    /**
-     * Starts the animation if not already started
-     * @memberof Webvs.Main#
-     */
-    start: function() {
-        if(this.isStarted) {
-            return;
-        }
-
+    _startAnimation: function() {
         var _this = this;
         var drawFrame = function() {
-            if(_this.analyser.isPlaying()) {
-                _this.rootComponent.update();
-            }
+            _this.analyser.update();
+            _this.rootComponent.draw();
             _this.animReqId = requestAnimationFrame(drawFrame);
         };
 
-        // wrap drawframe in stats collection if required
+        // Wrap drawframe in stats collection if required
         if(this.stats) {
             var oldDrawFrame = drawFrame;
             drawFrame = function() {
@@ -135,183 +91,121 @@ Webvs.Main = Webvs.defineClass(Main, Object, {
                 _this.stats.end();
             };
         }
-
-        if(!this.rootComponent.componentInited) {
-            this.registerBank = {};
-            this.bootTime = (new Date()).getTime();
-            this.rootComponent.init(this.gl, this);
-        }
         this.animReqId = requestAnimationFrame(drawFrame);
-        this.isStarted = true;
     },
 
-    /**
-     * Stops the animation
-     * @memberof Webvs.Main#
-     */
-    stop: function() {
-        if(!_.isUndefined(this.animReqId)) {
-            cancelAnimationFrame(this.animReqId);
-            this.isStarted = false;
+    _stopAnimation: function() {
+        cancelAnimationFrame(this.animReqId);
+    },
+
+    // Starts the animation if not already started
+    start: function() {
+        if(this.isStarted) {
+            return;
+        }
+        this.isStarted = true;
+        if(this.rsrcMan.ready) {
+            this._startAnimation();
         }
     },
 
-    /**
-     * Generates and returns the instantaneous preset JSON 
-     * representation
-     * @returns {object} preset json
-     * @memberof Webvs.Main#
-     */
-    getPreset: function() {
-        var preset = this.rootComponent.getOptions();
-        preset.resources = this.resources;
+    // Stops the animation
+    stop: function() {
+        if(!this.isStarted) {
+            return;
+        }
+        this.isStarted = false;
+        if(this.rsrcMan.ready) {
+            this._stopAnimation();
+        }
+    },
+
+    // Loads a preset JSON. If a preset is already loaded and running, then
+    // the animation is stopped, and the new preset is loaded.
+    loadPreset: function(preset) {
+        preset = _.clone(preset); // use our own copy
+        preset.id = "root";
+        this.rootComponent.destroy();
+
+        // setup resources
+        this.rsrcMan.clear();
+        if("resources" in preset && "uris" in preset.resources) {
+            this.rsrcMan.registerUri(preset.resources.uris);
+        }
+
+        // load meta
+        this.meta = _.clone(preset.meta);
+
+        this._setupRoot(preset);
+    },
+
+    // Reset all the components.
+    resetCanvas: function() {
+        var preset = this.rootComponent.generateOptionsObj();
+        this.rootComponent.destroy();
+        this.copier.cleanup();
+        this.buffers.destroy();
+        this._initGl();
+        this._setupRoot(preset);
+    },
+
+    notifyResize: function() {
+        this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+        this.buffers.resize();
+        this.trigger("resize", this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+    },
+
+    setAttribute: function(key, value, options) {
+        if(key == "meta") {
+            this.meta = value;
+            return true;
+        }
+        return false;
+    },
+
+    get: function(key, value) {
+        if(key == "meta") {
+            return this.meta;
+        }
+    },
+
+    // Generates and returns the instantaneous preset JSON 
+    // representation
+    toJSON: function() {
+        var preset = this.rootComponent.toJSON();
+        preset = _.pick(preset, "clearFrame", "components");
+        preset.resources = this.rsrcMan.toJSON();
+        preset.meta = _.clone(this.meta);
         return preset;
     },
 
-    /**
-     * Adds a component under the given parent. Root has the id "root".
-     * @param {string} parentId - id of the parent under which the component is
-     *     to be added
-     * @param {object} options - options for the new component
-     * @param {number} [pos] - position at which the component will be inserted.
-     *     default is the end of the list
-     * @returns {string} id of the new component
-     * @memberof Webvs.Main#
-     */
-    addComponent: function(parentId, options, pos) {
-        options = _.clone(options); // use our own copy
-        this.rootComponent.addComponent(parentId, options, pos);
-        return res;
+    destroy: function() {
+        this.stop();
+        this.rootComponent.destroy();
+        this.rootComponent = null;
+        if(this.stats) {
+            var statsDomElement = this.stats.domElement;
+            statsDomElement.parentNode.removeChild(statsDomElement);
+            this.stats = null;
+        }
+        this.rsrcMan.destroy();
+        this.rsrcMan = null;
+        this.stopListening();
     },
 
-    /**
-     * Updates a component.
-     * @param {string} id - id of the component
-     * @param {object} options - options to be updated.
-     * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main#
-     */
-    updateComponent: function(id, options) {
-        options = _.clone(options); // use our own copy
-        options.id = id;
-        if(id == "root") {
-            var subComponents = this.rootComponent.detachAllComponents();
-            options = _.defaults(options, this.rootComponent.options);
-            this.rootComponent.destroy();
-            this.rootComponent = new Webvs.EffectList(options, subComponents);
-            this.rootComponent.init(this.gl, this);
-            return true;
-        } else {
-            return this.rootComponent.updateComponent(id, options);
+    // event handlers
+    handleRsrcWait: function() {
+        if(this.isStarted) {
+            this._stopAnimation();
         }
     },
-
-
-    /**
-     * Removes a component
-     * @param {string} id - id of the component to be removed
-     * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main#
-     */
-    removeComponent: function(id) {
-        var component = this.rootComponent.detachComponent(id);
-        if(component) {
-            component.destroy();
-            return true;
-        } else {
-            return false;
+    
+    handleRsrcReady: function() {
+        if(this.isStarted) {
+            this._startAnimation();
         }
-    },
-
-    /**
-     * Moves a component to a different parent
-     * @param {string} id - id of the component to be moved
-     * @param {string} newParentId - id of the new parent
-     * @param {number} pos - position in the new parent
-     * @returns {boolean} - success of the operation
-     * @memberof Webvs.Main#
-     */
-    moveComponent: function(id, newParentId, pos) {
-        var component = this.rootComponent.detachComponent(id);
-        if(component) {
-            return this.rootComponent.addComponent(newParentId, component, pos);
-        } else {
-            return false;
-        }
-    },
-
-    /**
-     * Returns resource data. If resource is not defined
-     * at preset level, its searched in the global resources
-     * object
-     * @param {string} name - name of the resource
-     * @returns resource data. if resource is not found then name itself is returned
-     * @memberof Webvs.Main#
-     */
-    getResource: function(name) {
-        var resource;
-        resource = this.resources[name];
-        if(!resource) {
-            resource = Webvs.Resources[name];
-        }
-        if(!resource) {
-            resource = name;
-        }
-        return resource;
-    },
-
-    /**
-     * Sets a preset level resource
-     * @param {string} name - name of the resource
-     * @param data - resource data
-     * @memberof Webvs.Main#
-     */
-    setResource: function(name, data) {
-        this.resources[name] = data;
-    },
-
-    /**
-     * Traverses a callback over the component tree
-     * @param {Webvs.Main~traverseCallback} callback - callback.
-     * @memberof Webvs.Main#
-     */
-    traverse: function(callback) {
-        this.rootComponent.traverse(callback);
     }
-
-    /**
-     * This function is called once for each component in the tree
-     * @callback Webvs.Main~traverseCallback
-     * @param {string} id - id of the component
-     * @param {string} parentId - id of the parent. Undefined for root
-     * @param {object} options - the options for this component.
-     */
 });
-
-Main.ui = {
-    leaf: false,
-    disp: "Main",
-    schema: {
-        name: {
-            type: "string",
-            title: "Name"
-        },
-        author: {
-            type: "string",
-            title: "Author"
-        },
-        description: {
-            type: "string",
-            title: "Description"
-        },
-        clearFrame: {
-            type: "boolean",
-            title: "Clear every frame",
-            default: false,
-            required: true
-        }
-    },
-};
 
 })(Webvs);
 

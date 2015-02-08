@@ -10,6 +10,7 @@ module.exports = function(grunt) {
     var jsFiles = [
         "src/Base.js",
         "src/Resources.js",
+        "src/ResourceManager.js",
 
         "src/analyser/*.js",
 
@@ -25,9 +26,9 @@ module.exports = function(grunt) {
         "src/webgl/ClearScreenProgram.js",
 
         "src/expr/Ast.js",
-        "build/pegs_expr_parser.js",
+        ".tmp/pegs_expr_parser.js",
         "src/expr/CodeInstance.js",
-        "src/expr/ExprCodeGenerator.js",
+        "src/expr/CodeGenerator.js",
 
         "src/misc/GlobalVar.js",
         "src/misc/BufferSave.js",
@@ -40,24 +41,27 @@ module.exports = function(grunt) {
         "src/trans/Movement.js",
         "src/trans/ChannelShift.js",
         "src/trans/UniqueTone.js",
+        "src/trans/Invert.js",
+        "src/trans/Mosaic.js",
+        "src/trans/Mirror.js",
 
         "src/render/SuperScope.js",
         "src/render/Simple.js",
         "src/render/Texer.js",
+        "src/render/MovingParticle.js",
         "src/render/ClearScreen.js",
         "src/render/Picture.js"
     ];
 
     var libFiles = [
         "bower_components/underscore/underscore.js",
-        "bower_components/dancer.js/lib/fft.js",
-        "bower_components/dancer.js/dancer.js",
+        "bower_components/backbone-events/backbone-events.js",
         "bower_components/stats.js/src/Stats.js"
     ];
 
     grunt.initConfig({
         jshint: {
-            files: ["Gruntfile.js", "src/**/*.js"],
+            files: ["Gruntfile.js", "src/**/*.js", "test/**/*.js"],
             options: {
                 globals: {
                     Webvs: true
@@ -69,7 +73,7 @@ module.exports = function(grunt) {
         peg: {
             expr_lang: {
                 grammar: "src/expr/ExprGrammar.pegjs",
-                outputFile: "build/pegs_expr_parser.js",
+                outputFile: ".tmp/pegs_expr_parser.js",
                 exportVar: "Webvs.PegExprParser",
                 options: {
                     trackLineAndColumn : true,
@@ -80,25 +84,33 @@ module.exports = function(grunt) {
 
         karma: {
             options: {
-                configFile: "karma.conf.js"
+                frameworks: ["qunit"],
+                files: [].concat(libFiles, jsFiles, [
+                    "./bower_components/seedrandom/seedrandom.js",
+                    "./test/base.js",
+                    "./test/**/*.js"
+                ]),
+                proxies: {
+                    "/assert": "http://localhost:8000/test/assert/",
+                    "/images": "http://localhost:8000/test/images/",
+                    "/resources": "http://localhost:8000/resources/"
+                },
+                reporters: ['progress'],
+                port: 9876,
+                runnerPort: 9100,
+                colors: true,
+                logLevel: "DEBUG",
+                autoWatch: false,
+                browsers: ['Firefox', 'Chrome'],
+                captureTimeout: 60000
             },
             test: {
                 singleRun: true
             },
             debug: {
                 singleRun: false,
-                background: true
-            }
-        },
-
-        jsdoc : {
-            dist : {
-                src: ["src/**/*.js", "README.md"], 
-                options: {
-                    template: "node_modules/grunt-jsdoc/node_modules/ink-docstrap/template",
-                    destination: 'doc',
-                    configure: "jsdoc.conf.js"
-                }
+                background: true,
+                browsers: ["Firefox"]
             }
         },
 
@@ -113,22 +125,20 @@ module.exports = function(grunt) {
         },
 
         watch: {
-            scripts: {
-                files: ["src/**/*.js"],
-                tasks: ["default"]
+            test: {
+                files: ["src/**/*.js", "test/**/*.js"],
+                tasks: ["default", "karma:debug:run"]
             },
-
-            doc: {
-                files: ["src/**/*.js"],
-                tasks: ["doc"]
+            build: {
+                files: ["src/**/*.js", "test/**/*.js"],
+                tasks: ["default"]
             }
         },
 
         concat: {
-            dev: {
+            build: {
                 files: {
-                    "build/webvs.js": jsFiles,
-                    "build/libs.js": libFiles
+                    "build/webvs.js": jsFiles
                 }
             }
         },
@@ -136,17 +146,13 @@ module.exports = function(grunt) {
         uglify: {
             dist: {
                 files: {
-                    "dist/webvs.min.js": jsFiles,
-                    "dist/libs.min.js": libFiles,
-                    "dist/webvs.full.min.js": libFiles.concat(jsFiles)
+                    "build/webvs.min.js": "build/webvs.js"
                 }
             }
         },
 
         clean: {
-            build: ["build/*"],
-            dist: ["dist/*"],
-            doc: ["doc/*"]
+            build: ["build/*"]
         }
     });
 
@@ -154,17 +160,17 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-watch");
     grunt.loadNpmTasks("grunt-contrib-uglify");
     grunt.loadNpmTasks("grunt-contrib-clean");
-    grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-connect");
+    grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-peg");
     grunt.loadNpmTasks("grunt-karma");
     grunt.loadNpmTasks("grunt-jsdoc");
 
-    grunt.registerTask('default', ['clean:build', 'jshint', 'peg', 'concat:dev']);
-    grunt.registerTask("doc", ["clean:doc", "jsdoc"]);
-    grunt.registerTask('dist', ["default", 'uglify:dist']);
-    grunt.registerTask('test', ["connect", "default", 'karma:test']);
+    grunt.registerTask('default', ['jshint', 'peg', 'concat']);
+    grunt.registerTask('dist', ["clean", "default", 'uglify']);
 
-    grunt.registerTask('debug', ["connect", "default", "watch:scripts"]);
-    grunt.registerTask('debug_test', ["connect", "default", "karma:debug", "watch:scripts"]);
+    grunt.registerTask("debug", ["connect", "watch:build"]);
+
+    grunt.registerTask('test', ["connect", "default", 'karma:test']);
+    grunt.registerTask('debug_test', ["connect", "default", "karma:debug:start", "watch:test"]);
 };

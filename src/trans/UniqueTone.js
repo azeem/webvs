@@ -1,63 +1,63 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A Component that applies a unique color tone
- * @param {object} options - options object
- * @param {string} [options.color="#FFFFFF"] - the color tone
- * @param {boolean} [options.invert=false] - if set then tone is inverted
- * @param {string} [options.blendMode="REPLACE"] - blending mode for this component
- * @augments Webvs.Component
- * @memberof Webvs
- * @constructor
- */
-function UniqueTone(options) {
-    options = _.defaults(options, {
+// A Component that applies a unique color tone
+function UniqueTone(gl, main, parent, opts) {
+    UniqueTone.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(UniqueTone, {
+    name: "UniqueTone",
+    menu: "Trans"
+});
+
+Webvs.defineClass(UniqueTone, Webvs.Component, {
+    defaultOptions: {
         color: "#ffffff",
         invert: false,
         blendMode: "REPLACE"
-    });
-
-    this.tone = Webvs.parseColorNorm(options.color);
-    this.invert = options.invert;
-    this.program = new UniqueToneProgram(Webvs.getBlendMode(options.blendMode));
-}
-Webvs.UniqueTone = Webvs.defineClass(UniqueTone, Webvs.Component, {
-    /**
-     * initializes the UniqueTone component
-     * @memberof Webvs.UniqueTone#
-     */
-    init: function(gl, main, parent) {
-        UniqueTone.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
     },
 
-    /**
-     * applies unique tone
-     * @memberof Webvs.UniqueTone#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.tone, this.invert);
+    onChange: {
+        color: "updateColor",
+        blendMode: "updateProgram"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.UniqueTone#
-     */
+    init: function() {
+        this.updateColor();
+        this.updateProgram();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.tone, this.opts.invert);
+    },
+
     destroy: function() {
         UniqueTone.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateColor: function() {
+        this.tone = Webvs.parseColorNorm(this.opts.color);
+    },
+
+    updateProgram: function() {
+        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
+        var program = new UniqueToneProgram(this.gl, blendMode);
+        if(this.program) {
+            this.program.cleanup();
+        }
+        this.program = program;
     }
 });
 
-function UniqueToneProgram(blendMode) {
-    UniqueToneProgram.super.constructor.call(this, {
-        outputBlendMode: blendMode,
+function UniqueToneProgram(gl, blendMode) {
+    UniqueToneProgram.super.constructor.call(this, gl, {
+        blendMode: blendMode,
         swapFrame: true,
         fragmentShader: [
             "uniform vec3 u_tone;",

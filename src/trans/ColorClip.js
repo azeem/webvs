@@ -1,83 +1,69 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that clips colors to a different color depending
- * on whether the source colors are above or below a reference color.
- * 
- * @see r_contrast.cpp
- * @param {object} options - options object
- * @param {string} [options.mode="BELOW"] - comparison mode viz. `BELOW`, `ABOVE`, `NEAR`
- * @param {string} [options.color="#202020"] - reference color against which the
- *     the screen colors are compared
- * @param {string} [options.outColor="#202020"] - output color for clipped pixels
- * @param {number} [options.level=0] - when mode is `NEAR`, this value decides the distance
- *     between source and reference colors below which pixels would be clipped. 0-1 normalized
- *
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function ColorClip(options) {
-    Webvs.checkRequiredOptions(options, ["mode", "color", "outColor"]);
-    options = _.defaults(options, {
+// A component that clips colors to a different color depending
+// on whether the source colors are above or below a reference color.
+function ColorClip(gl, main, parent, opts) {
+    ColorClip.super.constructor.call(this, gl, main, parent, opts);
+}
+
+Webvs.registerComponent(ColorClip, {
+    name: "ColorClip",
+    menu: "Trans"
+});
+
+var ClipModes = {
+    "BELOW": 0,
+    "ABOVE": 1,
+    "NEAR": 2
+};
+ColorClip.ClipModes = ClipModes;
+
+Webvs.defineClass(ColorClip, Webvs.Component,  {
+    defaultOptions: {
         mode: "BELOW",
         color: "#202020",
         outColor: "#202020",
         level: 0
-    });
-
-    this.mode = _.indexOf(this.modes, options.mode);
-    if(this.mode == -1) {
-        throw new Error("ColorClip: invalid mode");
-    }
-    this.color = Webvs.parseColorNorm(options.color);
-    this.outColor = Webvs.parseColorNorm(options.outColor);
-    this.level = options.level;
-
-    this.program = new Webvs.ColorClipProgram();
-
-    ColorClip.super.constructor.apply(this, arguments);
-}
-Webvs.ColorClip = Webvs.defineClass(ColorClip, Webvs.Component, {
-    modes: ["BELOW", "ABOVE", "NEAR"],
-    componentName: "ChannelShift",
-
-    /**
-     * initializes the ColorClip component
-     * @memberof Webvs.ColorClip#
-     */
-    init: function(gl, main, parent) {
-        ColorClip.super.init.call(this, gl, main, parent);
-
-        this.program.init(gl);
     },
 
-    /**
-     * clips the colors
-     * @memberof Webvs.ColorClip#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.level);
+    onChange: {
+        mode: "updateMode",
+        color: "updateColor",
+        outColor: "updateColor"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.ColorClip#
-     */
+    init: function() {
+        this.program = new ColorClipProgram(this.gl);
+        this.updateColor();
+        this.updateMode();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.opts.level);
+    },
+
     destroy: function() {
         ColorClip.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateMode: function() {
+        this.mode = Webvs.getEnumValue(this.opts.mode, ClipModes);
+    },
+
+    updateColor: function() {
+        this.color = Webvs.parseColorNorm(this.opts.color);
+        this.outColor = Webvs.parseColorNorm(this.opts.outColor);
     }
 });
 
-function ColorClipProgram() {
-    ColorClipProgram.super.constructor({
+function ColorClipProgram(gl) {
+    ColorClipProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
             "uniform int u_mode;",

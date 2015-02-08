@@ -1,47 +1,40 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that simply runs some avs expressions.
- * Useful to maintain global state
- *
- * @param {object} options - options object
- * @param {string} [options.code.init] - code to be run at startup
- * @param {string} [options.code.onBeat] - code to be run when a beat occurs
- * @param {string} [ptions.code.perFrame]- code to be run on every frame
- * @augments Webvs.Component
- * @constructor
- * @memberof Webvs
- */
-function GlobalVar(options) {
-	Webvs.checkRequiredOptions(options, ["code"]);
-	var codeGen = new Webvs.ExprCodeGenerator(options.code, ["b"]);
-    this.code = codeGen.generateJs(["init", "onBeat", "perFrame"]);
-    this.inited = false;
-
-    GlobalVar.super.constructor.apply(this, arguments);
+// A component that simply runs some avs expressions.
+// Useful to maintain global state
+function GlobalVar(gl, main, parent, opts) {
+    GlobalVar.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
-    /**
-     * initializes the globalvar component
-     * @memberof Webvs.GlobalVar#
-     */
-	init: function(gl, main, parent) {
-		GlobalVar.super.init.call(this, gl, main, parent);
 
-        this.code.setup(main, this);
-	},
+Webvs.registerComponent(GlobalVar, {
+    name: "GlobalVar",
+    menu: "Misc"
+});
 
-    /**
-     * Runs the code
-     * @memberof Webvs.GlobalVar#
-     */
-	update: function() {
+Webvs.defineClass(GlobalVar, Webvs.Component, {
+    defaultOptions: {
+        code: {
+            init: "",
+            onBeat: "",
+            perFrame: ""
+        }
+    },
+
+    onChange: {
+        "code": "updateCode"
+    },
+
+    init: function() {
+        this.updateCode();
+        this.listenTo(this.main, "resize", this.handleResize);
+    },
+
+    draw: function() {
 		var code = this.code;
 		code.b = this.main.analyser.beat?1:0;
 
@@ -55,33 +48,17 @@ Webvs.GlobalVar = Webvs.defineClass(GlobalVar, Webvs.Component, {
 		}
 
 		code.perFrame();
-	}
-});
+    },
 
-GlobalVar.ui = {
-    disp: "Global Var",
-    type: "GlobalVar",
-    schema: {
-        code: {
-            type: "object",
-            title: "Code",
-            default: {},
-            properties: {
-                init: {
-                    type: "string",
-                    title: "Init",
-                },
-                onBeat: {
-                    type: "string",
-                    title: "On Beat",
-                },
-                perFrame: {
-                    type: "string",
-                    title: "Per Frame",
-                }
-            },
-        }
+    updateCode: function() {
+        this.code = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame"]).codeInst;
+        this.code.setup(this.main, this);
+        this.inited = false;
+    },
+
+    handleResize: function() {
+        this.code.updateDimVars(this.gl);
     }
-};
+});
 
 })(Webvs);

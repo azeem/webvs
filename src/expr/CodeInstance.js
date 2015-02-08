@@ -1,32 +1,21 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * An object that encapsulates the generated executable code
- * and its state values. Also contains implementations of
- * functions callable from expressions
- * @constructor
- * @memberof Webvs
- */
+// An object that encapsulates the generated executable code
+// and its state values. Also contains implementations of
+// functions callable from expressions
 function CodeInstance() {}
 Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
-    /**
-     * avs expression rand function
-     * @memberof Webvs.CodeInstance#
-     */
+    // avs expression rand function
     rand: function(max) { 
         return Math.floor(Math.random() * max) + 1;
     },
 
-    /**
-     * avs expression gettime function
-     * @memberof Webvs.CodeInstance#
-     */
+    // avs expression gettime function
     gettime: function(startTime) {
         switch(startTime) {
             case 0:
@@ -36,10 +25,7 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         }
     },
 
-    /**
-     * avs expression getosc function
-     * @memberof Webvs.CodeInstance#
-     */
+    // avs expression getosc function
     getosc: function(band, width, channel) {
         var osc = this._analyser.getWaveform();
         var pos = Math.floor((band - width/2)*(osc.length-1));
@@ -52,42 +38,27 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         return sum/(end-pos+1);
     },
 
-    /**
-     * bind state values to uniforms
-     * @param {Webvs.ShaderProgram} program - program to which the state values 
-     *                                        should be bound
-     * @memberof Webvs.CodeInstance#
-     */
+    // bind state values to uniforms
     bindUniforms: function(program) {
-        var that = this;
         // bind all values
-        var toBeBound = _.difference(_.keys(this), this._treatAsNonUniform);
-        _.each(toBeBound, function(name) {
-            var value = that[name];
-            if(typeof value !== "number") { return; }
-            program.setUniform(name, "1f", value);
-        });
+        _.each(this._uniforms, function(name) {
+            program.setUniform(name, "1f", this[name]);
+        }, this);
 
         // bind registers
-        _.each(this._registerUsages, function(name) {
+        _.each(this._glslRegisters, function(name) {
             program.setUniform(name, "1f", this._registerBank[name]);
-        });
+        }, this);
 
         // bind random step value if there are usages of random
-        if(this.hasRandom) {
+        if(this._hasRandom) {
             var step = [Math.random()/100, Math.random()/100];
             program.setUniform("__randStep", "2fv", step);
         }
 
-        // bind time values for gettime calls
-        if(this.hasGettime) {
-            var time0 = ((new Date()).getTime()-this._bootTime)/1000;
-            program.setUniform("__gettime0", "1f", time0);
-        }
-
         // bind precomputed values
-        _.each(this._preCompute, function(item, index) {
-            var args = _.map(_.last(item, item.length-2), function(arg) {
+        _.each(this._preCompute, function(entry, name) {
+            var args = _.map(_.drop(entry), function(arg) {
                 if(_.isString(arg)) {
                     if(arg.substring(0, 5) == "__REG") {
                         return this._registerBank[arg];
@@ -97,25 +68,18 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
                 } else {
                     return arg;
                 }
-            });
-            var result = this[item[0]].apply(this, args);
-            program.setUniform(item[1], "1f", result);
-        });
+            }, this);
+            var result = this[entry[0]].apply(this, args);
+            program.setUniform(name, "1f", result);
+        }, this);
     },
 
-    /**
-     * initializes this codeinstance
-     * @param {Webvs.Main} main - webvs main instance
-     * @param {Webvs.Component} parent - the component thats using this codeinstance
-     * @memberof Webvs.CodeInstance#
-     */
+    // initializes this codeinstance
     setup: function(main, parent) {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
-
-        this.w = main.canvas.width;
-        this.h = main.canvas.height;
+        this.updateDimVars(parent.gl);
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {
@@ -123,20 +87,42 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
                 main.registerBank[name] = 0;
             }
         });
+    },
+
+    updateDimVars: function(gl) {
+        this.w = gl.drawingBufferWidth;
+        this.h = gl.drawingBufferHeight;
     }
 });
 
-CodeInstance.clone = function(codeInst, count) {
-    codeInst.cid = 0;
-    var clones = [codeInst];
-    if(count > 1) {
-        _.times(count-1, function(index) {
-            var clone = _.clone(codeInst);
-            clone.cid = index+1;
+// creates an array of clones of code instances
+CodeInstance.clone = function(clones, count) {
+    if(!_.isArray(clones)) {
+        clones.cid = 0;
+        clones = [codeInst];
+    }
+
+    var clonesLength = clones.length;
+    if(clonesLength < count) {
+        _.times(count-clonesLength, function(index) {
+            var clone = Object.create(CodeInstance.prototype);
+            _.extend(clone, clones[0]);
+            clone.cid = index+clonesLength;
             clones.push(clone);
         });
+    } else if(clonesLength > count) {
+        clones = _.first(this.clones, count);
     }
     return clones;
+};
+
+// copies instance values from one code instance to another
+CodeInstance.copyValues = function(dest, src) {
+    _.each(src, function(name, value) {
+        if(!_.isFunction(value) && name.charAt(0) !== "_") {
+            dest[name] = value;
+        }
+    });
 };
 
 

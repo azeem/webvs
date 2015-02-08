@@ -1,26 +1,68 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(window) {
 
-/**
- * Webvs namespace that contains all classes
- * @alias Webvs
- * @namespace
- */
+// Webvs namespace that contains all classes
 var Webvs = {};
 
 window.Webvs = Webvs;
 
-/**
- * A wrapper around Object.create to help with class definition
- * @param {function} constructor - constructor function for which the prototype is to be defined
- * @param {function} baseConstructor - base constructor whose prototype will be extended
- * @param {...object} [properties] - additional properties to be added to the prototype
- * @returns {function} the constructor
- */
+// Events mixin. Use Backbone Events if available
+// else we expect a global Events mixin with similar
+// API to be present
+Webvs.Events = (window.Backbone && Backbone.Events) || window.Events;
+Webvs.ModelLike = _.extend(_.clone(Webvs.Events), {
+    get: function(key) {
+        throw new Error("get not implemented");
+    },
+
+    toJSON: function(key) {
+        throw new Error("toJSON not implemented");
+    },
+
+    setAttribute: function(key) {
+        throw new Error("setAttribute not implemented");
+    },
+
+    set: function(key, value, options) {
+        var success, silent;
+
+        if(!_.isString(key) && arguments.length <= 2) {
+            // if map of key values are passed
+            // then set each value separately
+            silent = value.silent;
+            options = _.defaults({silent:true}, value);
+            value = _.clone(key);
+
+            success = false;
+            for(key in value) {
+                if(this.setAttribute(key, value[key], options)) {
+                    success = true;
+                    if(!silent) {
+                        this.trigger("change:" + key, this, value[key], options); 
+                    }
+                }
+            }
+            if(success && !silent) {
+                this.trigger("change", this, options); 
+            }
+        } else {
+            options = options || {};
+            success = this.setAttribute(key, value, options);
+            if(success && !options.silent) {
+                this.trigger("change:" + key, this, value, options); 
+                this.trigger("change", this, options); 
+            }
+        }
+
+        return success;
+    }
+});
+
+// A wrapper around Object.create to help with class definition
 Webvs.defineClass = function(constructor, baseConstructor) {
     constructor.prototype = Object.create(baseConstructor.prototype);
     constructor.prototype.constructor = constructor; // fix the constructor reference
@@ -34,16 +76,17 @@ Webvs.defineClass = function(constructor, baseConstructor) {
     return constructor;
 };
 
-/**
- * An empty function
- */
+Webvs.ComponentRegistry = {};
+Webvs.registerComponent = function(componentClass, meta) {
+    Webvs.checkRequiredOptions(meta, ["name"]);
+    componentClass.Meta = meta;
+    Webvs[meta.name] = componentClass;
+    Webvs.ComponentRegistry[meta.name] = componentClass;
+};
+
 Webvs.noop = function() {};
 
-/**
- * Checks if an object contains the required properties
- * @param {object} options - object to be checked
- * @param {Array.<string>} - properties to be checked
- */
+// Checks if an object contains the required properties
 Webvs.checkRequiredOptions = function(options, requiredOptions) {
     for(var i in requiredOptions) {
         var key =  requiredOptions[i];
@@ -53,21 +96,13 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
     }
 };
 
-/**
- * Returns a floating point value representation of a number
- * embeddable in glsl shader code
- * @param {number} val - value to be converted
- * @returns {string} float represntation
- */
+// Returns a floating point value representation of a number
+// embeddable in glsl shader code
 Webvs.glslFloatRepr = function(val) {
     return val + (val%1 === 0?".0":"");
 };
 
-/**
- * Parse css color string #RRGGBB or rgb(r, g, b)
- * @param {string} color - color to be parsed
- * @returns {Array.<number>} triple of color values in 0-255 range
- */
+// Parse css color string #RRGGBB or rgb(r, g, b)
 Webvs.parseColor = function(color) {
     if(_.isArray(color) && color.length == 3) {
         return color;
@@ -92,18 +127,12 @@ Webvs.parseColor = function(color) {
     throw new Error("Invalid Color Format");
 };
 
-/**
- * 0-1 normalized version of {@link Webvs.parseColor}
- */
+// 0-1 normalized version of Webvs.parseColor
 Webvs.parseColorNorm = function(color) {
     return _.map(Webvs.parseColor(color), function(value) { return value/255; });
 };
 
-/**
- * Pretty prints a shader compilation error
- * @param {string} - shader source code
- * @param {string} - error message from gl.getShaderInfoLog
- */
+// Pretty prints a shader compilation error
 Webvs.logShaderError = function(src, error) {
     var lines = src.split("\n");
     var ndigits = lines.length.toString().length;
@@ -134,115 +163,47 @@ Webvs.logShaderError = function(src, error) {
     console.log("Shader Error : \n" + numberedLines);
 };
 
-
-/**
- * @class
- * A simple promise object to notify async init of
- * components
- * @memberof Webvs
- * @constructor
- */
-var Promise = function() {
-    this.resolved = false;
-    this.listeners = [];
-};
-Webvs.Promise = Webvs.defineClass(Promise, Object, {
-    /**
-     * resolves the promise object and runs all
-     * the callbacks
-     * @memberof Webvs.Promise#
-     */
-    resolve: function() {
-        if(!this.resolved) {
-            this.resolved = true;
-            _.each(this.listeners, function(cb) {
-                cb();
-            });
-        }
-    },
-
-    /**
-     * register a callback which should be called
-     * when the promise resolves
-     * @param {function} cb - callback
-     * @memberof Webvs.Promise#
-     */
-    onResolve : function(cb) {
-        if(this.resolved) {
-            cb();
-        } else {
-            this.listeners.push(cb);
-        }
-    }
-});
-
-/**
- * Combines several promises into one promise
- * @param {Array.<Webvs.Promise>} promises - promises to be combined
- * @returns {Webvs.Promise}
- */
-Webvs.joinPromises = function(promises) {
-    var joinedPromise = new Promise();
-    promises = _.filter(promises, function(p) {return !_.isUndefined(p);});
-    if(promises.length === 0) {
-        joinedPromise.resolve();
-    } else {
-        var counter = promises.length;
-        var onResolveCb = function() {
-            counter--;
-            if(counter === 0) {
-                joinedPromise.resolve();
-            }
-        };
-        _.each(promises, function(promise) {
-            if(promise.resolved) {
-                onResolveCb();
-            } else {
-                promise.onResolve(onResolveCb);
-            }
-        });
-    }
-
-    return joinedPromise;
-};
-
 _.flatMap = _.compose(_.flatten, _.map);
 
-/**
- * Blend mode constants
- */
-Webvs.blendModes = {
+// Blend mode constants
+Webvs.BlendModes = {
     REPLACE: 1,
     MAXIMUM: 2,
     AVERAGE: 3,
     ADDITIVE: 4,
     SUBTRACTIVE1: 5,
     SUBTRACTIVE2: 6,
-    MULTIPLY: 7
+    MULTIPLY: 7,
+    MULTIPLY2: 8,
+    ADJUSTABLE: 9,
+    ALPHA: 10
 };
-_.extend(Webvs, Webvs.blendModes);
+_.extend(Webvs, Webvs.BlendModes);
 
-/**
- * Returns the blendmode constant. Throws an error if its
- * an invalid blend mode
- * @param {string} name - the blend mode in string
- * @returns {number} the code for the blend mode
- */
-Webvs.getBlendMode = function(name) {
-    var mode = Webvs.blendModes[name];
-    if(!mode) {
-        throw new Error("Unknown blendMode " + name);
+Webvs.Channels = {
+    CENTER: 0,
+    LEFT: 1,
+    RIGHT: 2
+};
+_.extend(Webvs, Webvs.Channels);
+
+Webvs.Source = {
+    SPECTRUM: 1,
+    WAVEFORM: 2
+};
+_.extend(Webvs, Webvs.Source);
+
+// Returns an enumeration(plain object with numeric values)
+// value or throws an exception if it doesnt exists
+Webvs.getEnumValue = function(key, enumeration) {
+    key = key.toUpperCase();
+    if(!(key in enumeration)) {
+        throw new Error("Unknown key " + key + ", expecting one of " + _.keys(enumeration).join(","));
     }
-    return mode;
+    return enumeration[key];
 };
 
-/**
- * Returns a random string of given length
- * @param {number} count - the number of characters required
- * @param {string} chars - a string containing the characters 
- *                         from which to choose
- * @returns {string} a random string
- */
+// Returns a random string of given length
 Webvs.randString = function(count, chars) {
     var string = [];
     chars = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -252,22 +213,46 @@ Webvs.randString = function(count, chars) {
     return string.join("");
 };
 
-/**
- * Clamps a number between two given numbers
- * @param {number} num - number to be clamped
- * @param {number} min - clamp min edge
- * @returns {number} max - clamp max edge
- */
+// Clamps a number between two given numbers
 Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };
 
+// Returns the component class with the given name. Throws
 Webvs.getComponentClass = function(name) {
-    var componentClass = Webvs[name];
+    var componentClass = Webvs.ComponentRegistry[name];
     if(!componentClass) {
         throw new Error("Unknown Component class " + name);
     }
     return componentClass;
+};
+
+// Returns the value of property given its (dot separated) path in an object
+Webvs.getProperty = function(obj, name) {
+    if(_.isString(name)) {
+        name = name.split(".");
+    }
+    var value = obj[name.shift()];
+    if(value) {
+        if(name.length > 0) {
+            return Webvs.getProperty(value, name);
+        } else {
+            return value;
+        }
+    }
+};
+
+// Sets a property, given its (dot separated) path in an object
+Webvs.setProperty = function(obj, name, value) {
+    if(_.isString(name)) {
+        name = name.split(".");
+    }
+    var propertyName = name.shift();
+    if(name.length === 0) {
+        obj[propertyName] = value;
+    } else {
+        Webvs.setProperty(obj[propertyName], name, value);
+    }
 };
 
 })(window);

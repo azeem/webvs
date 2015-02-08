@@ -1,4 +1,6 @@
-doc
 node_modules
 .idea
+*.iml
+build
 bower_components
+.tmp

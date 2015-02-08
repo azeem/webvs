@@ -1,30 +1,16 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * FrameBufferManager maintains a set of render targets
- * and can switch between them.
- *
- * @param {number} width - the width of the textures to be initialized
- * @param {number} height - the height of the textures to be initialized
- * @param {WebGLRenderingContext} gl - the webgl context to be used
- * @param {Webvs.CopyProgram} copier - an instance of a CopyProgram that should be used
- *                                     when a frame copyOver is required
- * @param {boolean} textureOnly - if set then only texture's and renderbuffers are maintained
- * @constructor
- * @memberof Webvs
- */
-function FrameBufferManager(width, height, gl, copier, textureOnly, texCount) {
+// FrameBufferManager maintains a set of render targets
+// and can switch between them.
+function FrameBufferManager(gl, copier, textureOnly, texCount) {
     this.gl = gl;
-    this.width = width;
-    this.height = height;
     this.copier = copier;
-    this.texCount = texCount || 2;
+    this.initTexCount = _.isNumber(texCount)?texCount:2;
     this.textureOnly = textureOnly;
     this._initFrameBuffers();
 }
@@ -36,117 +22,168 @@ Webvs.FrameBufferManager = Webvs.defineClass(FrameBufferManager, Object, {
             this.framebuffer = gl.createFramebuffer();
         }
 
-        var attachments = [];
-        for(var i = 0;i < this.texCount;i++) {
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
+        this.names = {};
+        this.textures = [];
+        for(var i = 0;i < this.initTexCount;i++) {
+            this.addTexture();
+        }
+        this.curTex = 0;
+        this.isRenderTarget = false;
+    },
 
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
-                0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-            var renderbuffer = gl.createRenderbuffer();
-            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-
-            attachments[i] = {
-                texture: texture,
-                renderbuffer: renderbuffer
+    addTexture: function(name) {
+        if(name && name in this.names) {
+            this.names[name].refCount++;
+            return this.names[name];
+        }
+        var gl = this.gl;
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
+                      gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        this.textures.push(texture);
+        if(name) {
+            this.names[name] = {
+                refCount: 1,
+                index: this.textures.length-1
             };
         }
-
-        this.frameAttachments = attachments;
-        this.currAttachment = 0;
+        return this.textures.length-1;
     },
 
-    /**
-     * Saves the current render target and sets this
-     * as the render target
-     * @memberof Webvs.FrameBufferManager#
-     */
-    setRenderTarget: function() {
-        var gl = this.gl;
-        if(this.textureOnly) {
-            this.oldAttachment = this._getFBAttachment();
-        } else {
-            this.oldFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-            gl.viewport(0, 0, this.width, this.height);
+    removeTexture: function(arg) {
+        if(_.isString(arg) && arg in this.names) {
+            if(this.names[arg].refCount > 1) {
+                this.names[arg].refCount--;
+                return;
+            }
         }
-        this._setFBAttachment();
+        var index = this._findIndex(arg);
+        if(index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
+            throw new Error("Cannot remove current texture when set as render target");
+        }
+        var gl = this.gl;
+        gl.deleteTexture(this.textures[index]);
+        this.textures.splice(index, 1);
+        if(this.curTex >= this.textures.length) {
+            this.curTex = this.textures.lenght-1;
+        }
+        delete this.names[arg];
     },
 
-    /**
-     * Restores the render target previously saved with
-     * a {@link Webvs.FrameBufferManager.setRenderTarget} call
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Saves the current render target and sets this
+    // as the render target
+    setRenderTarget: function(texName) {
+        var gl = this.gl;
+        var curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+        if(this.textureOnly) {
+            if(!curFrameBuffer) {
+                throw new Error("Cannot use textureOnly when current rendertarget is the default FrameBuffer");
+            }
+            this.oldTexture = gl.getFramebufferAttachmentParameter(
+                                  gl.FRAMEBUFFER,
+                                  gl.COLOR_ATTACHMENT0,
+                                  gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+        } else {
+            this.oldFrameBuffer = curFrameBuffer;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        }
+        this.isRenderTarget = true;
+        if(!_.isUndefined(texName)) {
+            this.switchTexture(texName);
+        } else {
+            var texture = this.textures[this.curTex];
+            gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                    gl.COLOR_ATTACHMENT0,
+                                    gl.TEXTURE_2D,
+                                    texture, 0);
+        }
+    },
+
+    // Restores the render target previously saved with
+    // a Webvs.FrameBufferManager.setRenderTarget call
     restoreRenderTarget: function() {
         var gl = this.gl;
         if(this.textureOnly) {
-            this._setFBAttachment(this.oldAttachment);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                    gl.COLOR_ATTACHMENT0,
+                                    gl.TEXTURE_2D,
+                                    this.oldTexture, 0);
+            this.oldTexture = null;
         } else {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.oldFrameBuffer);
+            this.oldFrameBuffer = null;
         }
+        this.isRenderTarget = false;
     },
 
-    /**
-     * Returns the texture that is currently being used
-     * @returns {WebGLTexture}
-     * @memberof Webvs.FrameBufferManager#
-     */
+    // Returns the texture that is currently being used
     getCurrentTexture: function() {
-        return this.frameAttachments[this.currAttachment].texture;
+        return this.textures[this.curTex];
     },
 
-    /**
-     * Copies the previous texture into the current texture
-     * @memberof Webvs.FrameBufferManager#
-     */
+    getTexture: function(arg) {
+        var index = this._findIndex(arg);
+        return this.textures[index];
+    },
+
+    // Copies the previous texture into the current texture
     copyOver: function() {
-        var prevTexture = this.frameAttachments[Math.abs(this.currAttachment-1)%this.texCount].texture;
+        var texCount = this.textures.length;
+        var prevTexture = this.textures[(texCount+this.curTex-1)%texCount];
         this.copier.run(null, null, prevTexture);
     },
 
-    /**
-     * Swaps the current texture
-     * @memberof Webvs.FrameBufferManager#
-     */
-    swapAttachment : function() {
-        this.currAttachment = (this.currAttachment + 1) % this.texCount;
-        this._setFBAttachment();
+    // Swaps the current texture
+    switchTexture: function(arg) {
+        if(!this.isRenderTarget) {
+            throw new Error("Cannot switch texture when not set as rendertarget");
+        }
+        var gl = this.gl;
+        this.curTex = _.isUndefined(arg)?(this.curTex+1):this._findIndex(arg);
+        this.curTex %= this.textures.length;
+        var texture = this.textures[this.curTex];
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,
+                                gl.COLOR_ATTACHMENT0,
+                                gl.TEXTURE_2D, texture, 0);
     },
 
-    /**
-     * cleans up all webgl resources
-     * @memberof Webvs.FrameBufferManager#
-     */
-    destroy: function() {
+    resize: function() {
+        // TODO: investigate chrome warning: INVALID_OPERATION: no texture
         var gl = this.gl;
-        for(var i = 0;i < this.texCount;i++) {
-            gl.deleteRenderbuffer(this.frameAttachments[i].renderbuffer);
-            gl.deleteTexture(this.frameAttachments[i].texture);
+        for(var i = 0;i < this.textures.length;i++) {
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
+                          gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
     },
 
-
-    _getFBAttachment: function() {
+    // cleans up all webgl resources
+    destroy: function() {
         var gl = this.gl;
-        return {
-            texture: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME),
-            renderbuffer: gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME)
-        };
+        for(var i = 0;i < this.textures.length;i++) {
+            gl.deleteTexture(this.textures[i]);
+        }
+        if(!this.textureOnly) {
+            gl.deleteFramebuffer(this.frameBuffer);
+        }
     },
 
-    _setFBAttachment: function(attachment) {
-        attachment = attachment || this.frameAttachments[this.currAttachment];
-        var gl = this.gl;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, attachment.texture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, attachment.renderbuffer);
-    },
+    _findIndex: function(arg) {
+        var index;
+        if(_.isString(arg) && arg in this.names) {
+            index = this.names[arg].index;
+        } else if(_.isNumber(arg) && arg >=0 && arg < this.textures.length) {
+            index = arg;
+        } else {
+            throw new Error("Unknown texture '" + arg + "'");
+        }
+        return index;
+    }
 });
 
 })(Webvs);

@@ -1,123 +1,96 @@
 /**
- * Copyright (c) 2013 Azeem Arshad
+ * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
 
 (function(Webvs) {
 
-/**
- * @class
- * A component that applies a convolution kernel
- *
- * @param {object} options - options object
- * @param {Array.<Array.<number>>} options.kernel - an NxN array of numbers
- * @param {number} [options.bias=0] - bias value to be added
- * @param {number} [options.scale] - scale for the kernel. default is sum of kernel values
- * @param {object} [options.edgeMode="EXTEND"] - how the frame edge cases should be handled viz. `WRAP`, `EXTEND`
- *
- * @constructor
- * @augments Webvs.Component
- * @memberof Webvs
- */
-function Convolution(options) {
-    Webvs.checkRequiredOptions(options, ["kernel"]);
-    options = _.defaults(options, {
-        edgeMode: "EXTEND",
-        bias: 0
-    });
-
-    var kernel;
-    if(options.kernel in Convolution.kernels) {
-        kernel = Convolution.kernels[options.kernel];
-    } else if(_.isArray(options.kernel) && options.kernel.length%2 === 1) {
-        kernel = options.kernel;
-    } else {
-        throw new Error("Invalid convolution kernel");
-    }
-
-    var kernelSize = Math.floor(Math.sqrt(kernel.length));
-    if(kernelSize*kernelSize != kernel.length) {
-        throw new Error("Invalid convolution kernel");
-    }
-
-    this.program = new Webvs.ConvolutionProgram(kernel, kernelSize, 
-                                                options.edgeMode, options.scale,
-                                                options.bias);
-
-    Convolution.super.constructor.apply(this, arguments);
+// A component that applies a convolution kernel
+function Convolution(gl, main, parent, opts) {
+    Convolution.super.constructor.call(this, gl, main, parent, opts);
 }
-Webvs.Convolution = Webvs.defineClass(Convolution, Webvs.Component, {
-    componentName: "Convolution",
 
-    /**
-     * initializes the Convolution component
-     * @method
-     * @memberof Webvs.Convolution#
-     */
-    init: function(gl, main, parent) {
-        Convolution.super.init.call(this, gl, main, parent);
-        this.program.init(gl);
+Webvs.registerComponent(Convolution, {
+    name: "Convolution",
+    menu: "Trans"
+});
+
+var EdgeModes = {
+    "EXTEND": 0,
+    "WRAP": 1,
+};
+Convolution.EdgeModes = EdgeModes;
+
+Webvs.defineClass(Convolution, Webvs.Component, {
+    defaultOptions: {
+        edgeMode: "EXTEND",
+        autoScale: true,
+        scale: 0,
+        kernel: [
+            0, 0, 0,
+            0, 1, 0,
+            0, 0, 0
+        ],
+        bias: 0
     },
 
-    /**
-     * applies the Convolution matrix
-     * @method
-     * @memberof Webvs.Convolution#
-     */
-    update: function() {
-        this.program.run(this.parent.fm, null);
+    onChange: {
+        "edgeMode": "updateProgram",
+        "kernel": ["updateProgram", "updateScale"],
+        "scale": "updateScale"
     },
 
-    /**
-     * releases resources
-     * @memberof Webvs.Convolution#
-     */
+    init: function() {
+        this.updateProgram();
+        this.updateScale();
+    },
+
+    draw: function() {
+        this.program.run(this.parent.fm, null, this.scale, this.opts.bias);
+    },
+
     destroy: function() {
         Convolution.super.destroy.call(this);
-        this.program.cleanup();
+        this.program.destroy();
+    },
+
+    updateScale: function() {
+        var opts = this.opts;
+        if(opts.autoScale) {
+            this.scale = _.reduce(opts.kernel, function(memo, num){ return memo + num; }, 0);
+        } else {
+            this.scale = opts.scale;
+        }
+    },
+
+    updateProgram: function() {
+        var opts = this.opts;
+        if(!_.isArray(opts.kernel) || opts.kernel.length%2 !== 1) {
+            throw new Error("Invalid convolution kernel");
+        }
+        var kernelSize = Math.floor(Math.sqrt(opts.kernel.length));
+        if(kernelSize*kernelSize != opts.kernel.length) {
+            throw new Error("Invalid convolution kernel");
+        }
+
+        if(this.program) {
+            this.program.destroy();
+        }
+        var edgeMode = Webvs.getEnumValue(this.opts.edgeMode, EdgeModes);
+        this.program = new Webvs.ConvolutionProgram(this.gl, opts.kernel, kernelSize, edgeMode);
     }
 });
 
-Convolution.kernels = {
-    normal: [
-        0, 0, 0,
-        0, 1, 0,
-        0, 0, 0
-    ],
-    gaussianBlur: [
-        0.045, 0.122, 0.045,
-        0.122, 0.332, 0.122,
-        0.045, 0.122, 0.045
-    ],
-    unsharpen: [
-        -1, -1, -1,
-        -1,  9, -1,
-        -1, -1, -1
-    ],
-    emboss: [
-        -2, -1,  0,
-        -1,  1,  1,
-        0,  1,  2
-    ],
-    blur: [
-        1, 1, 1,
-        1, 1, 1,
-        1, 1, 1
-    ]
-};
-
-function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
+function ConvolutionProgram(gl, kernel, kernelSize, edgeMode) {
     // generate edge correction function
     var edgeFunc = "";
     switch(edgeMode) {
-        case "WRAP":
+        case EdgeModes.WRAP:
             edgeFunc = "pos = vec2(pos.x<0?pos.x+1.0:pos.x%1, pos.y<0?pos.y+1.0:pos.y%1);";
             break;
-        case "EXTEND":
+        case EdgeModes.EXTEND:
             edgeFunc = "pos = clamp(pos, vec2(0,0), vec2(1,1));";
             break;
-        default:
-            throw new Error("Invalid edge mode");
     }
 
     var i,j;
@@ -131,30 +104,33 @@ function ConvolutionProgram(kernel, kernelSize, edgeMode, scale, bias) {
             if(value === 0) {
                 continue;
             }
-            colorSumEq.push("pos = v_position + texel * vec2("+(i-mid)+","+(j-mid)+");");
+            colorSumEq.push("pos = v_position + texel * vec2("+(j-mid)+","+(mid-i)+");");
             colorSumEq.push(edgeFunc);
             colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+Webvs.glslFloatRepr(value)+";");
         }
     }
 
-    // compute kernel scaling factor
-    if(_.isUndefined(scale)) {
-        scale = _.reduce(kernel, function(memo, num){ return memo + num; }, 0);
-    }
-
-    ConvolutionProgram.super.constructor.call(this, {
+    ConvolutionProgram.super.constructor.call(this, gl, {
         swapFrame: true,
         fragmentShader: [
+            "uniform float u_scale;",
+            "uniform float u_bias;",
             "void main() {",
             "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
             "   vec2 pos;",
             "   vec4 colorSum = vec4(0,0,0,0);",
             colorSumEq.join("\n"),
-            "   setFragColor(vec4(((colorSum+"+Webvs.glslFloatRepr(bias)+") / "+Webvs.glslFloatRepr(scale)+").rgb, 1.0));",
+            "   setFragColor(vec4(((colorSum+u_bias)/u_scale).rgb, 1.0));",
             "}"
         ]
     });
 }
-Webvs.ConvolutionProgram = Webvs.defineClass(ConvolutionProgram, Webvs.QuadBoxProgram);
+Webvs.ConvolutionProgram = Webvs.defineClass(ConvolutionProgram, Webvs.QuadBoxProgram, {
+    draw: function(scale, bias) {
+        this.setUniform("u_scale", "1f", scale);
+        this.setUniform("u_bias", "1f", bias);
+        ConvolutionProgram.super.draw.call(this);
+    }
+});
 
 })(Webvs);
