@@ -14,5 +14,8 @@
     "soundmanager2": "*",
     "seedrandom": "~2.3.6",
     "backbone-events": "git://github.com/azeem/backbone-events.git#~1.1.2"
+  },
+  "dependencies": {
+    "webgl-obj-loader": "frenchtoast747/webgl-obj-loader#~0.1.1"
   }
 }
