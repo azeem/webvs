@@ -16,6 +16,7 @@
     "backbone-events": "git://github.com/azeem/backbone-events.git#~1.1.2"
   },
   "dependencies": {
-    "webgl-obj-loader": "frenchtoast747/webgl-obj-loader#~0.1.1"
+    "webgl-obj-loader": "frenchtoast747/webgl-obj-loader#~0.1.1",
+    "gl-matrix": "~2.2.1"
   }
 }

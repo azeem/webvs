@@ -276,6 +276,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 var args = [location].concat(_.drop(arguments, 2));
                 gl["uniform" + type].apply(gl, args);
                 break;
+            case "Matrix2fv": case "Matrix3fv": case "Matrix4fv":
             case "1fv": case "2fv": case "3fv": case "4fv":
             case "1iv": case "2iv": case "3iv": case "4iv":
                 gl["uniform" + type].apply(gl, location, value);

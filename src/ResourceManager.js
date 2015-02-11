@@ -94,6 +94,24 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
             this.trigger("ready");
         }
     },
+
+    _isDataUri: function(uri) {
+        return (uri.substring(0, 5) == "data:");
+    },
+
+    _parseDataUri: function(uri) {
+        var commaPos = uri.indexOf(",");
+        if(commaPos == -1) {
+            throw new Error("Unable to Parse Data URI");
+        }
+        var isBase64 = (uri.substring(0, commaPos).toLowerCase().indexOf("base64") == -1);
+        if(isBase64) {
+            return atob(uri.substring(commaPos));
+        } else {
+            return decodeUri(uri.substring(commaPos));
+        }
+    },
+
     
     // Loads an Image resource
     getImage: function(fileName, success, error, context) {
@@ -113,7 +131,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
             throw new Error("Unknown image file " + fileName);
         }
         image = new Image();
-        if(uri.indexOf("data:") !== 0) {
+        if(!this._isDataUri(uri)) {
             // add cross origin attribute for
             // remote images
             image.crossOrigin = "anonymous";
@@ -128,7 +146,6 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
         if(error) {
             image.onError = function() {
                 if(error.call(context)) { 
-    
                     // then we treat this load as complete
                     // and handled properly
                     this_._loadEnd();
@@ -137,6 +154,40 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
         }
         this._loadStart();
         image.src = uri;
+    },
+
+    getMesh: function(fileName, success, error, context) {
+        context = context || this;
+        var mesh = this.meshes[fileName];
+        if(mesh) {
+            if(success) {
+                success.call(context, mesh);
+            }
+            return;
+        }
+
+        var uri = this._getUri(fileName);
+        if(!uri) {
+            throw new Error("Unknown mesh file " + fileName);
+        }
+
+        if(this._isDataUri(uri)) {
+            mesh = new OBJ.Mesh(this._parseDataUri(uri));
+            this.meshes[fileName] = mesh;
+            if(success) {
+                success.call(context, mesh);
+            }
+        } else {
+            this._loadStart();
+            OBJ.downloadMeshes({
+                "meshOne": uri
+            }, _.bind(function(meshes) {
+                if(success) {
+                    success.call(context, meshes.meshOne);
+                }
+                this._loadEnd();
+            }, this));
+        }
     }
 });
 
