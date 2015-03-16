@@ -48,6 +48,7 @@ module.exports = function(grunt) {
         "src/render/SuperScope.js",
         "src/render/Simple.js",
         "src/render/Texer.js",
+        "src/render/Voxer.js",
         "src/render/MovingParticle.js",
         "src/render/ClearScreen.js",
         "src/render/Picture.js"
@@ -56,7 +57,9 @@ module.exports = function(grunt) {
     var libFiles = [
         "bower_components/underscore/underscore.js",
         "bower_components/backbone-events/backbone-events.js",
-        "bower_components/stats.js/src/Stats.js"
+        "bower_components/stats.js/src/Stats.js",
+        "bower_components/gl-matrix/dist/gl-matrix.js",
+        "bower_components/webgl-obj-loader/webgl-obj-loader.js"
     ];
 
     grunt.initConfig({
@@ -85,10 +88,12 @@ module.exports = function(grunt) {
         karma: {
             options: {
                 frameworks: ["qunit"],
-                files: [].concat(libFiles, jsFiles, [
+                plugins: ["karma-qunit", "karma-chrome-launcher", "karma-firefox-launcher"],
+                files: ["./test/fixQUnit.js"].concat(libFiles, jsFiles, [
                     "./bower_components/seedrandom/seedrandom.js",
                     "./test/base.js",
-                    "./test/**/*.js"
+                    "./test/render/Voxer.test.js"
+                    //"./test/**/*.js"
                 ]),
                 proxies: {
                     "/assert": "http://localhost:8000/test/assert/",
@@ -101,11 +106,11 @@ module.exports = function(grunt) {
                 colors: true,
                 logLevel: "DEBUG",
                 autoWatch: false,
-                browsers: ['Firefox', 'Chrome'],
                 captureTimeout: 60000
             },
             test: {
-                singleRun: true
+                singleRun: true,
+                browsers: ["Firefox", "Chrome"]
             },
             debug: {
                 singleRun: false,

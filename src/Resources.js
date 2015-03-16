@@ -9,6 +9,7 @@ Webvs.ResourcePack = {
     name: "Builtin",
     prefix: "./resources/",
     fileNames: [
+        "teddy.obj",
         "avsres_texer_circle_edgeonly_19x19.bmp",
         "avsres_texer_circle_edgeonly_29x29.bmp",
         "avsres_texer_circle_fade_13x13.bmp",

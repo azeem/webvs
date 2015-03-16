@@ -58,6 +58,7 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
     clear: function() {
         this.uris = {};
         this.images = {};
+        this.meshes = {};
         this.waitCount = 0;
         this.ready = true;
     },

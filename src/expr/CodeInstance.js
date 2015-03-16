@@ -79,6 +79,8 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
+        this._vec3 = [];
+        this._quat = [];
         this.updateDimVars(parent.gl);
 
         // clear all used registers

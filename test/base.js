@@ -3,7 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-function logGLCall(functionName, args) {   
+function logGLCall(functionName, args) {
    console.log("gl." + functionName + "(" + 
       WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");   
 } 
@@ -84,9 +84,9 @@ function CanvasTest() {
     }
     testArgs.push(wrapper);
     if(extraOptions.async || extraOptions.images) {
-        asyncTest.apply(window, testArgs);
+        QUnit.asyncTest.apply(window, testArgs);
     } else {
-        test.apply(window, testArgs);
+        QUnit.test.apply(window, testArgs);
     }
 }
 
@@ -293,7 +293,7 @@ function imageFuzzyOk(message, gl, canvas, targetImage, mismatchThreshold, dista
     }
 
     if(mismatch < mismatchThreshold) {
-        ok(true, message);
+        QUnit.ok(true, message);
     } else {
         // show the diff image 
         var errorId = _.uniqueId();
@@ -305,6 +305,6 @@ function imageFuzzyOk(message, gl, canvas, targetImage, mismatchThreshold, dista
             diffSrc: tempCanvas.toDataURL()
         });
         document.body.appendChild(errorElement);
-        ok(false, message + " ImageMismatch #" + errorId);
+        QUnit.ok(false, message + " ImageMismatch #" + errorId);
     }
 }
