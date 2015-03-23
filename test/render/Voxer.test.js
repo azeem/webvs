@@ -17,6 +17,9 @@ CanvasTestWithFM(
 
         var testValues = {
             modelSrc: "teddy.obj",
+            code: {
+                init: "n=2"
+            }
         };
 
         var voxer;

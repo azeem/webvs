@@ -101,6 +101,13 @@ Webvs.checkRequiredOptions = function(options, requiredOptions) {
 Webvs.glslFloatRepr = function(val) {
     return val + (val%1 === 0?".0":"");
 };
+Webvs.glslVec3Repr = function (val) {
+    var repr = _.map(val, function(val) {
+        return Webvs.glslFloatRepr(val);
+    }).join(",");
+    repr = "vec3(" + repr + ")";
+    return repr;
+};
 
 // Parse css color string #RRGGBB or rgb(r, g, b)
 Webvs.parseColor = function(color) {

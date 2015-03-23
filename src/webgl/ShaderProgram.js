@@ -98,8 +98,13 @@ function ShaderProgram(gl, opts) {
         }
     }
 
-    this.fragmentSrc = fsrc.join("\n") + "\n" + opts.fragmentShader.join("\n");
-    this.vertexSrc = vsrc.join("\n") + "\n" + opts.vertexShader.join("\n");
+    var fragmentShader = opts.fragmentShader;
+    var vertexShader = opts.vertexShader;
+    fragmentShader = _.isArray(fragmentShader)?(fragmentShader.join("\n")):fragmentShader;
+    vertexShader = _.isArray(vertexShader)?(vertexShader.join("\n")):vertexShader;
+
+    this.fragmentSrc = fsrc.join("\n") + "\n" + fragmentShader;
+    this.vertexSrc = vsrc.join("\n") + "\n" + vertexShader;
     this._locations = {};
     this._textureVars = [];
     this._arrBuffers = {};
