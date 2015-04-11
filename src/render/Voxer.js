@@ -19,14 +19,18 @@ Webvs.defineClass(Voxer, Webvs.Component, {
         },
         modelSrc: "cube.obj",
         material: {
-            color: "#FF00FF"
+            type: "phong",
+            ambient: "#ff00ff",
+            specular: "#777777",
+            diffuse: "#777777",
+            shininess: 30
         },
-        ambientColor: "#FFFFFF",
+        ambientLightColor: "#000000",
         lights: [
             {
-                type: "DIRECTIONAL",
-                direction: { x:1, y:0, z:1},
-                color: "#FFFFFF"
+                type: "point",
+                position: { x:0, y:0, z:-2},
+                color: "#000022"
             }
         ]
     },
@@ -35,14 +39,14 @@ Webvs.defineClass(Voxer, Webvs.Component, {
         code: "updateCode",
         modelSrc: "updateModel",
         lights: ["updateLights", "updateProgram"],
-        ambientColor: "updateAmbientColor",
+        ambientLightColor: "updateAmbientLightColor",
         material: "updateMaterial"
     },
 
     init: function() {
         this.updateCode();
         this.updateModel();
-        this.updateAmbientColor();
+        this.updateAmbientLightColor();
         this.updateMaterial();
         this.updateLights();
         this.updateProgram();
@@ -114,7 +118,7 @@ Webvs.defineClass(Voxer, Webvs.Component, {
             mat3.invert(nMatrix, nMatrix);
             mat3.transpose(nMatrix, nMatrix);
 
-            this.program.run(this.parent.fm, null, this.mesh, matrix, nMatrix, this.materialColor, this.ambientColor);
+            this.program.run(this.parent.fm, null, this.mesh, matrix, nMatrix, this.material, this.ambientLightColor);
         }
         if(oldDepthTest) {
             gl.enable(gl.DEPTH_TEST);
@@ -204,7 +208,7 @@ Webvs.defineClass(Voxer, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var program = new VoxerShader(this.gl, this.dirLights);
+        var program = new VoxerShader(this.gl, this.lights);
         if(this.program) {
             this.program.destroy();
         }
@@ -212,34 +216,47 @@ Webvs.defineClass(Voxer, Webvs.Component, {
     },
 
     updateMaterial: function() {
-        this.materialColor = Webvs.parseColorNorm(this.opts.material.color);
+        this.material = {
+            ambient: Webvs.parseColorNorm(this.opts.material.ambient),
+            specular: Webvs.parseColorNorm(this.opts.material.specular),
+            diffuse: Webvs.parseColorNorm(this.opts.material.diffuse),
+            shininess: this.opts.material.shininess
+        };
     },
 
-    updateAmbientColor: function() {
-        this.ambientColor = Webvs.parseColorNorm(this.opts.ambientColor);
+    updateAmbientLightColor: function() {
+        this.ambientLightColor = Webvs.parseColorNorm(this.opts.ambientLightColor);
     },
 
     updateLights: function() {
-        var dirLights = _.chain(this.opts.lights).filter(function(light) {
-            return light.type == "DIRECTIONAL";
-        }).map(function(light) {
-            var direction = vec3.fromValues(light.direction.x,
-                                            light.direction.y,
-                                            light.direction.z);
-            vec3.normalize(direction, direction);
-            vec3.scale(direction, direction, -1);
+        this.lights = _.map(this.opts.lights, function(light) {
+            var color;
+            switch(light.type) {
+                case "directional":
+                    var direction = vec3.fromValues(light.direction.x,
+                                                    light.direction.y,
+                                                    light.direction.z);
+                    vec3.normalize(direction, direction);
 
-            var color = Webvs.parseColorNorm(light.color);
-            return {color: color, direction: direction};
-        }).value();
-        this.dirLights = dirLights;
+                    color = Webvs.parseColorNorm(light.color);
+                    return {type: light.type, color: color, direction: direction};
+                case "point":
+                    var position = vec3.fromValues(light.position.x,
+                                                   light.position.y,
+                                                   light.position.z);
+                    color = Webvs.parseColorNorm(light.color);
+                    return {type: light.type, color: color, position: position};
+                default:
+                    throw new Error("Unknow Light type");
+            }
+       });
     }
 });
 
-function VoxerShader(gl, dirLights) {
+function VoxerShader(gl, lights) {
     VoxerShader.super.constructor.call(this, gl, {
         copyOnSwap: true,
-        vertexShader: VoxerShader.vertexShaderTemplate({dirLights: dirLights}),
+        vertexShader: VoxerShader.vertexShaderTemplate({lights: lights}),
         fragmentShader: VoxerShader.fragmentShaderTemplate
     });
 }
@@ -247,42 +264,70 @@ function VoxerShader(gl, dirLights) {
 VoxerShader.vertexShaderTemplate = _.template([
     "attribute vec3 a_position;",
     "attribute vec3 a_normal;",
+
     "varying vec4 v_pos4;",
-    "varying vec3 v_lightWeighting;",
+    "varying vec3 v_light;",
+
     "uniform mat4 u_matrix;",
     "uniform mat3 u_nMatrix;",
-    "uniform vec3 u_ambientColor;",
+
+    "uniform vec3 u_ambientLightColor;",
+
+    "uniform vec3 u_kSpecular;",
+    "uniform vec3 u_kDiffuse;",
+    "uniform vec3 u_kAmbient;",
+    "uniform float u_shininess;",
 
     "void main() {",
     "  v_pos4 = u_matrix * vec4(a_position, 1.0);",
     "  setPosition4(v_pos4);",
 
     "  vec3 tNormal = u_nMatrix * a_normal;",
-    "  v_lightWeighting = u_ambientColor;",
-    "  <% _.each(dirLights, function(light) { %>",
-    "      v_lightWeighting = <%= Webvs.glslVec3Repr(light.color) %> *",
-    "         max(dot(tNormal, <%= Webvs.glslVec3Repr(light.direction) %>), 0.0);",
+    "  v_light = u_ambientLightColor * u_kAmbient;",
+
+    "  <% _.each(lights, function(light) { %>",
+    "      <% if(light.type == 'directional') { %>",
+    "          vec3 lightDir = -<%= Webvs.glslVec3Repr(light.direction) %>;",
+    "      <% } %>",
+
+    "      <% if(light.type == 'point') { %>",
+    "          vec3 lightDir = normalize(<%= Webvs.glslVec3Repr(light.position) %> - v_pos4.xyz);",
+    "      <% } %>",
+
+    "      vec3 reflDir = 2.0*dot(lightDir, tNormal)-lightDir;",
+
+    "      float dTerm = dot(lightDir, tNormal);",
+    "      float sTerm = dot(reflDir, vec3(0,0,-1));",
+    "      if(dTerm > 0.0) {",
+    "          v_light += u_kDiffuse * dTerm * <%= Webvs.glslVec3Repr(light.color) %>;",
+    "          if(sTerm > 0.0) {",
+    "              v_light += u_kSpecular * pow(sTerm, u_shininess) * <%= Webvs.glslVec3Repr(light.color) %>;",
+    "          }",
+    "      }",
+
     "  <% }); %>",
     "}"
 ].join("\n"));
 
 VoxerShader.fragmentShaderTemplate = [
     "varying vec4 v_pos4;",
-    "varying vec3 v_lightWeighting;",
-    "uniform vec3 u_materialColor;",
+    "varying vec3 v_light;",
 
     "void main() {",
-    " setFragColor(vec4(u_materialColor * v_lightWeighting, 1.0));",
+    " setFragColor(vec4(v_light, 1.0));",
     "}"
 ].join("\n");
 
 Webvs.VoxerShader = Webvs.defineClass(VoxerShader, Webvs.ShaderProgram, {
-    draw: function(mesh, matrix, nMatrix, materialColor, ambientColor) {
+    draw: function(mesh, matrix, nMatrix, material, ambientLightColor) {
         var gl = this.gl;
         this.setUniform("u_matrix", "Matrix4fv", false, matrix);
         this.setUniform("u_nMatrix", "Matrix3fv", false, nMatrix);
-        this.setUniform("u_ambientColor", "3fv", ambientColor);
-        this.setUniform("u_materialColor", "3fv", materialColor);
+        this.setUniform("u_ambientLightColor", "3fv", ambientLightColor);
+        this.setUniform("u_kSpecular", "3fv", material.specular);
+        this.setUniform("u_kDiffuse", "3fv", material.diffuse);
+        this.setUniform("u_kAmbient", "3fv", material.ambient);
+        this.setUniform("u_shininess", "1f", material.shininess);
 
         this.setVertexAttribArray("a_position", new Float32Array(mesh.vertices), 3);
         this.setVertexAttribArray("a_normal", new Float32Array(mesh.vertexNormals), 3);
