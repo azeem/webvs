@@ -53,7 +53,7 @@ CanvasTestWithFM(
 
         // test that buffersave component destroy
         // has triggered destroy for the texture
-        equal(buffers.textures.length, 0);
+        QUnit.equal(buffers.textures.length, 0);
         buffers.destroy();
 
         polyProgram.destroy();

@@ -241,7 +241,7 @@ var imageFuzzyOkErrorTemplate = _.template([
 // Checks if the framebuffer image is equal to target image
 // within threshold
 function imageFuzzyOk(message, gl, canvas, targetImage, mismatchThreshold, distanceThreshold) {
-    mismatchThreshold = _.isNumber(mismatchThreshold)?mismatchThreshold:1;
+    mismatchThreshold = _.isNumber(mismatchThreshold)?mismatchThreshold:5;
     distanceThreshold = _.isNumber(distanceThreshold)?(Math.pow(distanceThreshold*255, 2)*3):10; // scale to 255*sqrt(3) and square
     var width = canvas.width;
     var height = canvas.height;

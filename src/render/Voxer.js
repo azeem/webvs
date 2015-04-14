@@ -3,11 +3,21 @@
 function Voxer(gl, main, parent, opts) {
     Voxer.super.constructor.call(this, gl, main, parent, opts);
 }
-
 Webvs.registerComponent(Voxer, {
     name: "Voxer",
     menu: "Render"
 });
+
+var MaterialType = {
+    "PHONG": 1,
+    "NORMAL": 2
+};
+
+var LightType = {
+    "AMBIENT": 1,
+    "DIRECTIONAL": 2,
+    "POINT": 3
+};
 
 Webvs.defineClass(Voxer, Webvs.Component, {
     defaultOptions: {
@@ -18,19 +28,35 @@ Webvs.defineClass(Voxer, Webvs.Component, {
             perObject: ""
         },
         modelSrc: "cube.obj",
+        // material: {
+        //     type: "PHONG",
+        //     ambient: "#404040",
+        //     specular: "#808080",
+        //     diffuse: "#808080",
+        //     shininess: 30
+        // },
         material: {
-            type: "phong",
-            ambient: "#ff00ff",
-            specular: "#777777",
-            diffuse: "#777777",
-            shininess: 30
+            type: "NORMAL"
         },
-        ambientLightColor: "#000000",
         lights: [
             {
-                type: "point",
+                type: "AMBIENT",
+                color: "#FFFFFF"
+            },
+            {
+                type: "DIRECTIONAL",
+                direction: { x:1, y:1, z:1},
+                color: "#FFFFFF"
+            },
+            {
+                type: "POINT",
                 position: { x:0, y:0, z:-2},
-                color: "#000022"
+                color: "#404040"
+            },
+            {
+                type: "POINT",
+                position: { x:1, y:1, z:-2},
+                color: "#000080"
             }
         ]
     },
@@ -38,15 +64,13 @@ Webvs.defineClass(Voxer, Webvs.Component, {
     onChange: {
         code: "updateCode",
         modelSrc: "updateModel",
-        lights: ["updateLights", "updateProgram"],
-        ambientLightColor: "updateAmbientLightColor",
+        lights: "updateLights",
         material: "updateMaterial"
     },
 
     init: function() {
         this.updateCode();
         this.updateModel();
-        this.updateAmbientLightColor();
         this.updateMaterial();
         this.updateLights();
         this.updateProgram();
@@ -87,10 +111,8 @@ Webvs.defineClass(Voxer, Webvs.Component, {
 
         var oldDepthTest = gl.getParameter(gl.DEPTH_TEST);
         var oldDepthFunc = gl.getParameter(gl.DEPTH_FUNC);
-        console.log(oldDepthTest);
-        console.log(oldDepthFunc);
         gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LESS);
+        gl.depthFunc(gl.LEQUAL);
 
         for(i = 0;i < code.n;i++) {
             object3d = this.objects[i];
@@ -113,12 +135,15 @@ Webvs.defineClass(Voxer, Webvs.Component, {
             mat4.fromRotationTranslation(matrix, object3d.quaternion, position);
             mat4.scale(matrix, matrix, scale);
 
-            var nMatrix = mat3.create();
-            mat3.fromMat4(nMatrix, matrix);
-            mat3.invert(nMatrix, nMatrix);
-            mat3.transpose(nMatrix, nMatrix);
-
-            this.program.run(this.parent.fm, null, this.mesh, matrix, nMatrix, this.material, this.ambientLightColor);
+            if(this.material.type == MaterialType.PHONG) {
+                var nMatrix = mat3.create();
+                mat3.fromMat4(nMatrix, matrix);
+                mat3.invert(nMatrix, nMatrix);
+                mat3.transpose(nMatrix, nMatrix);
+                this.program.run(this.parent.fm, null, this.mesh, matrix, nMatrix, this.lights, this.material);
+            } else if(this.material.type == MaterialType.NORMAL) {
+                this.program.run(this.parent.fm, null, this.mesh, matrix);
+            }
         }
         if(oldDepthTest) {
             gl.enable(gl.DEPTH_TEST);
@@ -208,7 +233,15 @@ Webvs.defineClass(Voxer, Webvs.Component, {
     },
 
     updateProgram: function() {
-        var program = new VoxerShader(this.gl, this.lights);
+        var program;
+        switch(this.material.type) {
+            case MaterialType.PHONG:
+                program = new VoxerPhongMaterialShader(this.gl);
+                break;
+            case MaterialType.NORMAL:
+                program = new VoxerNormalMaterialShader(this.gl);
+                break;
+        } 
         if(this.program) {
             this.program.destroy();
         }
@@ -216,114 +249,166 @@ Webvs.defineClass(Voxer, Webvs.Component, {
     },
 
     updateMaterial: function() {
-        this.material = {
-            ambient: Webvs.parseColorNorm(this.opts.material.ambient),
-            specular: Webvs.parseColorNorm(this.opts.material.specular),
-            diffuse: Webvs.parseColorNorm(this.opts.material.diffuse),
-            shininess: this.opts.material.shininess
-        };
-    },
-
-    updateAmbientLightColor: function() {
-        this.ambientLightColor = Webvs.parseColorNorm(this.opts.ambientLightColor);
+        var materialType = Webvs.getEnumValue(this.opts.material.type, MaterialType);
+        switch(materialType) {
+            case MaterialType.PHONG:
+                this.material = {
+                    type: materialType,
+                    ambient: Webvs.parseColorNorm(this.opts.material.ambient),
+                    specular: Webvs.parseColorNorm(this.opts.material.specular),
+                    diffuse: Webvs.parseColorNorm(this.opts.material.diffuse),
+                    shininess: this.opts.material.shininess
+                };
+                break;
+            case MaterialType.NORMAL:
+                this.material = {
+                    type: materialType
+                };
+                break;
+            default:
+                throw new Error("Unknown material type " + this.opts.material.type);
+        }
     },
 
     updateLights: function() {
         this.lights = _.map(this.opts.lights, function(light) {
             var color;
-            switch(light.type) {
-                case "directional":
+            var lightObj;
+            var lightType = Webvs.getEnumValue(light.type, LightType);
+            switch(lightType) {
+                case LightType.AMBIENT:
+                    color = Webvs.parseColorNorm(light.color);
+                    lightObj = {
+                        type: lightType,
+                        color: color,
+                        vector: [0,0,0]
+                    };
+                    break;
+                case LightType.DIRECTIONAL:
                     var direction = vec3.fromValues(light.direction.x,
                                                     light.direction.y,
                                                     light.direction.z);
                     vec3.normalize(direction, direction);
 
                     color = Webvs.parseColorNorm(light.color);
-                    return {type: light.type, color: color, direction: direction};
-                case "point":
+                    lightObj = {
+                        type: lightType,
+                        color: color,
+                        vector: direction
+                    };
+                    break;
+                case LightType.POINT:
                     var position = vec3.fromValues(light.position.x,
                                                    light.position.y,
                                                    light.position.z);
                     color = Webvs.parseColorNorm(light.color);
-                    return {type: light.type, color: color, position: position};
-                default:
-                    throw new Error("Unknow Light type");
+                    lightObj = {
+                        type: lightType,
+                        color: color,
+                        vector: position 
+                    };
+                    break;
             }
+            return lightObj;
        });
     }
 });
 
-function VoxerShader(gl, lights) {
+function VoxerShader(gl, vertexShader, dynamicBlend) {
     VoxerShader.super.constructor.call(this, gl, {
         copyOnSwap: true,
-        vertexShader: VoxerShader.vertexShaderTemplate({lights: lights}),
-        fragmentShader: VoxerShader.fragmentShaderTemplate
+        vertexShader: vertexShader,
+        dynamicBlend: !!dynamicBlend,
+        fragmentShader:[
+            "varying vec4 v_pos4;",
+            "varying vec3 v_light;",
+
+            "void main() {",
+            " setFragColor(vec4(v_light, 1.0));",
+            "}"
+        ].join("\n")
     });
 }
+Webvs.VoxerShader = Webvs.defineClass(VoxerShader, Webvs.ShaderProgram);
 
-VoxerShader.vertexShaderTemplate = _.template([
-    "attribute vec3 a_position;",
-    "attribute vec3 a_normal;",
+function VoxerNormalMaterialShader(gl) {
+    VoxerPhongMaterialShader.super.constructor.call(this, gl, [
+        "attribute vec3 a_position;",
+        "attribute vec3 a_normal;",
+        "varying vec4 v_pos4;",
+        "varying vec3 v_light;",
+        "uniform mat4 u_matrix;",
+        "void main() {",
+        "    v_pos4 = u_matrix * vec4(a_position, 1.0);",
+        "    setPosition4(v_pos4);",
+        "    v_light = (a_normal+1.0)/2.0;",
+        "}",
+    ].join("\n"));
+}
+Webvs.VoxerNormalMaterialShader = Webvs.defineClass(VoxerNormalMaterialShader, VoxerShader, {
+    draw: function(mesh, matrix) {
+        var gl = this.gl;
+        this.setUniform("u_matrix", "Matrix4fv", false, matrix);
+        this.setVertexAttribArray("a_position", new Float32Array(mesh.vertices), 3);
+        this.setVertexAttribArray("a_normal", new Float32Array(mesh.vertexNormals), 3);
+        this.setElementArray(new Uint16Array(mesh.indices));
+        gl.drawElements(gl.TRIANGLES, mesh.indices.length, gl.UNSIGNED_SHORT, 0);
+    }
+});
+    
+function VoxerPhongMaterialShader(gl) {
+    VoxerPhongMaterialShader.super.constructor.call(this, gl, [
+        "attribute vec3 a_position;",
+        "attribute vec3 a_normal;",
 
-    "varying vec4 v_pos4;",
-    "varying vec3 v_light;",
+        "varying vec4 v_pos4;",
+        "varying vec3 v_light;",
 
-    "uniform mat4 u_matrix;",
-    "uniform mat3 u_nMatrix;",
+        "uniform mat4 u_matrix;",
+        "uniform mat3 u_nMatrix;",
 
-    "uniform vec3 u_ambientLightColor;",
+        "uniform int u_lightType;",
+        "uniform vec3 u_lightVector;",
+        "uniform vec3 u_lightColor;",
 
-    "uniform vec3 u_kSpecular;",
-    "uniform vec3 u_kDiffuse;",
-    "uniform vec3 u_kAmbient;",
-    "uniform float u_shininess;",
+        "uniform vec3 u_kSpecular;",
+        "uniform vec3 u_kDiffuse;",
+        "uniform vec3 u_kAmbient;",
+        "uniform float u_shininess;",
 
-    "void main() {",
-    "  v_pos4 = u_matrix * vec4(a_position, 1.0);",
-    "  setPosition4(v_pos4);",
-
-    "  vec3 tNormal = u_nMatrix * a_normal;",
-    "  v_light = u_ambientLightColor * u_kAmbient;",
-
-    "  <% _.each(lights, function(light) { %>",
-    "      <% if(light.type == 'directional') { %>",
-    "          vec3 lightDir = -<%= Webvs.glslVec3Repr(light.direction) %>;",
-    "      <% } %>",
-
-    "      <% if(light.type == 'point') { %>",
-    "          vec3 lightDir = normalize(<%= Webvs.glslVec3Repr(light.position) %> - v_pos4.xyz);",
-    "      <% } %>",
-
-    "      vec3 reflDir = 2.0*dot(lightDir, tNormal)-lightDir;",
-
-    "      float dTerm = dot(lightDir, tNormal);",
-    "      float sTerm = dot(reflDir, vec3(0,0,-1));",
-    "      if(dTerm > 0.0) {",
-    "          v_light += u_kDiffuse * dTerm * <%= Webvs.glslVec3Repr(light.color) %>;",
-    "          if(sTerm > 0.0) {",
-    "              v_light += u_kSpecular * pow(sTerm, u_shininess) * <%= Webvs.glslVec3Repr(light.color) %>;",
-    "          }",
-    "      }",
-
-    "  <% }); %>",
-    "}"
-].join("\n"));
-
-VoxerShader.fragmentShaderTemplate = [
-    "varying vec4 v_pos4;",
-    "varying vec3 v_light;",
-
-    "void main() {",
-    " setFragColor(vec4(v_light, 1.0));",
-    "}"
-].join("\n");
-
-Webvs.VoxerShader = Webvs.defineClass(VoxerShader, Webvs.ShaderProgram, {
-    draw: function(mesh, matrix, nMatrix, material, ambientLightColor) {
+        "void main() {",
+        "    v_pos4 = u_matrix * vec4(a_position, 1.0);",
+        "    setPosition4(v_pos4);",
+        "    vec3 tNormal = normalize(u_nMatrix * a_normal);",
+        "    if(u_lightType == 1) {", // ambient
+        "        v_light = u_lightColor * u_kAmbient;",
+        "    } else {",
+        "        vec3 lightDir;",
+        "        if(u_lightType == 2) {", //directional
+        "            lightDir = -u_lightVector;",
+        "        }",
+        "        if(u_lightType == 3) {", //point
+        "            lightDir = normalize(u_lightVector - v_pos4.xyz);",
+        "        }",
+        "        vec3 reflDir = 2.0*dot(lightDir, tNormal)-lightDir;",
+        "        float dTerm = dot(lightDir, tNormal);",
+        "        float sTerm = dot(reflDir, vec3(0,0,-1));",
+        "        if(dTerm > 0.0) {",
+        "            v_light = u_kDiffuse * dTerm * u_lightColor;",
+        "            if(sTerm > 0.0) {",
+        "                v_light += u_kSpecular * pow(sTerm, u_shininess) * u_lightColor;",
+        "            }",
+        "        }",
+        "    }",
+        "}"
+    ], true);
+}
+Webvs.VoxerPhongMaterialShader = Webvs.defineClass(VoxerPhongMaterialShader, VoxerShader, {
+    draw: function(mesh, matrix, nMatrix, lights, material) {
         var gl = this.gl;
         this.setUniform("u_matrix", "Matrix4fv", false, matrix);
         this.setUniform("u_nMatrix", "Matrix3fv", false, nMatrix);
-        this.setUniform("u_ambientLightColor", "3fv", ambientLightColor);
+
         this.setUniform("u_kSpecular", "3fv", material.specular);
         this.setUniform("u_kDiffuse", "3fv", material.diffuse);
         this.setUniform("u_kAmbient", "3fv", material.ambient);
@@ -332,7 +417,21 @@ Webvs.VoxerShader = Webvs.defineClass(VoxerShader, Webvs.ShaderProgram, {
         this.setVertexAttribArray("a_position", new Float32Array(mesh.vertices), 3);
         this.setVertexAttribArray("a_normal", new Float32Array(mesh.vertexNormals), 3);
         this.setElementArray(new Uint16Array(mesh.indices));
-        gl.drawElements(gl.TRIANGLES, mesh.indices.length, gl.UNSIGNED_SHORT, 0);
+
+        this._setGlBlendMode(Webvs.REPLACE);
+        for(var i = 0;i < lights.length;i++) {
+            // probably not such a clean way
+            // to set blend modes inside draw function
+            // like this. but works for ADDITIVE
+            if(i == 1) {
+                this._setGlBlendMode(Webvs.ADDITIVE);
+            }
+            var light = lights[i];
+            this.setUniform("u_lightType", "1i", light.type);
+            this.setUniform("u_lightVector", "3fv", light.vector);
+            this.setUniform("u_lightColor", "3fv", light.color);
+            gl.drawElements(gl.TRIANGLES, mesh.indices.length, gl.UNSIGNED_SHORT, 0);
+        }
     }
 });
     
