@@ -64,16 +64,37 @@ Webvs.ModelLike = _.extend(_.clone(Webvs.Events), {
 
 // A wrapper around Object.create to help with class definition
 Webvs.defineClass = function(constructor, baseConstructor) {
+    var overridePrefix = "_override_";
     constructor.prototype = Object.create(baseConstructor.prototype);
     constructor.prototype.constructor = constructor; // fix the constructor reference
     constructor.super = baseConstructor.prototype; // add a superclass reference
 
     // extend mixins and properties
     _.chain(arguments).drop(2).each(function(properties) {
+        properties = _.chain(properties).map(function(value, key) {
+            if(key.indexOf(overridePrefix) === 0) {
+                key = key.substring(overridePrefix.length);
+                value = _.defaults(value, constructor.prototype[key]);
+            }
+            return [key, value];
+        }).object().value();
         _.extend(constructor.prototype, properties);
     });
 
     return constructor;
+};
+
+// tells whether constructor is the same as or is a 
+// subclass of target
+Webvs.isSubclass = function(constructor, target) {
+    if(constructor == target) {
+        return true;
+    }
+    if(constructor.super) {
+        return Webvs.isSubclass(constructor.super, target);
+    } else {
+        return false;
+    }
 };
 
 Webvs.ComponentRegistry = {};

@@ -26,7 +26,9 @@ function Component(gl, main, parent, options) {
 Webvs.Component = Webvs.defineClass(Component, Object, Webvs.ModelLike, {
     init: function() {},
 
-    draw: function() {},
+    draw: function() {
+        throw new Error("Draw function not implemented");
+    },
 
     destroy: function() {
         this.stopListening();

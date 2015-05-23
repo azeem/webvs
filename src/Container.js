@@ -35,6 +35,10 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     createComponent: function(opts) {
         return (new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts));
     },
+
+    canAddType: function(comonentType) {
+        return Webvs.isSubclass(componentType, Webvs.Component);
+    },
     
     // Adds a component as child of the given parent that
     // resides under this containers subtree
@@ -46,6 +50,11 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         } else {
             component = this.createComponent(componentOpts);
         }
+
+        if(!this.canAddType(component.constructor)) {
+            throw new Error("Cannot add this component type as a child");
+        }
+
         if(!_.isNumber(pos)) {
             pos = this.components.length;
         }
