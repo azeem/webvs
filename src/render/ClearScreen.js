@@ -68,6 +68,7 @@ Webvs.defineClass(ClearScreen, Webvs.Component, {
         var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
         var program = new Webvs.ClearScreenProgram(this.gl, blendMode);
         if(this.program) {
+            program.copyBuffers(this.program);
             this.program.destroy();
         }
         this.program = program;

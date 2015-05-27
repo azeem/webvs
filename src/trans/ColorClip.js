@@ -96,8 +96,8 @@ function ColorClipProgram(gl) {
 Webvs.ColorClipProgram = Webvs.defineClass(ColorClipProgram, Webvs.QuadBoxProgram, {
     draw: function(mode, color, outColor, level) {
         this.setUniform("u_mode", "1i", mode);
-        this.setUniform.apply(this, ["u_color", "3f"].concat(color));
-        this.setUniform.apply(this, ["u_outColor", "3f"].concat(outColor));
+        this.setUniform("u_color", "3fv", color);
+        this.setUniform("u_outColor", "3fv", outColor);
         this.setUniform("u_level", "1f", level);
         ColorClipProgram.super.draw.call(this);
     }

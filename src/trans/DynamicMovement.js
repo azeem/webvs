@@ -73,7 +73,7 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
             code.onBeat();
         }
 
-        this.program.run(this.parent.fm, null, this.code, this.gridVertices, this.gridVerticesSize);
+        this.program.run(this.parent.fm, null, this.code);
     },
 
     destroy: function() {
@@ -109,6 +109,7 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
                                             this.glslCode, opts.blend);
         }
         if(this.program) {
+            program.copyBuffers(this.program);
             this.program.destroy();
         }
         this.program = program;
@@ -156,6 +157,7 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
             }
             this.gridVertices = gridVertices;
             this.gridVerticesSize = pbi/2;
+            this.program.setGrid(this.gridVertices, this.gridVerticesSize);
         }
     },
 
@@ -312,10 +314,15 @@ function DMovProgram(gl, coordMode, bFilter, compat, randSeed, exprCode, blend) 
     });
 }
 Webvs.DMovProgram = Webvs.defineClass(DMovProgram, Webvs.ShaderProgram, GlslHelpers, {
-    draw: function(code, gridVertices, gridVerticesSize) {
+    setGrid: function(gridVertices, gridVerticesSize) {
+        this.setVertexAttribData("a_position", gridVertices);
+        this.gridVerticesSize = gridVerticesSize;
+    },
+
+    draw: function(code) {
         code.bindUniforms(this);
-        this.setVertexAttribArray("a_position", gridVertices, 2, this.gl.FLOAT, false, 0, 0);
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, gridVerticesSize);
+        this.enableVertexAttrib("a_position");
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, this.gridVerticesSize);
     }
 });
 

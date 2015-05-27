@@ -263,13 +263,20 @@ function TexerProgram(gl) {
 Webvs.TexerProgram = Webvs.defineClass(TexerProgram, Webvs.ShaderProgram, {
     draw: function(vertices, texVertices, indices, colors, image) {
         this.setUniform("u_image", "texture2D", image);
-        this.setVertexAttribArray("a_vertex", vertices);
-        this.setVertexAttribArray("a_texVertex", texVertices);
+
+        this.setVertexAttribData("a_vertex", vertices);
+        this.enableVertexAttrib("a_vertex");
+
+        this.setVertexAttribData("a_texVertex", texVertices);
+        this.enableVertexAttrib("a_texVertex");
+
         if(colors) {
             this.setUniform("u_colorFilter", "1f", 1);
-            this.setVertexAttribArray("a_color", colors, 3);
+            this.setVertexAttribData("a_color", colors);
+            this.enableVertexAttrib("a_color", 3);
         } else {
             this.setUniform("u_colorFilter", "1f", 0);
+            this.disableVertexAttrib("a_color");
         }
 
         this.setElementArray(indices);

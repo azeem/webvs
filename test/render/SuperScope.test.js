@@ -35,7 +35,7 @@ CanvasTestWithFM(
         };
 
         var testData = [
-            {opts: {code: code, thickness: 1, drawMode: "DOTS"}, mismatch: 8},
+            {opts: {code: code, thickness: 1, drawMode: "DOTS"}, mismatch: 1},
             {opts: {code: code, thickness: 3, drawMode: "DOTS"}, mismatch: 25},
             {opts: {code: code, thickness: 300, drawMode: "DOTS"}},
             {opts: {code: code, thickness: 1, drawMode: "LINES"}, mismatch: 4},

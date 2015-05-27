@@ -146,8 +146,9 @@ PolygonProgram = Webvs.defineClass(PolygonProgram, Webvs.ShaderProgram, {
         mode = _.isUndefined(mode)?this.gl.TRIANGLES:mode;
         points = new Float32Array(points);
 
-        this.setUniform.apply(this, ["u_color", "3f"].concat(Webvs.parseColorNorm(color)));
-        this.setVertexAttribArray("a_position", points);
+        this.setUniform("u_color", "3fv", Webvs.parseColorNorm(color));
+        this.setVertexAttribData("a_position", points);
+        this.enableVertexAttrib("a_position");
         this.gl.drawArrays(mode, 0, points.length/2);
     }
 });

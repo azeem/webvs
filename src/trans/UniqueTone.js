@@ -49,6 +49,7 @@ Webvs.defineClass(UniqueTone, Webvs.Component, {
         var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
         var program = new UniqueToneProgram(this.gl, blendMode);
         if(this.program) {
+            program.copyBuffers(this.program);
             this.program.cleanup();
         }
         this.program = program;
@@ -75,7 +76,7 @@ function UniqueToneProgram(gl, blendMode) {
 }
 Webvs.UniqueToneProgram = Webvs.defineClass(UniqueToneProgram, Webvs.QuadBoxProgram, {
     draw: function(tone, invert) {
-        this.setUniform.apply(this, ["u_tone", "3f"].concat(tone));
+        this.setUniform("u_tone", "3fv", tone);
         this.setUniform("u_invert", "1f", invert?1:0);
         UniqueToneProgram.super.draw.call(this);
     }
