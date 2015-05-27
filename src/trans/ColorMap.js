@@ -48,15 +48,17 @@ Webvs.defineClass(ColorMap, Webvs.Component, {
 
     onChange: {
         "maps": "updateMap",
-        "key": "updateProgram",
+        "key": "updateKey",
         "mapCycleMode": "updateCycleMode",
-        "output": "updateProgram"
+        "output": "updateBlendMode"
     },
 
     init: function() {
-        this.updateProgram();
+        this.program = new Webvs.ColorMapProgram(this.gl);
         this.updateMap();
+        this.updateKey();
         this.updateCycleMode();
+        this.updateBlendMode();
     },
 
     draw: function() {
@@ -67,7 +69,7 @@ Webvs.defineClass(ColorMap, Webvs.Component, {
                 this.currentMap = (this.currentMap+1)%this.colorMaps.length;
             }
         }
-        this.program.run(this.parent.fm, null, this.colorMaps[this.currentMap]);
+        this.program.run(this.parent.fm, this.blendMode, this.colorMaps[this.currentMap], this.key);
     },
 
     destroy: function() {
@@ -76,15 +78,6 @@ Webvs.defineClass(ColorMap, Webvs.Component, {
         _.each(this.colorMaps, function(tex) {
             this.gl.deleteTexture(tex);
         }, this);
-    },
-
-    updateProgram: function() {
-        if(this.program) {
-            this.program.cleanup();
-        }
-        var output = Webvs.getEnumValue(this.opts.output, Webvs.BlendModes);
-        var key = Webvs.getEnumValue(this.opts.key, MapKey);
-        this.program = new Webvs.ColorMapProgram(this.gl, key, output);
     },
 
     updateMap: function() {
@@ -101,6 +94,14 @@ Webvs.defineClass(ColorMap, Webvs.Component, {
 
     updateCycleMode: function() {
         this.mapCycleMode = Webvs.getEnumValue(this.opts.mapCycleMode, MapCycleModes);
+    },
+
+    updateKey: function() {
+        this.key = Webvs.getEnumValue(this.opts.key, MapKey);
+    },
+
+    updateBlendMode: function() {
+        this.blendMode = Webvs.getEnumValue(this.opts.output, Webvs.BlendModes);
     },
 
     _buildColorMap: function(map) {
@@ -159,31 +160,30 @@ Webvs.defineClass(ColorMap, Webvs.Component, {
     }
 });
 
-function ColorMapProgram(gl, key, blendMode) {
-    var keyEq = "";
-    switch(key) {
-        case MapKey.RED: keyEq = "srcColor.r"; break;
-        case MapKey.GREEN: keyEq = "srcColor.g"; break;
-        case MapKey.BLUE: keyEq = "srcColor.b"; break;
-        case MapKey["(R+G+B)/2"]: keyEq = "min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0)"; break;
-        case MapKey["(R+G+B)/3"]: keyEq = "(srcColor.r+srcColor.g+srcColor.b)/3.0"; break;
-        case MapKey.MAX: keyEq = "max(srcColor.r, max(srcColor.g, srcColor.b))"; break;
-    }
-
+function ColorMapProgram(gl) {
     ColorMapProgram.super.constructor.call(this, gl, {
-        blendMode: blendMode,
+        dynamicBlend: true,
         swapFrame: true,
         fragmentShader: [
+            "uniform int u_key;",
             "uniform sampler2D u_colorMap;",
             "void main() {",
             "   vec4 srcColor = getSrcColor();",
-            "   setFragColor(texture2D(u_colorMap, vec2(("+keyEq+"), 0)));",
+            "   float key;",
+            "   if(u_key == "+ MapKey.RED          +") { key = srcColor.r; } ",
+            "   if(u_key == "+ MapKey.GREEN        +") { key = srcColor.g; } ",
+            "   if(u_key == "+ MapKey.BLUE         +") { key = srcColor.b; } ",
+            "   if(u_key == "+ MapKey["(R+G+B)/2"] +") { key = min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0); } ",
+            "   if(u_key == "+ MapKey["(R+G+B)/3"] +") { key = (srcColor.r+srcColor.g+srcColor.b)/3.0; } ",
+            "   if(u_key == "+ MapKey.MAX          +") { key = max(srcColor.r, max(srcColor.g, srcColor.b)); } ",
+            "   setFragColor(texture2D(u_colorMap, vec2(key, 0)));",
             "}"
         ]
     });
 }
 Webvs.ColorMapProgram = Webvs.defineClass(ColorMapProgram, Webvs.QuadBoxProgram, {
-    draw: function(colorMap) {
+    draw: function(colorMap, key) {
+        this.setUniform("u_key", "1i", key);
         this.setUniform("u_colorMap", "texture2D", colorMap);
         ColorMapProgram.super.draw.call(this);
     }

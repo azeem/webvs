@@ -27,7 +27,7 @@
 // + `setFragColor(vec4 color)` - sets the correctly blended fragment color
 // + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
 //     when swapFrame is set to true
-// + `vec2 u_resolution` - the screen resolution. enabled only if fm is 
+// + `vec1 u_resolution` - the screen resolution. enabled only if fm is 
 //     passed to {@link Webvs.ShaderProgram.run} call
 // + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
 //     when varyingPos option is used
@@ -104,6 +104,7 @@ function ShaderProgram(gl, opts) {
     this._arrBuffers = {};
 
     this._compile();
+    this.init();
 }
 
 // these are blend modes not supported with gl.BLEND
@@ -148,8 +149,12 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         return shader;
     },
 
+    init: function() {},
+
     // Performs the actual drawing and any further bindings and calculations if required.
-    draw: function() {},
+    draw: function() {
+        throw new Error("draw not implemented");
+    },
 
     // Runs this shader program
     run: function(fm, blendMode) {
@@ -273,18 +278,31 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
                 break;
             case "1f": case "2f": case "3f": case "4f":
             case "1i": case "2i": case "3i": case "4i":
-                var args = [location].concat(_.drop(arguments, 2));
-                gl["uniform" + type].apply(gl, args);
+                gl["uniform" + type].apply(gl, [location].concat(_.rest(arguments, 2)));
                 break;
             case "1fv": case "2fv": case "3fv": case "4fv":
             case "1iv": case "2iv": case "3iv": case "4iv":
-                gl["uniform" + type].apply(gl, location, value);
+                if(!(value instanceof Float32Array)) {
+                    value = new Float32Array(value);
+                }
+                gl["uniform" + type].call(gl, location, value);
                 break;
         }
     },
 
     // binds the vertex attribute array
-    setVertexAttribArray: function(name, array, size, type, normalized, stride, offset) {
+    setVertexAttribData: function(name, array) {
+        var gl = this.gl;
+        var buffer = this._arrBuffers[name];
+        if(_.isUndefined(buffer)) {
+            buffer = gl.createBuffer();
+            this._arrBuffers[name] = buffer;
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
+    },
+
+    enableVertexAttrib: function(name, size, type, normalized, stride, offset) {
         var gl = this.gl;
         size = size || 2;
         type = type || gl.FLOAT;
@@ -293,16 +311,19 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         offset = offset || 0;
 
         var buffer = this._arrBuffers[name];
-        if(_.isUndefined(buffer)) {
-            buffer = gl.createBuffer();
-            this._arrBuffers[name] = buffer;
+        if(!buffer) {
+            throw new Error("Cannot set pointe for non existent buffer");
         }
-        var location = this.getLocation(name, true);
-
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
-        gl.enableVertexAttribArray(location);
+
+        var location = this.getLocation(name, true);
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
+        this.gl.enableVertexAttribArray(location);
+    },
+
+    disableVertexAttrib: function(name) {
+        var location = this.getLocation(name, true);
+        this.gl.disableVertexAttibArray(location);
     },
 
     setElementArray: function(array) {
@@ -316,6 +337,13 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array, gl.STATIC_DRAW);
+    },
+
+    // copies buffers from another program
+    // useful when creating new updated instances of a program
+    copyBuffers: function(program) {
+        this._arrBuffers = program._arrBuffers;
+        program._arrBuffers = {};
     },
 
     // destroys webgl resources consumed by this program.

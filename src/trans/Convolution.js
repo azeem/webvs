@@ -73,11 +73,13 @@ Webvs.defineClass(Convolution, Webvs.Component, {
             throw new Error("Invalid convolution kernel");
         }
 
+        var edgeMode = Webvs.getEnumValue(this.opts.edgeMode, EdgeModes);
+        var program = new Webvs.ConvolutionProgram(this.gl, opts.kernel, kernelSize, edgeMode);
         if(this.program) {
+            program.copyBuffers(this.program);
             this.program.destroy();
         }
-        var edgeMode = Webvs.getEnumValue(this.opts.edgeMode, EdgeModes);
-        this.program = new Webvs.ConvolutionProgram(this.gl, opts.kernel, kernelSize, edgeMode);
+        this.program = program;
     }
 });
 

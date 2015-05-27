@@ -211,7 +211,7 @@ Webvs.MirrorProgram = Webvs.defineClass(MirrorProgram, Webvs.QuadBoxProgram, {
     draw: function(transition, mix) {
         this.setUniform("u_mode", "1i", transition?1:0);
         for(var i = 0;i < 4;i++) {
-            this.setUniform.apply(this, ["u_mix"+i, "4f"].concat(mix[i]));
+            this.setUniform("u_mix"+i, "4fv", mix[i]);
         }
         MirrorProgram.super.draw.call(this);
     }

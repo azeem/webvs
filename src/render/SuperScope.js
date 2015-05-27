@@ -243,6 +243,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
         var program = new SuperScopeShader(this.gl, blendMode);
         if(this.program) {
+            program.copyBuffers(this.program);
             this.program.destroy();
         }
         this.program = program;
@@ -356,8 +357,11 @@ Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram
         var gl = this.gl;
 
         this.setUniform("u_pointSize", "1f", thickness);
-        this.setVertexAttribArray("a_position", points, 2, gl.FLOAT, false, 0, 0);
-        this.setVertexAttribArray("a_color", colors, 3, gl.FLOAT, false, 0, 0);
+        this.setVertexAttribData("a_position", points);
+        this.setVertexAttribData("a_color", colors);
+
+        this.enableVertexAttrib("a_position", 2);
+        this.enableVertexAttrib("a_color", 3);
 
         var prevLineWidth;
         if(!dots) {
