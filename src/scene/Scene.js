@@ -33,6 +33,23 @@ Webvs.defineClass(Scene, Webvs.Object2D, {
 
         // update all world matrices
         this.updateWorldMatrix();
+
+        // find all renderables and lights
+        var renderables = [];
+        var lights = [];
+        this.traverse(function(obj) {
+            if(obj instanceof Webvs.Light) {
+                lights.push(obj);
+            }
+            if(obj.isRenderable()) {
+                renderables.push(obj);
+            }
+        });
+
+        var viewMatrix = mat4.invert(mat4.create(), this.camera.matrix);
+
+        for(i = 0;i < renderables.length;i++) {
+        }
     },
 
     updateCamera: function() {

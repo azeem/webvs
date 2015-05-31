@@ -109,6 +109,17 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         }
     },
 
+    traverse: function(callback) {
+        var i;
+        for(i = 0;i < this.components.length;i++) {
+            var component = this.components[i];
+            callback(component);
+            if(component instanceof Webvs.Container) {
+                component.traverse(callback);
+            }
+        }
+    },
+
     // Constructs complete options object for this container and its
     // subtree
     toJSON: function() {

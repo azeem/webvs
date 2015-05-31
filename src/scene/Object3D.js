@@ -58,6 +58,10 @@ Webvs.defineClass(Effect, Webvs.Container, {
         this.updateMaterial();
     },
 
+    isRenderable: function() {
+        return !_.isUndefined(this.geometry);
+    },
+
     update: function() {
         var code = this.code;
 
