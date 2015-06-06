@@ -40,13 +40,12 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
 
         this.updateBlendMode();
         this.program = new MovingParticleShader(this.gl);
-        this.program.setPoints(this._getCircleGeometry());
         this.updateColor();
     },
 
     _getCircleGeometry: function() {
-        if(Webvs.MovingParticle.circleGeometry) {
-            return Webvs.MovingParticle.circleGeometry;
+        if(this.main.__circleGeometry) {
+            return this.main.__circleGeometry;
         }
         var pointCount = 100;
         var points = new Float32Array((pointCount+2)*2);
@@ -59,8 +58,10 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
         }
         points[pbi++] = points[2]; // repeat last point again
         points[pbi++] = points[3];
-        Webvs.MovingParticle.circleGeometry = points;
-        return points;
+
+        var buffer = new Webvs.Buffer(this.gl, false, points);
+        this.main.__circleGeometry = buffer;
+        return buffer;
     },
 
     draw: function() {
@@ -92,7 +93,9 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
         scaleX = 2*scaleX/this.gl.drawingBufferWidth;
         scaleY = 2*scaleY/this.gl.drawingBufferHeight;
 
-        this.program.run(this.parent.fm, this.blendMode, scaleX, scaleY, x, y, this.color);
+        this.program.run(this.parent.fm, this.blendMode,
+                         this._getCircleGeometry(),
+                         scaleX, scaleY, x, y, this.color);
     },
 
     updateBlendMode: function() {
@@ -135,12 +138,12 @@ Webvs.MovingParticleShader = Webvs.defineClass(MovingParticleShader, Webvs.Shade
         this.pointsLength = points.length;
     },
 
-    draw: function(scaleX, scaleY, x, y, color) {
+    draw: function(points, scaleX, scaleY, x, y, color) {
         this.setUniform("u_scale", "2f", scaleX, scaleY);
         this.setUniform("u_position", "2f", x, y);
         this.setUniform("u_color", "3fv", color);
-        this.enableVertexAttrib("a_point");
-        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, this.pointsLength/2);
+        this.setAttrib("a_point", points);
+        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, points.length/2);
     }
 });
 

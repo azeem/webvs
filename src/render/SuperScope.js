@@ -62,6 +62,9 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         this.updateChannel();
         this.updateThickness();
         this.listenTo(this.main, "resize", this.handleResize);
+
+        this.pointBuffer = new Webvs.Buffer(this.gl);
+        this.colorBuffer = new Webvs.Buffer(this.gl);
     },
 
     draw: function() {
@@ -75,6 +78,8 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
     destroy: function() {
         SuperScope.super.destroy.call(this);
         this.program.destroy();
+        this.pointBuffer.destroy();
+        this.colorBuffer.destroy();
     },
 
     /**
@@ -236,7 +241,15 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
             }
         }
 
-        this.program.run(this.parent.fm, null, pointBufferData, colorData, dots, this.veryThick?1:this.opts.thickness, this.veryThick);
+        this.pointBuffer.setData(pointBufferData);
+        this.colorBuffer.setData(colorData);
+
+        this.program.run(this.parent.fm, null, 
+                         this.pointBuffer, 
+                         this.colorBuffer, 
+                         dots, 
+                         this.veryThick?1:this.opts.thickness, 
+                         this.veryThick);
     },
 
     updateProgram: function() {
@@ -357,11 +370,8 @@ Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram
         var gl = this.gl;
 
         this.setUniform("u_pointSize", "1f", thickness);
-        this.setVertexAttribData("a_position", points);
-        this.setVertexAttribData("a_color", colors);
-
-        this.enableVertexAttrib("a_position", 2);
-        this.enableVertexAttrib("a_color", 3);
+        this.setAttrib("a_position", points, 2);
+        this.setAttrib("a_color", colors, 3);
 
         var prevLineWidth;
         if(!dots) {

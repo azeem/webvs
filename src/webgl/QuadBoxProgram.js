@@ -20,23 +20,28 @@ function QuadBoxProgram(gl, options) {
 }
 Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
     init: function() {
-        this.setVertexAttribData(
-            "a_position",
-            new Float32Array([
+        this.pointBuffer = new Webvs.Buffer(
+            this.gl, false,
+            [
                 -1,  -1,
                 1,  -1,
                 -1,  1,
                 -1,  1,
                 1,  -1,
                 1,  1
-            ])
-        );
+            ]
+       );
     },
 
     // Sets the vertices for the quad box
     draw: function() {
-        this.enableVertexAttrib("a_position");
+        this.setAttrib("a_position", this.pointBuffer);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+    },
+    
+    destroy: function() {
+        this.pointBuffer.destroy();
+        QuadBoxProgram.super.destroy.call(this);
     }
 });
 

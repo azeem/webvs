@@ -79,6 +79,9 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
     destroy: function() {
         DynamicMovement.super.destroy.call(this);
         this.program.destroy();
+        if(this.gridVertexBuffer) {
+            this.gridVertexBuffer.destroy();
+        }
     },
 
     updateCode: function() {
@@ -117,10 +120,7 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
 
     updateGrid: function() {
         var opts = this.opts;
-        if(opts.noGrid) {
-            this.gridVertices = undefined;
-            this.gridVerticesSize = undefined;
-        } else {
+        if(!opts.noGrid) {
             var gridW = Webvs.clamp(opts.gridW, 1, this.gl.drawingBufferWidth);
             var gridH = Webvs.clamp(opts.gridH, 1, this.gl.drawingBufferHeight);
             var nGridW = (gridW/this.gl.drawingBufferWidth)*2;
@@ -155,9 +155,10 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
                 curx = -1;
                 cury += nGridH;
             }
-            this.gridVertices = gridVertices;
-            this.gridVerticesSize = pbi/2;
-            this.program.setGrid(this.gridVertices, this.gridVerticesSize);
+            if(!this.gridVertexBuffer) {
+                this.gridVertexBuffer = new Webvs.Buffer(this.gl);
+            }
+            this.gridVertexBuffer.setData(gridVertices);
         }
     },
 
@@ -314,15 +315,10 @@ function DMovProgram(gl, coordMode, bFilter, compat, randSeed, exprCode, blend) 
     });
 }
 Webvs.DMovProgram = Webvs.defineClass(DMovProgram, Webvs.ShaderProgram, GlslHelpers, {
-    setGrid: function(gridVertices, gridVerticesSize) {
-        this.setVertexAttribData("a_position", gridVertices);
-        this.gridVerticesSize = gridVerticesSize;
-    },
-
-    draw: function(code) {
+    draw: function(code, grid) {
         code.bindUniforms(this);
-        this.enableVertexAttrib("a_position");
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, this.gridVerticesSize);
+        this.setAttrib("a_position", grid);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, grid.length/2);
     }
 });
 
