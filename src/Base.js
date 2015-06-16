@@ -213,6 +213,20 @@ Webvs.randString = function(count, chars) {
     return string.join("");
 };
 
+Webvs.isTypedArray = function(array) {
+    return (
+        array instanceof Int8Array ||
+        array instanceof Uint8Array ||
+        array instanceof Uint8ClampedArray ||
+        array instanceof Int16Array ||
+        array instanceof Uint16Array ||
+        array instanceof Int32Array ||
+        array instanceof Uint32Array ||
+        array instanceof Float32Array ||
+        array instanceof Float64Array
+    );
+};
+
 // Clamps a number between two given numbers
 Webvs.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);

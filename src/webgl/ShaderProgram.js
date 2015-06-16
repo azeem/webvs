@@ -5,7 +5,7 @@
 
 (function(Webvs) {
 
-function Buffer(gl, isElemArray, data) {
+function Buffer(gl, isElemArray, data, arrayType) {
     this.type = isElemArray?gl.ELEMENT_ARRAY_BUFFER:gl.ARRAY_BUFFER;
     this.gl = gl;
     this.glBuffer = gl.createBuffer();
@@ -16,7 +16,7 @@ function Buffer(gl, isElemArray, data) {
 }
 Webvs.Buffer = Webvs.defineClass(Buffer, Object, {
     setData: function(array) {
-        if(!(array instanceof Float32Array)) {
+        if(!Webvs.isTypedArray(array)) {
             array = new Float32Array(array);
         }
         this.length = array.length;
@@ -126,6 +126,7 @@ function ShaderProgram(gl, opts) {
     this._locations = {};
     this._textureVars = [];
     this._arrBuffers = {};
+    this._enabledAttribs = [];
 
     this._compile();
     this.init();
@@ -182,6 +183,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
     // Runs this shader program
     run: function(fm, blendMode) {
+        var i;
         var gl = this.gl;
         var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
@@ -210,6 +212,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
         this._setGlBlendMode(blendMode);
         this.draw.apply(this, _.drop(arguments, 2));
+        // disable all enabled attributes
+        while(this._enabledAttribs.length) {
+            gl.disableVertexAttribArray(this._enabledAttribs.shift());
+        }
         gl.disable(gl.BLEND);
         gl.useProgram(oldProgram);
     },
@@ -318,7 +324,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         var gl = this.gl;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.glBuffer);
     },
-    
+
     setAttrib: function(name, buffer, size, type, normalized, stride, offset) {
         var gl = this.gl;
         size = size || 2;
@@ -331,11 +337,12 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer.glBuffer);
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
         gl.enableVertexAttribArray(location);
+        this._enabledAttribs.push(location);
     },
 
     disableAttrib: function(name) {
         var location = this.getLocation(name, true);
-        this.gl.disableVertexAttibArray(location);
+        this.gl.disableVertexAttribArray(location);
     },
 
     // destroys webgl resources consumed by this program.

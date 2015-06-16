@@ -73,7 +73,7 @@ Webvs.defineClass(DynamicMovement, Webvs.Component, {
             code.onBeat();
         }
 
-        this.program.run(this.parent.fm, null, this.code);
+        this.program.run(this.parent.fm, null, this.code, this.gridVertexBuffer);
     },
 
     destroy: function() {

@@ -225,7 +225,7 @@ Webvs.defineClass(Texer, Webvs.Component, {
 
         this.vertexBuffer.setData(vertexData);
         this.texVertexBuffer.setData(texVertexData);
-        this.indexBuffer.setData(vertexIndices);
+        this.indexBuffer.setData(new Uint16Array(vertexIndices));
         if(colorData) {
             this.colorBuffer.setData(colorData);
         }
@@ -283,10 +283,10 @@ Webvs.TexerProgram = Webvs.defineClass(TexerProgram, Webvs.ShaderProgram, {
         this.setAttrib("a_texVertex", texVertices);
 
         if(colors) {
-            this.setUniform("u_colorFilter", "1f", 1);
+            this.setUniform("u_colorFilter", "1i", 1);
             this.setAttrib("a_color", colors, 3);
         } else {
-            this.setUniform("u_colorFilter", "1f", 0);
+            this.setUniform("u_colorFilter", "1i", 0);
             this.disableAttrib("a_color");
         }
 

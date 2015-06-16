@@ -45,16 +45,16 @@ LineProgram = Webvs.defineClass(LineProgram, Webvs.ShaderProgram, {
                 0,  1, 0,
                 0,  1, 0,
                 0,  0, 1,
+                1,  1, 0,
                 0,  0, 1,
-                1,  1, 0,
-                1,  1, 0,
+                1,  1, 0
             ] 
         );
     },
 
     draw: function() {
         this.setAttrib("a_position", this.pointBuffer);
-        this.enableVertexAttrib("a_color");
+        this.setAttrib("a_color", this.colorBuffer);
         this.gl.drawArrays(this.gl.LINES, 0, 8);
     },
 
