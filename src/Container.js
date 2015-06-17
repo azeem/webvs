@@ -36,7 +36,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
         return (new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts));
     },
 
-    canAddType: function(comonentType) {
+    canAddType: function(componentType) {
         return Webvs.isSubclass(componentType, Webvs.Component);
     },
     

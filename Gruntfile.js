@@ -92,8 +92,7 @@ module.exports = function(grunt) {
                 files: ["./test/fixQUnit.js"].concat(libFiles, jsFiles, [
                     "./bower_components/seedrandom/seedrandom.js",
                     "./test/base.js",
-                    "./test/render/Voxer.test.js"
-                    //"./test/**/*.js"
+                    "./test/**/!(Voxer).js",
                 ]),
                 proxies: {
                     "/assert": "http://localhost:8000/test/assert/",

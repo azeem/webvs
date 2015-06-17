@@ -5,6 +5,30 @@
 
 (function(Webvs) {
 
+function Buffer(gl, isElemArray, data, arrayType) {
+    this.type = isElemArray?gl.ELEMENT_ARRAY_BUFFER:gl.ARRAY_BUFFER;
+    this.gl = gl;
+    this.glBuffer = gl.createBuffer();
+    this.length = 0;
+    if(data) {
+        this.setData(data);
+    }
+}
+Webvs.Buffer = Webvs.defineClass(Buffer, Object, {
+    setData: function(array) {
+        if(!Webvs.isTypedArray(array)) {
+            array = new Float32Array(array);
+        }
+        this.length = array.length;
+        this.gl.bindBuffer(this.type, this.glBuffer);
+        this.gl.bufferData(this.type, array, this.gl.STATIC_DRAW);
+    },
+
+    destroy: function() {
+        this.gl.deleteBuffer(this.glBuffer);
+    }
+});
+
 // Base class for Webgl Shaders. This provides an abstraction
 // with support for blended output, easier variable bindings
 // etc.
@@ -108,6 +132,7 @@ function ShaderProgram(gl, opts) {
     this._locations = {};
     this._textureVars = [];
     this._arrBuffers = {};
+    this._enabledAttribs = [];
 
     this._compile();
     this.init();
@@ -164,6 +189,7 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
     // Runs this shader program
     run: function(fm, blendMode) {
+        var i;
         var gl = this.gl;
         var oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
@@ -192,6 +218,10 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
 
         this._setGlBlendMode(blendMode);
         this.draw.apply(this, _.drop(arguments, 2));
+        // disable all enabled attributes
+        while(this._enabledAttribs.length) {
+            gl.disableVertexAttribArray(this._enabledAttribs.shift());
+        }
         gl.disable(gl.BLEND);
         gl.useProgram(oldProgram);
     },
@@ -301,19 +331,12 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         }
     },
 
-    // binds the vertex attribute array
-    setVertexAttribData: function(name, array) {
+    setIndex: function(buffer) {
         var gl = this.gl;
-        var buffer = this._arrBuffers[name];
-        if(_.isUndefined(buffer)) {
-            buffer = gl.createBuffer();
-            this._arrBuffers[name] = buffer;
-        }
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.glBuffer);
     },
 
-    enableVertexAttrib: function(name, size, type, normalized, stride, offset) {
+    setAttrib: function(name, buffer, size, type, normalized, stride, offset) {
         var gl = this.gl;
         size = size || 2;
         type = type || gl.FLOAT;
@@ -321,49 +344,22 @@ Webvs.ShaderProgram = Webvs.defineClass(ShaderProgram, Object, {
         stride = stride || 0;
         offset = offset || 0;
 
-        var buffer = this._arrBuffers[name];
-        if(!buffer) {
-            throw new Error("Cannot set pointe for non existent buffer");
-        }
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-
         var location = this.getLocation(name, true);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer.glBuffer);
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
-        this.gl.enableVertexAttribArray(location);
+        gl.enableVertexAttribArray(location);
+        this._enabledAttribs.push(location);
     },
 
-    disableVertexAttrib: function(name) {
+    disableAttrib: function(name) {
         var location = this.getLocation(name, true);
-        this.gl.disableVertexAttibArray(location);
-    },
-
-    setElementArray: function(array) {
-        var gl = this.gl;
-
-        var buffer = this._arrBuffers.__indexBuffer;
-        if(_.isUndefined(buffer)) {
-            buffer = gl.createBuffer();
-            this._arrBuffers.__indexBuffer = buffer;
-        }
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array, gl.STATIC_DRAW);
-    },
-
-    // copies buffers from another program
-    // useful when creating new updated instances of a program
-    copyBuffers: function(program) {
-        this._arrBuffers = program._arrBuffers;
-        program._arrBuffers = {};
+        this.gl.disableVertexAttribArray(location);
     },
 
     // destroys webgl resources consumed by this program.
     // call in component destroy
     destroy: function() {
         var gl = this.gl;
-        _.each(this._buffers, function(buffer) {
-            gl.deleteBuffer(buffer);
-        }, this);
         gl.deleteProgram(this.program);
         gl.deleteShader(this.vertexShader);
         gl.deleteShader(this.fragmentShader);

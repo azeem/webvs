@@ -91,7 +91,7 @@ Webvs.isSubclass = function(constructor, target) {
         return true;
     }
     if(constructor.super) {
-        return Webvs.isSubclass(constructor.super, target);
+        return Webvs.isSubclass(constructor.super.constructor, target);
     } else {
         return false;
     }
@@ -239,6 +239,20 @@ Webvs.randString = function(count, chars) {
         string.push(chars.charAt(Math.floor(Math.random()*chars.length)));
     }
     return string.join("");
+};
+
+Webvs.isTypedArray = function(array) {
+    return (
+        array instanceof Int8Array ||
+        array instanceof Uint8Array ||
+        array instanceof Uint8ClampedArray ||
+        array instanceof Int16Array ||
+        array instanceof Uint16Array ||
+        array instanceof Int32Array ||
+        array instanceof Uint32Array ||
+        array instanceof Float32Array ||
+        array instanceof Float64Array
+    );
 };
 
 // Clamps a number between two given numbers

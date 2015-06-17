@@ -142,14 +142,21 @@ var PolygonProgram = function(gl, options) {
     }));
 };
 PolygonProgram = Webvs.defineClass(PolygonProgram, Webvs.ShaderProgram, {
+    init: function() {
+        this.pointBuffer = new Webvs.Buffer(this.gl);
+    },
+
     draw: function(color, points, mode) {
         mode = _.isUndefined(mode)?this.gl.TRIANGLES:mode;
-        points = new Float32Array(points);
-
+        this.pointBuffer.setData(points);
         this.setUniform("u_color", "3fv", Webvs.parseColorNorm(color));
-        this.setVertexAttribData("a_position", points);
-        this.enableVertexAttrib("a_position");
+        this.setAttrib("a_position", this.pointBuffer);
         this.gl.drawArrays(mode, 0, points.length/2);
+    },
+
+    destroy: function() {
+        this.pointBuffer.destroy();
+        PolygonProgram.super.destroy.call(this);
     }
 });
 
