@@ -38,7 +38,7 @@ Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
         this.setAttrib("a_position", this.pointBuffer);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     },
-    
+
     destroy: function() {
         this.pointBuffer.destroy();
         QuadBoxProgram.super.destroy.call(this);

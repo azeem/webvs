@@ -11,7 +11,7 @@
 function CodeInstance() {}
 Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
     // avs expression rand function
-    rand: function(max) { 
+    rand: function(max) {
         return Math.floor(Math.random() * max) + 1;
     },
 
@@ -36,6 +36,26 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
             sum += osc[i];
         }
         return sum/(end-pos+1);
+    },
+
+    vec3GetX: function(ref) {
+        var vec = this._refs.vec3[ref];
+        return vec.x;
+    },
+
+    vec3GetY: function(ref) {
+        var vec = this._refs.vec3[ref];
+        return vec.y;
+    },
+
+    vec3GetZ: function(ref) {
+        var vec = this._refs.vec3[ref];
+        return vec.z;
+    },
+
+    vec3Set: function(ref, x, y, z) {
+        var vec = this._refs.vec3[ref];
+        vec.set(x, y, z);
     },
 
     // bind state values to uniforms
@@ -74,13 +94,22 @@ Webvs.CodeInstance = Webvs.defineClass(CodeInstance, Object, {
         }, this);
     },
 
+    addDataRef: function(name, type, value) {
+        if(!(type in this._refs)) {
+            this[name] = 0;
+            this._refs[type] = [value];
+        } else {
+            this[name] = this._refs[type].length;
+            this._refs[type].push(value);
+        }
+    },
+
     // initializes this codeinstance
     setup: function(main, parent) {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
-        this._vec3 = [];
-        this._quat = [];
+        this._refs = {};
         this.updateDimVars(parent.gl);
 
         // clear all used registers

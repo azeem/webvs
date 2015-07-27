@@ -25,7 +25,7 @@ var Channels = {
 };
 ChannelShift.Channels = Channels;
 
-Webvs.defineClass(ChannelShift, Webvs.Component, {
+Webvs.ChannelShift = Webvs.defineClass(ChannelShift, Webvs.Component, {
     defaultOptions: {
         channel: "RGB",
         onBeatRandom: false

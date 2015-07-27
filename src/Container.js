@@ -14,15 +14,12 @@ function Container(gl, main, parent, opts) {
 }
 Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     init: function(gl, main, parent) {
-        var components = [];
+        this.components = [];
         if(this.opts.components) {
             for(var i = 0;i < this.opts.components.length;i++) {
-                var opts = this.opts.components[i];
-                var component = new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts);
-                components.push(component);
+                this.addComponent(this.opts.components[i]);
             }
         }
-        this.components = components;
     },
 
     destroy: function() {
@@ -31,7 +28,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
             this.components[i].destroy();
         }
     },
-    
+
     createComponent: function(opts) {
         return (new (Webvs.getComponentClass(opts.type))(this.gl, this.main, this, opts));
     },
@@ -39,7 +36,7 @@ Webvs.Container = Webvs.defineClass(Container, Webvs.Component, {
     canAddType: function(componentType) {
         return Webvs.isSubclass(componentType, Webvs.Component);
     },
-    
+
     // Adds a component as child of the given parent that
     // resides under this containers subtree
     addComponent: function(componentOpts, pos, options) {

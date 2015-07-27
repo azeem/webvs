@@ -33,6 +33,22 @@ module.exports = function(grunt) {
         "src/misc/GlobalVar.js",
         "src/misc/BufferSave.js",
 
+        "src/scene/Object3D.js",
+        "src/scene/Mesh.js",
+        "src/scene/material/Material.js",
+        "src/scene/material/MeshBasicMaterial.js",
+        "src/scene/material/MeshNormalMaterial.js",
+        "src/scene/material/MeshPhongMaterial.js",
+        "src/scene/light/Light.js",
+        "src/scene/light/AmbientLight.js",
+        "src/scene/light/DirectionalLight.js",
+        "src/scene/light/PointLight.js",
+        "src/scene/geometry/Geometry.js",
+        "src/scene/geometry/IndexedGeometry.js",
+        "src/scene/camera/Camera.js",
+        "src/scene/camera/OrthographicCamera.js",
+        "src/scene/camera/PerspectiveCamera.js",
+
         "src/trans/FadeOut.js",
         "src/trans/Convolution.js",
         "src/trans/ColorMap.js",
@@ -51,14 +67,28 @@ module.exports = function(grunt) {
         "src/render/Voxer.js",
         "src/render/MovingParticle.js",
         "src/render/ClearScreen.js",
-        "src/render/Picture.js"
+        "src/render/Picture.js",
+
+        "src/render/scene/Object3DComponent.js",
+        "src/render/scene/MeshComponent.js",
+        "src/render/scene/SceneComponent.js",
+        "src/render/scene/camera/OrthoCameraComponent.js",
+        "src/render/scene/camera/PerspCameraComponent.js",
+        "src/render/scene/light/LightComponent.js",
+        "src/render/scene/light/AmbientLightComponent.js",
+        "src/render/scene/light/DirectionalLightComponent.js",
+        "src/render/scene/light/PointLightComponent.js",
+        "src/render/scene/shaders/MaterialShader.js",
+        "src/render/scene/shaders/BasicMaterialShader.js",
+        "src/render/scene/shaders/NormalMaterialShader.js",
+        "src/render/scene/shaders/PhongMaterialShader.js",
     ];
 
     var libFiles = [
         "bower_components/underscore/underscore.js",
         "bower_components/backbone-events/backbone-events.js",
         "bower_components/stats.js/src/Stats.js",
-        "bower_components/gl-matrix/dist/gl-matrix.js",
+        "bower_components/threemath/dist/Math3.js",
         "bower_components/webgl-obj-loader/webgl-obj-loader.js"
     ];
 
@@ -92,7 +122,9 @@ module.exports = function(grunt) {
                 files: ["./test/fixQUnit.js"].concat(libFiles, jsFiles, [
                     "./bower_components/seedrandom/seedrandom.js",
                     "./test/base.js",
-                    "./test/**/!(Voxer).js",
+                    // "./test/**/!(Voxer).js",
+                    "./test/render/Scene.test.js",
+                    // "./test/trans/ChannelShift.test.js",
                 ]),
                 proxies: {
                     "/assert": "http://localhost:8000/test/assert/",
@@ -105,7 +137,13 @@ module.exports = function(grunt) {
                 colors: true,
                 logLevel: "DEBUG",
                 autoWatch: false,
-                captureTimeout: 60000
+                captureTimeout: 60000,
+                customLaunchers: {
+                    "ChromeDebug": {
+                        base: "Chrome",
+                        flags: ["--disable-cache"]
+                    }
+                }
             },
             test: {
                 singleRun: true,
@@ -114,7 +152,7 @@ module.exports = function(grunt) {
             debug: {
                 singleRun: false,
                 background: true,
-                browsers: ["Firefox"]
+                browsers: ["ChromeDebug"]
             }
         },
 

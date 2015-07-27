@@ -18,7 +18,7 @@ Webvs.compileExpr = function(codeSrc, jsFuncs, glslFuncs, nonUniforms) {
         }
         code = code.trim();
         return [name, code];
-    }).filter(function(code) { 
+    }).filter(function(code) {
         return code[1].length > 0;
     }).object().value();
 
@@ -426,6 +426,10 @@ var funcArgLengths = {
     "rand": 1,
     "gettime": 1,
     "getosc": 3,
+    "vec3Set": 4,
+    "vec3GetX": 1,
+    "vec3GetY": 1,
+    "vec3GetZ": 1,
     "select": {min: 2}
 };
 

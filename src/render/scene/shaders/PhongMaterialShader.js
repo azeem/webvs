@@ -5,7 +5,6 @@ function PhongMaterialShader(gl) {
         "attribute vec3 a_position;",
         "attribute vec3 a_normal;",
 
-        "varying vec4 v_pos4;",
         "varying vec3 v_light;",
 
         "uniform mat4 u_matrix;",
@@ -21,8 +20,8 @@ function PhongMaterialShader(gl) {
         "uniform float u_shininess;",
 
         "void main() {",
-        "    v_pos4 = u_matrix * vec4(a_position, 1.0);",
-        "    setPosition4(v_pos4);",
+        "    vec4 pos4 = u_matrix * vec4(a_position, 1.0);",
+        "    setPosition4(pos4);",
         "    vec3 tNormal = normalize(u_nMatrix * a_normal);",
         "    if(u_lightType == 1) {", // ambient
         "        v_light = u_lightColor * u_kAmbient;",

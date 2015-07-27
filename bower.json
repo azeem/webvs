@@ -9,14 +9,14 @@
     "tests"
   ],
   "devDependencies": {
-    "underscore": "~1.6.0",
-    "stats.js": "*",
-    "soundmanager2": "*",
-    "seedrandom": "~2.3.6",
-    "backbone-events": "git://github.com/azeem/backbone-events.git#~1.1.2"
+    "seedrandom": "~2.3.6"
   },
   "dependencies": {
-    "webgl-obj-loader": "frenchtoast747/webgl-obj-loader#~0.1.1",
-    "gl-matrix": "~2.2.1"
+    "stats.js": "*",
+    "soundmanager2": "*",
+    "underscore": "~1.6.0",
+    "webgl-obj-loader": "git://github.com/azeem/webgl-obj-loader#master",
+    "backbone-events": "git://github.com/azeem/backbone-events.git#~1.1.2",
+    "threemath": "git://github.com/azeem/threemath"
   }
 }

@@ -42,19 +42,19 @@ Webvs.ModelLike = _.extend(_.clone(Webvs.Events), {
                 if(this.setAttribute(key, value[key], options)) {
                     success = true;
                     if(!silent) {
-                        this.trigger("change:" + key, this, value[key], options); 
+                        this.trigger("change:" + key, this, value[key], options);
                     }
                 }
             }
             if(success && !silent) {
-                this.trigger("change", this, options); 
+                this.trigger("change", this, options);
             }
         } else {
             options = options || {};
             success = this.setAttribute(key, value, options);
             if(success && !options.silent) {
-                this.trigger("change:" + key, this, value, options); 
-                this.trigger("change", this, options); 
+                this.trigger("change:" + key, this, value, options);
+                this.trigger("change", this, options);
             }
         }
 
@@ -84,7 +84,7 @@ Webvs.defineClass = function(constructor, baseConstructor) {
     return constructor;
 };
 
-// tells whether constructor is the same as or is a 
+// tells whether constructor is the same as or is a
 // subclass of target
 Webvs.isSubclass = function(constructor, target) {
     if(constructor == target) {
@@ -101,7 +101,7 @@ Webvs.ComponentRegistry = {};
 Webvs.registerComponent = function(componentClass, meta) {
     Webvs.checkRequiredOptions(meta, ["name"]);
     componentClass.Meta = meta;
-    Webvs[meta.name] = componentClass;
+    // Webvs[meta.name] = componentClass;
     Webvs.ComponentRegistry[meta.name] = componentClass;
 };
 
@@ -158,6 +158,18 @@ Webvs.parseColor = function(color) {
 // 0-1 normalized version of Webvs.parseColor
 Webvs.parseColorNorm = function(color) {
     return _.map(Webvs.parseColor(color), function(value) { return value/255; });
+};
+
+Webvs.makeVec = function(vec) {
+    if(_.isArray(vec) && vec.length >= 3) {
+        return new Math3.Vector3(vec[0], vec[1], vec[2]);
+    } else if("x" in vec && "y" in vec && "z" in vec) {
+        return new Math3.Vector3(vec.x, vec.y, vec.z);
+    }
+    throw new Error("Cannot create Vector");
+};
+
+Webvs.vecToList = function(vec) {
 };
 
 // Pretty prints a shader compilation error
