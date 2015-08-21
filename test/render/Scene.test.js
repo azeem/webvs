@@ -20,14 +20,14 @@ CanvasTestWithFM(
                         type: "NORMAL",
                         color: "cyan"
                     },
-                    rotation: {x:0, y:3.14, z:0},
-                    scale: {x: 0.03, y: 0.03, z: 0.03},
+                    rotation: {x:0, y:0, z:0},
+                    scale: {x: 1, y: 1, z: 1},
                     position: {x: 0, y: 0, z: 0}
                 },
                 {
                     type: "PerspectiveCamera",
                     id: "testCamera",
-                    position: {x: 0, y: 0, z: 0}
+                    position: {x: 0, y: 0, z: 1}
                 }
             ]
         };
