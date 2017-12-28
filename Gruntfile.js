@@ -54,9 +54,9 @@ module.exports = function(grunt) {
     ];
 
     var libFiles = [
-        "bower_components/underscore/underscore.js",
-        "bower_components/backbone-events/backbone-events.js",
-        "bower_components/stats.js/src/Stats.js"
+        "node_modules/underscore/underscore.js",
+        "node_modules/backbone-events/backbone-events.js",
+        "node_modules/stats.js/src/Stats.js"
     ];
 
     grunt.initConfig({
@@ -86,7 +86,7 @@ module.exports = function(grunt) {
             options: {
                 frameworks: ["qunit"],
                 files: [].concat(libFiles, jsFiles, [
-                    "./bower_components/seedrandom/seedrandom.js",
+                    "./node_modules/seedrandom/seedrandom.js",
                     "./test/base.js",
                     "./test/**/*.js"
                 ]),
