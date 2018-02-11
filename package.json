@@ -17,6 +17,13 @@
   "bugs": {
     "url": "https://github.com/azeem/webvs/issues"
   },
+  "dependencies": {
+    "underscore": "~1.6.0",
+    "stats.js": "*",
+    "soundmanager2": "*",
+    "seedrandom": "~2.3.6",
+    "backbone-events": "azeem/backbone-events.git#~1.1.2"
+  },
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-jshint": "~0.6.0",
