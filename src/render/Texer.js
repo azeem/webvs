@@ -45,6 +45,11 @@ Webvs.defineClass(Texer, Webvs.Component, {
         this.updateImage();
         this.updateSource();
         this.listenTo(this.main, "resize", this.handleResize);
+
+        this.vertexBuffer = new Webvs.Buffer(this.gl);
+        this.texVertexBuffer = new Webvs.Buffer(this.gl);
+        this.colorBuffer = new Webvs.Buffer(this.gl);
+        this.indexBuffer = new Webvs.Buffer(this.gl, true);
     },
 
     draw: function() {
@@ -58,6 +63,10 @@ Webvs.defineClass(Texer, Webvs.Component, {
         Texer.super.destroy.call(this);
         this.program.destroy();
         this.gl.deleteTexture(this.texture);
+        this.vertexBuffer.destroy();
+        this.texVertexBuffer.destroy();
+        this.colorBuffer.destroy();
+        this.indexBuffer.destroy();
     },
 
     updateCode: function() {
@@ -214,11 +223,17 @@ Webvs.defineClass(Texer, Webvs.Component, {
             }
         }
 
+        this.vertexBuffer.setData(vertexData);
+        this.texVertexBuffer.setData(texVertexData);
+        this.indexBuffer.setData(new Uint16Array(vertexIndices));
+        if(colorData) {
+            this.colorBuffer.setData(colorData);
+        }
         this.program.run(this.parent.fm, null,
-                         new Float32Array(vertexData),
-                         new Float32Array(texVertexData),
-                         new Uint16Array(vertexIndices),
-                         colorData?new Float32Array(colorData):null,
+                         this.vertexBuffer,
+                         this.texVertexBuffer,
+                         this.indexBuffer,
+                         colorData?this.colorBuffer:null,
                          this.texture);
     },
 
@@ -263,16 +278,19 @@ function TexerProgram(gl) {
 Webvs.TexerProgram = Webvs.defineClass(TexerProgram, Webvs.ShaderProgram, {
     draw: function(vertices, texVertices, indices, colors, image) {
         this.setUniform("u_image", "texture2D", image);
-        this.setVertexAttribArray("a_vertex", vertices);
-        this.setVertexAttribArray("a_texVertex", texVertices);
+
+        this.setAttrib("a_vertex", vertices);
+        this.setAttrib("a_texVertex", texVertices);
+
         if(colors) {
-            this.setUniform("u_colorFilter", "1f", 1);
-            this.setVertexAttribArray("a_color", colors, 3);
+            this.setUniform("u_colorFilter", "1i", 1);
+            this.setAttrib("a_color", colors, 3);
         } else {
-            this.setUniform("u_colorFilter", "1f", 0);
+            this.setUniform("u_colorFilter", "1i", 0);
+            this.disableAttrib("a_color");
         }
 
-        this.setElementArray(indices);
+        this.setIndex(indices);
         this.gl.drawElements(this.gl.TRIANGLES, indices.length, this.gl.UNSIGNED_SHORT, 0);
     }
 });

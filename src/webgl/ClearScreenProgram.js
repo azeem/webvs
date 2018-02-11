@@ -20,7 +20,7 @@ function ClearScreenProgram(gl, blendMode) {
 Webvs.ClearScreenProgram = Webvs.defineClass(ClearScreenProgram, Webvs.QuadBoxProgram, {
     // Renders this shader
     draw: function(color) {
-        this.setUniform.apply(this, ["u_color", "3f"].concat(color));
+        this.setUniform("u_color", "3fv", color);
         ClearScreenProgram.super.draw.call(this);
     }
 });

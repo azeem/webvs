@@ -92,21 +92,22 @@ function PictureProgram(gl) {
     });
 }
 Webvs.PictureProgram = Webvs.defineClass(PictureProgram, Webvs.ShaderProgram, {
+    init: function() {
+        this.points = new Webvs.Buffer(this.gl, false, [
+            0,  0,
+            0,  1,
+            1,  1,
+            0,  0,
+            1,  1,
+            1,  0
+        ]);
+    },
+
     draw: function(x, y, image, imgw, imgh) {
         this.setUniform("u_pos", "2f", x, -y);
         this.setUniform("u_texRes", "2f", imgw, imgh);
         this.setUniform("u_image", "texture2D", image);
-        this.setVertexAttribArray(
-            "a_texVertex", 
-            new Float32Array([
-                0,  0,
-                0,  1,
-                1,  1,
-                0,  0,
-                1,  1,
-                1,  0
-            ])
-        );
+        this.setAttrib("a_texVertex", this.points);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     }
 });

@@ -25,10 +25,9 @@ var LineProgram = function(gl) {
     });
 };
 LineProgram = Webvs.defineClass(LineProgram, Webvs.ShaderProgram, {
-    draw: function() {
-        this.setVertexAttribArray(
-            "a_position", 
-            new Float32Array([
+    init: function() {
+        this.pointBuffer = new Webvs.Buffer(this.gl, false, 
+            [
                 0,  0,
                 0, -0.5,
                 0,  0,
@@ -37,23 +36,32 @@ LineProgram = Webvs.defineClass(LineProgram, Webvs.ShaderProgram, {
                 0.5, 0,
                 0,  0,
                 -0.5, 0,
-            ])
+            ]
         );
-        this.setVertexAttribArray(
-            "a_color",
-            new Float32Array([
+        this.colorBuffer = new Webvs.Buffer(this.gl, false,
+            [
                 1,  0, 0,
                 1,  0, 0,
                 0,  1, 0,
                 0,  1, 0,
                 0,  0, 1,
+                1,  1, 0,
                 0,  0, 1,
-                1,  1, 0,
-                1,  1, 0,
-            ]), 
-            3
+                1,  1, 0
+            ] 
         );
+    },
+
+    draw: function() {
+        this.setAttrib("a_position", this.pointBuffer);
+        this.setAttrib("a_color", this.colorBuffer);
         this.gl.drawArrays(this.gl.LINES, 0, 8);
+    },
+
+    destroy: function() {
+        this.pointBuffer.destroy();
+        this.colorBuffer.destroy();
+        LineProgram.super.destroy.call(this);
     }
 });
 

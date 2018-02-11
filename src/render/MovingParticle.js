@@ -27,7 +27,7 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
 
     onChange: {
         color: "updateColor",
-        blendMode: "updateProgram"
+        blendMode: "updateBlendMode"
     },
 
     init: function() {
@@ -38,14 +38,14 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
         this.posX = 0;
         this.posY = 0;
 
-        this._computeGeometry();
-        this.updateProgram();
+        this.updateBlendMode();
+        this.program = new MovingParticleShader(this.gl);
         this.updateColor();
     },
 
-    _computeGeometry: function() {
-        if(Webvs.MovingParticle.circleGeometry) {
-            return;
+    _getCircleGeometry: function() {
+        if(this.main.__circleGeometry) {
+            return this.main.__circleGeometry;
         }
         var pointCount = 100;
         var points = new Float32Array((pointCount+2)*2);
@@ -58,7 +58,10 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
         }
         points[pbi++] = points[2]; // repeat last point again
         points[pbi++] = points[3];
-        Webvs.MovingParticle.circleGeometry = points;
+
+        var buffer = new Webvs.Buffer(this.gl, false, points);
+        this.main.__circleGeometry = buffer;
+        return buffer;
     },
 
     draw: function() {
@@ -90,17 +93,13 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
         scaleX = 2*scaleX/this.gl.drawingBufferWidth;
         scaleY = 2*scaleY/this.gl.drawingBufferHeight;
 
-        this.program.run(this.parent.fm, null, Webvs.MovingParticle.circleGeometry,
+        this.program.run(this.parent.fm, this.blendMode,
+                         this._getCircleGeometry(),
                          scaleX, scaleY, x, y, this.color);
     },
 
-    updateProgram: function() {
-        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
-        var program = new MovingParticleShader(this.gl, blendMode);
-        if(this.program) {
-            this.program.destroy();
-        }
-        this.program = program;
+    updateBlendMode: function() {
+        this.blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
     },
 
     updateColor: function() {
@@ -113,10 +112,10 @@ Webvs.defineClass(MovingParticle, Webvs.Component, {
     }
 });
 
-function MovingParticleShader(gl, blendMode) {
+function MovingParticleShader(gl) {
     MovingParticleShader.super.constructor.call(this, gl, {
         copyOnSwap: true,
-        blendMode: blendMode,
+        dynamicBlend: true,
         vertexShader: [
             "attribute vec2 a_point;",
             "uniform vec2 u_position;",
@@ -134,11 +133,16 @@ function MovingParticleShader(gl, blendMode) {
     });
 }
 Webvs.MovingParticleShader = Webvs.defineClass(MovingParticleShader, Webvs.ShaderProgram, {
+    setPoints: function(points) {
+        this.setVertexAttribData("a_point", points);
+        this.pointsLength = points.length;
+    },
+
     draw: function(points, scaleX, scaleY, x, y, color) {
         this.setUniform("u_scale", "2f", scaleX, scaleY);
         this.setUniform("u_position", "2f", x, y);
-        this.setUniform.apply(this, ["u_color", "3f"].concat(color));
-        this.setVertexAttribArray("a_point", points);
+        this.setUniform("u_color", "3fv", color);
+        this.setAttrib("a_point", points);
         this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, points.length/2);
     }
 });
