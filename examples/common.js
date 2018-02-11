@@ -30,7 +30,7 @@ var SMReady = function () {
     });
 
     // load and play the track
-    var trackUrl = "https://soundcloud.com/gigamesh/fleetwood-mac-dreams-gigamesh";
+    var trackUrl = "https://soundcloud.com/bigsean-1/bounce-back";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4 && xhr.status == 200) {

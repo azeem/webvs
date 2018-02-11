@@ -716,6 +716,7 @@ Webvs.WebAudioAnalyser = Webvs.defineClass(WebAudioAnalyser, Webvs.AnalyserAdapt
             this.source = this.context.createMediaElementSource(element);
         } else {
             element = new Audio();
+            element.crossOrigin = 'anonymous';
             element.src = source;
             this.source = this.context.createMediaElementSource(element);
         }
