@@ -3,9 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-(function(Webvs) {
-
-Webvs.ResourcePack = {
+const ResourcePack = {
     name: "Builtin",
     prefix: "./resources/",
     fileNames: [
@@ -33,5 +31,4 @@ Webvs.ResourcePack = {
         "avsres_texer_square_sharp_250x250.bmp"
     ]
 };
-
-})(Webvs);
+export default ResourcePack;

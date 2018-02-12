@@ -3,62 +3,77 @@
  * See the file license.txt for copying permission.
  */
 
-(function(Webvs) {
+import {checkRequiredOptions} from './utils';
+import AnalyserAdapter from './analyser/AnalyserAdapter';
+import Model from './Model';
+import Stats from 'stats.js';
+import _ from 'lodash';
+import ResourcePack from './ResourcePack';
+import ResourceManager from './ResourceManager';
+import CopyProgram from './webgl/CopyProgram';
 
 // Main Webvs object, that represents a running webvs instance.
-function Main(options) {
-    Webvs.checkRequiredOptions(options, ["canvas", "analyser"]);
-    options = _.defaults(options, {
-        showStat: false
-    });
-    this.canvas = options.canvas;
-    this.msgElement = options.msgElement;
-    this.analyser = options.analyser;
-    this.isStarted = false;
-    if(options.showStat) {
-        var stats = new Stats();
-        stats.setMode(0);
-        stats.domElement.style.position = 'absolute';
-        stats.domElement.style.right = '5px';
-        stats.domElement.style.bottom = '5px';
-        document.body.appendChild(stats.domElement);
-        this.stats = stats;
+class Main extends Model {
+    private canvas: HTMLCanvasElement;
+    private msgElement: HTMLElement;
+    private analyser: AnalyserAdapter;
+    private isStarted: boolean;
+    private stats: Stats;
+    private meta: any;
+    private rsrcMan: ResourceManager;
+    private gl: WebGLRenderingContext;
+    private copier: CopyProgram;
+
+    constructor(options) {
+        super();
+        checkRequiredOptions(options, ["canvas", "analyser"]);
+        options = _.defaults(options, {
+            showStat: false
+        });
+        this.canvas = options.canvas;
+        this.msgElement = options.msgElement;
+        this.analyser = options.analyser;
+        this.isStarted = false;
+        if(options.showStat) {
+            var stats = new Stats();
+            stats.setMode(0);
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.right = '5px';
+            stats.domElement.style.bottom = '5px';
+            document.body.appendChild(stats.domElement);
+            this.stats = stats;
+        }
+
+        this.meta = {};
+        this._initResourceManager(options.resourcePrefix);
+        this._registerContextEvents();
+        this._initGl();
+        this._setupRoot({id: "root"});
     }
 
-    this.meta = {};
-    this._initResourceManager(options.resourcePrefix);
-    this._registerContextEvents();
-    this._initGl();
-    this._setupRoot({id: "root"});
-}
-Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
-    _initResourceManager: function(prefix) {
-        var builtinPack = Webvs.ResourcePack;
+    private _initResourceManager(prefix: string): void {
+        let builtinPack = ResourcePack;
         if(prefix) {
             builtinPack = _.clone(builtinPack);
             builtinPack.prefix = prefix;
         }
-        this.rsrcMan = new Webvs.ResourceManager(builtinPack);
+        this.rsrcMan = new ResourceManager(builtinPack);
         this.listenTo(this.rsrcMan, "wait", this.handleRsrcWait);
         this.listenTo(this.rsrcMan, "ready", this.handleRsrcReady);
+    }
 
-        var this_ = this;
-    },
-
-    _registerContextEvents: function() {
-        var _this = this;
-
-        this.canvas.addEventListener("webglcontextlost", function(event) {
+    private _registerContextEvents() {
+        this.canvas.addEventListener("webglcontextlost", (event) => {
             event.preventDefault();
-           _this.stop();
+            this.stop();
         });
 
-        this.canvas.addEventListener("webglcontextrestored", function(event) {
-            _this.resetCanvas();
+        this.canvas.addEventListener("webglcontextrestored", (event) => {
+            this.resetCanvas();
         });
-    },
+    }
 
-    _initGl: function() {
+    private _initGl() {
         try {
             this.gl = this.canvas.getContext("webgl", {alpha: false});
             this.copier = new Webvs.CopyProgram(this.gl, {dynamicBlend: true});
@@ -66,15 +81,15 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
         }
-    },
+    }
 
-    _setupRoot: function(preset) {
+    _setupRoot(preset) {
         this.registerBank = {};
         this.bootTime = (new Date()).getTime();
         this.rootComponent = new Webvs.EffectList(this.gl, this, null, preset);
-    },
+    }
 
-    _startAnimation: function() {
+    _startAnimation() {
         var _this = this;
         var drawFrame = function() {
             _this.analyser.update();
@@ -92,14 +107,14 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
             };
         }
         this.animReqId = requestAnimationFrame(drawFrame);
-    },
+    }
 
-    _stopAnimation: function() {
+    _stopAnimation() {
         cancelAnimationFrame(this.animReqId);
-    },
+    }
 
     // Starts the animation if not already started
-    start: function() {
+    start() {
         if(this.isStarted) {
             return;
         }
@@ -107,10 +122,10 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         if(this.rsrcMan.ready) {
             this._startAnimation();
         }
-    },
+    }
 
     // Stops the animation
-    stop: function() {
+    stop() {
         if(!this.isStarted) {
             return;
         }
@@ -118,11 +133,11 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         if(this.rsrcMan.ready) {
             this._stopAnimation();
         }
-    },
+    }
 
     // Loads a preset JSON. If a preset is already loaded and running, then
     // the animation is stopped, and the new preset is loaded.
-    loadPreset: function(preset) {
+    loadPreset(preset) {
         preset = _.clone(preset); // use our own copy
         preset.id = "root";
         this.rootComponent.destroy();
@@ -137,49 +152,49 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         this.meta = _.clone(preset.meta);
 
         this._setupRoot(preset);
-    },
+    }
 
     // Reset all the components.
-    resetCanvas: function() {
+    resetCanvas() {
         var preset = this.rootComponent.generateOptionsObj();
         this.rootComponent.destroy();
         this.copier.cleanup();
         this.buffers.destroy();
         this._initGl();
         this._setupRoot(preset);
-    },
+    }
 
-    notifyResize: function() {
+    notifyResize() {
         this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
         this.buffers.resize();
         this.trigger("resize", this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
-    },
+    }
 
-    setAttribute: function(key, value, options) {
+    setAttribute(key, value, options) {
         if(key == "meta") {
             this.meta = value;
             return true;
         }
         return false;
-    },
+    }
 
-    get: function(key, value) {
+    get(key, value) {
         if(key == "meta") {
             return this.meta;
         }
-    },
+    }
 
     // Generates and returns the instantaneous preset JSON 
     // representation
-    toJSON: function() {
+    toJSON() {
         var preset = this.rootComponent.toJSON();
         preset = _.pick(preset, "clearFrame", "components");
         preset.resources = this.rsrcMan.toJSON();
         preset.meta = _.clone(this.meta);
         return preset;
-    },
+    }
 
-    destroy: function() {
+    destroy() {
         this.stop();
         this.rootComponent.destroy();
         this.rootComponent = null;
@@ -191,21 +206,21 @@ Webvs.Main = Webvs.defineClass(Main, Object, Webvs.ModelLike, {
         this.rsrcMan.destroy();
         this.rsrcMan = null;
         this.stopListening();
-    },
+    }
 
     // event handlers
-    handleRsrcWait: function() {
+    handleRsrcWait() {
         if(this.isStarted) {
             this._stopAnimation();
         }
-    },
+    }
     
-    handleRsrcReady: function() {
+    handleRsrcReady() {
         if(this.isStarted) {
             this._startAnimation();
         }
     }
-});
+}
 
 })(Webvs);
 

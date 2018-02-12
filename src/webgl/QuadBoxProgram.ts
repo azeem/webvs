@@ -3,23 +3,25 @@
  * See the file license.txt for copying permission.
  */
 
-(function(Webvs) {
+import _ from 'lodash';
+import ShaderProgram from './ShaderProgram';
 
 // A Base for shaders that provides a vertexShader and vertices
 // for a rectangle that fills the entire screen
-function QuadBoxProgram(gl, options) {
-    options = _.defaults(options, {
-        vertexShader: [
-            "attribute vec2 a_position;",
-            "void main() {",
-            "   setPosition(a_position);",
-            "}"
-        ]
-    });
-    QuadBoxProgram.super.constructor.call(this, gl, options);
-}
-Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
-    init: function() {
+export default class QuadBoxProgram extends ShaderProgram {
+    constructor(gl, options) {
+        options = _.defaults(options, {
+            vertexShader: [
+                "attribute vec2 a_position;",
+                "void main() {",
+                "   setPosition(a_position);",
+                "}"
+            ]
+        });
+        super(gl, options);
+    }
+
+    init() {
         this.pointBuffer = new Webvs.Buffer(
             this.gl, false,
             [
@@ -31,18 +33,18 @@ Webvs.QuadBoxProgram = Webvs.defineClass(QuadBoxProgram, Webvs.ShaderProgram, {
                 1,  1
             ]
        );
-    },
+    }
 
     // Sets the vertices for the quad box
-    draw: function() {
+    draw() {
         this.setAttrib("a_position", this.pointBuffer);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
-    },
+    }
     
-    destroy: function() {
+    destroy() {
         this.pointBuffer.destroy();
         QuadBoxProgram.super.destroy.call(this);
     }
-});
+}
 
 })(Webvs);

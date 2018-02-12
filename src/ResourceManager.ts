@@ -3,7 +3,14 @@
  * See the file license.txt for copying permission.
  */
 
-(function(Webvs) {
+import _ from 'lodash';
+import Model from './Model';
+
+interface Pack {
+    name: string;
+    prefix: string;
+    fileNames: string[];
+}
 
 // ResourceManager manages async loading and caching of resources.
 // Basically, it maintains a map of fileNames to URI for the resource.
@@ -11,104 +18,109 @@
 // and the file is either async loaded or served from cache. This also manages
 // a ready state with callbacks that tells when one or more resources are being loaded and
 // when all resources are ready.
-function ResourceManager(packs) {
-    if(packs) {
-        if(!_.isArray(packs)) {
-            packs = [packs];
+export default class ResourceManager extends Model {
+    private packs: Pack[];
+    private uris: {[key: string]: string};
+    private images: {[key: string]: HTMLImageElement};
+    private waitCount: number;
+    private ready: boolean;
+
+    constructor(packs: Pack[]) {
+        super();
+        if(packs) {
+            if(!_.isArray(packs)) {
+                packs = [packs];
+            }
+            this.packs = packs;
+        } else {
+            this.packs = [];
         }
-        this.packs = packs;
-    } else {
-        this.packs = [];
+        this.clear();
     }
-    this.clear();
-}
-Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLike, {
+
     // Register a filename and a URI in the resource manager.
-    registerUri: function(fileName, uri) {
-        if(_.isString(fileName) && _.isString(uri)) {
+    registerUri(fileName: string | any, uri: string) {
+        if(typeof fileName === 'string' && typeof uri === 'string') {
             this.uris[fileName] = uri;
         } else {
-            _.extend(this.uris, fileName);
+            const inputUris = fileName;
+            _.extend(this.uris, inputUris);
         }
-    },
+    }
 
-    get: function(key, value) {
+    get(key: string) {
         if(key == "uris") {
             return this.uris;
         } else if(key == "packs") {
             return this.packs;
         }
-    },
+    }
 
-    setAttribute: function(key, value, options) {
+    setAttribute(key: string, value: any, options: any) {
         if(key == "uris") {
             this.uris = value;
             return true;
         }
         return false;
-    },
+    }
 
-    toJSON: function() {
+    toJSON() {
         return {
             uris: _.clone(this.uris)
         };
-    },
+    }
 
     // Clears state, uri mappings and caches. Browser caches still apply.
-    clear: function() {
+    clear() {
         this.uris = {};
         this.images = {};
         this.waitCount = 0;
         this.ready = true;
-    },
+    }
 
-    destroy: function() {
-        this.stopListening();
-    },
+    destroy() {}
 
-    _getUri: function(fileName) {
-        var uri = this.uris[fileName];
+    private _getUri(fileName: string): string {
+        const uri = this.uris[fileName];
         if(uri) {
             return uri;
         }
-        for(var i = this.packs.length-1;i >= 0;i--) {
-            var pack = this.packs[i];
+        for(let i = this.packs.length-1;i >= 0;i--) {
+            const pack = this.packs[i];
             if(pack.fileNames.indexOf(fileName) != -1) {
                 return pack.prefix + fileName;
             }
         }
-    },
+    }
 
-    _loadStart: function() {
+    private _loadStart() {
         this.waitCount++;
         if(this.waitCount == 1) {
             this.ready = false;
-            this.trigger("wait");
+            this.emit("wait");
         }
-    },
+    }
 
-    _loadEnd: function() {
+    private _loadEnd() {
         this.waitCount--;
         if(this.waitCount === 0) {
             this.ready = true;
-            this.trigger("ready");
+            this.emit("ready");
         }
-    },
+    }
     
     // Loads an Image resource
-    getImage: function(fileName, success, error, context) {
-        context = context || this;
-        var this_ = this;
-        var image = this.images[fileName];
+    getImage(fileName: string, success: (image: HTMLImageElement) => void, error: () => void): void {
+        let image = this.images[fileName];
         if(image) { // check in cache
             if(success) {
-                success.call(context, image);
+                success(image);
             }
             return;
         }
 
         // load file
-        var uri = this._getUri(fileName);
+        const uri = this._getUri(fileName);
         if(!uri) {
             throw new Error("Unknown image file " + fileName);
         }
@@ -118,26 +130,23 @@ Webvs.ResourceManager = Webvs.defineClass(ResourceManager, Object, Webvs.ModelLi
             // remote images
             image.crossOrigin = "anonymous";
         }
-        image.onload = function() {
-            this_.images[fileName] = image;
+        image.onload = () => {
+            this.images[fileName] = image;
             if(success) {
-                success.call(context, image);
+                success(image);
             }
-            this_._loadEnd();
+            this._loadEnd();
         };
         if(error) {
-            image.onError = function() {
-                if(error.call(context)) { 
-    
+            image.onerror = () => {
+                if(error()) { 
                     // then we treat this load as complete
                     // and handled properly
-                    this_._loadEnd();
+                    this._loadEnd();
                 }
             };
         }
         this._loadStart();
         image.src = uri;
     }
-});
-
-})(Webvs);
+}

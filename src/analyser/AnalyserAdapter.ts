@@ -3,24 +3,27 @@
  * See the file license.txt for copying permission.
  */
 
-(function(Webvs) {
+import { FloatArray } from '../utils';
+
+export enum Channel {
+    CENTER = 0,
+    LEFT,
+    RIGHT
+}
 
 // AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
 // Adapters extend this class and define the required methods.
-function AnalyserAdapter() {}
-Webvs.AnalyserAdapter = Webvs.defineClass(AnalyserAdapter, Object, {
+export default abstract class AnalyserAdapter {
     // boolean value indicating whether a beat
     // is in progress or not
-    beat: false,
+    protected beat = false;
 
     // Called every frame. Override and implement analyser code
-    update: function() {},
+    abstract update(): void;
 
     // Returns array of waveform values
-    getWaveform: function(channel) {return new Float32Array(0);},
+    abstract getWaveform(channel: Channel): FloatArray;
 
     // Returns array of spectrum values
-    getSpectrum: function(channel) {return new Float32Array(0);}
-});
-
-})(Webvs);
+    abstract getSpectrum(channel: Channel): FloatArray
+}
