@@ -25,6 +25,10 @@ export default class Buffer {
         this.gl.bufferData(this.type, array, this.gl.STATIC_DRAW);
     }
 
+    getGlBuffer(): WebGLBuffer {
+        return this.glBuffer;
+    }
+
     destroy() {
         this.gl.deleteBuffer(this.glBuffer);
     }

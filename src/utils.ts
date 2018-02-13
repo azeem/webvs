@@ -122,6 +122,14 @@ export function randString(count: number, chars: string): string {
     return string.join("");
 }
 
+export enum WebGLVarType {
+    TEXTURE2D = 'texture2D',
+    _1F = '1f', _2F = '2f', _3F = '3f', _4F = '4f',
+    _1I = '1i', _2I = '2i', _3I = '3i', _4I = '4i',
+    _1FV = '1fv', _2FV = '2fv', _3FV = '3fv', _4FV = '4fv',
+    _1IV = '1iv', _2IV = '2iv', _3IV = '3iv', _4IV = '4iv'
+};
+
 export type FloatArray = number[] | Float32Array | Float64Array;
 export type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array |
                          Int32Array | Uint32Array | Float32Array | Float64Array;

@@ -3,7 +3,9 @@
  * See the file license.txt for copying permission.
  */
 
+import _ from 'lodash';
 import QuadBoxProgram from './QuadBoxProgram';
+import { WebGLVarType } from '../utils';
 
 // A Shader that copies given texture onto current buffer
 export default class CopyProgram extends QuadBoxProgram {
@@ -20,7 +22,7 @@ export default class CopyProgram extends QuadBoxProgram {
     }
     // Renders this shader
     draw(srcTexture) {
-        this.setUniform("u_copySource", "texture2D", srcTexture);
-        CopyProgram.super.draw.call(this);
+        this.setUniform("u_copySource", WebGLVarType.TEXTURE2D, srcTexture);
+        super.draw();
     }
 }

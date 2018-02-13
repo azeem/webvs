@@ -11,6 +11,7 @@ import _ from 'lodash';
 import ResourcePack from './ResourcePack';
 import ResourceManager from './ResourceManager';
 import CopyProgram from './webgl/CopyProgram';
+import FrameBufferManager from './webgl/FrameBufferManager';
 
 // Main Webvs object, that represents a running webvs instance.
 class Main extends Model {
@@ -23,6 +24,7 @@ class Main extends Model {
     private rsrcMan: ResourceManager;
     private gl: WebGLRenderingContext;
     private copier: CopyProgram;
+    private buffers: FrameBufferManager;
 
     constructor(options) {
         super();
@@ -76,8 +78,8 @@ class Main extends Model {
     private _initGl() {
         try {
             this.gl = this.canvas.getContext("webgl", {alpha: false});
-            this.copier = new Webvs.CopyProgram(this.gl, {dynamicBlend: true});
-            this.buffers = new Webvs.FrameBufferManager(this.gl, this.copier, true, 0);
+            this.copier = new CopyProgram(this.gl, {dynamicBlend: true});
+            this.buffers = new FrameBufferManager(this.gl, this.copier, true, 0);
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
         }
