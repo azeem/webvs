@@ -2,26 +2,43 @@
  * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
+import Container from './Container';
+import Main from './Main';
+import Component from './Component';
+import FrameBufferManager from './webgl/FrameBufferManager';
 
-(function(Webvs) {
+export enum ELBlendModes {
+    REPLACE = 1,
+    MAXIMUM,
+    AVERAGE,
+    ADDITIVE,
+    SUBTRACTIVE1,
+    SUBTRACTIVE2,
+    MULTIPLY,
+    MULTIPLY2,
+    ADJUSTABLE,
+    ALPHA,
+    IGNORE
+}
+
+interface EffectListOpts {
+    code: {
+        init: string,
+        perFrame: string
+    };
+    output: string,
+    input: string,
+    clearFrame: boolean,
+    enableOnBeat: boolean,
+    enableOnBeatFor: number
+}
 
 // Effectlist is a container that renders components to a separate buffer. and blends
 // it in with the parent buffer. Its also used as the root component in Webvs.Main
-function EffectList(gl, main, parent, opts) {
-    EffectList.super.constructor.call(this, gl, main, parent, opts);
-}
-
-Webvs.registerComponent(EffectList, {
-    name: "EffectList"
-});
-
-var ELBlendModes = _.extend({
-    "IGNORE": 50
-}, Webvs.BlendModes);
-EffectList.ELBlendModes = ELBlendModes;
-
-Webvs.defineClass(EffectList, Webvs.Container, {
-    defaultOptions: {
+export default class EffectList extends Container {
+    static componentName = "EffectList";
+    static componentTag = "";
+    static defaultOptions: EffectListOpts = {
         code: {
             init: "",
             perFrame: ""
@@ -31,27 +48,35 @@ Webvs.defineClass(EffectList, Webvs.Container, {
         clearFrame: false,
         enableOnBeat: false,
         enableOnBeatFor: 1
-    },
-
-    onChange: {
+    }
+    static optUpdateHandlers = {
         code: "updateCode",
         output: "updateBlendMode",
         input: "updateBlendMode"
-    },
+    }
 
-    init: function() {
-        EffectList.super.init.call(this);
-        this.fm = new Webvs.FrameBufferManager(this.gl, this.main.copier, this.parent?true:false);
+    protected opts: EffectListOpts;
+    private fm: FrameBufferManager;
+    private frameCounter: number;
+    private first: boolean;
+
+    constructor(gl: WebGLRenderingContext, main: Main, parent: Component, opts: any) {
+        super(gl, main, parent, opts);
+    }
+
+    init() {
+        super.init();
+        this.fm = new FrameBufferManager(this.gl, this.main.copier, this.parent?true:false);
         this.updateCode();
         this.updateBlendMode(this.opts.input, "input");
         this.updateBlendMode(this.opts.output, "output");
         this.frameCounter = 0;
         this.first = true;
         this.listenTo(this.main, "resize", this.handleResize);
-    },
+    }
 
-    draw: function() {
-        var opts = this.opts;
+    draw() {
+        const opts = this.opts;
 
         if(opts.enableOnBeat) {
             if(this.main.analyser.beat) {
@@ -112,30 +137,28 @@ Webvs.defineClass(EffectList, Webvs.Container, {
                 this.main.copier.run(null, null, this.fm.getCurrentTexture());
             }
         }
-    },
+    }
 
-    destroy: function() {
+    destroy() {
         EffectList.super.destroy.call(this);
         if(this.fm) {
             // destroy the framebuffer manager
             this.fm.destroy();
         }
-    },
+    }
 
-    updateCode: function() {
+    updateCode() {
         this.code = Webvs.compileExpr(this.opts.code, ["init", "perFrame"]).codeInst;
         this.code.setup(this.main, this);
         this.inited = false;
-    },
+    }
 
-    updateBlendMode: function(value, name) {
+    updateBlendMode(value, name) {
         this[name] = Webvs.getEnumValue(value, ELBlendModes);
-    },
+    }
 
-    handleResize: function() {
+    handleResize() {
         this.fm.resize();
         this.code.updateDimVars(this.gl);
     }
-});
-
-})(Webvs);
+}

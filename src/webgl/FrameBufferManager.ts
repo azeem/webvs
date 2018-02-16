@@ -26,10 +26,10 @@ export default class FrameBufferManager {
     private oldFrameBuffer: WebGLFramebuffer;
     private isRenderTarget: boolean;
 
-    constructor(gl: WebGLRenderingContext, copier: CopyProgram, textureOnly: boolean, texCount: number) {
+    constructor(gl: WebGLRenderingContext, copier: CopyProgram, textureOnly: boolean = false, texCount: number = 2) {
         this.gl = gl;
         this.copier = copier;
-        this.initTexCount = _.isNumber(texCount)?texCount:2;
+        this.initTexCount = texCount;
         this.textureOnly = textureOnly;
         this.initFrameBuffers();
     }

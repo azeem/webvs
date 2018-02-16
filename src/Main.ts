@@ -12,19 +12,23 @@ import ResourcePack from './ResourcePack';
 import ResourceManager from './ResourceManager';
 import CopyProgram from './webgl/CopyProgram';
 import FrameBufferManager from './webgl/FrameBufferManager';
+import EffectList from './EffectList';
 
 // Main Webvs object, that represents a running webvs instance.
-class Main extends Model {
+export default class Main extends Model {
     private canvas: HTMLCanvasElement;
     private msgElement: HTMLElement;
-    private analyser: AnalyserAdapter;
+    public analyser: AnalyserAdapter;
     private isStarted: boolean;
     private stats: Stats;
     private meta: any;
     private rsrcMan: ResourceManager;
     private gl: WebGLRenderingContext;
-    private copier: CopyProgram;
+    public copier: CopyProgram;
     private buffers: FrameBufferManager;
+    private registerBank: {[key: string]: number};
+    private bootTime: number;
+    private rootComponent: IComponent;
 
     constructor(options) {
         super();
@@ -88,7 +92,7 @@ class Main extends Model {
     _setupRoot(preset) {
         this.registerBank = {};
         this.bootTime = (new Date()).getTime();
-        this.rootComponent = new Webvs.EffectList(this.gl, this, null, preset);
+        this.rootComponent = new EffectList(this.gl, this, null, preset);
     }
 
     _startAnimation() {
@@ -158,7 +162,7 @@ class Main extends Model {
 
     // Reset all the components.
     resetCanvas() {
-        var preset = this.rootComponent.generateOptionsObj();
+        var preset = this.rootComponent.toJSON();
         this.rootComponent.destroy();
         this.copier.cleanup();
         this.buffers.destroy();

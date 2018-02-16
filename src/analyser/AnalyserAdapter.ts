@@ -16,7 +16,7 @@ export enum Channel {
 export default abstract class AnalyserAdapter {
     // boolean value indicating whether a beat
     // is in progress or not
-    protected beat = false;
+    public beat = false;
 
     // Called every frame. Override and implement analyser code
     abstract update(): void;

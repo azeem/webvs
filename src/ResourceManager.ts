@@ -25,7 +25,7 @@ export default class ResourceManager extends Model {
     private waitCount: number;
     private ready: boolean;
 
-    constructor(packs: Pack[]) {
+    constructor(packs: Pack | Pack[]) {
         super();
         if(packs) {
             if(!_.isArray(packs)) {
