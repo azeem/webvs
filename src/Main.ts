@@ -10,25 +10,31 @@ import Stats from 'stats.js';
 import _ from 'lodash';
 import ResourcePack from './ResourcePack';
 import ResourceManager from './ResourceManager';
+import Buffer from './webgl/Buffer';
 import CopyProgram from './webgl/CopyProgram';
 import FrameBufferManager from './webgl/FrameBufferManager';
 import EffectList from './EffectList';
+import { IComponent } from './componentInterfaces';
+import IMain from './IMain';
+import RenderingContext from './webgl/RenderingContext';
 
 // Main Webvs object, that represents a running webvs instance.
-export default class Main extends Model {
+export default class Main extends Model implements IMain {
     private canvas: HTMLCanvasElement;
     private msgElement: HTMLElement;
     public analyser: AnalyserAdapter;
     private isStarted: boolean;
     private stats: Stats;
     private meta: any;
-    private rsrcMan: ResourceManager;
-    private gl: WebGLRenderingContext;
+    public rsrcMan: ResourceManager;
+    public rctx: RenderingContext;
     public copier: CopyProgram;
-    private buffers: FrameBufferManager;
+    private fm: FrameBufferManager;
     private registerBank: {[key: string]: number};
     private bootTime: number;
     private rootComponent: IComponent;
+    private animReqId: number;
+    private buffers: {[name: string]: Buffer};
 
     constructor(options) {
         super();
@@ -81,42 +87,41 @@ export default class Main extends Model {
 
     private _initGl() {
         try {
-            this.gl = this.canvas.getContext("webgl", {alpha: false});
-            this.copier = new CopyProgram(this.gl, {dynamicBlend: true});
-            this.buffers = new FrameBufferManager(this.gl, this.copier, true, 0);
+            this.rctx = new RenderingContext(this.canvas.getContext("webgl", {alpha: false}));
+            this.copier = new CopyProgram(this.rctx, {dynamicBlend: true});
+            this.fm = new FrameBufferManager(this.rctx, this.copier, true, 0);
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
         }
     }
 
-    _setupRoot(preset) {
+    private _setupRoot(preset: any) {
         this.registerBank = {};
         this.bootTime = (new Date()).getTime();
-        this.rootComponent = new EffectList(this.gl, this, null, preset);
+        this.rootComponent = new EffectList(this, null, preset);
     }
 
-    _startAnimation() {
-        var _this = this;
-        var drawFrame = function() {
-            _this.analyser.update();
-            _this.rootComponent.draw();
-            _this.animReqId = requestAnimationFrame(drawFrame);
+    private _startAnimation() {
+        let drawFrame = () => {
+            this.analyser.update();
+            this.rootComponent.draw();
+            this.animReqId = window.requestAnimationFrame(drawFrame);
         };
 
         // Wrap drawframe in stats collection if required
         if(this.stats) {
-            var oldDrawFrame = drawFrame;
-            drawFrame = function() {
-                _this.stats.begin();
+            const oldDrawFrame = drawFrame;
+            drawFrame = () => {
+                this.stats.begin();
                 oldDrawFrame.call(this, arguments);
-                _this.stats.end();
+                this.stats.end();
             };
         }
         this.animReqId = requestAnimationFrame(drawFrame);
     }
 
-    _stopAnimation() {
-        cancelAnimationFrame(this.animReqId);
+    private _stopAnimation() {
+        window.cancelAnimationFrame(this.animReqId);
     }
 
     // Starts the animation if not already started
@@ -143,7 +148,7 @@ export default class Main extends Model {
 
     // Loads a preset JSON. If a preset is already loaded and running, then
     // the animation is stopped, and the new preset is loaded.
-    loadPreset(preset) {
+    loadPreset(preset: any) {
         preset = _.clone(preset); // use our own copy
         preset.id = "root";
         this.rootComponent.destroy();
@@ -162,21 +167,29 @@ export default class Main extends Model {
 
     // Reset all the components.
     resetCanvas() {
-        var preset = this.rootComponent.toJSON();
+        const preset = this.rootComponent.toJSON();
         this.rootComponent.destroy();
-        this.copier.cleanup();
-        this.buffers.destroy();
+        this.fm.destroy();
         this._initGl();
         this._setupRoot(preset);
     }
 
     notifyResize() {
-        this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
-        this.buffers.resize();
-        this.trigger("resize", this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+        const gl = this.rctx.gl;
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        this.fm.resize();
+        this.emit("resize", gl.drawingBufferWidth, gl.drawingBufferHeight);
     }
 
-    setAttribute(key, value, options) {
+    cacheBuffer(name: string, buffer: Buffer) {
+        this.buffers[name] = buffer;
+    }
+
+    getBuffer(name: string): Buffer {
+        return this.buffers[name];
+    }
+
+    setAttribute(key: string, value: any, options: any) {
         if(key == "meta") {
             this.meta = value;
             return true;
@@ -184,7 +197,7 @@ export default class Main extends Model {
         return false;
     }
 
-    get(key, value) {
+    get(key: string) {
         if(key == "meta") {
             return this.meta;
         }
@@ -192,8 +205,8 @@ export default class Main extends Model {
 
     // Generates and returns the instantaneous preset JSON 
     // representation
-    toJSON() {
-        var preset = this.rootComponent.toJSON();
+    toJSON(): any {
+        let preset = this.rootComponent.toJSON();
         preset = _.pick(preset, "clearFrame", "components");
         preset.resources = this.rsrcMan.toJSON();
         preset.meta = _.clone(this.meta);
@@ -205,7 +218,7 @@ export default class Main extends Model {
         this.rootComponent.destroy();
         this.rootComponent = null;
         if(this.stats) {
-            var statsDomElement = this.stats.domElement;
+            const statsDomElement = this.stats.domElement;
             statsDomElement.parentNode.removeChild(statsDomElement);
             this.stats = null;
         }
@@ -227,9 +240,3 @@ export default class Main extends Model {
         }
     }
 }
-
-})(Webvs);
-
-
-
-

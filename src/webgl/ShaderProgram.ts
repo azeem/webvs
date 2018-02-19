@@ -7,6 +7,7 @@ import _ from 'lodash';
 import { BlendModes, logShaderError, WebGLVarType } from '../utils';
 import Buffer from './Buffer';
 import FrameBufferManager from './FrameBufferManager';
+import RenderingContext from './RenderingContext';
 
 // Base class for Webgl Shaders. This provides an abstraction
 // with support for blended output, easier variable bindings
@@ -23,7 +24,6 @@ import FrameBufferManager from './FrameBufferManager';
 // #### glsl utilities
 
 // The following utilities are usable inside the shader code in subclasses
-
 // + `setPosition(vec2 pos)` - sets gl_Position
 // + `getSrcColorAtPos(vec2 pos)` - pixel value at pos in u_srcTexture
 // + `getSrcColor(vec2 pos)` - same as above, but uses v_position
@@ -35,7 +35,7 @@ import FrameBufferManager from './FrameBufferManager';
 // + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
 //     when varyingPos option is used
 export default abstract class ShaderProgram {
-    protected gl: WebGLRenderingContext;
+    protected rctx: RenderingContext;
     private swapFrame: boolean;
     private copyOnSwap: boolean;
     private blendValue: number;
@@ -57,11 +57,10 @@ export default abstract class ShaderProgram {
         [BlendModes.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)"
     };
 
-    abstract init(): void;
     // Performs the actual drawing and any further bindings and calculations if required.
     abstract draw(...args: any[]): void;
 
-    constructor(gl: WebGLRenderingContext, opts: any) {
+    constructor(rctx: RenderingContext, opts: any) {
         opts = _.defaults(opts, {
             blendMode: BlendModes.REPLACE,
             swapFrame: false,
@@ -92,7 +91,7 @@ export default abstract class ShaderProgram {
             #define getSrcColor() (texture2D(u_srcTexture, v_position))
         `];
 
-        this.gl = gl;
+        this.rctx = rctx;
         this.swapFrame = opts.swapFrame;
         this.copyOnSwap = opts.copyOnSwap;
         this.blendValue = opts.blendValue;
@@ -136,12 +135,14 @@ export default abstract class ShaderProgram {
         this.init();
     }
 
+    init() {}
+
     private _isShaderBlend(mode) {
         return (mode in ShaderProgram.shaderBlendEq);
     }
 
     private _compile() {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         const vertex = this._compileShader(this.vertexSrc, gl.VERTEX_SHADER);
         const fragment = this._compileShader(this.fragmentSrc, gl.FRAGMENT_SHADER);
         const program = gl.createProgram();
@@ -159,7 +160,7 @@ export default abstract class ShaderProgram {
     }
 
     private _compileShader(shaderSrc: string, type: number): WebGLShader {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         const shader = gl.createShader(type);
         gl.shaderSource(shader, shaderSrc);
         gl.compileShader(shader);
@@ -173,7 +174,7 @@ export default abstract class ShaderProgram {
 
     // Runs this shader program
     run(fm: FrameBufferManager, blendMode: BlendModes, ...args: any[]) {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         const oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
 
@@ -210,7 +211,7 @@ export default abstract class ShaderProgram {
     }
 
     private _setGlBlendMode(mode) {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         switch(mode) {
             case BlendModes.ADDITIVE:
                 gl.enable(gl.BLEND);
@@ -264,10 +265,11 @@ export default abstract class ShaderProgram {
     getLocation(name: string, attrib: boolean = false): number | WebGLUniformLocation {
         let location = this._locations[name];
         if(typeof location === 'undefined') {
+            const gl = this.rctx.gl;
             if(attrib) {
-                location = this.gl.getAttribLocation(this.program, name);
+                location = gl.getAttribLocation(this.program, name);
             } else {
-                location = this.gl.getUniformLocation(this.program, name);
+                location = gl.getUniformLocation(this.program, name);
             }
             this._locations[name] = location;
         }
@@ -287,7 +289,7 @@ export default abstract class ShaderProgram {
     // binds value of a uniform variable in this program
     setUniform(name: string, type: WebGLVarType, ...values) {
         const location = this.getLocation(name);
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         switch(type) {
             case "texture2D":
                 const id = this.getTextureId(name);
@@ -311,7 +313,7 @@ export default abstract class ShaderProgram {
     }
 
     setIndex(buffer: Buffer) {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.getGlBuffer());
     }
 
@@ -319,14 +321,14 @@ export default abstract class ShaderProgram {
         name: string, 
         buffer: Buffer, 
         size: number = 2, 
-        type: number = this.gl.FLOAT, 
+        type: number = this.rctx.gl.FLOAT, 
         normalized:boolean = false, 
         stride: number = 0, 
         offset: number = 0
     ) {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         const location = this.getLocation(name, true) as number;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer.getGlBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer.getGlBuffer());
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
         gl.enableVertexAttribArray(location);
         this._enabledAttribs.push(location);
@@ -334,13 +336,13 @@ export default abstract class ShaderProgram {
 
     disableAttrib(name: string) {
         const location = this.getLocation(name, true) as number;
-        this.gl.disableVertexAttribArray(location);
+        this.rctx.gl.disableVertexAttribArray(location);
     }
 
     // destroys webgl resources consumed by this program.
     // call in component destroy
     destroy() {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         gl.deleteProgram(this.program);
         gl.deleteShader(this.vertex);
         gl.deleteShader(this.fragment);

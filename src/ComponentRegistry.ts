@@ -1,4 +1,5 @@
 import Component, {IComponentConstructor} from './Component';
+import ClearScreen from './render/ClearScreen';
 
 export default class ComponentRegistry {
     static components: {[name: string]: IComponentConstructor};
@@ -20,3 +21,7 @@ export default class ComponentRegistry {
         return ComponentRegistry.components[name];
     }
 };
+
+ComponentRegistry.addComponent([
+
+]);

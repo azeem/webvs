@@ -4,34 +4,33 @@
  */
 import _ from 'lodash';
 import Model from './Model';
-import Main from './Main';
+import IMain from './IMain';
+import {IComponent, IContainer} from './componentInterfaces';
 
 export interface IComponentConstructor {
-    new(gl: WebGLRenderingContext, main: Main, parent: Component, opts: any): Component;
+    new(main: IMain, parent: Component, opts: any): Component;
     componentName: string;
     componentTag: string;
 }
 
 export default abstract class Component extends Model implements IComponent {
     ['constructor']: typeof Component;
-    protected gl: WebGLRenderingContext;
-    protected main: Main;
-    protected parent: Component;
+    protected main: IMain;
+    protected parent: IContainer;
     public id: string;
-    private enabled: boolean;
+    public enabled: boolean;
     protected opts: any;
-    protected static defaultOptions: any = {};
     public static componentName: string = "Component";
     public static componentTag: string = "";
     protected static optUpdateHandlers: {[key: string]: string | string[] } = null;
+    protected static defaultOptions: any = {};
     public lastError: any;
 
     abstract init();
     abstract draw();
 
-    constructor(gl: WebGLRenderingContext, main: Main, parent: Component, options: any) {
+    constructor(main: IMain, parent: IContainer, options: any) {
         super();
-        this.gl = gl;
         this.main = main;
         this.parent = parent;
 
@@ -55,7 +54,7 @@ export default abstract class Component extends Model implements IComponent {
         this.stopListening();
     }
 
-    setParent(newParent: Component) {
+    setParent(newParent: IContainer) {
         this.parent = newParent;
     }
 
@@ -67,8 +66,8 @@ export default abstract class Component extends Model implements IComponent {
         return opts;
     }
 
-    setAttribute(key, value, options) {
-        var oldValue = this.get(key);
+    setAttribute(key: string, value: any, options: any) {
+        const oldValue = this.get(key);
         if(key == "type" || _.isEqual(value, oldValue)) {
             return false;
         }

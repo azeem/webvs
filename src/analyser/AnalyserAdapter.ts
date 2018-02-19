@@ -22,8 +22,8 @@ export default abstract class AnalyserAdapter {
     abstract update(): void;
 
     // Returns array of waveform values
-    abstract getWaveform(channel: Channel): FloatArray;
+    abstract getWaveform(channel?: Channel): FloatArray;
 
     // Returns array of spectrum values
-    abstract getSpectrum(channel: Channel): FloatArray
+    abstract getSpectrum(channel?: Channel): FloatArray
 }

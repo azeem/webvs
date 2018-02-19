@@ -18,11 +18,11 @@ export function checkRequiredOptions(options: any, requiredOptions: string[]): v
 
 // Returns a floating point value representation of a number
 // embeddable in glsl shader code
-export function glslFloatRepr(val: number): string {
-    return val + (val%1 === 0?".0":"");
+export function glslFloatRepr(val: string): string {
+    return val + (parseFloat(val)%1 === 0?".0":"");
 }
 
-type Color = [number, number, number];
+export type Color = [number, number, number];
 function isColor(color: string | Color): color is Color {
     return Array.isArray(color) && color.length === 3;
 }

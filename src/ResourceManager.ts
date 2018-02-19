@@ -23,7 +23,7 @@ export default class ResourceManager extends Model {
     private uris: {[key: string]: string};
     private images: {[key: string]: HTMLImageElement};
     private waitCount: number;
-    private ready: boolean;
+    public ready: boolean;
 
     constructor(packs: Pack | Pack[]) {
         super();
@@ -39,7 +39,7 @@ export default class ResourceManager extends Model {
     }
 
     // Register a filename and a URI in the resource manager.
-    registerUri(fileName: string | any, uri: string) {
+    registerUri(fileName: string | any, uri?: string) {
         if(typeof fileName === 'string' && typeof uri === 'string') {
             this.uris[fileName] = uri;
         } else {

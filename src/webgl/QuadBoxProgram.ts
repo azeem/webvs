@@ -6,13 +6,15 @@
 import _ from 'lodash';
 import ShaderProgram from './ShaderProgram';
 import Buffer from './Buffer';
+import { squareGeometry } from './geometries';
+import RenderingContext from './RenderingContext';
 
 // A Base for shaders that provides a vertexShader and vertices
 // for a rectangle that fills the entire screen
 export default class QuadBoxProgram extends ShaderProgram {
     private pointBuffer: Buffer;
 
-    constructor(gl, options) {
+    constructor(rctx: RenderingContext, options) {
         options = _.defaults(options, {
             vertexShader: [
                 "attribute vec2 a_position;",
@@ -21,31 +23,17 @@ export default class QuadBoxProgram extends ShaderProgram {
                 "}"
             ]
         });
-        super(gl, options);
-    }
-
-    init() {
-        this.pointBuffer = new Buffer(
-            this.gl, false,
-            [
-                -1,  -1,
-                1,  -1,
-                -1,  1,
-                -1,  1,
-                1,  -1,
-                1,  1
-            ]
-       );
+        super(rctx, options);
     }
 
     // Sets the vertices for the quad box
     draw(...args: any[]) {
-        this.setAttrib("a_position", this.pointBuffer);
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+        const gl = this.rctx.gl;
+        this.setAttrib("a_position", squareGeometry(this.rctx));
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
     
     destroy() {
-        this.pointBuffer.destroy();
         super.destroy();
     }
 }

@@ -1,8 +1,11 @@
 {
+    var _ = require('lodash');
+    var Ast = require('./Ast.ts');
+
     function makeBinaryExpr(head, tail) {
         var result = head;
-        _.each(tail, function(tailItem) {
-            result = new Webvs.AstBinaryExpr(tailItem[1], result, tailItem[3]);
+        tail.forEach(function(tailItem) {
+            result = new Ast.BinaryExpr(tailItem[1], result, tailItem[3]);
         });
         return result;
     }
@@ -17,11 +20,11 @@ program = p:(__ statement __ (";" __ statement __)* ";"? __) {
     stmts = stmts.concat(_.map(p[3], function(pp) {
         return pp[2];
     }));
-    return new Webvs.AstProgram(stmts);
+    return new Ast.Program(stmts);
 }
 
 statement
-		= lhs:assignable __ "=" __ e:expr { return new Webvs.AstAssignment(lhs, e); }
+		= lhs:assignable __ "=" __ e:expr { return new Ast.Assignment(lhs, e); }
 		/ expr
 
 unary_ops = "+" / "-"
@@ -41,7 +44,7 @@ multiplicative_expr
 		= head:unary tail:(__ multiplicative_ops __ unary)* { return makeBinaryExpr(head, tail); }
 
 unary
-		= op:unary_ops __ oper:func_call { return new Webvs.AstUnaryExpr(op, oper); }
+		= op:unary_ops __ oper:func_call { return new Ast.UnaryExpr(op, oper); }
 		/ func_call
 
 func_call
@@ -51,7 +54,7 @@ func_call
 		            argsList.push(toks[1]);
 		        });
                 argsList.push(args[2]);
-                return new Webvs.AstFuncCall(flattenChars(funcName), argsList);
+                return new Ast.FuncCall(flattenChars(funcName), argsList);
 		}
 		/ primary_expr
 
@@ -67,19 +70,19 @@ assignable
         / identifier
 
 identifier
-		= val:([a-zA-Z_] [a-zA-Z_0-9]*) { return new Webvs.AstPrimaryExpr(flattenChars(val).toLowerCase(), "ID"); }
+		= val:([a-zA-Z_] [a-zA-Z_0-9]*) { return new Ast.PrimaryExpr(flattenChars(val).toLowerCase(), "ID"); }
 
 constant
-        = "$" val:([a-zA-Z_0-9]*) { return new Webvs.AstPrimaryExpr(flattenChars(val).toLowerCase(), "CONST"); }
+        = "$" val:([a-zA-Z_0-9]*) { return new Ast.PrimaryExpr(flattenChars(val).toLowerCase(), "CONST"); }
 
 register
-        = "@" val:([a-zA-Z_0-9]*)          { return new Webvs.AstPrimaryExpr("__REG_AT_" + flattenChars(val).toLowerCase(), "REG"); }
-        / val:([rR] [eE] [gG] [0-9] [0-9]) { return new Webvs.AstPrimaryExpr("__REG_" + flattenChars(val).toLowerCase(), "REG"); }
+        = "@" val:([a-zA-Z_0-9]*)          { return new Ast.PrimaryExpr("__REG_AT_" + flattenChars(val).toLowerCase(), "REG"); }
+        / val:([rR] [eE] [gG] [0-9] [0-9]) { return new Ast.PrimaryExpr("__REG_" + flattenChars(val).toLowerCase(), "REG"); }
 
 value
-		= val:([0-9]* "." [0-9]+ ([Ee] [0-9]+)?) { return new Webvs.AstPrimaryExpr(parseFloat(flattenChars(val)), "VALUE"); }
-		/ val:([a-fA-F0-9]+) [hH]                { return new Webvs.AstPrimaryExpr(parseInt(flattenChars(val), 16), "VALUE"); }
-        / val:([0-9]+) [dD]?                     { return new Webvs.AstPrimaryExpr(parseInt(flattenChars(val), 10), "VALUE"); }
+		= val:([0-9]* "." [0-9]+ ([Ee] [0-9]+)?) { return new Ast.PrimaryExpr(parseFloat(flattenChars(val)), "VALUE"); }
+		/ val:([a-fA-F0-9]+) [hH]                { return new Ast.PrimaryExpr(parseInt(flattenChars(val), 16), "VALUE"); }
+        / val:([0-9]+) [dD]?                     { return new Ast.PrimaryExpr(parseInt(flattenChars(val), 10), "VALUE"); }
 
 __
         = (whiteSpace / lineEnd / comment)*

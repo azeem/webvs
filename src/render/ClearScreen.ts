@@ -2,41 +2,54 @@
  * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
+import _ from 'lodash';
+import IMain from '../IMain';
+import Component from '../Component';
+import {IContainer} from '../componentInterfaces'
+import ShaderProgram from '../webgl/ShaderProgram';
+import ClearScreenProgram from '../webgl/ClearScreenProgram';
+import {Color, BlendModes, parseColorNorm} from '../utils';
 
-(function(Webvs) {
-
-// A component that clears the screen
-function ClearScreen(gl, main, parent, opts) {
-    ClearScreen.super.constructor.call(this, gl, main, parent, opts);
+interface ClearScreenOpts {
+    beatCount: number,
+    color: string,
+    blendMode: string
 }
 
-Webvs.registerComponent(ClearScreen, {
-    name: "ClearScreen",
-    menu: "Render"
-});
-
-Webvs.defineClass(ClearScreen, Webvs.Component, {
-    defaultOptions: {
+// A component that clears the screen
+export default class ClearScreen extends Component {
+    static componentName = "ClearScreen";
+    static componentTag = "render";
+    protected static defaultOptions: ClearScreenOpts = {
         beatCount: 0,
         color: "#000000",
         blendMode: "REPLACE"
-    },
-
-    onChange: {
+    }
+    protected static optUpdateHandlers = {
         color: "updateColor",
         blendMode: "updateProgram"
-    },
+    }
 
-    init: function() {
+    private prevBeat: boolean;
+    private beatCount: number;
+    private program: ClearScreenProgram;
+    private color: Color;
+    protected opts: ClearScreenOpts;
+
+    constructor(main: IMain, parent: IContainer, opts: any) {
+        super(main, parent, opts);
+    }
+
+    init() {
         this.prevBeat = false;
         this.beatCount = 0;
 
         this.updateColor();
         this.updateProgram();
-    },
+    }
 
-    draw: function() {
-        var clear = false;
+    draw() {
+        let clear = false;
         if(this.opts.beatCount === 0) {
             clear = true;
         } else {
@@ -53,26 +66,23 @@ Webvs.defineClass(ClearScreen, Webvs.Component, {
         if(clear) {
             this.program.run(this.parent.fm, null, this.color);
         }
-    },
+    }
 
-    destroy: function() {
-        ClearScreen.super.destroy.call(this);
+    destroy() {
+        super.destroy();
         this.program.destroy();
-    },
+    }
 
-    updateColor: function() {
-        this.color = Webvs.parseColorNorm(this.opts.color);
-    },
+    updateColor() {
+        this.color = parseColorNorm(this.opts.color);
+    }
 
-    updateProgram: function() {
-        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
-        var program = new Webvs.ClearScreenProgram(this.gl, blendMode);
+    updateProgram() {
+        const blendMode = BlendModes[this.opts.blendMode];
+        const program = new ClearScreenProgram(this.main.rctx, blendMode);
         if(this.program) {
-            program.copyBuffers(this.program);
             this.program.destroy();
         }
         this.program = program;
     }
-});
-
-})(Webvs);
+}

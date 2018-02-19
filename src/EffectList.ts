@@ -3,9 +3,12 @@
  * See the file license.txt for copying permission.
  */
 import Container from './Container';
-import Main from './Main';
+import IMain from './IMain';
 import Component from './Component';
 import FrameBufferManager from './webgl/FrameBufferManager';
+import CodeInstance from './expr/CodeInstance';
+import { BlendModes } from './utils';
+import compileExpr from './expr/compileExpr';
 
 export enum ELBlendModes {
     REPLACE = 1,
@@ -38,7 +41,7 @@ interface EffectListOpts {
 export default class EffectList extends Container {
     static componentName = "EffectList";
     static componentTag = "";
-    static defaultOptions: EffectListOpts = {
+    protected static defaultOptions: EffectListOpts = {
         code: {
             init: "",
             perFrame: ""
@@ -49,24 +52,27 @@ export default class EffectList extends Container {
         enableOnBeat: false,
         enableOnBeatFor: 1
     }
-    static optUpdateHandlers = {
+    protected static optUpdateHandlers = {
         code: "updateCode",
         output: "updateBlendMode",
         input: "updateBlendMode"
     }
 
     protected opts: EffectListOpts;
-    private fm: FrameBufferManager;
     private frameCounter: number;
     private first: boolean;
+    private inited: boolean = false;
+    private code: CodeInstance;
+    private input: ELBlendModes;
+    private output: ELBlendModes;
 
-    constructor(gl: WebGLRenderingContext, main: Main, parent: Component, opts: any) {
-        super(gl, main, parent, opts);
+    constructor(main: IMain, parent: Container, opts: any) {
+        super(main, parent, opts);
     }
 
     init() {
         super.init();
-        this.fm = new FrameBufferManager(this.gl, this.main.copier, this.parent?true:false);
+        this.fm = new FrameBufferManager(this.main.rctx, this.main.copier, this.parent?true:false);
         this.updateCode();
         this.updateBlendMode(this.opts.input, "input");
         this.updateBlendMode(this.opts.output, "output");
@@ -91,15 +97,15 @@ export default class EffectList extends Container {
             }
         }
 
-        this.code.beat = this.main.analyser.beat?1:0;
-        this.code.enabled = 1;
-        this.code.clear = opts.clearFrame;
+        this.code['beat'] = this.main.analyser.beat?1:0;
+        this.code['enabled'] = 1;
+        this.code['clear'] = opts.clearFrame;
         if(!this.inited) {
             this.inited = true;
-            this.code.init();
+            this.code['init']();
         }
-        this.code.perFrame();
-        if(this.code.enabled === 0) {
+        this.code['perFrame']();
+        if(this.code['enabled'] === 0) {
             return;
         }
 
@@ -107,20 +113,22 @@ export default class EffectList extends Container {
         this.fm.setRenderTarget();
 
         // clear frame
-        if(opts.clearFrame || this.first || this.code.clear) {
-            this.gl.clearColor(0,0,0,1);
-            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        if(opts.clearFrame || this.first || this.code['clear']) {
+            const gl = this.main.rctx.gl;
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
             this.first = false;
         }
 
         // blend input texture onto internal texture
         if(this.input !== ELBlendModes.IGNORE) {
-            var inputTexture = this.parent.fm.getCurrentTexture();
-            this.main.copier.run(this.fm, this.input, inputTexture);
+            const inputTexture = this.parent.fm.getCurrentTexture();
+            //const blendMode: BlendModes = this.input as number;
+            this.main.copier.run(this.fm, this.input as number, inputTexture);
         }
 
         // render all the components
-        for(var i = 0;i < this.components.length;i++) {
+        for(let i = 0;i < this.components.length;i++) {
             if(this.components[i].enabled) {
                 this.components[i].draw();
             }
@@ -132,7 +140,7 @@ export default class EffectList extends Container {
         // blend current texture to the output framebuffer
         if(this.output != ELBlendModes.IGNORE) {
             if(this.parent) {
-                this.main.copier.run(this.parent.fm, this.output, this.fm.getCurrentTexture());
+                this.main.copier.run(this.parent.fm, this.output as number, this.fm.getCurrentTexture());
             } else {
                 this.main.copier.run(null, null, this.fm.getCurrentTexture());
             }
@@ -140,25 +148,29 @@ export default class EffectList extends Container {
     }
 
     destroy() {
-        EffectList.super.destroy.call(this);
+        super.destroy();
         if(this.fm) {
             // destroy the framebuffer manager
             this.fm.destroy();
         }
     }
 
-    updateCode() {
-        this.code = Webvs.compileExpr(this.opts.code, ["init", "perFrame"]).codeInst;
+    private updateCode() {
+        this.code = compileExpr(this.opts.code, ["init", "perFrame"]).codeInst;
         this.code.setup(this.main, this);
         this.inited = false;
     }
 
-    updateBlendMode(value, name) {
-        this[name] = Webvs.getEnumValue(value, ELBlendModes);
+    private updateBlendMode(value: string, name: "input" | "output") {
+        if(name === "input") {
+            this.input = ELBlendModes[value];
+        } else {
+            this.output = ELBlendModes[value];
+        }
     }
 
-    handleResize() {
+    private handleResize() {
         this.fm.resize();
-        this.code.updateDimVars(this.gl);
+        this.code.updateDimVars(this.main.rctx.gl);
     }
 }

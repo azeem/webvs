@@ -4,16 +4,20 @@
  */
 
 import _ from 'lodash';
+import IMain from './IMain';
+import { IContainer } from './componentInterfaces';
 import Component, { IComponentConstructor } from './Component';
 import ComponentRegistry from './ComponentRegistry';
+import FrameBufferManager from './webgl/FrameBufferManager';
 
 // A base class for all components that can have sub components.
 // Manages, cloning and component tree operations
-export default abstract class Container extends Component {
+export default abstract class Container extends Component implements IContainer {
     protected components: Component[];
+    public fm: FrameBufferManager;
 
-    constructor(gl, main, parent, opts) {
-        super(gl, main, parent, opts);
+    constructor(main: IMain, parent: IContainer, opts: any) {
+        super(main, parent, opts);
         delete this.opts.components;
     }
 
@@ -23,11 +27,12 @@ export default abstract class Container extends Component {
             for(let i = 0;i < this.opts.components.length;i++) {
                 const opts = this.opts.components[i];
                 const componentClass = ComponentRegistry.getComponentClass(opts.type);
-                const component = new componentClass(this.gl, this.main, this, opts);
+                const component = new componentClass(this.main, this, opts);
                 components.push(component);
             }
         }
         this.components = components;
+        this.fm = this.parent.fm;
     }
 
     destroy() {
@@ -37,9 +42,9 @@ export default abstract class Container extends Component {
         }
     }
     
-    createComponent(opts): Component {
+    createComponent(opts: any): Component {
         const componentClass = ComponentRegistry.getComponentClass(opts.type);
-        return new componentClass(this.gl, this.main, this, opts);
+        return new componentClass(this.main, this, opts);
     }
     
     // Adds a component as child of the given parent that

@@ -5,6 +5,7 @@
 
 import _ from 'lodash';
 import CopyProgram from './CopyProgram';
+import RenderingContext from './RenderingContext';
 
 interface TextureNameMeta {
     refCount: number,
@@ -14,7 +15,7 @@ interface TextureNameMeta {
 // FrameBufferManager maintains a set of render targets
 // and can switch between them.
 export default class FrameBufferManager {
-    private gl: WebGLRenderingContext;
+    private rctx: RenderingContext;
     private copier: CopyProgram;
     private initTexCount: number;
     private textureOnly: boolean;
@@ -26,8 +27,8 @@ export default class FrameBufferManager {
     private oldFrameBuffer: WebGLFramebuffer;
     private isRenderTarget: boolean;
 
-    constructor(gl: WebGLRenderingContext, copier: CopyProgram, textureOnly: boolean = false, texCount: number = 2) {
-        this.gl = gl;
+    constructor(rctx: RenderingContext, copier: CopyProgram, textureOnly: boolean = false, texCount: number = 2) {
+        this.rctx = rctx;
         this.copier = copier;
         this.initTexCount = texCount;
         this.textureOnly = textureOnly;
@@ -35,7 +36,7 @@ export default class FrameBufferManager {
     }
 
     private initFrameBuffers() {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
 
         if(!this.textureOnly) {
             this.framebuffer = gl.createFramebuffer();
@@ -55,7 +56,7 @@ export default class FrameBufferManager {
             this.names[name].refCount++;
             return this.names[name].index;
         }
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -85,7 +86,7 @@ export default class FrameBufferManager {
         if(index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
             throw new Error("Cannot remove current texture when set as render target");
         }
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         gl.deleteTexture(this.textures[index]);
         this.textures.splice(index, 1);
         if(this.curTex >= this.textures.length) {
@@ -98,8 +99,8 @@ export default class FrameBufferManager {
 
     // Saves the current render target and sets this
     // as the render target
-    setRenderTarget(texName: string) {
-        const gl = this.gl;
+    setRenderTarget(texName?: string) {
+        const gl = this.rctx.gl;
         const curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer;
         if(this.textureOnly) {
             if(!curFrameBuffer) {
@@ -128,7 +129,7 @@ export default class FrameBufferManager {
     // Restores the render target previously saved with
     // a Webvs.FrameBufferManager.setRenderTarget call
     restoreRenderTarget() {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         if(this.textureOnly) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                     gl.COLOR_ATTACHMENT0,
@@ -164,7 +165,7 @@ export default class FrameBufferManager {
         if(!this.isRenderTarget) {
             throw new Error("Cannot switch texture when not set as rendertarget");
         }
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         this.curTex = this.findIndex(nameOrIndex);
         this.curTex %= this.textures.length;
         const texture = this.textures[this.curTex];
@@ -175,7 +176,7 @@ export default class FrameBufferManager {
 
     resize() {
         // TODO: investigate chrome warning: INVALID_OPERATION: no texture
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         for(let i = 0;i < this.textures.length;i++) {
             gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
@@ -185,7 +186,7 @@ export default class FrameBufferManager {
 
     // cleans up all webgl resources
     destroy() {
-        const gl = this.gl;
+        const gl = this.rctx.gl;
         for(var i = 0;i < this.textures.length;i++) {
             gl.deleteTexture(this.textures[i]);
         }
