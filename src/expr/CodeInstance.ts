@@ -7,6 +7,8 @@ import _ from 'lodash';
 import AnalyserAdapter from '../analyser/AnalyserAdapter';
 import ShaderProgram from '../webgl/ShaderProgram';
 import { WebGLVarType } from '../utils';
+import { IContainer } from '../Component';
+import IMain from '../IMain';
 
 // An object that encapsulates the generated executable code
 // and its state values. Also contains implementations of
@@ -92,11 +94,11 @@ export default class CodeInstance {
     }
 
     // initializes this codeinstance
-    setup(main, parent) {
+    setup(main: IMain) {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
-        this.updateDimVars(parent.gl);
+        this.updateDimVars(main.rctx.gl);
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {
@@ -106,7 +108,7 @@ export default class CodeInstance {
         });
     }
 
-    updateDimVars(gl) {
+    updateDimVars(gl: WebGLRenderingContext) {
         this.w = gl.drawingBufferWidth;
         this.h = gl.drawingBufferHeight;
     }

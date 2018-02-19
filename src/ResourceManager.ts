@@ -110,7 +110,7 @@ export default class ResourceManager extends Model {
     }
     
     // Loads an Image resource
-    getImage(fileName: string, success: (image: HTMLImageElement) => void, error: () => void): void {
+    getImage(fileName: string, success: (image: HTMLImageElement) => void, error?: () => void): void {
         let image = this.images[fileName];
         if(image) { // check in cache
             if(success) {

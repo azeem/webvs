@@ -9,7 +9,7 @@ import * as Ast from './Ast';
 import CodeInstance from './CodeInstance';
 
 export interface CompileResult {
-    codeInst: any;
+    codeInst: CodeInstance;
     glslCode: string;
 }
 

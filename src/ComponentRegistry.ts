@@ -2,26 +2,29 @@ import Component, {IComponentConstructor} from './Component';
 import ClearScreen from './render/ClearScreen';
 
 export default class ComponentRegistry {
-    static components: {[name: string]: IComponentConstructor};
-    static addComponent(componentClasses: IComponentConstructor | IComponentConstructor[]) {
+    private components: {[name: string]: IComponentConstructor} = {};
+
+    constructor(componentClasses?: IComponentConstructor | IComponentConstructor[]) {
+        if(componentClasses) {
+            this.addComponent(componentClasses);
+        }
+    }
+
+    addComponent(componentClasses: IComponentConstructor | IComponentConstructor[]) {
         if(!Array.isArray(componentClasses)) {
             componentClasses = [componentClasses];
         }
 
         componentClasses.forEach((componentClass) => {
             const name = componentClass.componentName;
-            if(name in ComponentRegistry.components) {
+            if(name in this.components) {
                 throw new Error(`Component ${name} already exists in the registry`);
             }
-            ComponentRegistry.components[name] = componentClass;
+            this.components[name] = componentClass;
         });
     }
 
-    static getComponentClass(name) {
-        return ComponentRegistry.components[name];
+    getComponentClass(name) {
+        return this.components[name];
     }
 };
-
-ComponentRegistry.addComponent([
-
-]);

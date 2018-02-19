@@ -3,26 +3,71 @@
  * See the file license.txt for copying permission.
  */
 
-(function(Webvs) {
+import _ from 'lodash';
+import IMain from '../IMain';
+import Component, {IContainer} from '../Component';
+import Buffer from '../webgl/Buffer';
+import ShaderProgram from '../webgl/ShaderProgram';
+import RenderingContext from '../webgl/RenderingContext';
+import { BlendModes, Source, Color, parseColorNorm, WebGLVarType } from '../utils';
+import compileExpr, { CompileResult } from '../expr/compileExpr';
+import CodeInstance from '../expr/CodeInstance';
+import { Channel } from '../analyser/AnalyserAdapter';
 
-// A generic scope, that can draw points or lines based on user code
-function SuperScope(gl, main, parent, opts) {
-    SuperScope.super.constructor.call(this, gl, main, parent, opts);
+enum DrawModes {
+    LINES = 1,
+    DOTS
 }
 
-Webvs.registerComponent(SuperScope, {
-    name: "SuperScope",
-    menu: "Render"
-});
+interface SuperScopeOpts {
+    code: {
+        init: string,
+        perFrame: string,
+        onBeat: string,
+        perPoint: string
+    },
+    blendMode: string,
+    channel: string,
+    source: string,
+    drawMode: string,
+    thickness: number,
+    clone: number,
+    colors: string[],
+    cycleSpeed: number
+}
 
-var DrawModes = {
-    "LINES": 1,
-    "DOTS": 2
-};
-SuperScope.DrawModes = DrawModes;
+interface SSCodeInstance extends CodeInstance {
+    red: number;
+    green: number;
+    blue: number;
+    n: number;
+    b: number;
+    i: number;
+    v: number;
+    x: number;
+    y: number;
+    init: () => void;
+    perFrame: () => void;
+    onBeat: () => void;
+    perPoint: () => void;
+}
 
-Webvs.defineClass(SuperScope, Webvs.Component, {
-    defaultOptions: {
+// A generic scope, that can draw points or lines based on user code
+export default class SuperScope extends Component {
+    public static componentName: string = "SuperScope";
+    public static componentTag: string = "render";
+    protected static optUpdateHandlers = {
+        code: ["updateCode", "updateClones"],
+        colors: "updateColors",
+        cycleSpeed: "updateSpeed",
+        clone: "updateClones",
+        channel: "updateChannel",
+        thickness: "updateThickness",
+        blendMode: "updateProgram",
+        drawMode: "updateDrawMode",
+        source: "updateSource",
+    };
+    protected static defaultOptions: SuperScopeOpts = {
         code: {
             init: "n=800",
             perFrame: "t=t-0.05",
@@ -37,21 +82,28 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         clone: 1,
         colors: ["#ffffff"],
         cycleSpeed: 0.01
-    },
+    };
 
-    onChange: {
-        code: ["updateCode", "updateClones"],
-        colors: "updateColors",
-        cycleSpeed: "updateSpeed",
-        clone: "updateClones",
-        channel: "updateChannel",
-        thickness: "updateThickness",
-        blendMode: "updateProgram",
-        drawMode: "updateDrawMode",
-        source: "updateSource",
-    },
+    protected opts: SuperScopeOpts;
+    private pointBuffer: Buffer;
+    private colorBuffer: Buffer;
+    private code: SSCodeInstance[];
+    private inited: boolean;
+    private program: SuperScopeShader;
+    private source: Source;
+    private channel: Channel;
+    private drawMode: DrawModes;
+    private veryThick: boolean;
+    private colors: Color[];
+    private curColorId: number;
+    private maxStep: number;
+    private curStep: number;
 
-    init: function() {
+    constructor(main: IMain, parent: IContainer, opts: any) {
+        super(main, parent, opts);
+    }
+
+    init() {
         this.updateDrawMode();
         this.updateSource();
         this.updateProgram();
@@ -63,31 +115,31 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         this.updateThickness();
         this.listenTo(this.main, "resize", this.handleResize);
 
-        this.pointBuffer = new Webvs.Buffer(this.gl);
-        this.colorBuffer = new Webvs.Buffer(this.gl);
-    },
+        this.pointBuffer = new Buffer(this.main.rctx);
+        this.colorBuffer = new Buffer(this.main.rctx);
+    }
 
-    draw: function() {
-        var color = this._makeColor();
-        _.each(this.code, function(code) {
+    draw() {
+        const color = this._makeColor();
+        _.each(this.code, (code) => {
             this.drawScope(code, color, !this.inited);
-        }, this);
+        });
         this.inited = true;
-    },
+    }
 
-    destroy: function() {
-        SuperScope.super.destroy.call(this);
+    destroy() {
+        super.destroy();
         this.program.destroy();
         this.pointBuffer.destroy();
         this.colorBuffer.destroy();
-    },
+    }
 
     /**
      * renders the scope
      * @memberof Webvs.SuperScope#
      */
-    drawScope: function(code, color, runInit) {
-        var gl = this.gl;
+    private drawScope(code: SSCodeInstance, color: Color, runInit: boolean) {
+        const gl = this.main.rctx.gl;
 
         code.red = color[0];
         code.green = color[1];
@@ -97,42 +149,41 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
             code.init();
         }
 
-        var beat = this.main.analyser.beat;
+        const beat = this.main.analyser.beat;
         code.b = beat?1:0;
         code.perFrame();
         if(beat) {
             code.onBeat();
         }
 
-        var nPoints = Math.floor(code.n);
-        var data;
-        if(this.source == Webvs.Source.SPECTRUM) {
+        const nPoints = Math.floor(code.n);
+        let data;
+        if(this.source == Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum(this.channel);
         } else {
             data = this.main.analyser.getWaveform(this.channel);
         }
-        var dots = this.drawMode == DrawModes.DOTS;
-        var bucketSize = data.length/nPoints;
-        var pbi = 0;
-        var cdi = 0;
+        const dots = this.drawMode == DrawModes.DOTS;
+        const bucketSize = data.length/nPoints;
+        let pbi = 0;
+        let cdi = 0;
 
-        var bufferSize, thickX, thickY;
-        var lastX, lastY, lastR, lastG, lastB;
+        let bufferSize, thickX, thickY;
+        let lastX, lastY, lastR, lastG, lastB;
         if(this.veryThick) {
             bufferSize = (dots?(nPoints*6):(nPoints*6-6));
-            thickX = this.opts.thickness/this.gl.drawingBufferWidth;
-            thickY = this.opts.thickness/this.gl.drawingBufferHeight;
+            thickX = this.opts.thickness/gl.drawingBufferWidth;
+            thickY = this.opts.thickness/gl.drawingBufferHeight;
         } else {
             bufferSize = (dots?nPoints:(nPoints*2-2));
         }
 
-        var pointBufferData = new Float32Array(bufferSize * 2);
-        var colorData = new Float32Array(bufferSize * 3);
-        for(var i = 0;i < nPoints;i++) {
-            var value = 0;
-            var size = 0;
-            var j;
-            for(j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
+        const pointBufferData = new Float32Array(bufferSize * 2);
+        const colorData = new Float32Array(bufferSize * 3);
+        for(let i = 0;i < nPoints;i++) {
+            let value = 0;
+            let size = 0;
+            for(let j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
                 value += data[j];
             }
             value = value/size;
@@ -163,17 +214,17 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
                     pointBufferData[pbi++] = code.x+thickX;
                     pointBufferData[pbi++] = code.y+thickY;
 
-                    for(j = 0;j < 6;j++) {
+                    for(let j = 0;j < 6;j++) {
                         colorData[cdi++] = code.red;
                         colorData[cdi++] = code.green;
                         colorData[cdi++] = code.blue;
                     }
                 } else {
                     if(i !== 0) {
-                        var xdiff = Math.abs(lastX-code.x);
-                        var ydiff = Math.abs(lastY-code.y);
-                        var xoff = (xdiff <= ydiff)?thickX:0;
-                        var yoff = (xdiff >  ydiff)?thickY:0;
+                        const xdiff = Math.abs(lastX-code.x);
+                        const ydiff = Math.abs(lastY-code.y);
+                        const xoff = (xdiff <= ydiff)?thickX:0;
+                        const yoff = (xdiff >  ydiff)?thickY:0;
 
                         // a rectangle from last point to the current point
                         pointBufferData[pbi++] = lastX+xoff;
@@ -194,7 +245,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
                         pointBufferData[pbi++] = code.x-xoff;
                         pointBufferData[pbi++] = code.y-yoff;
 
-                        for(j = 0;j < 6;j++) {
+                        for(let j = 0;j < 6;j++) {
                             colorData[cdi++] = code.red;
                             colorData[cdi++] = code.green;
                             colorData[cdi++] = code.blue;
@@ -224,7 +275,7 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
                         pointBufferData[pbi++] = code.x;
                         pointBufferData[pbi++] = code.y;
 
-                        for(j = 0;j < 2;j++) {
+                        for(let j = 0;j < 2;j++) {
                             // use current color for both points because
                             // we dont want color interpolation between points
                             colorData[cdi++] = code.red;
@@ -250,37 +301,36 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
                          dots, 
                          this.veryThick?1:this.opts.thickness, 
                          this.veryThick);
-    },
+    }
 
-    updateProgram: function() {
-        var blendMode = Webvs.getEnumValue(this.opts.blendMode, Webvs.BlendModes);
-        var program = new SuperScopeShader(this.gl, blendMode);
+    private updateProgram() {
+        const blendMode: BlendModes = BlendModes[this.opts.blendMode];
+        const program = new SuperScopeShader(this.main.rctx, blendMode);
         if(this.program) {
-            program.copyBuffers(this.program);
             this.program.destroy();
         }
         this.program = program;
-    },
+    }
 
-    updateCode: function() {
-        var code = Webvs.compileExpr(this.opts.code, ["init", "onBeat", "perFrame", "perPoint"]).codeInst;
+    private updateCode() {
+        const code = compileExpr(this.opts.code, ["init", "onBeat", "perFrame", "perPoint"]).codeInst as SSCodeInstance;
         code.n = 100;
-        code.setup(this.main, this);
+        code.setup(this.main);
         this.inited = false;
         this.code = [code];
-    },
+    }
 
-    updateClones: function() {
-        this.code = Webvs.CodeInstance.clone(this.code, this.opts.clone);
-    },
+    private updateClones() {
+        this.code = CodeInstance.clone(this.code, this.opts.clone) as SSCodeInstance[];
+    }
 
-    updateColors: function() {
-        this.colors = _.map(this.opts.colors, Webvs.parseColorNorm);
+    private updateColors() {
+        this.colors = _.map(this.opts.colors, parseColorNorm);
         this.curColorId = 0;
-    },
+    }
 
-    updateSpeed: function() {
-        var oldMaxStep = this.maxStep;
+    private updateSpeed() {
+        const oldMaxStep = this.maxStep;
         this.maxStep = Math.floor(1/this.opts.cycleSpeed);
         if(this.curStep) {
             // curStep adjustment when speed changes
@@ -288,43 +338,44 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
         } else {
             this.curStep = 0;
         }
-    },
+    }
 
-    updateChannel: function() {
-        this.channel = Webvs.getEnumValue(this.opts.channel, Webvs.Channels);
-    },
+    private updateChannel() {
+        this.channel = Channel[this.opts.channel];
+    }
 
-    updateSource: function() {
-        this.source = Webvs.getEnumValue(this.opts.source, Webvs.Source);
-    },
+    private updateSource() {
+        this.source = Source[this.opts.source];
+    }
 
-    updateDrawMode: function() {
-        this.drawMode = Webvs.getEnumValue(this.opts.drawMode, DrawModes);
-    },
+    private updateDrawMode() {
+        this.drawMode = DrawModes[this.opts.drawMode];
+    }
 
-    updateThickness: function() {
-        var range;
+    private updateThickness() {
+        let range;
+        const gl = this.main.rctx.gl;
         if(this.drawMode == DrawModes.DOTS) {
-            range = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
+            range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
         } else {
-            range = this.gl.getParameter(this.gl.ALIASED_LINE_WIDTH_RANGE);
+            range = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE);
         }
         if(this.opts.thickness < range[0] || this.opts.thickness > range[1]) {
             this.veryThick = true;
         } else {
             this.veryThick = false;
         }
-    },
+    }
 
-    _makeColor: function() {
+    private _makeColor(): Color {
         if(this.colors.length == 1) {
             return this.colors[0];
         } else {
-            var color = [];
-            var currentColor = this.colors[this.curColorId];
-            var nextColor = this.colors[(this.curColorId+1)%this.colors.length];
-            var mix = this.curStep/this.maxStep;
-            for(var i = 0;i < 3;i++) {
+            const color: Color = [0,0,0];
+            const currentColor = this.colors[this.curColorId];
+            const nextColor = this.colors[(this.curColorId+1)%this.colors.length];
+            const mix = this.curStep/this.maxStep;
+            for(let i = 0;i < 3;i++) {
                 color[i] = currentColor[i]*(1-mix) + nextColor[i]*mix;
             }
             this.curStep = (this.curStep+1)%this.maxStep;
@@ -333,43 +384,44 @@ Webvs.defineClass(SuperScope, Webvs.Component, {
             }
             return color;
         }
-    },
-
-    handleResize: function() {
-        _.each(this.code, function(code) {
-            code.updateDimVars(this.gl);
-        }, this);
     }
-});
 
-function SuperScopeShader(gl, blendMode) {
-    SuperScopeShader.super.constructor.call(this, gl, {
-        copyOnSwap: true,
-        blendMode: blendMode,
-        vertexShader: [
-            "attribute vec2 a_position;",
-            "attribute vec3 a_color;",
-            "varying vec3 v_color;",
-            "uniform float u_pointSize;",
-            "void main() {",
-            "   gl_PointSize = u_pointSize;",
-            "   setPosition(a_position);",
-            "   v_color = a_color;",
-            "}"
-        ],
-        fragmentShader: [
-            "varying vec3 v_color;",
-            "void main() {",
-            "   setFragColor(vec4(v_color, 1));",
-            "}"
-        ]
-    });
+    private handleResize() {
+        _.each(this.code, (code) => {
+            code.updateDimVars(this.main.rctx.gl);
+        });
+    }
 }
-Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram, {
-    draw: function(points, colors, dots, thickness, triangles) {
-        var gl = this.gl;
 
-        this.setUniform("u_pointSize", "1f", thickness);
+class SuperScopeShader extends ShaderProgram {
+    constructor(rctx: RenderingContext, blendMode: BlendModes) {
+        super(rctx, {
+            copyOnSwap: true,
+            blendMode: blendMode,
+            vertexShader: [
+                "attribute vec2 a_position;",
+                "attribute vec3 a_color;",
+                "varying vec3 v_color;",
+                "uniform float u_pointSize;",
+                "void main() {",
+                "   gl_PointSize = u_pointSize;",
+                "   setPosition(a_position);",
+                "   v_color = a_color;",
+                "}"
+            ],
+            fragmentShader: [
+                "varying vec3 v_color;",
+                "void main() {",
+                "   setFragColor(vec4(v_color, 1));",
+                "}"
+            ]
+        });
+    }
+
+    draw(points, colors, dots, thickness, triangles) {
+        const gl = this.rctx.gl;
+
+        this.setUniform("u_pointSize", WebGLVarType._1F, thickness);
         this.setAttrib("a_position", points, 2);
         this.setAttrib("a_color", colors, 3);
 
@@ -393,6 +445,4 @@ Webvs.SuperScopeShader = Webvs.defineClass(SuperScopeShader, Webvs.ShaderProgram
             gl.lineWidth(prevLineWidth);
         }
     }
-});
-
-})(Webvs);
+}

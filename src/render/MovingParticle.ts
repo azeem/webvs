@@ -4,8 +4,7 @@
  */
 
 import IMain from '../IMain';
-import Component from '../Component';
-import { IContainer } from '../componentInterfaces';
+import Component, {IContainer} from '../Component';
 import ShaderProgram from '../webgl/ShaderProgram';
 import Buffer from '../webgl/Buffer';
 import { Color, WebGLVarType, BlendModes, parseColorNorm } from '../utils';

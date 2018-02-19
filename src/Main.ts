@@ -14,9 +14,13 @@ import Buffer from './webgl/Buffer';
 import CopyProgram from './webgl/CopyProgram';
 import FrameBufferManager from './webgl/FrameBufferManager';
 import EffectList from './EffectList';
-import { IComponent } from './componentInterfaces';
 import IMain from './IMain';
 import RenderingContext from './webgl/RenderingContext';
+import ComponentRegistry from './ComponentRegistry';
+import ClearScreen from './render/ClearScreen';
+import MovingParticle from './render/MovingParticle';
+import Picture from './render/Picture';
+import Component from './Component';
 
 // Main Webvs object, that represents a running webvs instance.
 export default class Main extends Model implements IMain {
@@ -29,10 +33,11 @@ export default class Main extends Model implements IMain {
     public rsrcMan: ResourceManager;
     public rctx: RenderingContext;
     public copier: CopyProgram;
+    public componentRegistry: ComponentRegistry;
     private fm: FrameBufferManager;
-    private registerBank: {[key: string]: number};
-    private bootTime: number;
-    private rootComponent: IComponent;
+    public registerBank: {[key: string]: number};
+    public bootTime: number;
+    private rootComponent: Component;
     private animReqId: number;
     private buffers: {[name: string]: Buffer};
 
@@ -57,10 +62,19 @@ export default class Main extends Model implements IMain {
         }
 
         this.meta = {};
+        this._initComponentRegistry();
         this._initResourceManager(options.resourcePrefix);
         this._registerContextEvents();
         this._initGl();
         this._setupRoot({id: "root"});
+    }
+
+    private _initComponentRegistry() {
+        this.componentRegistry = new ComponentRegistry([
+            ClearScreen,
+            MovingParticle,
+            Picture
+        ]);
     }
 
     private _initResourceManager(prefix: string): void {

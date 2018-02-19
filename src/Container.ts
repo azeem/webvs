@@ -5,8 +5,7 @@
 
 import _ from 'lodash';
 import IMain from './IMain';
-import { IContainer } from './componentInterfaces';
-import Component, { IComponentConstructor } from './Component';
+import Component, { IComponentConstructor, IContainer } from './Component';
 import ComponentRegistry from './ComponentRegistry';
 import FrameBufferManager from './webgl/FrameBufferManager';
 
@@ -26,7 +25,7 @@ export default abstract class Container extends Component implements IContainer 
         if(this.opts.components) {
             for(let i = 0;i < this.opts.components.length;i++) {
                 const opts = this.opts.components[i];
-                const componentClass = ComponentRegistry.getComponentClass(opts.type);
+                const componentClass = this.main.componentRegistry.getComponentClass(opts.type);
                 const component = new componentClass(this.main, this, opts);
                 components.push(component);
             }
@@ -43,7 +42,7 @@ export default abstract class Container extends Component implements IContainer 
     }
     
     createComponent(opts: any): Component {
-        const componentClass = ComponentRegistry.getComponentClass(opts.type);
+        const componentClass = this.main.componentRegistry.getComponentClass(opts.type);
         return new componentClass(this.main, this, opts);
     }
     

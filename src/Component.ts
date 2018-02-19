@@ -5,15 +5,19 @@
 import _ from 'lodash';
 import Model from './Model';
 import IMain from './IMain';
-import {IComponent, IContainer} from './componentInterfaces';
+import FrameBufferManager from './webgl/FrameBufferManager';
 
 export interface IComponentConstructor {
-    new(main: IMain, parent: Component, opts: any): Component;
+    new(main: IMain, parent: IContainer, opts: any): Component;
     componentName: string;
     componentTag: string;
 }
 
-export default abstract class Component extends Model implements IComponent {
+export interface IContainer extends Component {
+    fm: FrameBufferManager;
+}
+
+export default abstract class Component extends Model {
     ['constructor']: typeof Component;
     protected main: IMain;
     protected parent: IContainer;

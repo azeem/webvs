@@ -4,8 +4,7 @@
  */
 import _ from 'lodash';
 import IMain from '../IMain';
-import Component from '../Component';
-import {IContainer} from '../componentInterfaces'
+import Component, {IContainer} from '../Component';
 import ShaderProgram from '../webgl/ShaderProgram';
 import ClearScreenProgram from '../webgl/ClearScreenProgram';
 import {Color, BlendModes, parseColorNorm} from '../utils';

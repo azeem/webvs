@@ -7,7 +7,7 @@ export default class Buffer {
     private glBuffer: WebGLBuffer;
     public length: number;
 
-    constructor(rctx: RenderingContext, isElemArray: boolean, data?: number[] | TypedArray) {
+    constructor(rctx: RenderingContext, isElemArray: boolean = false, data?: number[] | TypedArray) {
         const gl = rctx.gl;
         this.type = isElemArray?gl.ELEMENT_ARRAY_BUFFER:gl.ARRAY_BUFFER;
         this.rctx = rctx;

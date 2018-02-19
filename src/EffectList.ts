@@ -157,7 +157,7 @@ export default class EffectList extends Container {
 
     private updateCode() {
         this.code = compileExpr(this.opts.code, ["init", "perFrame"]).codeInst;
-        this.code.setup(this.main, this);
+        this.code.setup(this.main);
         this.inited = false;
     }
 

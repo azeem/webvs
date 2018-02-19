@@ -23,23 +23,33 @@ export function circleGeometry(rctx: RenderingContext, pointCount: number = 100)
     return buffer;
 }
 
-export function squareGeometry(rctx: RenderingContext) {
-    const cacheKey = 'SquareGeometry';
+export function squareGeometry(rctx: RenderingContext, positiveQuad: boolean = false) {
+    const cacheKey = 'SquareGeometry_' + positiveQuad;
     let buffer = rctx.getBuffer(cacheKey);
     if(buffer) {
         return buffer;
     }
-    const squareGeometry = new Buffer(
-        this.gl, false,
-        [
+    let points;
+    if(positiveQuad) {
+        points = [
+            0,  0,
+            0,  1,
+            1,  1,
+            0,  0,
+            1,  1,
+            1,  0
+        ];
+    } else {
+        points = [
             -1,  -1,
             1,  -1,
             -1,  1,
             -1,  1,
             1,  -1,
             1,  1
-        ]
-    );
+        ];
+    }
+    buffer = new Buffer(this.gl, false, points);
     rctx.cacheBuffer(cacheKey, buffer);
     return buffer;
 }
