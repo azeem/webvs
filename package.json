@@ -25,6 +25,11 @@
     "stats.js": "*"
   },
   "devDependencies": {
+    "karma": "^2.0.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-mocha": "^1.3.0",
+    "karma-typescript": "^3.0.12",
+    "mocha": "^5.0.1",
     "pegjs": "^0.10.0",
     "pegjs-loader": "^0.5.4",
     "ts-loader": "^3.5.0",
