@@ -24,7 +24,7 @@ export default class CodeInstance {
     constructor(
         private _registerUsages: string[],
         private _glslRegisters: string[],
-        private _hasRandom: boolean,
+        public _hasRandom: boolean,
         private _uniforms: string[],
         private _preCompute: {[uniformName:string]: string[]}
     ) {}
