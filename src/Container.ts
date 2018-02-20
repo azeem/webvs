@@ -3,7 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-import _ from 'lodash';
+import * as _ from 'lodash';
 import IMain from './IMain';
 import Component, { IComponentConstructor, IContainer } from './Component';
 import ComponentRegistry from './ComponentRegistry';

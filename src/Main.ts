@@ -7,7 +7,7 @@ import {checkRequiredOptions} from './utils';
 import AnalyserAdapter from './analyser/AnalyserAdapter';
 import Model from './Model';
 import Stats from 'stats.js';
-import _ from 'lodash';
+import * as _ from 'lodash';
 import ResourcePack from './ResourcePack';
 import ResourceManager from './ResourceManager';
 import Buffer from './webgl/Buffer';
@@ -127,7 +127,7 @@ export default class Main extends Model implements IMain {
             const oldDrawFrame = drawFrame;
             drawFrame = () => {
                 this.stats.begin();
-                oldDrawFrame.call(this, arguments);
+                oldDrawFrame();
                 this.stats.end();
             };
         }

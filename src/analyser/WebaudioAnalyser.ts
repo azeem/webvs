@@ -4,7 +4,7 @@
  */
 
 import AnalyserAdapter, { Channel } from './AnalyserAdapter';
-import _ from 'lodash';
+import * as _ from 'lodash';
 
 interface VisData {
     spectrum: Float32Array,

@@ -7,10 +7,14 @@ module.exports = {
         filename: 'webvs.js'
     },
     resolve: {
-        extensions: ['.ts', '.tsx', '.js']
+        extensions: ['.ts', '.pegjs']
     },
     module: {
         rules: [
+            {
+                test: /\.pegjs$/,
+                loader: 'pegjs-loader'
+            },
             { 
                 test: /\.tsx?$/,
                 exclude: /node_modules/,

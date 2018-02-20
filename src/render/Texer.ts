@@ -3,7 +3,7 @@
  * See the file license.txt for copying permission.
  */
 
-import _ from 'lodash';
+import * as _ from 'lodash';
 import RenderingContext from "../webgl/RenderingContext";
 import IMain from "../IMain";
 import Component, { IContainer } from "../Component";

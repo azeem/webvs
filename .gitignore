@@ -1,6 +1,5 @@
 node_modules
 .idea
 *.iml
-build
-bower_components
+dist
 .tmp

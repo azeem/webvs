@@ -2,7 +2,7 @@
  * Copyright (c) 2013-2015 Azeem Arshad
  * See the file license.txt for copying permission.
  */
-import _ from 'lodash';
+import * as _ from 'lodash';
 import IMain from '../IMain';
 import Component, {IContainer} from '../Component';
 import ShaderProgram from '../webgl/ShaderProgram';

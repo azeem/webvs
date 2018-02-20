@@ -1,5 +1,5 @@
-import EventEmitter from 'eventemitter3';
-import _ from 'lodash';
+import * as EventEmitter from 'eventemitter3';
+import * as _ from 'lodash';
 
 interface Subscription {
     emitter: EventEmitter,

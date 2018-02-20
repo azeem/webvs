@@ -1,8 +1,5 @@
-/**
- * Copyright (c) 2013-2015 Azeem Arshad
- * See the file license.txt for copying permission.
- */
-import _ from 'lodash';
+///<reference path="./pegjs.d.ts"/>
+import * as _ from 'lodash';
 import {noop, glslFloatRepr} from '../utils';
 import Parser from './ExprGrammar.pegjs';
 import * as Ast from './Ast';

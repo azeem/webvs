@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import * as _ from 'lodash';
 import IMain from "../IMain";
 import Component, { IContainer } from "../Component";
 import QuadBoxProgram from "../webgl/QuadBoxProgram";
