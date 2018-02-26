@@ -31,7 +31,7 @@ export default abstract class Container extends Component implements IContainer 
             }
         }
         this.components = components;
-        this.fm = this.parent.fm;
+        this.fm = this.parent && this.parent.fm;
     }
 
     destroy() {

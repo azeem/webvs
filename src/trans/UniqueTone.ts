@@ -4,7 +4,7 @@ import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { BlendModes, WebGLVarType, parseColorNorm } from "../utils";
 
-interface UniqueToneOpts {
+export interface UniqueToneOpts {
     color: string,
     invert: boolean,
     blendMode: string 

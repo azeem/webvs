@@ -19,7 +19,7 @@ enum DrawModes {
     DOTS
 }
 
-interface SuperScopeOpts {
+export interface SuperScopeOpts {
     code: {
         init: string,
         perFrame: string,

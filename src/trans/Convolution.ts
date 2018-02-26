@@ -10,7 +10,7 @@ enum EdgeModes {
     WRAP
 }
 
-interface ConvolutionOpts {
+export interface ConvolutionOpts {
     edgeMode: string,
     autoScale: boolean,
     scale: number,
@@ -20,7 +20,7 @@ interface ConvolutionOpts {
 
 // A component that applies a convolution kernel
 export default class Convolution extends Component {
-    public static componentName: string = "ColorMap";
+    public static componentName: string = "Convolution";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
         "edgeMode": "updateProgram",

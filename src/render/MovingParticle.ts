@@ -11,7 +11,7 @@ import { Color, WebGLVarType, BlendModes, parseColorNorm } from '../utils';
 import RenderingContext from '../webgl/RenderingContext';
 import { circleGeometry } from '../webgl/geometries';
 
-interface MovingParticleOpts {
+export interface MovingParticleOpts {
     color: string,
     distance: number,
     particleSize: number,

@@ -6,7 +6,7 @@
 import * as _ from 'lodash';
 import Model from './Model';
 
-interface Pack {
+export interface Pack {
     name: string;
     prefix: string;
     fileNames: string[];

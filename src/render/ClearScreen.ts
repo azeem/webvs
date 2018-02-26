@@ -9,7 +9,7 @@ import ShaderProgram from '../webgl/ShaderProgram';
 import ClearScreenProgram from '../webgl/ClearScreenProgram';
 import {Color, BlendModes, parseColorNorm} from '../utils';
 
-interface ClearScreenOpts {
+export interface ClearScreenOpts {
     beatCount: number,
     color: string,
     blendMode: string

@@ -5,8 +5,8 @@ import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { WebGLVarType, BlendModes, parseColor, Color } from "../utils";
 
-type ColorMapItem = {index: number, color: string}
-interface ColorMapOpts {
+export type ColorMapItem = {index: number, color: string}
+export interface ColorMapOpts {
     key: string,
     output: string,
     mapCycleMode: string,

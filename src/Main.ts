@@ -21,11 +21,33 @@ import ClearScreen from './render/ClearScreen';
 import MovingParticle from './render/MovingParticle';
 import Picture from './render/Picture';
 import Component from './Component';
+import SuperScope from './render/SuperScope';
+import Texer from './render/Texer';
+import ChannelShift from './trans/ChannelShift';
+import ColorClip from './trans/ColorClip';
+import ColorMap from './trans/ColorMap';
+import Convolution from './trans/Convolution';
+import DynamicMovement from './trans/DynamicMovement';
+import FadeOut from './trans/FadeOut';
+import Invert from './trans/Invert';
+import Mirror from './trans/Mirror';
+import Mosaic from './trans/Mosaic';
+import UniqueTone from './trans/UniqueTone';
+import BufferSave from './misc/BufferSave';
+import GlobalVar from './misc/GlobalVar';
+
+export interface MainOpts {
+    canvas: HTMLCanvasElement;
+    analyser: AnalyserAdapter;
+    showStat?: boolean;
+    resourcePrefix?: string;
+    requestAnimationFrame?: (callback: () => void) => any;
+    cancelAnimationFrame?: (reqId: any) => void;
+}
 
 // Main Webvs object, that represents a running webvs instance.
 export default class Main extends Model implements IMain {
     private canvas: HTMLCanvasElement;
-    private msgElement: HTMLElement;
     public analyser: AnalyserAdapter;
     private isStarted: boolean;
     private stats: Stats;
@@ -34,23 +56,26 @@ export default class Main extends Model implements IMain {
     public rctx: RenderingContext;
     public copier: CopyProgram;
     public componentRegistry: ComponentRegistry;
-    private fm: FrameBufferManager;
+    public tempBuffers: FrameBufferManager;
     public registerBank: {[key: string]: number};
     public bootTime: number;
     private rootComponent: Component;
     private animReqId: number;
     private buffers: {[name: string]: Buffer};
+    private requestAnimationFrame: (callback: () => void) => any;
+    private cancelAnimationFrame: (reqId: any) => void;
 
-    constructor(options) {
+    constructor(options: MainOpts) {
         super();
         checkRequiredOptions(options, ["canvas", "analyser"]);
         options = _.defaults(options, {
             showStat: false
         });
         this.canvas = options.canvas;
-        this.msgElement = options.msgElement;
         this.analyser = options.analyser;
         this.isStarted = false;
+        this.requestAnimationFrame = options.requestAnimationFrame || window.requestAnimationFrame;
+        this.cancelAnimationFrame = options.cancelAnimationFrame || window.cancelAnimationFrame;
         if(options.showStat) {
             var stats = new Stats();
             stats.setMode(0);
@@ -63,7 +88,7 @@ export default class Main extends Model implements IMain {
 
         this.meta = {};
         this._initComponentRegistry();
-        this._initResourceManager(options.resourcePrefix);
+        this._initResourceManager(options.resourcePrefix || '');
         this._registerContextEvents();
         this._initGl();
         this._setupRoot({id: "root"});
@@ -73,7 +98,23 @@ export default class Main extends Model implements IMain {
         this.componentRegistry = new ComponentRegistry([
             ClearScreen,
             MovingParticle,
-            Picture
+            Picture,
+            SuperScope,
+            Texer,
+
+            ChannelShift,
+            ColorClip,
+            ColorMap,
+            Convolution,
+            DynamicMovement,
+            FadeOut,
+            Invert,
+            Mirror,
+            Mosaic,
+            UniqueTone,
+
+            BufferSave,
+            GlobalVar
         ]);
     }
 
@@ -103,7 +144,7 @@ export default class Main extends Model implements IMain {
         try {
             this.rctx = new RenderingContext(this.canvas.getContext("webgl", {alpha: false}));
             this.copier = new CopyProgram(this.rctx, {dynamicBlend: true});
-            this.fm = new FrameBufferManager(this.rctx, this.copier, true, 0);
+            this.tempBuffers = new FrameBufferManager(this.rctx, this.copier, true, 0);
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
         }
@@ -119,7 +160,7 @@ export default class Main extends Model implements IMain {
         let drawFrame = () => {
             this.analyser.update();
             this.rootComponent.draw();
-            this.animReqId = window.requestAnimationFrame(drawFrame);
+            this.animReqId = this.requestAnimationFrame(drawFrame);
         };
 
         // Wrap drawframe in stats collection if required
@@ -131,11 +172,11 @@ export default class Main extends Model implements IMain {
                 this.stats.end();
             };
         }
-        this.animReqId = requestAnimationFrame(drawFrame);
+        this.animReqId = this.requestAnimationFrame(drawFrame);
     }
 
     private _stopAnimation() {
-        window.cancelAnimationFrame(this.animReqId);
+        this.cancelAnimationFrame(this.animReqId);
     }
 
     // Starts the animation if not already started
@@ -183,7 +224,7 @@ export default class Main extends Model implements IMain {
     resetCanvas() {
         const preset = this.rootComponent.toJSON();
         this.rootComponent.destroy();
-        this.fm.destroy();
+        this.tempBuffers.destroy();
         this._initGl();
         this._setupRoot(preset);
     }
@@ -191,7 +232,7 @@ export default class Main extends Model implements IMain {
     notifyResize() {
         const gl = this.rctx.gl;
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this.fm.resize();
+        this.tempBuffers.resize();
         this.emit("resize", gl.drawingBufferWidth, gl.drawingBufferHeight);
     }
 

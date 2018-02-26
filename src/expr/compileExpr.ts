@@ -1,7 +1,7 @@
 ///<reference path="./pegjs.d.ts"/>
 import * as _ from 'lodash';
 import {noop, glslFloatRepr} from '../utils';
-import Parser from './ExprGrammar.pegjs';
+import { parse } from './ExprGrammar.pegjs';
 import * as Ast from './Ast';
 import CodeInstance from './CodeInstance';
 
@@ -47,7 +47,7 @@ function parseCode(codeSrc: {[name:string]: string}): CodeAst {
     const codeAst: CodeAst = {}; // abstract syntax tree
     for(const name in codeSrc) {
         try {
-            codeAst[name] = Parser.parse(codeSrc[name]) as Ast.Program;
+            codeAst[name] = parse(codeSrc[name]) as Ast.Program;
         } catch(e) {
             throw new Error("Error parsing " + name + " (" + e.line + ":" + e.column + ")" + " : " + e);
         }

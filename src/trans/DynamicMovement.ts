@@ -12,7 +12,7 @@ enum CoordModes {
     RECT
 };
 
-interface DynamicMovementOpts {
+export interface DynamicMovementOpts {
     code: {
         init: string,
         onBeat: string,

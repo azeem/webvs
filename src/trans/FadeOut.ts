@@ -3,7 +3,7 @@ import Component, { IContainer } from "../Component";
 import ClearScreenProgram from "../webgl/ClearScreenProgram";
 import { BlendModes, Color, parseColorNorm } from "../utils";
 
-interface FadeOutOpts {
+export interface FadeOutOpts {
     speed: number,
     color: string
 }

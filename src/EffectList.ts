@@ -24,7 +24,7 @@ export enum ELBlendModes {
     IGNORE
 }
 
-interface EffectListOpts {
+export interface EffectListOpts {
     code: {
         init: string,
         perFrame: string

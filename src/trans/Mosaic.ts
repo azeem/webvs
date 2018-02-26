@@ -4,7 +4,7 @@ import QuadBoxProgram from '../webgl/QuadBoxProgram';
 import RenderingContext from '../webgl/RenderingContext';
 import { BlendModes, WebGLVarType } from '../utils';
 
-interface MosaicOpts {
+export interface MosaicOpts {
     blendMode: string,
     squareSize: number,
     onBeatSizeChange: boolean,

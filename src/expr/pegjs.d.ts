@@ -1,7 +1,3 @@
 declare module '*.pegjs' {
-    interface Parser {
-        parse(string): any
-    }
-    const parser: Parser;
-    export default parser;
+    export const parse: (string) => any;
 }

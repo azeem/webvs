@@ -14,7 +14,7 @@ import { WebGLVarType, Source } from "../utils";
 import CodeInstance from "../expr/CodeInstance";
 
 
-interface TexerOpts {
+export interface TexerOpts {
     code: {
         init: string,
         onBeat: string,

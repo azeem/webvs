@@ -8,7 +8,7 @@ interface Subscription {
 };
 
 export default abstract class Model extends EventEmitter {
-    private subscriptions: Subscription[];
+    private subscriptions: Subscription[] = [];
 
     public abstract get(key: string): any;
     public abstract toJSON(key: string): any;

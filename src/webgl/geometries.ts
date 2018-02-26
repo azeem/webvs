@@ -49,7 +49,7 @@ export function squareGeometry(rctx: RenderingContext, positiveQuad: boolean = f
             1,  1
         ];
     }
-    buffer = new Buffer(this.gl, false, points);
+    buffer = new Buffer(rctx, false, points);
     rctx.cacheBuffer(cacheKey, buffer);
     return buffer;
 }

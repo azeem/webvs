@@ -5,7 +5,7 @@ import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { WebGLVarType } from "../utils";
 
-interface ChannelShiftOpts {
+export interface ChannelShiftOpts {
     channel: string,
     onBeatRandom: boolean
 }
@@ -22,8 +22,8 @@ const ShiftChannelsKeys = Object.keys(ShiftChannels).filter(s => typeof s === "s
 
 // A component that swizzles the color component
 export default class ChannelShift extends Component {
-    public static componentName: string = "SuperScope";
-    public static componentTag: string = "render";
+    public static componentName: string = "ChannelShift";
+    public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
         channel: "updateChannel"
     };

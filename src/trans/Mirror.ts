@@ -4,14 +4,14 @@ import RenderingContext from '../webgl/RenderingContext';
 import { WebGLVarType } from '../utils';
 import IMain from '../IMain';
 
-interface MirrorDirs {
+export interface MirrorDirs {
     topToBottom: boolean,
     bottomToTop: boolean,
     leftToRight: boolean,
     rightToLeft: boolean,
 }
 
-interface MirrorOpts extends MirrorDirs {
+export interface MirrorOpts extends MirrorDirs {
     onBeatRandom: boolean,
     smoothTransition: boolean,
     transitionDuration: number

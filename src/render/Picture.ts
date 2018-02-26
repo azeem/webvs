@@ -11,7 +11,7 @@ import Buffer from '../webgl/Buffer';
 import { WebGLVarType } from '../utils';
 import { squareGeometry } from '../webgl/geometries';
 
-interface PictureOpts {
+export interface PictureOpts {
     src: string;
     x: number;
     y: number;

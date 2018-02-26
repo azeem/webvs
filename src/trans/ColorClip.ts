@@ -9,7 +9,7 @@ import { WebGLVarType, Color, parseColorNorm } from "../utils";
  * See the file license.txt for copying permission.
  */
 
-interface ColorClipOpts {
+export interface ColorClipOpts {
     mode: string,
     color: string,
     outColor: string,
