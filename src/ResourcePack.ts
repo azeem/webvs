@@ -1,11 +1,8 @@
-/**
- * Copyright (c) 2013-2015 Azeem Arshad
- * See the file license.txt for copying permission.
- */
+declare var RESOURCE_PACK_URL: string;
 
 const ResourcePack = {
     name: "Builtin",
-    prefix: "./resources/",
+    prefix: RESOURCE_PACK_URL,
     fileNames: [
         "avsres_texer_circle_edgeonly_19x19.bmp",
         "avsres_texer_circle_edgeonly_29x29.bmp",

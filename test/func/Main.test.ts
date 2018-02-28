@@ -3,8 +3,8 @@ import {mainTest} from './funcTestUtils';
 
 describe('Main', () => {
     it('should render components', () => {
-        return mainTest(
-            {
+        return mainTest({
+            preset: {
                 components: [
                     {
                         type: "ClearScreen",
@@ -19,7 +19,7 @@ describe('Main', () => {
                     }
                 ]
             },
-            '/base/test/func/assert/Main_0.png'
-        )
+            expectImageSrc: 'Main_0.png'
+        });
     });
 });

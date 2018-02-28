@@ -1,4 +1,6 @@
+var webpack = require('webpack');
 var webpackConfig = require('./webpack.config')({TARGET: 'web'});
+var packageJson = require('./package.json');
 
 module.exports = function(config) {
   config.set({
@@ -8,15 +10,24 @@ module.exports = function(config) {
       'text/x-typescript': ['ts']
     },
     files: [
-      'test/func/**/*.test.ts',
-      {pattern: './test/func/assert/**/*', included: false}
+      'test/func/testIndex.ts',
+      // 'test/func/render/Texer.test.ts',
+      {pattern: './test/func/assert/**/*', included: false},
+      {pattern: './resources/**/*', included: false}
     ],
     preprocessors: {
-      'test/func/**/*.test.ts': ['webpack']
+      'test/func/testIndex.ts': ['webpack']
+      // 'test/func/render/Texer.test.ts': ['webpack'],
     },
     webpack: {
       resolve: webpackConfig.resolve,
       module: webpackConfig.module,
+      plugins: [
+        new webpack.DefinePlugin({
+          RESOURCE_PACK_URL: JSON.stringify('/base/resources/'),
+          WEBVS_VERSION: JSON.stringify(packageJson.version)
+        })
+      ]
     },
     reporters: ['mocha'],
     browsers: ['Chrome'],

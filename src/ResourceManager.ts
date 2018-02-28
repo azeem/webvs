@@ -20,10 +20,11 @@ export interface Pack {
 // when all resources are ready.
 export default class ResourceManager extends Model {
     private packs: Pack[];
-    private uris: {[key: string]: string};
-    private images: {[key: string]: HTMLImageElement};
-    private waitCount: number;
-    public ready: boolean;
+    private uris: {[key: string]: string} = {};
+    private images: {[key: string]: HTMLImageElement} = {};
+    private waitImages: {[key: string]: HTMLImageElement} = {};
+    private waitCount: number = 0;
+    public ready: boolean = true;
 
     constructor(packs: Pack | Pack[]) {
         super();
@@ -71,9 +72,21 @@ export default class ResourceManager extends Model {
     }
 
     // Clears state, uri mappings and caches. Browser caches still apply.
-    clear() {
-        this.uris = {};
-        this.images = {};
+    clear(keys: string[] = null) {
+        for(const fileName in this.waitImages) {
+            const image = this.waitImages[fileName];
+            image.onload = null;
+            image.onerror = null;
+        }
+        this.waitImages = {};
+        if (keys) {
+            const pickPredicate = (val, key) => keys.indexOf(key) === -1;
+            this.uris = _.pickBy(this.uris, pickPredicate);
+            this.images = _.pickBy(this.images, pickPredicate);
+        } else {
+            this.uris = {};
+            this.images = {};
+        }
         this.waitCount = 0;
         this.ready = true;
     }
@@ -131,6 +144,7 @@ export default class ResourceManager extends Model {
             image.crossOrigin = "anonymous";
         }
         image.onload = () => {
+            delete this.waitImages[fileName];
             this.images[fileName] = image;
             if(success) {
                 success(image);
@@ -139,6 +153,8 @@ export default class ResourceManager extends Model {
         };
         if(error) {
             image.onerror = () => {
+                console.log('>>> onError Called');
+                delete this.waitImages[fileName];
                 if(error()) { 
                     // then we treat this load as complete
                     // and handled properly
@@ -148,5 +164,6 @@ export default class ResourceManager extends Model {
         }
         this._loadStart();
         image.src = uri;
+        this.waitImages[fileName] = image;
     }
 }

@@ -1,5 +1,10 @@
 var path = require('path');
+var webpack = require('webpack');
+var fs = require('fs');
+var packageJson = require('./package.json');
 
+var resourcePackUrl = 'https://unpkg.com/webvs@' + packageJson.version + '/resources/';
+console.log(resourcePackUrl);
 var commonJsConfig = {
     entry: './index.ts',
     output: {
@@ -22,7 +27,13 @@ var commonJsConfig = {
                 loader: 'ts-loader'
             }
         ]
-    }
+    },
+    plugins: [
+        new webpack.DefinePlugin({
+            RESOURCE_PACK_URL: JSON.stringify(resourcePackUrl),
+            WEBVS_VERSION: JSON.stringify(packageJson.version)
+        })
+    ]
 };
 
 var webConfig = Object.assign({}, commonJsConfig, {
@@ -35,7 +46,7 @@ var webConfig = Object.assign({}, commonJsConfig, {
 });
 
 module.exports = function(env) {
-    var target = env.TARGET || 'all';
+    var target = (env && env.TARGET) || 'all';
     if(target == 'all') {
         return [commonJsConfig, webConfig];
     } else if(target === 'web') {

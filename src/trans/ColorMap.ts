@@ -96,9 +96,7 @@ export default class ColorMap extends Component {
                 this.main.rctx.gl.deleteTexture(tex);
             });
         }
-        this.colorMaps = _.map(this.opts.maps, function(map) {
-            return this._buildColorMap(map);
-        });
+        this.colorMaps = _.map(this.opts.maps, (map) => this._buildColorMap(map));
         this.currentMap = 0;
     }
 

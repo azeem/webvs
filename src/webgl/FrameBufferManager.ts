@@ -161,13 +161,12 @@ export default class FrameBufferManager {
     }
 
     // Swaps the current texture
-    switchTexture(nameOrIndex: string | number = this.curTex + 1) {
+    switchTexture(nameOrIndex: string | number = (this.curTex+1)%this.textures.length) {
         if(!this.isRenderTarget) {
             throw new Error("Cannot switch texture when not set as rendertarget");
         }
         const gl = this.rctx.gl;
         this.curTex = this.findIndex(nameOrIndex);
-        this.curTex %= this.textures.length;
         const texture = this.textures[this.curTex];
         gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                 gl.COLOR_ATTACHMENT0,
@@ -202,6 +201,7 @@ export default class FrameBufferManager {
         } else if(_.isNumber(arg) && arg >=0 && arg < this.textures.length) {
             index = arg;
         } else {
+            console.log('arg = ', typeof(arg), 'textures = ', this.textures);
             throw new Error("Unknown texture '" + arg + "'");
         }
         return index;

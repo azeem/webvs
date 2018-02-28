@@ -36,6 +36,8 @@ import UniqueTone from './trans/UniqueTone';
 import BufferSave from './misc/BufferSave';
 import GlobalVar from './misc/GlobalVar';
 
+declare var WEBVS_VERSION: string;
+
 export interface MainOpts {
     canvas: HTMLCanvasElement;
     analyser: AnalyserAdapter;
@@ -47,6 +49,7 @@ export interface MainOpts {
 
 // Main Webvs object, that represents a running webvs instance.
 export default class Main extends Model implements IMain {
+    public static version: string = WEBVS_VERSION;
     private canvas: HTMLCanvasElement;
     public analyser: AnalyserAdapter;
     private isStarted: boolean;
@@ -64,6 +67,9 @@ export default class Main extends Model implements IMain {
     private buffers: {[name: string]: Buffer};
     private requestAnimationFrame: (callback: () => void) => any;
     private cancelAnimationFrame: (reqId: any) => void;
+    private presetResourceKeys: string[] = [];
+    private contextLostHander: (event: any) => void;
+    private contextRestoredHander: (event: any) => void;
 
     constructor(options: MainOpts) {
         super();
@@ -125,19 +131,21 @@ export default class Main extends Model implements IMain {
             builtinPack.prefix = prefix;
         }
         this.rsrcMan = new ResourceManager(builtinPack);
-        this.listenTo(this.rsrcMan, "wait", this.handleRsrcWait);
-        this.listenTo(this.rsrcMan, "ready", this.handleRsrcReady);
+        this.listenTo(this.rsrcMan, "wait", this.handleRsrcWait.bind(this));
+        this.listenTo(this.rsrcMan, "ready", this.handleRsrcReady.bind(this));
     }
 
     private _registerContextEvents() {
-        this.canvas.addEventListener("webglcontextlost", (event) => {
+        this.contextLostHander = (event) => {
             event.preventDefault();
             this.stop();
-        });
+        };
+        this.canvas.addEventListener("webglcontextlost", this.contextLostHander);
 
-        this.canvas.addEventListener("webglcontextrestored", (event) => {
+        this.contextRestoredHander = (event) => {
             this.resetCanvas();
-        });
+        };
+        this.canvas.addEventListener("webglcontextrestored", this.contextRestoredHander);
     }
 
     private _initGl() {
@@ -209,9 +217,12 @@ export default class Main extends Model implements IMain {
         this.rootComponent.destroy();
 
         // setup resources
-        this.rsrcMan.clear();
+        this.rsrcMan.clear(this.presetResourceKeys);
         if("resources" in preset && "uris" in preset.resources) {
             this.rsrcMan.registerUri(preset.resources.uris);
+            this.presetResourceKeys = Object.keys(preset.resources.uris);
+        } else {
+            this.presetResourceKeys = [];
         }
 
         // load meta
@@ -280,6 +291,8 @@ export default class Main extends Model implements IMain {
         this.rsrcMan.destroy();
         this.rsrcMan = null;
         this.stopListening();
+        this.canvas.removeEventListener("webglcontextlost", this.contextLostHander);
+        this.canvas.removeEventListener("webglcontextrestored", this.contextRestoredHander);
     }
 
     // event handlers

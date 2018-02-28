@@ -18,7 +18,7 @@ enum ShiftChannels {
     GBR,
     GRB
 };
-const ShiftChannelsKeys = Object.keys(ShiftChannels).filter(s => typeof s === "string");
+const ShiftChannelsKeys = Object.keys(ShiftChannels).filter(s => isNaN(parseInt(s)));
 
 // A component that swizzles the color component
 export default class ChannelShift extends Component {
@@ -70,7 +70,6 @@ class ChannelShiftProgram extends QuadBoxProgram {
                 "uniform int u_channel;",
                 "void main() {",
                 "   vec3 color = getSrcColor().rgb;",
-
                 _.flatMap(ShiftChannelsKeys, (channel) => {
                     return [
                         "if(u_channel == "+ShiftChannels[channel]+") {",

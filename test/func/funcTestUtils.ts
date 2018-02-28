@@ -1,7 +1,10 @@
 import AnalyserAdapter, { Channel } from "../../src/analyser/AnalyserAdapter";
-import { clamp } from "../../src/utils";
+import { clamp, glslFloatRepr, noop } from "../../src/utils";
 import * as _ from "lodash";
 import Main from "../../src/Main";
+import Component from "../../src/Component";
+import QuadBoxProgram from "../../src/webgl/QuadBoxProgram";
+import IMain from "../../src/IMain";
 
 class MockAnalyser extends AnalyserAdapter {
     private sineData: Float32Array;
@@ -22,6 +25,52 @@ class MockAnalyser extends AnalyserAdapter {
     }
     getWaveform(channel?: Channel) {
         return this.sineData;
+    }
+}
+
+class GradientProgram extends QuadBoxProgram {
+    constructor(rctx, blue) {
+        super(rctx, {
+            fragmentShader: [
+                "void main() {",
+                "   setFragColor(vec4(v_position, "+glslFloatRepr(blue)+", 1));",
+                "}"
+            ]
+
+        });
+    }
+}
+
+interface TestPatternOpts {
+    blue: number;
+};
+
+class TestPattern extends Component {
+    public static componentName: string = "TestPattern";
+    public static componentTag: string = "render";
+    protected static optUpdateHandlers = {
+        blue: "updateProgram",
+    };
+    protected static defaultOptions: TestPatternOpts = {
+        blue: 0.5
+    };
+    protected opts: TestPatternOpts;
+    private program: GradientProgram;
+
+    init() {
+        this.updateProgram();
+    }
+
+    draw() {
+        this.program.run(this.parent.fm, null);
+    }
+
+    private updateProgram() {
+        const program = new GradientProgram(this.main.rctx, this.opts.blue);
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
     }
 }
 
@@ -125,19 +174,33 @@ function imageFuzzyOk(
     }
 }
 
-export async function mainTest(preset: any, expectImageSrc: string, frameCount: number = 10) {
-    const expectImage = await loadImage(expectImageSrc);
+interface MainTestOpts {
+    preset: any, 
+    expectImageSrc: string, 
+    onFrame?: (main: IMain, index: number) => void,
+    onInit?: (main: IMain) => void,
+    frameCount?: number,
+    distanceThreshold?: number,
+    mismatchThreshold?: number
+}
+
+export async function mainTest(opts: MainTestOpts) {
+    const {preset, expectImageSrc, onFrame, onInit, frameCount = 10} = opts;
+    const expectImage = await loadImage('/base/test/func/assert/' + expectImageSrc);
     const canvas = document.createElement('canvas');
     canvas.width = expectImage.width;
     canvas.height = expectImage.height;
     document.body.appendChild(canvas);
     const runMain = new Promise<Main>((resolve, reject) => {
-        let main;
+        let main: Main;
         let frameCounter = 0;
         const requestAnimationFrame = (drawCallback) => {
             if(++frameCounter === frameCount) {
                 resolve(main);
             } else {
+                if(onFrame) {
+                    onFrame(main, frameCounter - 1);
+                }
                 drawCallback();
             }
             return frameCounter;
@@ -147,9 +210,32 @@ export async function mainTest(preset: any, expectImageSrc: string, frameCount: 
         main = new Main({
             canvas, analyser, requestAnimationFrame, cancelAnimationFrame
         });
+        if(onInit) {
+            onInit(main);
+        }
+        main.componentRegistry.addComponent(TestPattern);
         main.loadPreset(preset);
         main.start();
     })
     const main = await runMain;
-    imageFuzzyOk(main.rctx.gl, canvas, expectImage);
+    try {
+        imageFuzzyOk(main.rctx.gl, canvas, expectImage, opts.distanceThreshold, opts.mismatchThreshold);
+    } finally {
+        main.destroy();
+        canvas.remove();
+    }
+}
+
+export function makeSinglePreset(type: string, opts: any, testPatternBlue: number= null) {
+    const componentOpts = Object.assign({ type }, opts);
+    const components = [
+        componentOpts
+    ]
+    if (_.isNumber(testPatternBlue)) {
+        components.unshift({
+            type: 'TestPattern',
+            blue: testPatternBlue
+        });
+    }
+    return { components }
 }

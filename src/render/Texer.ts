@@ -106,7 +106,7 @@ export default class Texer extends Component {
     }
 
     draw() {
-        _.each(this.code, function(code) {
+        _.each(this.code, (code) => {
             this._drawScope(code, !this.inited);
         });
         this.inited = true;
