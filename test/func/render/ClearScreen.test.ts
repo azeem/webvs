@@ -37,7 +37,7 @@ describe('ClearScreen', () => {
             onFrame: (main: IMain, frame: number) => {
                 main.analyser.beat = (frame%2) === 0;
             },
-            frameCount: 10
+            frameCount: 9
         });
     })
 });

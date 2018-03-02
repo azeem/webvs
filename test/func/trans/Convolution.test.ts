@@ -37,7 +37,7 @@ describe('Convolution', () => {
             },
             expectImageSrc: 'Convolution_0.png',
             mismatchThreshold: 50,
-            frameCount: 2
+            frameCount: 1
         })
     });
 });

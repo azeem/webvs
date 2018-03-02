@@ -11,13 +11,11 @@ module.exports = function(config) {
     },
     files: [
       'test/func/testIndex.ts',
-      // 'test/func/render/Texer.test.ts',
       {pattern: './test/func/assert/**/*', included: false},
       {pattern: './resources/**/*', included: false}
     ],
     preprocessors: {
       'test/func/testIndex.ts': ['webpack']
-      // 'test/func/render/Texer.test.ts': ['webpack'],
     },
     webpack: {
       resolve: webpackConfig.resolve,

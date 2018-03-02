@@ -195,15 +195,15 @@ export async function mainTest(opts: MainTestOpts) {
         let main: Main;
         let frameCounter = 0;
         const requestAnimationFrame = (drawCallback) => {
-            if(++frameCounter === frameCount) {
+            if(frameCounter === frameCount) {
                 resolve(main);
             } else {
                 if(onFrame) {
-                    onFrame(main, frameCounter - 1);
+                    onFrame(main, frameCounter);
                 }
-                drawCallback();
+                window.setTimeout(drawCallback, 0);
             }
-            return frameCounter;
+            return ++frameCounter;
         }
         const cancelAnimationFrame = () => {}
         const analyser = new MockAnalyser();
