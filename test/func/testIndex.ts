@@ -1,2 +1,3 @@
-const testsContext= (require as any).context(".", true, /\.test$/);
+declare var require: any;
+const testsContext= require.context(".", true, /\.test$/);
 testsContext.keys().forEach(testsContext);

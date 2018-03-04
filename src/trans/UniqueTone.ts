@@ -53,7 +53,6 @@ export default class UniqueTone extends Component {
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
         const program = new UniqueToneProgram(this.main.rctx, blendMode);
-        console.log('>>> updating program = ', blendMode);
         if(this.program) {
             this.program.destroy();
         }

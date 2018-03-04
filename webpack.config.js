@@ -3,55 +3,70 @@ var webpack = require('webpack');
 var fs = require('fs');
 var packageJson = require('./package.json');
 
-var resourcePackUrl = 'https://unpkg.com/webvs@' + packageJson.version + '/resources/';
-console.log(resourcePackUrl);
-var commonJsConfig = {
-    entry: './index.ts',
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'webvs.node.js',
-        libraryTarget: 'commonjs2'
-    },
-    resolve: {
-        extensions: ['.ts', '.js', '.pegjs']
-    },
-    module: {
-        rules: [
-            {
-                test: /\.pegjs$/,
-                loader: 'pegjs-loader'
-            },
-            { 
-                test: /\.tsx?$/,
-                exclude: /node_modules/,
-                loader: 'ts-loader'
+function commonJsConfig(resourcePackUrl) {
+    if(!resourcePackUrl) {
+        resourcePackUrl = 'https://unpkg.com/webvs@' + packageJson.version + '/resources/';
+    }
+
+    return {
+        entry: './index.ts',
+        output: {
+            path: path.resolve(__dirname, 'dist'),
+            filename: 'webvs.node.js',
+            libraryTarget: 'commonjs2'
+        },
+        resolve: {
+            extensions: ['.ts', '.js', '.pegjs']
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.pegjs$/,
+                    loader: 'pegjs-loader'
+                },
+                { 
+                    test: /\.tsx?$/,
+                    exclude: /node_modules/,
+                    loader: 'ts-loader'
+                }
+            ]
+        },
+        plugins: [
+            new webpack.DefinePlugin({
+                RESOURCE_PACK_URL: JSON.stringify(resourcePackUrl),
+                WEBVS_VERSION: JSON.stringify(packageJson.version)
+            })
+        ],
+        serve: {
+            dev: {
+                publicPath: '/dist'
             }
-        ]
-    },
-    plugins: [
-        new webpack.DefinePlugin({
-            RESOURCE_PACK_URL: JSON.stringify(resourcePackUrl),
-            WEBVS_VERSION: JSON.stringify(packageJson.version)
-        })
-    ]
+        }
+    }
 };
 
-var webConfig = Object.assign({}, commonJsConfig, {
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'webvs.js',
-        library: 'Webvs',
-        libraryTarget: 'window'
-    }
-});
+function webConfig(devServer) {
+    const cjsConfig = commonJsConfig(devServer && '/resources/');
+    return Object.assign({}, cjsConfig, {
+        output: {
+            path: path.resolve(__dirname, 'dist'),
+            filename: 'webvs.js',
+            library: 'Webvs',
+            libraryTarget: 'window',
+            libraryExport: 'default'
+        }
+    });
+}
 
-module.exports = function(env) {
-    var target = (env && env.TARGET) || 'all';
-    if(target == 'all') {
-        return [commonJsConfig, webConfig];
-    } else if(target === 'web') {
-        return webConfig;
-    } else {
-        return commonJsConfig;
-    }
+var target = process.env.TARGET || 'all';
+if(target === 'dev') {
+    module.exports = webConfig(true);
+} else if(target == 'all') {
+    module.exports = [commonJsConfig(), webConfig()];
+} else if(target === 'web') {
+    module.exports = webConfig();
+} else if(target === 'cjs') {
+    module.exports = commonJsConfig();
+} else {
+    console.error('Unknown target', target);
 }

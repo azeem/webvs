@@ -80,8 +80,8 @@ export default class Main extends Model implements IMain {
         this.canvas = options.canvas;
         this.analyser = options.analyser;
         this.isStarted = false;
-        this.requestAnimationFrame = options.requestAnimationFrame || window.requestAnimationFrame;
-        this.cancelAnimationFrame = options.cancelAnimationFrame || window.cancelAnimationFrame;
+        this.requestAnimationFrame = options.requestAnimationFrame || window.requestAnimationFrame.bind(window);
+        this.cancelAnimationFrame = options.cancelAnimationFrame || window.cancelAnimationFrame.bind(window);
         if(options.showStat) {
             var stats = new Stats();
             stats.setMode(0);
@@ -102,6 +102,8 @@ export default class Main extends Model implements IMain {
 
     private _initComponentRegistry() {
         this.componentRegistry = new ComponentRegistry([
+            EffectList, 
+
             ClearScreen,
             MovingParticle,
             Picture,

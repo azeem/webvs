@@ -1,4 +1,4 @@
-import { mainTest } from "../funcTestUtils";
+import { mainTest, makeSinglePreset } from "../funcTestUtils";
 
 describe('SuperScope', () => {
     const code = {
@@ -27,14 +27,7 @@ describe('SuperScope', () => {
         ]
     };
 
-    function makePreset(opts) {
-        const superScopeOpts = Object.assign({ type: "SuperScope" }, opts);
-        return {
-            components: [
-                superScopeOpts
-            ]
-        };
-    }
+    const makePreset = makeSinglePreset.bind(this, 'SuperScope');
 
     it('should render dots', () => {
         return mainTest({
