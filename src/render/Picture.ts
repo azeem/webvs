@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2013-2015 Azeem Arshad
- * See the file license.txt for copying permission.
- */
-
 import IMain from '../IMain';
 import RenderingContext from "../webgl/RenderingContext";
 import Component, {IContainer} from '../Component';

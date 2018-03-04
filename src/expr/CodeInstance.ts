@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2013-2015 Azeem Arshad
- * See the file license.txt for copying permission.
- */
-
 import * as _ from 'lodash';
 import AnalyserAdapter from '../analyser/AnalyserAdapter';
 import ShaderProgram from '../webgl/ShaderProgram';

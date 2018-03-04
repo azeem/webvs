@@ -4,11 +4,6 @@ import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { WebGLVarType, Color, parseColorNorm } from "../utils";
 
-/**
- * Copyright (c) 2013-2015 Azeem Arshad
- * See the file license.txt for copying permission.
- */
-
 export interface ColorClipOpts {
     mode: string,
     color: string,

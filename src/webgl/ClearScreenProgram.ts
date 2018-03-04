@@ -2,10 +2,6 @@ import { BlendModes, WebGLVarType } from "../utils";
 import QuadBoxProgram from "./QuadBoxProgram";
 import RenderingContext from "./RenderingContext";
 
-/**
- * Copyright (c) 2013-2015 Azeem Arshad
- * See the file license.txt for copying permission.
- */
 // A Shader that clears the screen to a given color
 export default class ClearScreenProgram extends QuadBoxProgram {
     constructor(rctx: RenderingContext, blendMode: BlendModes) {
