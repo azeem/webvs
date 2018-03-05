@@ -1,71 +1,71 @@
-import { makeSinglePreset, mainTest } from "../funcTestUtils";
+import { mainTest, makeSinglePreset } from "../funcTestUtils";
 
-describe('ColorMap', () => {
-    const makePreset = (opts) => makeSinglePreset('ColorMap', opts, 0);
+describe("ColorMap", () => {
+    const makePreset = (opts) => makeSinglePreset("ColorMap", opts, 0);
     const maps = [
-        [{index:0, color: "#000000"},{index:255, color: "#FFFFFF"}]
+        [{index: 0, color: "#000000"}, {index: 255, color: "#FFFFFF"}],
     ];
 
-    it('should map RED', () => {
+    it("should map RED", () => {
         return mainTest({
             preset: makePreset({
-                maps, key: "RED"
+                maps, key: "RED",
             }),
-            expectImageSrc: 'ColorMap_0.png'
+            expectImageSrc: "ColorMap_0.png",
         });
     });
 
-    it('should blend output', () => {
+    it("should blend output", () => {
         return mainTest({
             preset: makePreset({
-                maps, key: "RED", output: "AVERAGE"
+                maps, key: "RED", output: "AVERAGE",
             }),
-            expectImageSrc: 'ColorMap_1.png'
+            expectImageSrc: "ColorMap_1.png",
         });
     });
 
-    it('should map GREEN', () => {
+    it("should map GREEN", () => {
         return mainTest({
             preset: makePreset({
-                maps, key: "GREEN"
+                maps, key: "GREEN",
             }),
-            expectImageSrc: 'ColorMap_2.png'
+            expectImageSrc: "ColorMap_2.png",
         });
     });
 
-    it('should map (R+G+B)/2', () => {
+    it("should map (R+G+B)/2", () => {
         return mainTest({
             preset: makePreset({
-                maps, key: "(R+G+B)/2"
+                maps, key: "(R+G+B)/2",
             }),
-            expectImageSrc: 'ColorMap_3.png'
+            expectImageSrc: "ColorMap_3.png",
         });
     });
 
-    it('should map (R+G+B)/3', () => {
+    it("should map (R+G+B)/3", () => {
         return mainTest({
             preset: makePreset({
-                maps, key: "(R+G+B)/3"
+                maps, key: "(R+G+B)/3",
             }),
-            expectImageSrc: 'ColorMap_4.png'
+            expectImageSrc: "ColorMap_4.png",
         });
     });
 
-    it('should map MAX', () => {
+    it("should map MAX", () => {
         return mainTest({
             preset: makePreset({
-                maps, key: "MAX"
+                maps, key: "MAX",
             }),
-            expectImageSrc: 'ColorMap_5.png'
+            expectImageSrc: "ColorMap_5.png",
         });
     });
 
-    it('should map BLUE', () => {
+    it("should map BLUE", () => {
         return mainTest({
             preset: makePreset({
-                maps, key: "BLUE"
+                maps, key: "BLUE",
             }),
-            expectImageSrc: 'blank.png'
+            expectImageSrc: "blank.png",
         });
     });
 });

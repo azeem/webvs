@@ -1,7 +1,7 @@
-import * as _ from 'lodash';
-import Model from './Model';
-import IMain from './IMain';
-import FrameBufferManager from './webgl/FrameBufferManager';
+import * as _ from "lodash";
+import IMain from "./IMain";
+import Model from "./Model";
+import FrameBufferManager from "./webgl/FrameBufferManager";
 
 export interface IComponentConstructor {
     new(main: IMain, parent: IContainer, opts: any): Component;
@@ -14,7 +14,7 @@ export interface IContainer extends Component {
 }
 
 export default abstract class Component extends Model {
-    ['constructor']: typeof Component;
+    public ["constructor"]: typeof Component;
     protected main: IMain;
     protected parent: IContainer;
     public id: string;
@@ -26,8 +26,8 @@ export default abstract class Component extends Model {
     protected static defaultOptions: any = {};
     public lastError: any;
 
-    abstract init();
-    abstract draw();
+    public abstract init();
+    public abstract draw();
 
     constructor(main: IMain, parent: IContainer, options: any) {
         super();
@@ -35,30 +35,30 @@ export default abstract class Component extends Model {
         this.parent = parent;
 
         this.id = options.id; // TODO: check for id uniqueness
-        if(!this.id) {
+        if (!this.id) {
             this.id = _.uniqueId(this.constructor.componentName  + "_");
         }
-        this.enabled = _.isUndefined(options.enabled)?true:options.enabled;
+        this.enabled = _.isUndefined(options.enabled) ? true : options.enabled;
 
         this.opts = _.omit(options, ["id", "enabled"]);
 
         const defaultOptions = this.constructor.defaultOptions;
-        if(defaultOptions) {
+        if (defaultOptions) {
             this.opts = _.defaults(this.opts, defaultOptions);
         }
 
         this.init();
     }
 
-    destroy() {
+    public destroy() {
         this.stopListening();
     }
 
-    setParent(newParent: IContainer) {
+    public setParent(newParent: IContainer) {
         this.parent = newParent;
     }
 
-    toJSON() {
+    public toJSON() {
         const opts = _.clone(this.opts);
         opts.id = this.id;
         opts.type = this.constructor.componentName;
@@ -66,16 +66,16 @@ export default abstract class Component extends Model {
         return opts;
     }
 
-    setAttribute(key: string, value: any, options: any) {
+    public setAttribute(key: string, value: any, options: any) {
         const oldValue = this.get(key);
-        if(key == "type" || _.isEqual(value, oldValue)) {
+        if (key == "type" || _.isEqual(value, oldValue)) {
             return false;
         }
 
         // set the property
-        if(key == "enabled") {
+        if (key == "enabled") {
             this.enabled = value;
-        } else if(key == "id") {
+        } else if (key == "id") {
             this.id = value;
         } else {
             this.opts[key] = value;
@@ -85,21 +85,21 @@ export default abstract class Component extends Model {
         // we just call these manually here no need to
         // go through event triggers
         const optUpdateHandlers = this.constructor.optUpdateHandlers;
-        if(optUpdateHandlers) {
+        if (optUpdateHandlers) {
             try {
                 const onChange = _.flatten([
                     optUpdateHandlers[key] || [],
-                    optUpdateHandlers["*"] || []
+                    optUpdateHandlers["*"] || [],
                 ]);
 
-                for(var i = 0;i < onChange.length;i++) {
+                for (let i = 0; i < onChange.length; i++) {
                     this[onChange[i]].call(this, value, key, oldValue);
                 }
-            } catch(e) {
+            } catch (e) {
                 // restore old value in case any of the onChange handlers fail
-                if(key == "enabled") {
+                if (key == "enabled") {
                     this.enabled = oldValue;
-                } else if(key == "id") {
+                } else if (key == "id") {
                     this.id = oldValue;
                 } else {
                     this.opts[key] = oldValue;
@@ -113,18 +113,18 @@ export default abstract class Component extends Model {
         return true;
     }
 
-    get(key): any {
-        if(key == "enabled") {
+    public get(key): any {
+        if (key == "enabled") {
             return this.enabled;
-        } else if(key == "id") {
+        } else if (key == "id") {
             return this.id;
         } else {
             return this.opts[key];
         }
     }
 
-    getPath(): string {
-        if(!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
+    public getPath(): string {
+        if (!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
             return this.parent.getPath() + "/" + this.constructor.componentName + "#" + this.id;
         } else {
             return this.constructor.componentName + "#Main";

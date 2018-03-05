@@ -1,13 +1,13 @@
-import Buffer from './Buffer';
+import Buffer from "./Buffer";
 
 export default class RenderingContext {
     private buffers: {[name: string]: Buffer} = {};
     constructor(public gl: WebGLRenderingContext) {}
 
-    cacheBuffer(name: string, buffer: Buffer) {
+    public cacheBuffer(name: string, buffer: Buffer) {
         this.buffers[name] = buffer;
     }
-    getBuffer(name: string): Buffer {
+    public getBuffer(name: string): Buffer {
         return this.buffers[name];
     }
 }

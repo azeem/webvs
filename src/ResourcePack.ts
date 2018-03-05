@@ -25,7 +25,7 @@ const ResourcePack = {
         "avsres_texer_square_sharp_64x64.bmp",
         "avsres_texer_square_sharp_72x72.bmp",
         "avsres_texer_square_sharp_96x96.bmp",
-        "avsres_texer_square_sharp_250x250.bmp"
-    ]
+        "avsres_texer_square_sharp_250x250.bmp",
+    ],
 };
 export default ResourcePack;

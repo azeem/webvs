@@ -1,15 +1,15 @@
-import * as seedrandom from 'seedrandom';
+import * as seedrandom from "seedrandom";
 import Component from "../../../src/Component";
-import { mainTest } from "../funcTestUtils";
 import IMain from "../../../src/IMain";
-import ShaderProgram from '../../../src/webgl/ShaderProgram';
+import ShaderProgram from "../../../src/webgl/ShaderProgram";
+import { mainTest } from "../funcTestUtils";
 
 class QuadrantColorComponent extends Component {
     public static componentName: string = "QuadrantColor";
     public static componentTag: string = "render";
     private program: ShaderProgram;
 
-    init() {
+    public init() {
         this.program = new ShaderProgram(this.main.rctx, {
             fragmentShader: `
                 void main() {
@@ -26,23 +26,23 @@ class QuadrantColorComponent extends Component {
                         setFragColor(vec4(1.0,1.0,0.0,1.0));
                     }
                 }
-            `
+            `,
         });
     }
 
-    draw() {
+    public draw() {
         this.program.run(this.parent.fm, {});
     }
 }
 
-describe('Mirror', () => {
+describe("Mirror", () => {
     before(() => {
-        seedrandom('mirror_test2', {global: true});
+        seedrandom("mirror_test2", {global: true});
     });
 
     after(() => {
         seedrandom(undefined, {global: true});
-    })
+    });
 
     function mirrorTest(opts: any, expectImageSrc: string, frameCount?: number, onFrame?: (main: IMain, frame: number) => void) {
         const mirrorOpts = Object.assign({type: "Mirror"}, opts);
@@ -53,46 +53,46 @@ describe('Mirror', () => {
             preset: {
                 components: [
                     {type: "QuadrantColor"},
-                    mirrorOpts
-                ]
+                    mirrorOpts,
+                ],
             },
             expectImageSrc,
             frameCount,
-            onFrame
+            onFrame,
         });
     }
 
-    it('Should mirror topToBottom', () => mirrorTest({topToBottom: true}, 'Mirror_0.png'));
-    it('Should mirror bottomToTop', () => mirrorTest({topToBottom: false, bottomToTop: true}, 'Mirror_1.png'));
-    it('Should mirror leftToRight', () => mirrorTest({topToBottom: false, leftToRight: true}, 'Mirror_2.png'));
-    it('Should mirror rightToLeft', () => mirrorTest({topToBottom: false, rightToLeft: true}, 'Mirror_3.png'));
-    it('Should onBeatRandom with transition #1', () => {
+    it("Should mirror topToBottom", () => mirrorTest({topToBottom: true}, "Mirror_0.png"));
+    it("Should mirror bottomToTop", () => mirrorTest({topToBottom: false, bottomToTop: true}, "Mirror_1.png"));
+    it("Should mirror leftToRight", () => mirrorTest({topToBottom: false, leftToRight: true}, "Mirror_2.png"));
+    it("Should mirror rightToLeft", () => mirrorTest({topToBottom: false, rightToLeft: true}, "Mirror_3.png"));
+    it("Should onBeatRandom with transition #1", () => {
         return mirrorTest(
             {topToBottom: true, rightToLeft: true, onBeatRandom: true, smoothTransition: true, transitionDuration: 10},
-            'Mirror_4.png',
+            "Mirror_4.png",
             5,
             (main, frame) => {
-                if(frame === 0) {
+                if (frame === 0) {
                     main.analyser.beat = true;
                 } else {
                     main.analyser.beat = false;
                 }
-            }
+            },
         );
     });
-    it('Should onBeatRandom with transition #2', () => {
+    it("Should onBeatRandom with transition #2", () => {
         return mirrorTest(
             {topToBottom: true, bottomToTop: true, rightToLeft: true, leftToRight: true, onBeatRandom: true, smoothTransition: true, transitionDuration: 15},
-            'Mirror_5.png',
+            "Mirror_5.png",
             15,
             (main, frame) => {
-                if(frame === 0 || frame === 10) {
+                if (frame === 0 || frame === 10) {
                     main.analyser.beat = true;
                 } else {
                     main.analyser.beat = false;
                 }
-            }
+            },
         );
     });
-    it('Should mirror topToBottom and rightToLeft', () => mirrorTest({topToBottom: true, rightToLeft: true}, 'Blue.png'));
+    it("Should mirror topToBottom and rightToLeft", () => mirrorTest({topToBottom: true, rightToLeft: true}, "Blue.png"));
 });

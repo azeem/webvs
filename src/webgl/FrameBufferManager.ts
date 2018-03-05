@@ -1,11 +1,11 @@
-import * as _ from 'lodash';
-import RenderingContext from './RenderingContext';
-import ShaderProgram from './ShaderProgram';
+import * as _ from "lodash";
+import RenderingContext from "./RenderingContext";
+import ShaderProgram from "./ShaderProgram";
 
 interface TextureNameMeta {
-    refCount: number,
-    index: number
-};
+    refCount: number;
+    index: number;
+}
 
 // FrameBufferManager maintains a set of render targets
 // and can switch between them.
@@ -15,7 +15,7 @@ export default class FrameBufferManager {
     private initTexCount: number;
     private textureOnly: boolean;
     private framebuffer: WebGLFramebuffer;
-    private names: {[key:string]: TextureNameMeta};
+    private names: {[key: string]: TextureNameMeta};
     private textures: WebGLTexture[];
     private curTex: number;
     private oldTexture: WebGLTexture;
@@ -33,21 +33,21 @@ export default class FrameBufferManager {
     private initFrameBuffers() {
         const gl = this.rctx.gl;
 
-        if(!this.textureOnly) {
+        if (!this.textureOnly) {
             this.framebuffer = gl.createFramebuffer();
         }
 
         this.names = {};
         this.textures = [];
-        for(var i = 0;i < this.initTexCount;i++) {
+        for (let i = 0; i < this.initTexCount; i++) {
             this.addTexture();
         }
         this.curTex = 0;
         this.isRenderTarget = false;
     }
 
-    addTexture(name?: string): number {
-        if(name && name in this.names) {
+    public addTexture(name?: string): number {
+        if (name && name in this.names) {
             this.names[name].refCount++;
             return this.names[name].index;
         }
@@ -61,44 +61,44 @@ export default class FrameBufferManager {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
                       gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         this.textures.push(texture);
-        if(name) {
+        if (name) {
             this.names[name] = {
                 refCount: 1,
-                index: this.textures.length-1
+                index: this.textures.length - 1,
             };
         }
-        return this.textures.length-1;
+        return this.textures.length - 1;
     }
 
-    removeTexture(nameOrIndex: string | number) {
-        if(_.isString(nameOrIndex) && nameOrIndex in this.names) {
-            if(this.names[nameOrIndex].refCount > 1) {
+    public removeTexture(nameOrIndex: string | number) {
+        if (_.isString(nameOrIndex) && nameOrIndex in this.names) {
+            if (this.names[nameOrIndex].refCount > 1) {
                 this.names[nameOrIndex].refCount--;
                 return;
             }
         }
         const index = this.findIndex(nameOrIndex);
-        if(index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
+        if (index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
             throw new Error("Cannot remove current texture when set as render target");
         }
         const gl = this.rctx.gl;
         gl.deleteTexture(this.textures[index]);
         this.textures.splice(index, 1);
-        if(this.curTex >= this.textures.length) {
-            this.curTex = this.textures.length-1;
+        if (this.curTex >= this.textures.length) {
+            this.curTex = this.textures.length - 1;
         }
-        if(typeof nameOrIndex === 'string') {
+        if (typeof nameOrIndex === "string") {
             delete this.names[nameOrIndex];
         }
     }
 
     // Saves the current render target and sets this
     // as the render target
-    setRenderTarget(texName?: string) {
+    public setRenderTarget(texName?: string) {
         const gl = this.rctx.gl;
         const curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer;
-        if(this.textureOnly) {
-            if(!curFrameBuffer) {
+        if (this.textureOnly) {
+            if (!curFrameBuffer) {
                 throw new Error("Cannot use textureOnly when current rendertarget is the default FrameBuffer");
             }
             this.oldTexture = gl.getFramebufferAttachmentParameter(
@@ -110,7 +110,7 @@ export default class FrameBufferManager {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         }
         this.isRenderTarget = true;
-        if(!_.isUndefined(texName)) {
+        if (!_.isUndefined(texName)) {
             this.switchTexture(texName);
         } else {
             const texture = this.textures[this.curTex];
@@ -123,9 +123,9 @@ export default class FrameBufferManager {
 
     // Restores the render target previously saved with
     // a Webvs.FrameBufferManager.setRenderTarget call
-    restoreRenderTarget() {
+    public restoreRenderTarget() {
         const gl = this.rctx.gl;
-        if(this.textureOnly) {
+        if (this.textureOnly) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                     gl.COLOR_ATTACHMENT0,
                                     gl.TEXTURE_2D,
@@ -139,25 +139,25 @@ export default class FrameBufferManager {
     }
 
     // Returns the texture that is currently being used
-    getCurrentTexture(): WebGLTexture {
+    public getCurrentTexture(): WebGLTexture {
         return this.textures[this.curTex];
     }
 
-    getTexture(arg): WebGLTexture {
-        var index = this.findIndex(arg);
+    public getTexture(arg): WebGLTexture {
+        let index = this.findIndex(arg);
         return this.textures[index];
     }
 
     // Copies the previous texture into the current texture
-    copyOver() {
+    public copyOver() {
         const texCount = this.textures.length;
-        const prevTexture = this.textures[(texCount+this.curTex-1)%texCount];
+        const prevTexture = this.textures[(texCount + this.curTex - 1) % texCount];
         this.copier.run(null, {srcTexture: prevTexture});
     }
 
     // Swaps the current texture
-    switchTexture(nameOrIndex: string | number = (this.curTex+1)%this.textures.length) {
-        if(!this.isRenderTarget) {
+    public switchTexture(nameOrIndex: string | number = (this.curTex + 1) % this.textures.length) {
+        if (!this.isRenderTarget) {
             throw new Error("Cannot switch texture when not set as rendertarget");
         }
         const gl = this.rctx.gl;
@@ -168,10 +168,10 @@ export default class FrameBufferManager {
                                 gl.TEXTURE_2D, texture, 0);
     }
 
-    resize() {
+    public resize() {
         // TODO: investigate chrome warning: INVALID_OPERATION: no texture
         const gl = this.rctx.gl;
-        for(let i = 0;i < this.textures.length;i++) {
+        for (let i = 0; i < this.textures.length; i++) {
             gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
                           gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -179,24 +179,24 @@ export default class FrameBufferManager {
     }
 
     // cleans up all webgl resources
-    destroy() {
+    public destroy() {
         const gl = this.rctx.gl;
-        for(var i = 0;i < this.textures.length;i++) {
+        for (let i = 0; i < this.textures.length; i++) {
             gl.deleteTexture(this.textures[i]);
         }
-        if(!this.textureOnly) {
+        if (!this.textureOnly) {
             gl.deleteFramebuffer(this.framebuffer);
         }
     }
 
     private findIndex(arg: string | number): number {
         let index;
-        if(_.isString(arg) && arg in this.names) {
+        if (_.isString(arg) && arg in this.names) {
             index = this.names[arg].index;
-        } else if(_.isNumber(arg) && arg >=0 && arg < this.textures.length) {
+        } else if (_.isNumber(arg) && arg >= 0 && arg < this.textures.length) {
             index = arg;
         } else {
-            console.log('arg = ', typeof(arg), 'textures = ', this.textures);
+            console.log("arg = ", typeof(arg), "textures = ", this.textures);
             throw new Error("Unknown texture '" + arg + "'");
         }
         return index;

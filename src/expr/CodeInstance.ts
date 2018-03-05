@@ -1,9 +1,9 @@
-import * as _ from 'lodash';
-import AnalyserAdapter from '../analyser/AnalyserAdapter';
-import ShaderProgram from '../webgl/ShaderProgram';
-import { WebGLVarType } from '../utils';
-import { IContainer } from '../Component';
-import IMain from '../IMain';
+import * as _ from "lodash";
+import AnalyserAdapter from "../analyser/AnalyserAdapter";
+import { IContainer } from "../Component";
+import IMain from "../IMain";
+import { WebGLVarType } from "../utils";
+import ShaderProgram from "../webgl/ShaderProgram";
 
 // An object that encapsulates the generated executable code
 // and its state values. Also contains implementations of
@@ -11,7 +11,7 @@ import IMain from '../IMain';
 export default class CodeInstance {
     private _bootTime: number;
     private _analyser: AnalyserAdapter;
-    private _registerBank: {[name:string]: number};
+    private _registerBank: {[name: string]: number};
     public w: number;
     public h: number;
     public cid: number;
@@ -21,39 +21,39 @@ export default class CodeInstance {
         private _glslRegisters: string[],
         public _hasRandom: boolean,
         private _uniforms: string[],
-        private _preCompute: {[uniformName:string]: string[]}
+        private _preCompute: {[uniformName: string]: string[]},
     ) {}
 
     // avs expression rand function
-    rand(max) { 
+    public rand(max) {
         return Math.floor(Math.random() * max) + 1;
     }
 
     // avs expression gettime function
-    gettime(startTime: number): number {
-        switch(startTime) {
+    public gettime(startTime: number): number {
+        switch (startTime) {
             case 0:
                 const currentTime = (new Date()).getTime();
-                return (currentTime-this._bootTime)/1000;
+                return (currentTime - this._bootTime) / 1000;
             default: throw new Error("Invalid startTime mode for gettime call");
         }
     }
 
     // avs expression getosc function
-    getosc(band: number, width: number, channel: number): number {
+    public getosc(band: number, width: number, channel: number): number {
         const osc = this._analyser.getWaveform();
-        const pos = Math.floor((band - width/2)*(osc.length-1));
-        const end = Math.floor((band + width/2)*(osc.length-1));
+        const pos = Math.floor((band - width / 2) * (osc.length - 1));
+        const end = Math.floor((band + width / 2) * (osc.length - 1));
 
         let sum = 0;
-        for(var i = pos;i <= end;i++) {
+        for (let i = pos; i <= end; i++) {
             sum += osc[i];
         }
-        return sum/(end-pos+1);
+        return sum / (end - pos + 1);
     }
 
     // bind state values to uniforms
-    bindUniforms(program: ShaderProgram) {
+    public bindUniforms(program: ShaderProgram) {
         // bind all values
         _.each(this._uniforms, (name) => {
             program.setUniform(name, WebGLVarType._1F, this[name]);
@@ -65,16 +65,16 @@ export default class CodeInstance {
         });
 
         // bind random step value if there are usages of random
-        if(this._hasRandom) {
-            var step = [Math.random()/100, Math.random()/100];
+        if (this._hasRandom) {
+            let step = [Math.random() / 100, Math.random() / 100];
             program.setUniform("__randStep", WebGLVarType._2FV, step);
         }
 
         // bind precomputed values
         _.each(this._preCompute, (entry, name) => {
             const args = _.map(_.drop(entry), (arg) => {
-                if(_.isString(arg)) {
-                    if(arg.substring(0, 5) == "__REG") {
+                if (_.isString(arg)) {
+                    if (arg.substring(0, 5) == "__REG") {
                         return this._registerBank[arg];
                     } else {
                         return this[arg];
@@ -83,13 +83,13 @@ export default class CodeInstance {
                     return arg;
                 }
             });
-            var result = this[entry[0]].apply(this, args);
+            let result = this[entry[0]].apply(this, args);
             program.setUniform(name, WebGLVarType._1F, result);
         });
     }
 
     // initializes this codeinstance
-    setup(main: IMain) {
+    public setup(main: IMain) {
         this._registerBank = main.registerBank;
         this._bootTime = main.bootTime;
         this._analyser = main.analyser;
@@ -97,44 +97,44 @@ export default class CodeInstance {
 
         // clear all used registers
         _.each(this._registerUsages, function(name) {
-            if(!_.has(main.registerBank, name)) {
+            if (!_.has(main.registerBank, name)) {
                 main.registerBank[name] = 0;
             }
         });
     }
 
-    updateDimVars(gl: WebGLRenderingContext) {
+    public updateDimVars(gl: WebGLRenderingContext) {
         this.w = gl.drawingBufferWidth;
         this.h = gl.drawingBufferHeight;
     }
 
     // creates an array of clones of code instances
-    static clone(cloneOrClones: CodeInstance | CodeInstance[], count): CodeInstance[] {
+    public static clone(cloneOrClones: CodeInstance | CodeInstance[], count): CodeInstance[] {
         let clones: CodeInstance[];
-        if(!_.isArray(cloneOrClones)) {
+        if (!_.isArray(cloneOrClones)) {
             cloneOrClones.cid = 0;
             clones = [cloneOrClones];
         } else {
-            clones = cloneOrClones
+            clones = cloneOrClones;
         }
         const clonesLength = clones.length;
-        if(clonesLength < count) {
-            _.times(count-clonesLength, (index) => {
+        if (clonesLength < count) {
+            _.times(count - clonesLength, (index) => {
                 const clone = Object.create(CodeInstance.prototype);
                 _.extend(clone, clones[0]);
-                clone.cid = index+clonesLength;
+                clone.cid = index + clonesLength;
                 clones.push(clone);
             });
-        } else if(clonesLength > count) {
+        } else if (clonesLength > count) {
             clones = _.take(clones, count);
         }
         return clones;
     }
 
     // copies instance values from one code instance to another
-    static copyValues(dest: CodeInstance, src: CodeInstance) {
+    public static copyValues(dest: CodeInstance, src: CodeInstance) {
         _.each(src, (value, name) => {
-            if(!_.isFunction(value) && name.charAt(0) !== "_") {
+            if (!_.isFunction(value) && name.charAt(0) !== "_") {
                 dest[name] = value;
             }
         });

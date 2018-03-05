@@ -1,20 +1,20 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
+import { Color, parseColorNorm, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
-import { WebGLVarType, Color, parseColorNorm } from "../utils";
 import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface ColorClipOpts {
-    mode: string,
-    color: string,
-    outColor: string,
-    level: number
+    mode: string;
+    color: string;
+    outColor: string;
+    level: number;
 }
 enum ClipModes {
     BELOW = 0,
     ABOVE,
-    NEAR
-};
+    NEAR,
+}
 
 // A component that clips colors to a different color depending
 // on whether the source colors are above or below a reference color.
@@ -24,13 +24,13 @@ export default class ColorClip extends Component {
     protected static optUpdateHandlers = {
         mode: "updateMode",
         color: "updateColor",
-        outColor: "updateColor"
+        outColor: "updateColor",
     };
     protected static defaultOptions: ColorClipOpts = {
         mode: "BELOW",
         color: "#202020",
         outColor: "#202020",
-        level: 0
+        level: 0,
     };
 
     protected opts: ColorClipOpts;
@@ -43,16 +43,16 @@ export default class ColorClip extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         this.program = new ShaderProgram(this.main.rctx, {
             swapFrame: true,
             bindings: {
                 uniforms: {
-                    mode:     { name: 'u_mode', valueType: WebGLVarType._1I },
-                    color:    { name: 'u_color', valueType: WebGLVarType._3FV },
-                    outColor: { name: 'u_outColor', valueType: WebGLVarType._3FV },
-                    level:    { name: 'u_level', valueType: WebGLVarType._1F },
-                }
+                    mode:     { name: "u_mode", valueType: WebGLVarType._1I },
+                    color:    { name: "u_color", valueType: WebGLVarType._3FV },
+                    outColor: { name: "u_outColor", valueType: WebGLVarType._3FV },
+                    level:    { name: "u_level", valueType: WebGLVarType._1F },
+                },
             },
             fragmentShader: `
                 uniform int u_mode;
@@ -79,25 +79,25 @@ export default class ColorClip extends Component {
                        setFragColor(inColor4);
                    }
                 }
-            `
+            `,
         });
         this.updateColor();
         this.updateMode();
     }
 
-    draw() {
+    public draw() {
         this.program.run(
-            this.parent.fm, 
+            this.parent.fm,
             {
-                mode: this.mode, 
-                color: this.color, 
-                outColor: this.outColor, 
-                level: this.opts.level
-            }
+                mode: this.mode,
+                color: this.color,
+                outColor: this.outColor,
+                level: this.opts.level,
+            },
         );
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
     }

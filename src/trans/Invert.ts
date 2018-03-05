@@ -12,22 +12,22 @@ export default class Invert extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         this.program = new ShaderProgram(this.main.rctx, {
             swapFrame: true,
             fragmentShader: `
                 void main() {
                    setFragColor(vec4(1,1,1,1)-getSrcColor());
                 }
-            `
+            `,
         });
     }
 
-    draw() {
+    public draw() {
         this.program.run(this.parent.fm, null);
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
     }

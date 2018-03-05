@@ -1,29 +1,29 @@
-import * as _ from 'lodash';
-import IMain from '../IMain';
-import Component, {IContainer} from '../Component';
-import ShaderProgram from '../webgl/ShaderProgram';
-import {Color, BlendModes, parseColorNorm} from '../utils';
-import ClearScreenProgram from '../webgl/ClearScreenProgram';
+import * as _ from "lodash";
+import Component, {IContainer} from "../Component";
+import IMain from "../IMain";
+import {BlendModes, Color, parseColorNorm} from "../utils";
+import ClearScreenProgram from "../webgl/ClearScreenProgram";
+import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface ClearScreenOpts {
-    beatCount: number,
-    color: string,
-    blendMode: string
+    beatCount: number;
+    color: string;
+    blendMode: string;
 }
 
 // A component that clears the screen
 export default class ClearScreen extends Component {
-    static componentName = "ClearScreen";
-    static componentTag = "render";
+    public static componentName = "ClearScreen";
+    public static componentTag = "render";
     protected static defaultOptions: ClearScreenOpts = {
         beatCount: 0,
         color: "#000000",
-        blendMode: "REPLACE"
-    }
+        blendMode: "REPLACE",
+    };
     protected static optUpdateHandlers = {
         color: "updateColor",
-        blendMode: "updateProgram"
-    }
+        blendMode: "updateProgram",
+    };
 
     private prevBeat: boolean;
     private beatCount: number;
@@ -35,7 +35,7 @@ export default class ClearScreen extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         this.prevBeat = false;
         this.beatCount = 0;
 
@@ -43,14 +43,14 @@ export default class ClearScreen extends Component {
         this.updateProgram();
     }
 
-    draw() {
+    public draw() {
         let clear = false;
-        if(this.opts.beatCount === 0) {
+        if (this.opts.beatCount === 0) {
             clear = true;
         } else {
-            if(this.main.analyser.beat && !this.prevBeat) {
+            if (this.main.analyser.beat && !this.prevBeat) {
                 this.beatCount++;
-                if(this.beatCount >= this.opts.beatCount) {
+                if (this.beatCount >= this.opts.beatCount) {
                     clear = true;
                     this.beatCount = 0;
                 }
@@ -58,24 +58,24 @@ export default class ClearScreen extends Component {
             this.prevBeat = this.main.analyser.beat;
         }
 
-        if(clear) {
+        if (clear) {
             this.program.run(this.parent.fm, {color: this.color});
         }
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
     }
 
-    updateColor() {
+    public updateColor() {
         this.color = parseColorNorm(this.opts.color);
     }
 
-    updateProgram() {
+    public updateProgram() {
         const blendMode = BlendModes[this.opts.blendMode];
         const program = new ClearScreenProgram(this.main.rctx, blendMode);
-        if(this.program) {
+        if (this.program) {
             this.program.destroy();
         }
         this.program = program;

@@ -1,24 +1,24 @@
-import IMain from "../IMain";
 import Component, { IContainer } from "../Component";
-import RenderingContext from "../webgl/RenderingContext";
+import CodeInstance from "../expr/CodeInstance";
+import compileExpr from "../expr/compileExpr";
+import IMain from "../IMain";
 import { BlendModes, clamp } from "../utils";
-import CodeInstance from '../expr/CodeInstance';
-import compileExpr from '../expr/compileExpr';
 import Buffer from "../webgl/Buffer";
+import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram, { ShaderOpts } from "../webgl/ShaderProgram";
 
 enum CoordModes {
     POLAR = 0,
-    RECT
-};
+    RECT,
+}
 
 export interface DynamicMovementOpts {
     code: {
         init: string,
         onBeat: string,
         perFrame: string,
-        perPixel: string
-    },
+        perPixel: string,
+    };
     gridW: number;
     gridH: number;
     blend: boolean;
@@ -45,21 +45,21 @@ export default class DynamicMovement extends Component {
     public static componentName: string = "DynamicMovement";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        "code": "updateCode",
-        "noGrid": ["updateProgram", "updateGrid"],
-        "compat": "updateProgram",
-        "bFilter": "updateProgram",
-        "coord": "updateProgram",
-        "blend": "updateProgram",
-        "gridW": "updateGrid",
-        "gridH": "updateGrid"
+        code: "updateCode",
+        noGrid: ["updateProgram", "updateGrid"],
+        compat: "updateProgram",
+        bFilter: "updateProgram",
+        coord: "updateProgram",
+        blend: "updateProgram",
+        gridW: "updateGrid",
+        gridH: "updateGrid",
     };
     protected static defaultOptions: DynamicMovementOpts = {
         code: {
             init: "",
             onBeat: "",
             perFrame: "",
-            perPixel: ""
+            perPixel: "",
         },
         gridW: 16,
         gridH: 16,
@@ -67,7 +67,7 @@ export default class DynamicMovement extends Component {
         noGrid: false,
         compat: false,
         bFilter: true,
-        coord: "POLAR"
+        coord: "POLAR",
     };
 
     protected opts: DynamicMovementOpts;
@@ -80,39 +80,39 @@ export default class DynamicMovement extends Component {
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
     }
-    
-    init() {
+
+    public init() {
         this.updateCode();
         this.updateGrid();
         this.listenTo(this.main, "resize", this.handleResize);
     }
 
-    draw() {
+    public draw() {
         const code = this.code;
 
         // run init, if required
-        if(!this.inited) {
+        if (!this.inited) {
             code.init();
             this.inited = true;
         }
 
         const beat = this.main.analyser.beat;
-        code.b = beat?1:0;
+        code.b = beat ? 1 : 0;
         // run per frame
         code.perFrame();
         // run on beat
-        if(beat) {
+        if (beat) {
             code.onBeat();
         }
 
         this.code.bindUniforms(this.program);
-        this.program.run(this.parent.fm, this.opts.noGrid ? {} :{ grid: this.gridVertexBuffer });
+        this.program.run(this.parent.fm, this.opts.noGrid ? {} : { grid: this.gridVertexBuffer });
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
-        if(this.gridVertexBuffer) {
+        if (this.gridVertexBuffer) {
             this.gridVertexBuffer.destroy();
         }
     }
@@ -136,12 +136,12 @@ export default class DynamicMovement extends Component {
         const coordMode = CoordModes[this.opts.coord];
         const rctx = this.main.rctx;
 
-        const programOpts:ShaderOpts = {
+        const programOpts: ShaderOpts = {
             blendMode: opts.blend ? BlendModes.ALPHA : BlendModes.REPLACE,
             swapFrame: true,
-            fragmentShader: ''
+            fragmentShader: "",
         };
-        if(opts.noGrid) {
+        if (opts.noGrid) {
             programOpts.fragmentShader = `
                 ${ this.glslCode }
                 ${ glslFilter(opts.bFilter, opts.compat) }
@@ -153,14 +153,14 @@ export default class DynamicMovement extends Component {
                     alpha=0.5;
                     perPixel();
                     ${ glslPolarToRect(coordMode) }
-                    setFragColor(vec4(filter(vec2(x, -y)), ${opts.blend?"alpha":"1.0"}));
+                    setFragColor(vec4(filter(vec2(x, -y)), ${opts.blend ? "alpha" : "1.0"}));
                 }
             `;
         } else {
             programOpts.bindings = {
                 attribs: {
-                    grid: {name: 'a_position', drawMode: rctx.gl.TRIANGLES }
-                }
+                    grid: {name: "a_position", drawMode: rctx.gl.TRIANGLES },
+                },
             };
             programOpts.vertexShader = `
                 attribute vec2 a_position;
@@ -185,13 +185,13 @@ export default class DynamicMovement extends Component {
                 varying float v_alpha;
                 ${ glslFilter(opts.bFilter, opts.compat) }
                 void main() {
-                   setFragColor(vec4(filter(v_newPoint), ${opts.blend?"v_alpha":"1.0"}));
+                   setFragColor(vec4(filter(v_newPoint), ${opts.blend ? "v_alpha" : "1.0"}));
                 }
             `;
         }
 
         const program = new ShaderProgram(rctx, programOpts);
-        if(this.program) {
+        if (this.program) {
             this.program.destroy();
         }
         this.program = program;
@@ -200,21 +200,21 @@ export default class DynamicMovement extends Component {
     private updateGrid() {
         const opts = this.opts;
         const gl = this.main.rctx.gl;
-        if(!opts.noGrid) {
+        if (!opts.noGrid) {
             const gridW = clamp(opts.gridW, 1, gl.drawingBufferWidth);
             const gridH = clamp(opts.gridH, 1, gl.drawingBufferHeight);
-            const nGridW = (gridW/gl.drawingBufferWidth)*2;
-            const nGridH = (gridH/gl.drawingBufferHeight)*2;
-            const gridCountAcross = Math.ceil(gl.drawingBufferWidth/gridW);
-            const gridCountDown = Math.ceil(gl.drawingBufferHeight/gridH);
-            const gridVertices = new Float32Array(gridCountAcross*gridCountDown*6*2);
+            const nGridW = (gridW / gl.drawingBufferWidth) * 2;
+            const nGridH = (gridH / gl.drawingBufferHeight) * 2;
+            const gridCountAcross = Math.ceil(gl.drawingBufferWidth / gridW);
+            const gridCountDown = Math.ceil(gl.drawingBufferHeight / gridH);
+            const gridVertices = new Float32Array(gridCountAcross * gridCountDown * 6 * 2);
             let pbi = 0;
             let curx = -1;
             let cury = -1;
-            for(let i = 0;i < gridCountDown;i++) {
-                for(let j = 0;j < gridCountAcross;j++) {
-                    const cornx = Math.min(curx+nGridW, 1);
-                    const corny = Math.min(cury+nGridH, 1);
+            for (let i = 0; i < gridCountDown; i++) {
+                for (let j = 0; j < gridCountAcross; j++) {
+                    const cornx = Math.min(curx + nGridW, 1);
+                    const corny = Math.min(cury + nGridH, 1);
 
                     gridVertices[pbi++] = curx;
                     gridVertices[pbi++] = cury;
@@ -235,7 +235,7 @@ export default class DynamicMovement extends Component {
                 curx = -1;
                 cury += nGridH;
             }
-            if(!this.gridVertexBuffer) {
+            if (!this.gridVertexBuffer) {
                 this.gridVertexBuffer = new Buffer(this.main.rctx);
             }
             this.gridVertexBuffer.setData(gridVertices);
@@ -248,32 +248,32 @@ export default class DynamicMovement extends Component {
 }
 
 function glslRectToPolar(coordMode: CoordModes): string {
-    if(coordMode === CoordModes.POLAR) {
+    if (coordMode === CoordModes.POLAR) {
         return `
             float ar = u_resolution.x/u_resolution.y;
             x=x*ar;
             d = distance(vec2(x, y), vec2(0,0))/sqrt(2.0);
             r = mod(atan(y, x)+PI*0.5, 2.0*PI);
-        `
+        `;
     } else {
         return "";
     }
 }
 
 function glslPolarToRect(coordMode: CoordModes): string {
-    if(coordMode === CoordModes.POLAR) {
+    if (coordMode === CoordModes.POLAR) {
         return `
             d = d*sqrt(2.0);
             x = d*sin(r)/ar;
             y = -d*cos(r);
-        `
+        `;
     } else {
         return "";
     }
 }
 
 function glslFilter(bFilter: boolean, compat: boolean): string {
-    if(bFilter && !compat) {
+    if (bFilter && !compat) {
         return `
             vec3 filter(vec2 point) {
                vec2 texel = 1.0/(u_resolution-vec2(1,1));
@@ -290,8 +290,8 @@ function glslFilter(bFilter: boolean, compat: boolean): string {
                vec3 pb = mix(bl, br, cornoff.x);
                return mix(pt, pb, cornoff.y);
             }
-        `
-    } else if(bFilter && compat) {
+        `;
+    } else if (bFilter && compat) {
         return `
             vec3 filter(vec2 point) {
                vec2 texel = 1.0/(u_resolution-vec2(1,1));
@@ -316,12 +316,12 @@ function glslFilter(bFilter: boolean, compat: boolean): string {
                float b = float(bt(a1,tl.b) + bt(a2,tr.b) + bt(a3,bl.b) + bt(a4,br.b))/255.0;
                return vec3(r,g,b);
             }
-        `
+        `;
     } else {
         return `
             vec3 filter(vec2 point) {
                return getSrcColorAtPos((point+1.0)/2.0).rgb;
             }
-        `
+        `;
     }
 }

@@ -1,46 +1,46 @@
-import * as _ from 'lodash';
-import { BlendModes, logShaderError, WebGLVarType, flatString } from '../utils';
-import Buffer from './Buffer';
-import FrameBufferManager from './FrameBufferManager';
-import RenderingContext from './RenderingContext';
-import { squareGeometry } from './geometries';
+import * as _ from "lodash";
+import { BlendModes, flatString, logShaderError, WebGLVarType } from "../utils";
+import Buffer from "./Buffer";
+import FrameBufferManager from "./FrameBufferManager";
+import { squareGeometry } from "./geometries";
+import RenderingContext from "./RenderingContext";
 
 interface AttributeBinding {
-    name: string,
-    size?: number, 
-    valueType?: number,
-    normalized?:boolean, 
-    stride?: number, 
-    offset?: number,
-    drawMode?: number
+    name: string;
+    size?: number;
+    valueType?: number;
+    normalized?: boolean;
+    stride?: number;
+    offset?: number;
+    drawMode?: number;
 }
 
 interface UniformBinding {
-    name: string,
-    valueType?: WebGLVarType
+    name: string;
+    valueType?: WebGLVarType;
 }
 
 interface IndexBinding {
-    valueName: string,
-    drawMode?: number
+    valueName: string;
+    drawMode?: number;
 }
 
 interface Bindings {
-    uniforms?: {[name:string]: UniformBinding},
-    attribs?: {[name:string]: AttributeBinding},
-    index?: IndexBinding
+    uniforms?: {[name: string]: UniformBinding};
+    attribs?: {[name: string]: AttributeBinding};
+    index?: IndexBinding;
 }
 
 export interface ShaderOpts<ValueType = any> {
-    fragmentShader: string | string[],
-    vertexShader?: string | string[],
-    blendMode?: BlendModes,
-    swapFrame?: boolean,
-    copyOnSwap?: boolean,
-    dynamicBlend?: boolean,
-    blendValue?: 0.5,
-    bindings?: Bindings,
-    drawHook?: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void
+    fragmentShader: string | string[];
+    vertexShader?: string | string[];
+    blendMode?: BlendModes;
+    swapFrame?: boolean;
+    copyOnSwap?: boolean;
+    dynamicBlend?: boolean;
+    blendValue?: 0.5;
+    bindings?: Bindings;
+    drawHook?: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void;
 }
 
 // Base class for Webgl Shaders. This provides an abstraction
@@ -64,7 +64,7 @@ export interface ShaderOpts<ValueType = any> {
 // + `setFragColor(vec4 color)` - sets the correctly blended fragment color
 // + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
 //     when swapFrame is set to true
-// + `vec1 u_resolution` - the screen resolution. enabled only if fm is 
+// + `vec1 u_resolution` - the screen resolution. enabled only if fm is
 //     passed to {@link Webvs.ShaderProgram.run} call
 // + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
 //     when varyingPos option is used
@@ -80,17 +80,17 @@ export default class ShaderProgram<ValueType = any> {
     private fragment: WebGLShader;
     private vertex: WebGLShader;
     private program: WebGLProgram;
-    private drawHook: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void
+    private drawHook: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void;
     private bindings: Bindings;
-    private _locations: {[key:string]: number | WebGLUniformLocation};
+    private _locations: {[key: string]: number | WebGLUniformLocation};
     private _textureVars: string[];
     private _enabledAttribs: number[];
 
     // these are blend modes not supported with gl.BLEND
     // and the formula to be used inside shader
-    static shaderBlendEq = {
+    public static shaderBlendEq = {
         [BlendModes.MAXIMUM]: "max(color, texture2D(u_srcTexture, v_position))",
-        [BlendModes.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)"
+        [BlendModes.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)",
     };
 
     constructor(rctx: RenderingContext, opts: ShaderOpts<ValueType>) {
@@ -99,7 +99,7 @@ export default class ShaderProgram<ValueType = any> {
             swapFrame: false,
             copyOnSwap: false,
             dynamicBlend: false,
-            blendValue: 0.5
+            blendValue: 0.5,
         });
 
         const vsrc = [`
@@ -131,7 +131,7 @@ export default class ShaderProgram<ValueType = any> {
         this.blendMode = opts.blendMode;
         this.dynamicBlend = opts.dynamicBlend;
 
-        if(this.dynamicBlend) {
+        if (this.dynamicBlend) {
             fsrc.push(`
                 uniform int u_blendMode;
                 void setFragColor(vec4 color) {
@@ -150,7 +150,7 @@ export default class ShaderProgram<ValueType = any> {
                 }
             `);
         } else {
-            if(this._isShaderBlend(this.blendMode)) {
+            if (this._isShaderBlend(this.blendMode)) {
                 const eq = ShaderProgram.shaderBlendEq[this.blendMode];
                 fsrc.push(`#define setFragColor(color) (gl_FragColor = (${eq}))`);
             } else {
@@ -158,9 +158,9 @@ export default class ShaderProgram<ValueType = any> {
             }
         }
 
-        this.drawHook= opts.drawHook;
+        this.drawHook = opts.drawHook;
         this.vertexSrc = vsrc.join("\n") + "\n";
-        if(opts.vertexShader) {
+        if (opts.vertexShader) {
             this.vertexSrc += flatString(opts.vertexShader);
         } else {
             this.vertexSrc += `
@@ -188,7 +188,6 @@ export default class ShaderProgram<ValueType = any> {
         this._compile();
     }
 
-
     private _isShaderBlend(mode) {
         return (mode in ShaderProgram.shaderBlendEq);
     }
@@ -202,7 +201,7 @@ export default class ShaderProgram<ValueType = any> {
         gl.attachShader(program, fragment);
         gl.linkProgram(program);
 
-        if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             throw new Error("Program link Error: " + gl.getProgramInfoLog(program));
         }
 
@@ -216,7 +215,7 @@ export default class ShaderProgram<ValueType = any> {
         const shader = gl.createShader(type);
         gl.shaderSource(shader, shaderSrc);
         gl.compileShader(shader);
-        if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
             logShaderError(shaderSrc, gl.getShaderInfoLog(shader));
             throw new Error("Shader compilation Error: " + gl.getShaderInfoLog(shader));
         }
@@ -224,38 +223,38 @@ export default class ShaderProgram<ValueType = any> {
     }
 
     // Runs this shader program
-    run(fm: FrameBufferManager, values: ValueType, blendMode: BlendModes = null, blendValue: number = null) {
+    public run(fm: FrameBufferManager, values: ValueType, blendMode: BlendModes = null, blendValue: number = null) {
         const gl = this.rctx.gl;
         const oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
 
-        if(blendMode && !this.dynamicBlend) {
+        if (blendMode && !this.dynamicBlend) {
             throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
         }
         blendMode = blendMode || this.blendMode;
-        blendValue = typeof(blendValue) === 'number' ? blendValue : this.blendValue;
+        blendValue = typeof(blendValue) === "number" ? blendValue : this.blendValue;
 
-        if(fm) {
+        if (fm) {
             this.setUniform("u_resolution", WebGLVarType._2F, gl.drawingBufferWidth, gl.drawingBufferHeight);
-            if(this.swapFrame || this._isShaderBlend(blendMode)) {
+            if (this.swapFrame || this._isShaderBlend(blendMode)) {
                 this.setUniform("u_srcTexture", WebGLVarType.TEXTURE2D, fm.getCurrentTexture());
                 fm.switchTexture();
-                if(this.copyOnSwap) {
+                if (this.copyOnSwap) {
                     fm.copyOver();
                 }
-            } else if(this.dynamicBlend) {
+            } else if (this.dynamicBlend) {
                 this.setUniform("u_srcTexture", WebGLVarType.TEXTURE2D, null);
             }
         }
 
-        if(this.dynamicBlend) {
+        if (this.dynamicBlend) {
             this.setUniform("u_blendMode", WebGLVarType._1I, blendMode);
         }
 
         this._setGlBlendMode(blendMode, blendValue);
         this.draw(values);
         // disable all enabled attributes
-        while(this._enabledAttribs.length) {
+        while (this._enabledAttribs.length) {
             gl.disableVertexAttribArray(this._enabledAttribs.shift());
         }
         gl.disable(gl.BLEND);
@@ -264,7 +263,7 @@ export default class ShaderProgram<ValueType = any> {
 
     private draw(values: ValueType) {
         const errorIfNotBuffer = (value, valueName): Buffer => {
-            if(value instanceof Buffer) {
+            if (value instanceof Buffer) {
                 return value;
             } else {
                 throw new Error(`Value "${valueName}" should be a Buffer`);
@@ -272,46 +271,46 @@ export default class ShaderProgram<ValueType = any> {
         };
 
         // bind variables
-        let isElements:boolean = false;
-        let drawMode:number = null;
-        let drawCount:number = null;
+        let isElements: boolean = false;
+        let drawMode: number = null;
+        let drawCount: number = null;
 
-        for(const bindingType in this.bindings) {
-            if(bindingType === 'index') {
+        for (const bindingType in this.bindings) {
+            if (bindingType === "index") {
                 const defn = this.bindings[bindingType];
                 const valueName = defn.valueName;
                 const value = values[valueName];
                 const indexBuffer = errorIfNotBuffer(value, valueName);
                 this.setIndex(indexBuffer);
-                if(defn.drawMode) {
+                if (defn.drawMode) {
                     drawCount = indexBuffer.length;
                     drawMode = defn.drawMode;
                     isElements = true;
                 }
             } else {
-                for(const valueName in this.bindings[bindingType]) {
+                for (const valueName in this.bindings[bindingType]) {
                     const value = values[valueName];
-                    if(bindingType === 'attribs') {
+                    if (bindingType === "attribs") {
                         const defn = this.bindings[bindingType][valueName];
-                        if(!value) {
+                        if (!value) {
                             this.disableAttrib(defn.name);
                         } else {
                             const attribBuffer = errorIfNotBuffer(value, valueName);
                             this.setAttrib(
-                                defn.name, 
+                                defn.name,
                                 attribBuffer,
                                 defn.size,
                                 defn.valueType,
                                 defn.normalized,
                                 defn.stride,
-                                defn.offset
+                                defn.offset,
                             );
-                            if(defn.drawMode) {
+                            if (defn.drawMode) {
                                 drawCount = attribBuffer.length / (defn.size || 2);
                                 drawMode = defn.drawMode;
                             }
                         }
-                    } else if(bindingType === 'uniforms') {
+                    } else if (bindingType === "uniforms") {
                         const defn = this.bindings[bindingType][valueName];
                         this.setUniform(defn.name, defn.valueType, value);
                     }
@@ -322,20 +321,20 @@ export default class ShaderProgram<ValueType = any> {
         const gl = this.rctx.gl;
         if (this.drawHook) {
             this.drawHook(values, gl, this);
-        } else if(drawMode !== null) {
-            if(isElements) {
+        } else if (drawMode !== null) {
+            if (isElements) {
                 gl.drawElements(drawMode, drawCount, gl.UNSIGNED_SHORT, 0);
             } else {
                 gl.drawArrays(drawMode, 0, drawCount);
             }
         } else {
-            throw new Error('Unable to draw shader. No drawHook or varDefs with drawMode found.');
+            throw new Error("Unable to draw shader. No drawHook or varDefs with drawMode found.");
         }
     }
 
     private _setGlBlendMode(mode, blendValue) {
         const gl = this.rctx.gl;
-        switch(mode) {
+        switch (mode) {
             case BlendModes.ADDITIVE:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
@@ -385,11 +384,11 @@ export default class ShaderProgram<ValueType = any> {
     }
 
     // returns the location of a uniform or attribute. locations are cached.
-    getLocation(name: string, attrib: boolean = false): number | WebGLUniformLocation {
+    public getLocation(name: string, attrib: boolean = false): number | WebGLUniformLocation {
         let location = this._locations[name];
-        if(typeof location === 'undefined') {
+        if (typeof location === "undefined") {
             const gl = this.rctx.gl;
-            if(attrib) {
+            if (attrib) {
                 location = gl.getAttribLocation(this.program, name);
             } else {
                 location = gl.getUniformLocation(this.program, name);
@@ -400,23 +399,23 @@ export default class ShaderProgram<ValueType = any> {
     }
 
     // returns the index of a texture. assigns id if not already assigned.
-    getTextureId(name: string): number {
+    public getTextureId(name: string): number {
         let id = _.indexOf(this._textureVars, name);
-        if(id === -1) {
+        if (id === -1) {
             this._textureVars.push(name);
-            id = this._textureVars.length-1;
+            id = this._textureVars.length - 1;
         }
         return id;
     }
 
     // binds value of a uniform variable in this program
-    setUniform(name: string, type: WebGLVarType, ...values) {
+    public setUniform(name: string, type: WebGLVarType, ...values) {
         const location = this.getLocation(name);
         const gl = this.rctx.gl;
-        switch(type) {
+        switch (type) {
             case "texture2D":
                 const id = this.getTextureId(name);
-                gl.activeTexture(gl["TEXTURE"+id]);
+                gl.activeTexture(gl["TEXTURE" + id]);
                 gl.bindTexture(gl.TEXTURE_2D, values[0]);
                 gl.uniform1i(location, id);
                 break;
@@ -427,7 +426,7 @@ export default class ShaderProgram<ValueType = any> {
             case "1fv": case "2fv": case "3fv": case "4fv":
             case "1iv": case "2iv": case "3iv": case "4iv":
                 let value = values[0];
-                if(!(value instanceof Float32Array)) {
+                if (!(value instanceof Float32Array)) {
                     value = new Float32Array(value);
                 }
                 gl["uniform" + type].call(gl, location, value);
@@ -435,19 +434,19 @@ export default class ShaderProgram<ValueType = any> {
         }
     }
 
-    setIndex(buffer: Buffer) {
+    public setIndex(buffer: Buffer) {
         const gl = this.rctx.gl;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.getGlBuffer());
     }
 
-    setAttrib(
-        name: string, 
-        buffer: Buffer, 
-        size: number = 2, 
-        type: number = this.rctx.gl.FLOAT, 
-        normalized:boolean = false, 
-        stride: number = 0, 
-        offset: number = 0
+    public setAttrib(
+        name: string,
+        buffer: Buffer,
+        size: number = 2,
+        type: number = this.rctx.gl.FLOAT,
+        normalized: boolean = false,
+        stride: number = 0,
+        offset: number = 0,
     ) {
         const gl = this.rctx.gl;
         const location = this.getLocation(name, true) as number;
@@ -457,14 +456,14 @@ export default class ShaderProgram<ValueType = any> {
         this._enabledAttribs.push(location);
     }
 
-    disableAttrib(name: string) {
+    public disableAttrib(name: string) {
         const location = this.getLocation(name, true) as number;
         this.rctx.gl.disableVertexAttribArray(location);
     }
 
     // destroys webgl resources consumed by this program.
     // call in component destroy
-    destroy() {
+    public destroy() {
         const gl = this.rctx.gl;
         gl.deleteProgram(this.program);
         gl.deleteShader(this.vertex);

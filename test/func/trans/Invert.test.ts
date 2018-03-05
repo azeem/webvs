@@ -1,10 +1,10 @@
-import { makeSinglePreset, mainTest } from "../funcTestUtils";
+import { mainTest, makeSinglePreset } from "../funcTestUtils";
 
-describe('Invert', () => {
-    it('should invert', () => {
+describe("Invert", () => {
+    it("should invert", () => {
         return mainTest({
             preset: makeSinglePreset("Invert", {}, 1),
-            expectImageSrc: 'Invert_0.png'
+            expectImageSrc: "Invert_0.png",
         });
     });
-})
+});

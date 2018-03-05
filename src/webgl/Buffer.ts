@@ -1,4 +1,4 @@
-import { TypedArray, isTypedArray } from "../utils";
+import { isTypedArray, TypedArray } from "../utils";
 import RenderingContext from "./RenderingContext";
 
 export default class Buffer {
@@ -9,17 +9,17 @@ export default class Buffer {
 
     constructor(rctx: RenderingContext, isElemArray: boolean = false, data?: number[] | TypedArray) {
         const gl = rctx.gl;
-        this.type = isElemArray?gl.ELEMENT_ARRAY_BUFFER:gl.ARRAY_BUFFER;
+        this.type = isElemArray ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER;
         this.rctx = rctx;
         this.glBuffer = gl.createBuffer();
         this.length = 0;
-        if(data) {
+        if (data) {
             this.setData(data);
         }
     }
 
-    setData(array: number[] | TypedArray) {
-        if(!isTypedArray(array)) {
+    public setData(array: number[] | TypedArray) {
+        if (!isTypedArray(array)) {
             array = new Float32Array(array);
         }
         const gl = this.rctx.gl;
@@ -28,11 +28,11 @@ export default class Buffer {
         gl.bufferData(this.type, array, gl.STATIC_DRAW);
     }
 
-    getGlBuffer(): WebGLBuffer {
+    public getGlBuffer(): WebGLBuffer {
         return this.glBuffer;
     }
 
-    destroy() {
+    public destroy() {
         this.rctx.gl.deleteBuffer(this.glBuffer);
     }
 }

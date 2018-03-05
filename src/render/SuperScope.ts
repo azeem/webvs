@@ -1,17 +1,17 @@
-import * as _ from 'lodash';
-import IMain from '../IMain';
-import Component, {IContainer} from '../Component';
-import Buffer from '../webgl/Buffer';
-import ShaderProgram from '../webgl/ShaderProgram';
-import RenderingContext from '../webgl/RenderingContext';
-import { BlendModes, Source, Color, parseColorNorm, WebGLVarType } from '../utils';
-import compileExpr, { CompileResult } from '../expr/compileExpr';
-import CodeInstance from '../expr/CodeInstance';
-import { Channel } from '../analyser/AnalyserAdapter';
+import * as _ from "lodash";
+import { Channel } from "../analyser/AnalyserAdapter";
+import Component, {IContainer} from "../Component";
+import CodeInstance from "../expr/CodeInstance";
+import compileExpr, { CompileResult } from "../expr/compileExpr";
+import IMain from "../IMain";
+import { BlendModes, Color, parseColorNorm, Source, WebGLVarType } from "../utils";
+import Buffer from "../webgl/Buffer";
+import RenderingContext from "../webgl/RenderingContext";
+import ShaderProgram from "../webgl/ShaderProgram";
 
 enum DrawModes {
     LINES = 1,
-    DOTS
+    DOTS,
 }
 
 export interface SuperScopeOpts {
@@ -19,24 +19,24 @@ export interface SuperScopeOpts {
         init: string,
         perFrame: string,
         onBeat: string,
-        perPoint: string
-    },
-    blendMode: string,
-    channel: string,
-    source: string,
-    drawMode: string,
-    thickness: number,
-    clone: number,
-    colors: string[],
-    cycleSpeed: number
+        perPoint: string,
+    };
+    blendMode: string;
+    channel: string;
+    source: string;
+    drawMode: string;
+    thickness: number;
+    clone: number;
+    colors: string[];
+    cycleSpeed: number;
 }
 
 interface SuperScopeShaderValues {
-    pointSize: number,
-    points: Buffer,
-    colors: Buffer,
-    isDots: boolean,
-    drawTriangles: boolean
+    pointSize: number;
+    points: Buffer;
+    colors: Buffer;
+    isDots: boolean;
+    drawTriangles: boolean;
 }
 
 interface SSCodeInstance extends CodeInstance {
@@ -75,7 +75,7 @@ export default class SuperScope extends Component {
             init: "n=800",
             perFrame: "t=t-0.05",
             onBeat: "",
-            perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d"
+            perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d",
         },
         blendMode: "REPLACE",
         channel: "CENTER",
@@ -84,7 +84,7 @@ export default class SuperScope extends Component {
         thickness: 1,
         clone: 1,
         colors: ["#ffffff"],
-        cycleSpeed: 0.01
+        cycleSpeed: 0.01,
     };
 
     protected opts: SuperScopeOpts;
@@ -106,7 +106,7 @@ export default class SuperScope extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         this.updateDrawMode();
         this.updateSource();
         this.updateProgram();
@@ -122,7 +122,7 @@ export default class SuperScope extends Component {
         this.colorBuffer = new Buffer(this.main.rctx);
     }
 
-    draw() {
+    public draw() {
         const color = this._makeColor();
         _.each(this.code, (code) => {
             this.drawScope(code, color, !this.inited);
@@ -130,7 +130,7 @@ export default class SuperScope extends Component {
         this.inited = true;
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
         this.pointBuffer.destroy();
@@ -148,107 +148,107 @@ export default class SuperScope extends Component {
         code.green = color[1];
         code.blue = color[2];
 
-        if(runInit) {
+        if (runInit) {
             code.init();
         }
 
         const beat = this.main.analyser.beat;
-        code.b = beat?1:0;
+        code.b = beat ? 1 : 0;
         code.perFrame();
-        if(beat) {
+        if (beat) {
             code.onBeat();
         }
 
         const nPoints = Math.floor(code.n);
         let data;
-        if(this.source == Source.SPECTRUM) {
+        if (this.source == Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum(this.channel);
         } else {
             data = this.main.analyser.getWaveform(this.channel);
         }
         const dots = this.drawMode == DrawModes.DOTS;
-        const bucketSize = data.length/nPoints;
+        const bucketSize = data.length / nPoints;
         let pbi = 0;
         let cdi = 0;
 
         let bufferSize, thickX, thickY;
         let lastX, lastY, lastR, lastG, lastB;
-        if(this.veryThick) {
-            bufferSize = (dots?(nPoints*6):(nPoints*6-6));
-            thickX = this.opts.thickness/gl.drawingBufferWidth;
-            thickY = this.opts.thickness/gl.drawingBufferHeight;
+        if (this.veryThick) {
+            bufferSize = (dots ? (nPoints * 6) : (nPoints * 6 - 6));
+            thickX = this.opts.thickness / gl.drawingBufferWidth;
+            thickY = this.opts.thickness / gl.drawingBufferHeight;
         } else {
-            bufferSize = (dots?nPoints:(nPoints*2-2));
+            bufferSize = (dots ? nPoints : (nPoints * 2 - 2));
         }
 
         const pointBufferData = new Float32Array(bufferSize * 2);
         const colorData = new Float32Array(bufferSize * 3);
-        for(let i = 0;i < nPoints;i++) {
+        for (let i = 0; i < nPoints; i++) {
             let value = 0;
             let size = 0;
-            for(let j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
+            for (let j = Math.floor(i * bucketSize); j < (i + 1) * bucketSize; j++, size++) {
                 value += data[j];
             }
-            value = value/size;
+            value = value / size;
 
-            var pos = i/((nPoints > 1)?(nPoints-1):1);
+            let pos = i / ((nPoints > 1) ? (nPoints - 1) : 1);
             code.i = pos;
             code.v = value;
             code.perPoint();
             code.y *= -1;
-            if(this.veryThick) {
-                if(dots) {
+            if (this.veryThick) {
+                if (dots) {
                     // just a box at current point
-                    pointBufferData[pbi++] = code.x-thickX;
-                    pointBufferData[pbi++] = code.y-thickY;
+                    pointBufferData[pbi++] = code.x - thickX;
+                    pointBufferData[pbi++] = code.y - thickY;
 
-                    pointBufferData[pbi++] = code.x+thickX;
-                    pointBufferData[pbi++] = code.y-thickY;
+                    pointBufferData[pbi++] = code.x + thickX;
+                    pointBufferData[pbi++] = code.y - thickY;
 
-                    pointBufferData[pbi++] = code.x-thickX;
-                    pointBufferData[pbi++] = code.y+thickY;
+                    pointBufferData[pbi++] = code.x - thickX;
+                    pointBufferData[pbi++] = code.y + thickY;
 
-                    pointBufferData[pbi++] = code.x+thickX;
-                    pointBufferData[pbi++] = code.y-thickY;
+                    pointBufferData[pbi++] = code.x + thickX;
+                    pointBufferData[pbi++] = code.y - thickY;
 
-                    pointBufferData[pbi++] = code.x-thickX;
-                    pointBufferData[pbi++] = code.y+thickY;
+                    pointBufferData[pbi++] = code.x - thickX;
+                    pointBufferData[pbi++] = code.y + thickY;
 
-                    pointBufferData[pbi++] = code.x+thickX;
-                    pointBufferData[pbi++] = code.y+thickY;
+                    pointBufferData[pbi++] = code.x + thickX;
+                    pointBufferData[pbi++] = code.y + thickY;
 
-                    for(let j = 0;j < 6;j++) {
+                    for (let j = 0; j < 6; j++) {
                         colorData[cdi++] = code.red;
                         colorData[cdi++] = code.green;
                         colorData[cdi++] = code.blue;
                     }
                 } else {
-                    if(i !== 0) {
-                        const xdiff = Math.abs(lastX-code.x);
-                        const ydiff = Math.abs(lastY-code.y);
-                        const xoff = (xdiff <= ydiff)?thickX:0;
-                        const yoff = (xdiff >  ydiff)?thickY:0;
+                    if (i !== 0) {
+                        const xdiff = Math.abs(lastX - code.x);
+                        const ydiff = Math.abs(lastY - code.y);
+                        const xoff = (xdiff <= ydiff) ? thickX : 0;
+                        const yoff = (xdiff >  ydiff) ? thickY : 0;
 
                         // a rectangle from last point to the current point
-                        pointBufferData[pbi++] = lastX+xoff;
-                        pointBufferData[pbi++] = lastY+yoff;
+                        pointBufferData[pbi++] = lastX + xoff;
+                        pointBufferData[pbi++] = lastY + yoff;
 
-                        pointBufferData[pbi++] = code.x+xoff;
-                        pointBufferData[pbi++] = code.y+yoff;
+                        pointBufferData[pbi++] = code.x + xoff;
+                        pointBufferData[pbi++] = code.y + yoff;
 
-                        pointBufferData[pbi++] = lastX-xoff;
-                        pointBufferData[pbi++] = lastY-yoff;
+                        pointBufferData[pbi++] = lastX - xoff;
+                        pointBufferData[pbi++] = lastY - yoff;
 
-                        pointBufferData[pbi++] = code.x+xoff;
-                        pointBufferData[pbi++] = code.y+yoff;
+                        pointBufferData[pbi++] = code.x + xoff;
+                        pointBufferData[pbi++] = code.y + yoff;
 
-                        pointBufferData[pbi++] = lastX-xoff;
-                        pointBufferData[pbi++] = lastY-yoff;
+                        pointBufferData[pbi++] = lastX - xoff;
+                        pointBufferData[pbi++] = lastY - yoff;
 
-                        pointBufferData[pbi++] = code.x-xoff;
-                        pointBufferData[pbi++] = code.y-yoff;
+                        pointBufferData[pbi++] = code.x - xoff;
+                        pointBufferData[pbi++] = code.y - yoff;
 
-                        for(let j = 0;j < 6;j++) {
+                        for (let j = 0; j < 6; j++) {
                             colorData[cdi++] = code.red;
                             colorData[cdi++] = code.green;
                             colorData[cdi++] = code.blue;
@@ -261,7 +261,7 @@ export default class SuperScope extends Component {
                     lastB = code.blue;
                 }
             } else {
-                if(dots) {
+                if (dots) {
                     // just a point at the current point
                     pointBufferData[pbi++] = code.x;
                     pointBufferData[pbi++] = code.y;
@@ -270,7 +270,7 @@ export default class SuperScope extends Component {
                     colorData[cdi++] = code.green;
                     colorData[cdi++] = code.blue;
                 } else {
-                    if(i !== 0) {
+                    if (i !== 0) {
                         // lines from last point to current point
                         pointBufferData[pbi++] = lastX;
                         pointBufferData[pbi++] = lastY;
@@ -278,7 +278,7 @@ export default class SuperScope extends Component {
                         pointBufferData[pbi++] = code.x;
                         pointBufferData[pbi++] = code.y;
 
-                        for(let j = 0;j < 2;j++) {
+                        for (let j = 0; j < 2; j++) {
                             // use current color for both points because
                             // we dont want color interpolation between points
                             colorData[cdi++] = code.red;
@@ -305,8 +305,8 @@ export default class SuperScope extends Component {
                 points: this.pointBuffer,
                 colors: this.colorBuffer,
                 drawTriangles: this.veryThick,
-                isDots: dots
-            }
+                isDots: dots,
+            },
         );
     }
 
@@ -314,7 +314,7 @@ export default class SuperScope extends Component {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
         const program = new ShaderProgram<SuperScopeShaderValues>(this.main.rctx, {
             copyOnSwap: true,
-            blendMode: blendMode,
+            blendMode,
             vertexShader: `
                 attribute vec2 a_position;
                 attribute vec3 a_color;
@@ -334,36 +334,36 @@ export default class SuperScope extends Component {
             `,
             bindings: {
                 uniforms: {
-                    pointSize: { name: 'u_pointSize', valueType: WebGLVarType._1F },
+                    pointSize: { name: "u_pointSize", valueType: WebGLVarType._1F },
                 },
                 attribs: {
-                    points: { name: 'a_position' },
-                    colors: { name: 'a_color', size: 3 },
-                }
+                    points: { name: "a_position" },
+                    colors: { name: "a_color", size: 3 },
+                },
             },
             drawHook: (values, gl) => {
                 let prevLineWidth;
-                if(!values.isDots) {
+                if (!values.isDots) {
                     prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
                     gl.lineWidth(values.pointSize);
                 }
 
                 let mode;
-                if(values.drawTriangles) {
+                if (values.drawTriangles) {
                     mode = gl.TRIANGLES;
-                } else if(values.isDots) {
+                } else if (values.isDots) {
                     mode = gl.POINTS;
                 } else {
                     mode = gl.LINES;
                 }
-                gl.drawArrays(mode, 0, values.points.length/2);
+                gl.drawArrays(mode, 0, values.points.length / 2);
 
-                if(!values.isDots) {
+                if (!values.isDots) {
                     gl.lineWidth(prevLineWidth);
                 }
-            }
+            },
         });
-        if(this.program) {
+        if (this.program) {
             this.program.destroy();
         }
         this.program = program;
@@ -388,10 +388,10 @@ export default class SuperScope extends Component {
 
     private updateSpeed() {
         const oldMaxStep = this.maxStep;
-        this.maxStep = Math.floor(1/this.opts.cycleSpeed);
-        if(this.curStep) {
+        this.maxStep = Math.floor(1 / this.opts.cycleSpeed);
+        if (this.curStep) {
             // curStep adjustment when speed changes
-            this.curStep = Math.floor((this.curStep/oldMaxStep)*this.maxStep);
+            this.curStep = Math.floor((this.curStep / oldMaxStep) * this.maxStep);
         } else {
             this.curStep = 0;
         }
@@ -412,12 +412,12 @@ export default class SuperScope extends Component {
     private updateThickness() {
         let range;
         const gl = this.main.rctx.gl;
-        if(this.drawMode == DrawModes.DOTS) {
+        if (this.drawMode == DrawModes.DOTS) {
             range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
         } else {
             range = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE);
         }
-        if(this.opts.thickness < range[0] || this.opts.thickness > range[1]) {
+        if (this.opts.thickness < range[0] || this.opts.thickness > range[1]) {
             this.veryThick = true;
         } else {
             this.veryThick = false;
@@ -425,19 +425,19 @@ export default class SuperScope extends Component {
     }
 
     private _makeColor(): Color {
-        if(this.colors.length == 1) {
+        if (this.colors.length == 1) {
             return this.colors[0];
         } else {
-            const color: Color = [0,0,0];
+            const color: Color = [0, 0, 0];
             const currentColor = this.colors[this.curColorId];
-            const nextColor = this.colors[(this.curColorId+1)%this.colors.length];
-            const mix = this.curStep/this.maxStep;
-            for(let i = 0;i < 3;i++) {
-                color[i] = currentColor[i]*(1-mix) + nextColor[i]*mix;
+            const nextColor = this.colors[(this.curColorId + 1) % this.colors.length];
+            const mix = this.curStep / this.maxStep;
+            for (let i = 0; i < 3; i++) {
+                color[i] = currentColor[i] * (1 - mix) + nextColor[i] * mix;
             }
-            this.curStep = (this.curStep+1)%this.maxStep;
-            if(this.curStep === 0) {
-                this.curColorId = (this.curColorId+1)%this.colors.length;
+            this.curStep = (this.curStep + 1) % this.maxStep;
+            if (this.curStep === 0) {
+                this.curColorId = (this.curColorId + 1) % this.colors.length;
             }
             return color;
         }

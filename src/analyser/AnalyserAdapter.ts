@@ -1,9 +1,9 @@
-import { FloatArray } from '../utils';
+import { FloatArray } from "../utils";
 
 export enum Channel {
     CENTER = 0,
     LEFT,
-    RIGHT
+    RIGHT,
 }
 
 // AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
@@ -14,11 +14,11 @@ export default abstract class AnalyserAdapter {
     public beat = false;
 
     // Called every frame. Override and implement analyser code
-    abstract update(): void;
+    public abstract update(): void;
 
     // Returns array of waveform values
-    abstract getWaveform(channel?: Channel): FloatArray;
+    public abstract getWaveform(channel?: Channel): FloatArray;
 
     // Returns array of spectrum values
-    abstract getSpectrum(channel?: Channel): FloatArray
+    public abstract getSpectrum(channel?: Channel): FloatArray;
 }

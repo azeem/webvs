@@ -1,30 +1,30 @@
-import Component, { IContainer } from '../Component';
-import IMain from '../IMain';
-import RenderingContext from '../webgl/RenderingContext';
-import { BlendModes, WebGLVarType } from '../utils';
-import ShaderProgram from '../webgl/ShaderProgram';
+import Component, { IContainer } from "../Component";
+import IMain from "../IMain";
+import { BlendModes, WebGLVarType } from "../utils";
+import RenderingContext from "../webgl/RenderingContext";
+import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface MosaicOpts {
-    blendMode: string,
-    squareSize: number,
-    onBeatSizeChange: boolean,
-    onBeatSquareSize: number,
-    onBeatSizeDuration: number
+    blendMode: string;
+    squareSize: number;
+    onBeatSizeChange: boolean;
+    onBeatSquareSize: number;
+    onBeatSizeDuration: number;
 }
 
 export default class Mosaic extends Component {
-    static componentName = "Mosaic";
-    static componentTag = "trans";
+    public static componentName = "Mosaic";
+    public static componentTag = "trans";
     protected static defaultOptions: MosaicOpts = {
         blendMode: "REPLACE",
         squareSize: 0.5,
         onBeatSizeChange: false,
         onBeatSquareSize: 1,
-        onBeatSizeDuration: 10
-    }
+        onBeatSizeDuration: 10,
+    };
     protected static optUpdateHandlers = {
-        blendMode: "updateProgram"
-    }
+        blendMode: "updateProgram",
+    };
 
     protected opts: MosaicOpts;
     private frameCount: number;
@@ -35,38 +35,38 @@ export default class Mosaic extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         this.frameCount = 0;
         this.size = this.opts.squareSize;
         this.updateProgram();
     }
 
-    draw() {
+    public draw() {
         const gl = this.main.rctx.gl;
-        if(this.opts.onBeatSizeChange && this.main.analyser.beat) {
+        if (this.opts.onBeatSizeChange && this.main.analyser.beat) {
             this.size = this.opts.onBeatSquareSize;
             this.frameCount = this.opts.onBeatSizeDuration;
         }
 
-        if(this.size !== 0) {
-            const sizeX = 1/Math.floor(this.size*(gl.drawingBufferWidth-1)+1);
-            const sizeY = 1/Math.floor(this.size*(gl.drawingBufferHeight-1)+1);
+        if (this.size !== 0) {
+            const sizeX = 1 / Math.floor(this.size * (gl.drawingBufferWidth - 1) + 1);
+            const sizeY = 1 / Math.floor(this.size * (gl.drawingBufferHeight - 1) + 1);
             this.program.run(this.parent.fm, { size: [sizeX, sizeY] });
         }
 
-        if(this.frameCount > 0) {
+        if (this.frameCount > 0) {
             this.frameCount--;
-            if(this.frameCount === 0) {
+            if (this.frameCount === 0) {
                 this.size = this.opts.squareSize;
             } else {
-                const incr = Math.abs(this.opts.squareSize-this.opts.onBeatSquareSize)/
+                const incr = Math.abs(this.opts.squareSize - this.opts.onBeatSquareSize) /
                            this.opts.onBeatSizeDuration;
-                this.size += incr * (this.opts.onBeatSquareSize>this.opts.squareSize?-1:1);
+                this.size += incr * (this.opts.onBeatSquareSize > this.opts.squareSize ? -1 : 1);
             }
         }
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
     }
@@ -75,11 +75,11 @@ export default class Mosaic extends Component {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
         const program = new ShaderProgram(this.main.rctx, {
             swapFrame: true,
-            blendMode: blendMode,
+            blendMode,
             bindings: {
                 uniforms: {
-                    size: { name: 'u_size', valueType: WebGLVarType._2FV }
-                }
+                    size: { name: "u_size", valueType: WebGLVarType._2FV },
+                },
             },
             fragmentShader: `
                 uniform vec2 u_size;
@@ -87,9 +87,9 @@ export default class Mosaic extends Component {
                     vec2 samplePos = u_size * ( floor(v_position/u_size) + vec2(0.5,0.5) );
                     setFragColor(getSrcColorAtPos(samplePos));
                 }
-            `
+            `,
         });
-        if(this.program) {
+        if (this.program) {
             this.program.destroy();
         }
         this.program = program;

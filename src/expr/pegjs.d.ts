@@ -1,3 +1,3 @@
-declare module '*.pegjs' {
+declare module "*.pegjs" {
     export const parse: (string) => any;
 }

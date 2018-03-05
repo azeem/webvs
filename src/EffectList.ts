@@ -1,10 +1,10 @@
-import Container from './Container';
-import IMain from './IMain';
-import Component from './Component';
-import FrameBufferManager from './webgl/FrameBufferManager';
-import CodeInstance from './expr/CodeInstance';
-import { BlendModes } from './utils';
-import compileExpr from './expr/compileExpr';
+import Component from "./Component";
+import Container from "./Container";
+import CodeInstance from "./expr/CodeInstance";
+import compileExpr from "./expr/compileExpr";
+import IMain from "./IMain";
+import { BlendModes } from "./utils";
+import FrameBufferManager from "./webgl/FrameBufferManager";
 
 export enum ELBlendModes {
     REPLACE = 1,
@@ -17,42 +17,42 @@ export enum ELBlendModes {
     MULTIPLY2,
     ADJUSTABLE,
     ALPHA,
-    IGNORE
+    IGNORE,
 }
 
 export interface EffectListOpts {
     code: {
         init: string,
-        perFrame: string
+        perFrame: string,
     };
-    output: string,
-    input: string,
-    clearFrame: boolean,
-    enableOnBeat: boolean,
-    enableOnBeatFor: number
+    output: string;
+    input: string;
+    clearFrame: boolean;
+    enableOnBeat: boolean;
+    enableOnBeatFor: number;
 }
 
 // Effectlist is a container that renders components to a separate buffer. and blends
 // it in with the parent buffer. Its also used as the root component in Webvs.Main
 export default class EffectList extends Container {
-    static componentName = "EffectList";
-    static componentTag = "";
+    public static componentName = "EffectList";
+    public static componentTag = "";
     protected static defaultOptions: EffectListOpts = {
         code: {
             init: "",
-            perFrame: ""
+            perFrame: "",
         },
         output: "REPLACE",
         input: "IGNORE",
         clearFrame: false,
         enableOnBeat: false,
-        enableOnBeatFor: 1
-    }
+        enableOnBeatFor: 1,
+    };
     protected static optUpdateHandlers = {
         code: "updateCode",
         output: "updateBlendMode",
-        input: "updateBlendMode"
-    }
+        input: "updateBlendMode",
+    };
 
     protected opts: EffectListOpts;
     private frameCounter: number;
@@ -66,9 +66,9 @@ export default class EffectList extends Container {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         super.init();
-        this.fm = new FrameBufferManager(this.main.rctx, this.main.copier, this.parent?true:false);
+        this.fm = new FrameBufferManager(this.main.rctx, this.main.copier, this.parent ? true : false);
         this.updateCode();
         this.updateBlendMode(this.opts.input, "input");
         this.updateBlendMode(this.opts.output, "output");
@@ -77,31 +77,31 @@ export default class EffectList extends Container {
         this.listenTo(this.main, "resize", this.handleResize);
     }
 
-    draw() {
+    public draw() {
         const opts = this.opts;
 
-        if(opts.enableOnBeat) {
-            if(this.main.analyser.beat) {
+        if (opts.enableOnBeat) {
+            if (this.main.analyser.beat) {
                 this.frameCounter = opts.enableOnBeatFor;
-            } else if(this.frameCounter > 0) {
+            } else if (this.frameCounter > 0) {
                 this.frameCounter--;
             }
 
             // only enable for enableOnBeatFor # of frames
-            if(this.frameCounter === 0) {
+            if (this.frameCounter === 0) {
                 return;
             }
         }
 
-        this.code['beat'] = this.main.analyser.beat?1:0;
-        this.code['enabled'] = 1;
-        this.code['clear'] = opts.clearFrame;
-        if(!this.inited) {
+        this.code.beat = this.main.analyser.beat ? 1 : 0;
+        this.code.enabled = 1;
+        this.code.clear = opts.clearFrame;
+        if (!this.inited) {
             this.inited = true;
-            this.code['init']();
+            this.code.init();
         }
-        this.code['perFrame']();
-        if(this.code['enabled'] === 0) {
+        this.code.perFrame();
+        if (this.code.enabled === 0) {
             return;
         }
 
@@ -109,22 +109,22 @@ export default class EffectList extends Container {
         this.fm.setRenderTarget();
 
         // clear frame
-        if(opts.clearFrame || this.first || this.code['clear']) {
+        if (opts.clearFrame || this.first || this.code.clear) {
             const gl = this.main.rctx.gl;
-            gl.clearColor(0,0,0,1);
+            gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             this.first = false;
         }
 
         // blend input texture onto internal texture
-        if(this.input !== ELBlendModes.IGNORE) {
+        if (this.input !== ELBlendModes.IGNORE) {
             const inputTexture = this.parent.fm.getCurrentTexture();
             this.main.copier.run(this.fm, { srcTexture: inputTexture }, this.input as number);
         }
 
         // render all the components
-        for(let i = 0;i < this.components.length;i++) {
-            if(this.components[i].enabled) {
+        for (let i = 0; i < this.components.length; i++) {
+            if (this.components[i].enabled) {
                 this.components[i].draw();
             }
         }
@@ -133,8 +133,8 @@ export default class EffectList extends Container {
         this.fm.restoreRenderTarget();
 
         // blend current texture to the output framebuffer
-        if(this.output != ELBlendModes.IGNORE) {
-            if(this.parent) {
+        if (this.output != ELBlendModes.IGNORE) {
+            if (this.parent) {
                 this.main.copier.run(this.parent.fm, { srcTexture: this.fm.getCurrentTexture() }, this.output as number);
             } else {
                 this.main.copier.run(null, { srcTexture: this.fm.getCurrentTexture() });
@@ -142,9 +142,9 @@ export default class EffectList extends Container {
         }
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
-        if(this.fm) {
+        if (this.fm) {
             // destroy the framebuffer manager
             this.fm.destroy();
         }
@@ -157,7 +157,7 @@ export default class EffectList extends Container {
     }
 
     private updateBlendMode(value: string, name: "input" | "output") {
-        if(name === "input") {
+        if (name === "input") {
             this.input = ELBlendModes[value];
         } else {
             this.output = ELBlendModes[value];

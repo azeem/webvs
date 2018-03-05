@@ -1,10 +1,10 @@
-import IMain from '../IMain';
+import Component, {IContainer} from "../Component";
+import IMain from "../IMain";
+import { WebGLVarType } from "../utils";
+import Buffer from "../webgl/Buffer";
+import { squareGeometry } from "../webgl/geometries";
 import RenderingContext from "../webgl/RenderingContext";
-import Component, {IContainer} from '../Component';
-import ShaderProgram from '../webgl/ShaderProgram';
-import Buffer from '../webgl/Buffer';
-import { WebGLVarType } from '../utils';
-import { squareGeometry } from '../webgl/geometries';
+import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface PictureOpts {
     src: string;
@@ -17,12 +17,12 @@ export default class Picture extends Component {
     public static componentName: string = "Picture";
     public static componentTag: string = "render";
     protected static optUpdateHandlers = {
-        src: "updateImage"
+        src: "updateImage",
     };
     protected static defaultOptions: PictureOpts = {
         src: "avsres_texer_circle_edgeonly_19x19.bmp",
         x: 0,
-        y: 0
+        y: 0,
     };
 
     protected opts: PictureOpts;
@@ -35,19 +35,19 @@ export default class Picture extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         const gl = this.main.rctx.gl;
         this.program = new ShaderProgram(this.main.rctx, {
             copyOnSwap: true,
             bindings: {
                 uniforms: {
-                    position: { name: 'u_pos', valueType: WebGLVarType._2FV },
-                    imageRes: { name: 'u_texRes', valueType: WebGLVarType._2FV },
-                    image:    { name: 'u_image', valueType: WebGLVarType.TEXTURE2D },
+                    position: { name: "u_pos", valueType: WebGLVarType._2FV },
+                    imageRes: { name: "u_texRes", valueType: WebGLVarType._2FV },
+                    image:    { name: "u_image", valueType: WebGLVarType.TEXTURE2D },
                 },
                 attribs: {
-                    points: { name: 'a_texVertex', drawMode: gl.TRIANGLES }
-                }
+                    points: { name: "a_texVertex", drawMode: gl.TRIANGLES },
+                },
             },
             vertexShader: `
                 attribute vec2 a_texVertex;
@@ -66,37 +66,37 @@ export default class Picture extends Component {
                 void main() {
                    setFragColor(texture2D(u_image, v_texCoord));
                 }
-            `
+            `,
         });
         this.updateImage();
     }
 
-    draw() {
+    public draw() {
         this.program.run(
             this.parent.fm,
             {
                 position: [this.opts.x, -this.opts.y],
                 imageRes: [this.width, this.height],
                 image: this.texture,
-                points: squareGeometry(this.main.rctx, true)
-            }
+                points: squareGeometry(this.main.rctx, true),
+            },
         );
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
         this.main.rctx.gl.deleteTexture(this.texture);
     }
 
-    updateImage() {
+    public updateImage() {
         const gl = this.main.rctx.gl;
         this.main.rsrcMan.getImage(
-            this.opts.src, 
+            this.opts.src,
             (image) => {
                 this.width = image.width;
                 this.height = image.height;
-                if(!this.texture) {
+                if (!this.texture) {
                     this.texture = gl.createTexture();
                     gl.bindTexture(gl.TEXTURE_2D, this.texture);
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -107,7 +107,7 @@ export default class Picture extends Component {
                     gl.bindTexture(gl.TEXTURE_2D, this.texture);
                 }
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            }
+            },
         );
     }
 }

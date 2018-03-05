@@ -1,27 +1,26 @@
-import * as _ from 'lodash';
-import RenderingContext from "../webgl/RenderingContext";
-import IMain from "../IMain";
+import * as _ from "lodash";
 import Component, { IContainer } from "../Component";
-import ShaderProgram from "../webgl/ShaderProgram";
-import Buffer from "../webgl/Buffer";
-import compileExpr from '../expr/compileExpr';
-import { WebGLVarType, Source } from "../utils";
 import CodeInstance from "../expr/CodeInstance";
-
+import compileExpr from "../expr/compileExpr";
+import IMain from "../IMain";
+import { Source, WebGLVarType } from "../utils";
+import Buffer from "../webgl/Buffer";
+import RenderingContext from "../webgl/RenderingContext";
+import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface TexerOpts {
     code: {
         init: string,
         onBeat: string,
         perFrame: string,
-        perPoint: string
-    },
-    imageSrc: string
-    source: string,
-    resizing: boolean,
-    wrapAround: boolean,
-    clone: number,
-    colorFiltering: boolean
+        perPoint: string,
+    };
+    imageSrc: string;
+    source: string;
+    resizing: boolean;
+    wrapAround: boolean;
+    clone: number;
+    colorFiltering: boolean;
 }
 
 interface TexerCodeInstance extends CodeInstance {
@@ -50,21 +49,21 @@ export default class Texer extends Component {
         code: "updateCode",
         clone: "updateClone",
         imageSrc: "updateImage",
-        source: "updateSource"
+        source: "updateSource",
     };
     protected static defaultOptions: TexerOpts = {
         code: {
             init: "",
             onBeat: "",
             perFrame: "",
-            perPoint: ""
+            perPoint: "",
         },
         imageSrc: "avsres_texer_circle_edgeonly_19x19.bmp",
         source: "SPECTRUM",
         resizing: false,
         wrapAround: false,
         clone: 1,
-        colorFiltering: true
+        colorFiltering: true,
     };
 
     protected opts: TexerOpts;
@@ -84,25 +83,25 @@ export default class Texer extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         const rctx = this.main.rctx;
         const gl = this.main.rctx.gl;
         this.program = new ShaderProgram(rctx, {
             copyOnSwap: true,
             bindings: {
                 uniforms: {
-                    image:       { name: 'u_image', valueType: WebGLVarType.TEXTURE2D },
-                    colorFilter: { name: 'u_colorFilter', valueType: WebGLVarType._1I },
+                    image:       { name: "u_image", valueType: WebGLVarType.TEXTURE2D },
+                    colorFilter: { name: "u_colorFilter", valueType: WebGLVarType._1I },
                 },
                 attribs: {
-                    vertices:    { name: 'a_vertex' },
-                    texVertices: { name: 'a_texVertex' },
-                    colors:      { name: 'a_color', size: 3 },
+                    vertices:    { name: "a_vertex" },
+                    texVertices: { name: "a_texVertex" },
+                    colors:      { name: "a_color", size: 3 },
                 },
                 index: {
-                    valueName: 'indices',
-                    drawMode: gl.TRIANGLES
-                }
+                    valueName: "indices",
+                    drawMode: gl.TRIANGLES,
+                },
             },
             vertexShader: `
                 uniform bool u_colorFilter;
@@ -131,7 +130,7 @@ export default class Texer extends Component {
                    }
                    setFragColor(vec4(outColor, 1));
                 }
-            `
+            `,
         });
         this.updateCode();
         this.updateClone();
@@ -145,14 +144,14 @@ export default class Texer extends Component {
         this.indexBuffer = new Buffer(rctx, true);
     }
 
-    draw() {
+    public draw() {
         _.each(this.code, (code) => {
             this._drawScope(code, !this.inited);
         });
         this.inited = true;
     }
 
-    destroy() {
+    public destroy() {
         const gl = this.main.rctx.gl;
         super.destroy();
         this.program.destroy();
@@ -182,7 +181,7 @@ export default class Texer extends Component {
             (image) => {
                 this.imageWidth = image.width;
                 this.imageHeight = image.height;
-                if(!this.texture) {
+                if (!this.texture) {
                     this.texture = gl.createTexture();
                     gl.bindTexture(gl.TEXTURE_2D, this.texture);
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -193,7 +192,7 @@ export default class Texer extends Component {
                     gl.bindTexture(gl.TEXTURE_2D, this.texture);
                 }
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            }
+            },
         );
     }
 
@@ -203,42 +202,42 @@ export default class Texer extends Component {
 
     private _drawScope(code: TexerCodeInstance, runInit: boolean) {
         const gl = this.main.rctx.gl;
-        if(runInit) {
+        if (runInit) {
             code.init();
         }
 
         const beat = this.main.analyser.beat;
-        code.b = beat?1:0;
+        code.b = beat ? 1 : 0;
         code.perFrame();
-        if(beat) {
+        if (beat) {
             code.onBeat();
         }
 
         const nPoints = Math.floor(code.n);
         let data;
-        if(this.source == Source.SPECTRUM) {
+        if (this.source == Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum();
         } else {
             data = this.main.analyser.getWaveform();
         }
-        const bucketSize = data.length/nPoints;
+        const bucketSize = data.length / nPoints;
 
         const vertexData = [];
         const texVertexData = [];
         const vertexIndices = [];
-        const colorData = this.opts.colorFiltering?[]:null;
+        const colorData = this.opts.colorFiltering ? [] : null;
         let index = 0;
         const addRect = (cornx, corny, sizex, sizey, red, green, blue) => {
-            if(cornx < -1-sizex || cornx > 1||
-               corny < -1-sizey || corny > 1) {
+            if (cornx < -1 - sizex || cornx > 1 ||
+               corny < -1 - sizey || corny > 1) {
                 return;
             }
             // screen coordinates
             vertexData.push(
                 cornx,       corny,
-                cornx+sizex, corny,
-                cornx+sizex, corny+sizey,
-                cornx,       corny+sizey
+                cornx + sizex, corny,
+                cornx + sizex, corny + sizey,
+                cornx,       corny + sizey,
             );
 
             // texture coordinates
@@ -246,39 +245,39 @@ export default class Texer extends Component {
                 0, 0,
                 1, 0,
                 1, 1,
-                0, 1
+                0, 1,
             );
 
-            if(colorData) {
+            if (colorData) {
                 // color data
                 colorData.push(
                     red, green, blue,
                     red, green, blue,
                     red, green, blue,
-                    red, green, blue
+                    red, green, blue,
                 );
             }
 
             // indices
             vertexIndices.push(
-                index+0, index+1, index+2,
-                index+0, index+2, index+3
+                index + 0, index + 1, index + 2,
+                index + 0, index + 2, index + 3,
             );
             index += 4;
         };
 
-        const imageSizex = (this.imageWidth/gl.drawingBufferWidth)*2;
-        const imageSizey = (this.imageHeight/gl.drawingBufferHeight)*2;
+        const imageSizex = (this.imageWidth / gl.drawingBufferWidth) * 2;
+        const imageSizey = (this.imageHeight / gl.drawingBufferHeight) * 2;
 
-        for(let i = 0;i < nPoints;i++) {
+        for (let i = 0; i < nPoints; i++) {
             let value = 0;
             let size = 0;
-            for(let j = Math.floor(i*bucketSize);j < (i+1)*bucketSize;j++,size++) {
+            for (let j = Math.floor(i * bucketSize); j < (i + 1) * bucketSize; j++, size++) {
                 value += data[j];
             }
-            value = value/size;
+            value = value / size;
 
-            const pos = i/(nPoints-1);
+            const pos = i / (nPoints - 1);
             code.i = pos;
             code.v = value;
             code.sizex = 1;
@@ -288,30 +287,30 @@ export default class Texer extends Component {
             code.blue = 1;
             code.perPoint();
 
-            var sizex = imageSizex;
-            var sizey = imageSizey;
-            if(this.opts.resizing) {
+            let sizex = imageSizex;
+            let sizey = imageSizey;
+            if (this.opts.resizing) {
                 sizex *= code.sizex;
                 sizey *= code.sizey;
             }
-            var cornx = code.x-sizex/2;
-            var corny = (-code.y)-sizey/2;
-            
+            let cornx = code.x - sizex / 2;
+            let corny = (-code.y) - sizey / 2;
+
             addRect(cornx, corny, sizex, sizey, code.red, code.green, code.blue);
-            if(this.opts.wrapAround) {
+            if (this.opts.wrapAround) {
                 // wrapped around x value is 1-(-1-cornx) or -1-(1-cornx)
                 // depending on the edge
                 // ie. 2+cornx or -2+cornx
-                var xwrap = (cornx < -1)?2:((cornx > (1-sizex))?-2:0);
-                var ywrap = (corny < -1)?2:((corny > (1-sizey))?-2:0);
-                if(xwrap) {
-                    addRect(xwrap+cornx, corny, sizex, sizey, code.red, code.green, code.blue);
+                let xwrap = (cornx < -1) ? 2 : ((cornx > (1 - sizex)) ? -2 : 0);
+                let ywrap = (corny < -1) ? 2 : ((corny > (1 - sizey)) ? -2 : 0);
+                if (xwrap) {
+                    addRect(xwrap + cornx, corny, sizex, sizey, code.red, code.green, code.blue);
                 }
-                if(ywrap) {
-                    addRect(cornx, ywrap+corny, sizex, sizey, code.red, code.green, code.blue);
+                if (ywrap) {
+                    addRect(cornx, ywrap + corny, sizex, sizey, code.red, code.green, code.blue);
                 }
-                if(xwrap && ywrap) {
-                    addRect(xwrap+cornx, ywrap+corny, sizex, sizey, code.red, code.green, code.blue);
+                if (xwrap && ywrap) {
+                    addRect(xwrap + cornx, ywrap + corny, sizex, sizey, code.red, code.green, code.blue);
                 }
             }
         }
@@ -319,7 +318,7 @@ export default class Texer extends Component {
         this.vertexBuffer.setData(vertexData);
         this.texVertexBuffer.setData(texVertexData);
         this.indexBuffer.setData(new Uint16Array(vertexIndices));
-        if(colorData) {
+        if (colorData) {
             this.colorBuffer.setData(colorData);
         }
         this.program.run(
@@ -331,12 +330,12 @@ export default class Texer extends Component {
                 texVertices: this.texVertexBuffer,
                 indices: this.indexBuffer,
                 colors: colorData ? this.colorBuffer : null,
-            }
+            },
         );
     }
 
-    handleResize() {
-        for(const codeInst of this.code) {
+    public handleResize() {
+        for (const codeInst of this.code) {
             codeInst.updateDimVars(this.main.rctx.gl);
         }
     }

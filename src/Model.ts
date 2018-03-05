@@ -1,11 +1,11 @@
-import * as EventEmitter from 'eventemitter3';
-import * as _ from 'lodash';
+import * as EventEmitter from "eventemitter3";
+import * as _ from "lodash";
 
 interface Subscription {
-    emitter: EventEmitter,
-    event: string,
-    callback: (...args: any[]) => void
-};
+    emitter: EventEmitter;
+    event: string;
+    callback: (...args: any[]) => void;
+}
 
 export default abstract class Model extends EventEmitter {
     private subscriptions: Subscription[] = [];
@@ -16,12 +16,12 @@ export default abstract class Model extends EventEmitter {
     public set(key: string | object, value: any, options?: any): boolean {
         let success, silent;
 
-        if(typeof(key) === 'string') {
+        if (typeof(key) === "string") {
             options = options || {};
             success = this.setAttribute(key, value, options);
-            if(success && !options.silent) {
-                this.emit("change:" + key, this, value, options); 
-                this.emit("change", this, options); 
+            if (success && !options.silent) {
+                this.emit("change:" + key, this, value, options);
+                this.emit("change", this, options);
             }
         } else {
             // if map of key values are passed
@@ -30,16 +30,16 @@ export default abstract class Model extends EventEmitter {
             const keyValueMap = key;
 
             success = false;
-            for(key in keyValueMap) {
-                if(this.setAttribute(key, keyValueMap[key], options)) {
+            for (key in keyValueMap) {
+                if (this.setAttribute(key, keyValueMap[key], options)) {
                     success = true;
-                    if(!silent) {
-                        this.emit("change:" + key, this, keyValueMap[key], options); 
+                    if (!silent) {
+                        this.emit("change:" + key, this, keyValueMap[key], options);
                     }
                 }
             }
-            if(success && !silent) {
-                this.emit("change", this, options); 
+            if (success && !silent) {
+                this.emit("change", this, options);
             }
         }
 

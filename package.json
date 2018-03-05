@@ -9,6 +9,7 @@
     "build-web": "cross-env TARGET=web webpack",
     "dev": "cross-env TARGET=dev webpack-serve",
     "func-test": "karma start",
+    "lint": "tslint -c tslint.json 'src/**/*.ts' 'test/**/*.ts'",
     "clean": "shx rm -rf ./dist ./coverage"
   },
   "repository": {
@@ -44,6 +45,7 @@
     "seedrandom": "^2.4.3",
     "shx": "^0.2.2",
     "ts-loader": "^3.5.0",
+    "tslint": "^5.9.1",
     "typescript": "^2.7.1",
     "webpack": "^3.11.0",
     "webpack-serve": "^0.1.5"

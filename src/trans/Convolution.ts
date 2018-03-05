@@ -1,21 +1,21 @@
-import * as _ from 'lodash';
+import * as _ from "lodash";
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import RenderingContext from "../webgl/RenderingContext";
 import { glslFloatRepr, WebGLVarType } from "../utils";
-import ShaderProgram from '../webgl/ShaderProgram';
+import RenderingContext from "../webgl/RenderingContext";
+import ShaderProgram from "../webgl/ShaderProgram";
 
 enum EdgeModes {
     EXTEND = 0,
-    WRAP
+    WRAP,
 }
 
 export interface ConvolutionOpts {
-    edgeMode: string,
-    autoScale: boolean,
-    scale: number,
-    kernel: number[],
-    bias: number
+    edgeMode: string;
+    autoScale: boolean;
+    scale: number;
+    kernel: number[];
+    bias: number;
 }
 
 // A component that applies a convolution kernel
@@ -23,9 +23,9 @@ export default class Convolution extends Component {
     public static componentName: string = "Convolution";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        "edgeMode": "updateProgram",
-        "kernel": ["updateProgram", "updateScale"],
-        "scale": "updateScale"
+        edgeMode: "updateProgram",
+        kernel: ["updateProgram", "updateScale"],
+        scale: "updateScale",
     };
     protected static defaultOptions: ConvolutionOpts = {
         edgeMode: "EXTEND",
@@ -34,9 +34,9 @@ export default class Convolution extends Component {
         kernel: [
             0, 0, 0,
             0, 1, 0,
-            0, 0, 0
+            0, 0, 0,
         ],
-        bias: 0
+        bias: 0,
     };
 
     protected opts: ConvolutionOpts;
@@ -47,24 +47,24 @@ export default class Convolution extends Component {
         super(main, parent, opts);
     }
 
-    init() {
+    public init() {
         this.updateProgram();
         this.updateScale();
     }
 
-    draw() {
+    public draw() {
         this.program.run(this.parent.fm, { scale: this.scale, bias: this.opts.bias });
     }
 
-    destroy() {
+    public destroy() {
         super.destroy();
         this.program.destroy();
     }
 
     private updateScale() {
         const opts = this.opts;
-        if(opts.autoScale) {
-            this.scale = _.reduce(opts.kernel, function(memo, num){ return memo + num; }, 0);
+        if (opts.autoScale) {
+            this.scale = _.reduce(opts.kernel, function(memo, num) { return memo + num; }, 0);
         } else {
             this.scale = opts.scale;
         }
@@ -72,11 +72,11 @@ export default class Convolution extends Component {
 
     private updateProgram() {
         const opts = this.opts;
-        if(!_.isArray(opts.kernel) || opts.kernel.length%2 !== 1) {
+        if (!_.isArray(opts.kernel) || opts.kernel.length % 2 !== 1) {
             throw new Error("Invalid convolution kernel");
         }
         const kernelSize = Math.floor(Math.sqrt(opts.kernel.length));
-        if(kernelSize*kernelSize != opts.kernel.length) {
+        if (kernelSize * kernelSize != opts.kernel.length) {
             throw new Error("Invalid convolution kernel");
         }
 
@@ -84,7 +84,7 @@ export default class Convolution extends Component {
 
         // generate edge correction function
         let edgeFunc = "";
-        switch(edgeMode) {
+        switch (edgeMode) {
             case EdgeModes.WRAP:
                 edgeFunc = "pos = vec2(pos.x<0?pos.x+1.0:pos.x%1, pos.y<0?pos.y+1.0:pos.y%1);";
                 break;
@@ -95,16 +95,16 @@ export default class Convolution extends Component {
 
         // generate kernel multiplication code
         const colorSumEq = [];
-        const mid = Math.floor(kernelSize/2);
-        for(let i = 0;i < kernelSize;i++) {
-            for(let j = 0;j < kernelSize;j++) {
-                const value = opts.kernel[(i*kernelSize+j)];
-                if(value === 0) {
+        const mid = Math.floor(kernelSize / 2);
+        for (let i = 0; i < kernelSize; i++) {
+            for (let j = 0; j < kernelSize; j++) {
+                const value = opts.kernel[(i * kernelSize + j)];
+                if (value === 0) {
                     continue;
                 }
-                colorSumEq.push("pos = v_position + texel * vec2("+(j-mid)+","+(mid-i)+");");
+                colorSumEq.push("pos = v_position + texel * vec2(" + (j - mid) + "," + (mid - i) + ");");
                 colorSumEq.push(edgeFunc);
-                colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * "+glslFloatRepr(value)+";");
+                colorSumEq.push("colorSum += texture2D(u_srcTexture, pos) * " + glslFloatRepr(value) + ";");
             }
         }
 
@@ -112,9 +112,9 @@ export default class Convolution extends Component {
             swapFrame: true,
             bindings: {
                 uniforms: {
-                    scale: { name: 'u_scale', valueType: WebGLVarType._1F },
-                    bias: { name: 'u_bias', valueType: WebGLVarType._1F }
-                }
+                    scale: { name: "u_scale", valueType: WebGLVarType._1F },
+                    bias: { name: "u_bias", valueType: WebGLVarType._1F },
+                },
             },
             fragmentShader: `
                 uniform float u_scale;
@@ -126,10 +126,10 @@ export default class Convolution extends Component {
                    ${ colorSumEq.join("\n") }
                    setFragColor(vec4(((colorSum+u_bias)/u_scale).rgb, 1.0));
                 }
-            `
+            `,
         });
 
-        if(this.program) {
+        if (this.program) {
             this.program.destroy();
         }
         this.program = program;

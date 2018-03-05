@@ -1,19 +1,19 @@
-import Buffer from './Buffer';
-import RenderingContext from './RenderingContext';
+import Buffer from "./Buffer";
+import RenderingContext from "./RenderingContext";
 
 export function circleGeometry(rctx: RenderingContext, pointCount: number = 100) {
-    const cacheKey = 'CircleGeometry_' + pointCount;
+    const cacheKey = "CircleGeometry_" + pointCount;
     let buffer = rctx.getBuffer(cacheKey);
-    if(buffer) {
+    if (buffer) {
         return buffer;
     }
-    const points = new Float32Array((pointCount+2)*2);
+    const points = new Float32Array((pointCount + 2) * 2);
     let pbi = 0;
     points[pbi++] = 0; // center
     points[pbi++] = 0;
-    for(let i = 0;i < pointCount;i++) {
-        points[pbi++] = Math.sin(i*2*Math.PI/pointCount);
-        points[pbi++] = Math.cos(i*2*Math.PI/pointCount);
+    for (let i = 0; i < pointCount; i++) {
+        points[pbi++] = Math.sin(i * 2 * Math.PI / pointCount);
+        points[pbi++] = Math.cos(i * 2 * Math.PI / pointCount);
     }
     points[pbi++] = points[2]; // repeat last point again
     points[pbi++] = points[3];
@@ -24,20 +24,20 @@ export function circleGeometry(rctx: RenderingContext, pointCount: number = 100)
 }
 
 export function squareGeometry(rctx: RenderingContext, positiveQuad: boolean = false) {
-    const cacheKey = 'SquareGeometry_' + positiveQuad;
+    const cacheKey = "SquareGeometry_" + positiveQuad;
     let buffer = rctx.getBuffer(cacheKey);
-    if(buffer) {
+    if (buffer) {
         return buffer;
     }
     let points;
-    if(positiveQuad) {
+    if (positiveQuad) {
         points = [
             0,  0,
             0,  1,
             1,  1,
             0,  0,
             1,  1,
-            1,  0
+            1,  0,
         ];
     } else {
         points = [
@@ -46,7 +46,7 @@ export function squareGeometry(rctx: RenderingContext, positiveQuad: boolean = f
             -1,  1,
             -1,  1,
             1,  -1,
-            1,  1
+            1,  1,
         ];
     }
     buffer = new Buffer(rctx, false, points);

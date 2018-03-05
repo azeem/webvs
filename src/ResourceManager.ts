@@ -1,5 +1,5 @@
-import * as _ from 'lodash';
-import Model from './Model';
+import * as _ from "lodash";
+import Model from "./Model";
 
 export interface Pack {
     name: string;
@@ -23,8 +23,8 @@ export default class ResourceManager extends Model {
 
     constructor(packs: Pack | Pack[]) {
         super();
-        if(packs) {
-            if(!_.isArray(packs)) {
+        if (packs) {
+            if (!_.isArray(packs)) {
                 packs = [packs];
             }
             this.packs = packs;
@@ -35,8 +35,8 @@ export default class ResourceManager extends Model {
     }
 
     // Register a filename and a URI in the resource manager.
-    registerUri(fileName: string | any, uri?: string) {
-        if(typeof fileName === 'string' && typeof uri === 'string') {
+    public registerUri(fileName: string | any, uri?: string) {
+        if (typeof fileName === "string" && typeof uri === "string") {
             this.uris[fileName] = uri;
         } else {
             const inputUris = fileName;
@@ -44,31 +44,31 @@ export default class ResourceManager extends Model {
         }
     }
 
-    get(key: string) {
-        if(key == "uris") {
+    public get(key: string) {
+        if (key == "uris") {
             return this.uris;
-        } else if(key == "packs") {
+        } else if (key == "packs") {
             return this.packs;
         }
     }
 
-    setAttribute(key: string, value: any, options: any) {
-        if(key == "uris") {
+    public setAttribute(key: string, value: any, options: any) {
+        if (key == "uris") {
             this.uris = value;
             return true;
         }
         return false;
     }
 
-    toJSON() {
+    public toJSON() {
         return {
-            uris: _.clone(this.uris)
+            uris: _.clone(this.uris),
         };
     }
 
     // Clears state, uri mappings and caches. Browser caches still apply.
-    clear(keys: string[] = null) {
-        for(const fileName in this.waitImages) {
+    public clear(keys: string[] = null) {
+        for (const fileName in this.waitImages) {
             const image = this.waitImages[fileName];
             image.onload = null;
             image.onerror = null;
@@ -86,16 +86,16 @@ export default class ResourceManager extends Model {
         this.ready = true;
     }
 
-    destroy() {}
+    public destroy() {}
 
     private _getUri(fileName: string): string {
         const uri = this.uris[fileName];
-        if(uri) {
+        if (uri) {
             return uri;
         }
-        for(let i = this.packs.length-1;i >= 0;i--) {
+        for (let i = this.packs.length - 1; i >= 0; i--) {
             const pack = this.packs[i];
-            if(pack.fileNames.indexOf(fileName) != -1) {
+            if (pack.fileNames.indexOf(fileName) != -1) {
                 return pack.prefix + fileName;
             }
         }
@@ -103,7 +103,7 @@ export default class ResourceManager extends Model {
 
     private _loadStart() {
         this.waitCount++;
-        if(this.waitCount == 1) {
+        if (this.waitCount == 1) {
             this.ready = false;
             this.emit("wait");
         }
@@ -111,17 +111,17 @@ export default class ResourceManager extends Model {
 
     private _loadEnd() {
         this.waitCount--;
-        if(this.waitCount === 0) {
+        if (this.waitCount === 0) {
             this.ready = true;
             this.emit("ready");
         }
     }
-    
+
     // Loads an Image resource
-    getImage(fileName: string, success: (image: HTMLImageElement) => void, error?: () => void): void {
+    public getImage(fileName: string, success: (image: HTMLImageElement) => void, error?: () => void): void {
         let image = this.images[fileName];
-        if(image) { // check in cache
-            if(success) {
+        if (image) { // check in cache
+            if (success) {
                 success(image);
             }
             return;
@@ -129,11 +129,11 @@ export default class ResourceManager extends Model {
 
         // load file
         const uri = this._getUri(fileName);
-        if(!uri) {
+        if (!uri) {
             throw new Error("Unknown image file " + fileName);
         }
         image = new Image();
-        if(uri.indexOf("data:") !== 0) {
+        if (uri.indexOf("data:") !== 0) {
             // add cross origin attribute for
             // remote images
             image.crossOrigin = "anonymous";
@@ -141,16 +141,16 @@ export default class ResourceManager extends Model {
         image.onload = () => {
             delete this.waitImages[fileName];
             this.images[fileName] = image;
-            if(success) {
+            if (success) {
                 success(image);
             }
             this._loadEnd();
         };
-        if(error) {
+        if (error) {
             image.onerror = () => {
-                console.log('>>> onError Called');
+                console.log(">>> onError Called");
                 delete this.waitImages[fileName];
-                if(error()) { 
+                if (error()) {
                     // then we treat this load as complete
                     // and handled properly
                     this._loadEnd();
