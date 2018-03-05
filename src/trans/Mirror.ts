@@ -74,7 +74,7 @@ export default class Mirror extends Component {
                 #define mirrorPos(pos,qa,qb) ((pos-vec2(0.5,0.5))*vec2(xFlip(qa,qb),yFlip(qa,qb))+vec2(0.5,0.5))
                 #define getMirrorColor(pos,qa,qb) (getSrcColorAtPos(mirrorPos(pos,qa,qb)))
 
-                void main() {",
+                void main() {
                     int quadrant = getQuadrant(v_position);
                     vec4 mix;
                     if(quadrant == 0)      { mix = u_mix0; }

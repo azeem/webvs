@@ -75,7 +75,7 @@ export default class Picture extends Component {
         this.program.run(
             this.parent.fm,
             {
-                position: [this.opts.x, this.opts.y],
+                position: [this.opts.x, -this.opts.y],
                 imageRes: [this.width, this.height],
                 image: this.texture,
                 points: squareGeometry(this.main.rctx, true)

@@ -1,5 +1,6 @@
 var webpack = require('webpack');
-var webpackConfig = require('./webpack.config')({TARGET: 'web'});
+process.env.TARGET = 'web';
+var webpackConfig = require('./webpack.config');
 var packageJson = require('./package.json');
 
 module.exports = function(config) {

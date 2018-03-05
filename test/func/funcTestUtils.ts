@@ -3,8 +3,8 @@ import { clamp, glslFloatRepr, noop } from "../../src/utils";
 import * as _ from "lodash";
 import Main from "../../src/Main";
 import Component from "../../src/Component";
-import QuadBoxProgram from "../../src/webgl/QuadBoxProgram";
 import IMain from "../../src/IMain";
+import ShaderProgram from "../../src/webgl/ShaderProgram";
 
 class MockAnalyser extends AnalyserAdapter {
     private sineData: Float32Array;
@@ -28,19 +28,6 @@ class MockAnalyser extends AnalyserAdapter {
     }
 }
 
-class GradientProgram extends QuadBoxProgram {
-    constructor(rctx, blue) {
-        super(rctx, {
-            fragmentShader: [
-                "void main() {",
-                "   setFragColor(vec4(v_position, "+glslFloatRepr(blue)+", 1));",
-                "}"
-            ]
-
-        });
-    }
-}
-
 interface TestPatternOpts {
     blue: number;
 };
@@ -55,18 +42,24 @@ class TestPattern extends Component {
         blue: 0.5
     };
     protected opts: TestPatternOpts;
-    private program: GradientProgram;
+    private program: ShaderProgram;
 
     init() {
         this.updateProgram();
     }
 
     draw() {
-        this.program.run(this.parent.fm, null);
+        this.program.run(this.parent.fm, {});
     }
 
     private updateProgram() {
-        const program = new GradientProgram(this.main.rctx, this.opts.blue);
+        const program = new ShaderProgram(this.main.rctx, {
+            fragmentShader: `
+                void main() {
+                   setFragColor(vec4(v_position, ${glslFloatRepr(this.opts.blue)}, 1));
+                }
+            `
+        });
         if(this.program) {
             this.program.destroy();
         }

@@ -9,8 +9,9 @@ export interface CopyProgramValues {
 
 // A Shader that copies given texture onto current buffer
 export default class CopyProgram extends ShaderProgram<CopyProgramValues> {
-    constructor(rctx: RenderingContext) {
+    constructor(rctx: RenderingContext, dynamicBlend: boolean = false) {
         super(rctx, {
+            dynamicBlend,
             bindings: {
                 uniforms: {
                     srcTexture: { name: 'u_copySource', valueType: WebGLVarType.TEXTURE2D }

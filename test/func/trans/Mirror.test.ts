@@ -1,42 +1,37 @@
 import * as seedrandom from 'seedrandom';
-import QuadBoxProgram from "../../../src/webgl/QuadBoxProgram";
 import Component from "../../../src/Component";
 import { mainTest } from "../funcTestUtils";
 import IMain from "../../../src/IMain";
+import ShaderProgram from '../../../src/webgl/ShaderProgram';
 
-class QuadrantColorProgram extends QuadBoxProgram {
-    constructor(rctx) {
-        super(rctx, {
-            fragmentShader: [
-                "void main() {",
-                "    if(v_position.x < 0.5 && v_position.y < 0.5) {",
-                "        setFragColor(vec4(1.0,0.0,0.0,1.0));",
-                "    }",
-                "    if(v_position.x < 0.5 && v_position.y > 0.5) {",
-                "        setFragColor(vec4(0.0,1.0,0.0,1.0));",
-                "    }",
-                "    if(v_position.x > 0.5 && v_position.y > 0.5) {",
-                "        setFragColor(vec4(0.0,0.0,1.0,1.0));",
-                "    }",
-                "    if(v_position.x > 0.5 && v_position.y < 0.5) {",
-                "        setFragColor(vec4(1.0,1.0,0.0,1.0));",
-                "    }",
-                "}"
-            ]
-        })
-    }
-};
 class QuadrantColorComponent extends Component {
     public static componentName: string = "QuadrantColor";
     public static componentTag: string = "render";
-    private program: QuadrantColorProgram;
+    private program: ShaderProgram;
 
     init() {
-        this.program = new QuadrantColorProgram(this.main.rctx);
+        this.program = new ShaderProgram(this.main.rctx, {
+            fragmentShader: `
+                void main() {
+                    if(v_position.x < 0.5 && v_position.y < 0.5) {
+                        setFragColor(vec4(1.0,0.0,0.0,1.0));
+                    }
+                    if(v_position.x < 0.5 && v_position.y > 0.5) {
+                        setFragColor(vec4(0.0,1.0,0.0,1.0));
+                    }
+                    if(v_position.x > 0.5 && v_position.y > 0.5) {
+                        setFragColor(vec4(0.0,0.0,1.0,1.0));
+                    }
+                    if(v_position.x > 0.5 && v_position.y < 0.5) {
+                        setFragColor(vec4(1.0,1.0,0.0,1.0));
+                    }
+                }
+            `
+        });
     }
 
     draw() {
-        this.program.run(this.parent.fm, null);
+        this.program.run(this.parent.fm, {});
     }
 }
 

@@ -97,7 +97,7 @@ export default class Texer extends Component {
                 attribs: {
                     vertices:    { name: 'a_vertex' },
                     texVertices: { name: 'a_texVertex' },
-                    colors:      { name: 'a_color' },
+                    colors:      { name: 'a_color', size: 3 },
                 },
                 index: {
                     valueName: 'indices',
@@ -329,7 +329,8 @@ export default class Texer extends Component {
                 colorFilter: colorData ? 1 : 0,
                 vertices: this.vertexBuffer,
                 texVertices: this.texVertexBuffer,
-                colors: colorData ? this.colorBuffer : null
+                indices: this.indexBuffer,
+                colors: colorData ? this.colorBuffer : null,
             }
         );
     }

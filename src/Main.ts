@@ -148,7 +148,7 @@ export default class Main extends Model implements IMain {
     private _initGl() {
         try {
             this.rctx = new RenderingContext(this.canvas.getContext("webgl", {alpha: false}));
-            this.copier = new CopyProgram(this.rctx, {dynamicBlend: true});
+            this.copier = new CopyProgram(this.rctx, true);
             this.tempBuffers = new FrameBufferManager(this.rctx, this.copier, true, 0);
         } catch(e) {
             throw new Error("Couldnt get webgl context" + e);
