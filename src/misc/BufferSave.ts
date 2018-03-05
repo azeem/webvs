@@ -61,11 +61,11 @@ export default class BufferSave extends Component {
         switch(currentAction) {
             case Actions.SAVE:
                 fm.setRenderTarget(this.opts.bufferId);
-                this.main.copier.run(null, null, this.parent.fm.getCurrentTexture());
+                this.main.copier.run(null, { srcTexture: this.parent.fm.getCurrentTexture() });
                 fm.restoreRenderTarget();
                 break;
             case Actions.RESTORE:
-                this.main.copier.run(this.parent.fm, this.blendMode, fm.getTexture(this.opts.bufferId));
+                this.main.copier.run(this.parent.fm, { srcTexture: fm.getTexture(this.opts.bufferId) }, this.blendMode);
                 break;
         }
     }

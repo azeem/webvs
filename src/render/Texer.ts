@@ -68,7 +68,7 @@ export default class Texer extends Component {
     };
 
     protected opts: TexerOpts;
-    private program: TexerProgram;
+    private program: ShaderProgram;
     private vertexBuffer: Buffer;
     private texVertexBuffer: Buffer;
     private colorBuffer: Buffer;
@@ -87,7 +87,52 @@ export default class Texer extends Component {
     init() {
         const rctx = this.main.rctx;
         const gl = this.main.rctx.gl;
-        this.program = new TexerProgram(rctx);
+        this.program = new ShaderProgram(rctx, {
+            copyOnSwap: true,
+            bindings: {
+                uniforms: {
+                    image:       { name: 'u_image', valueType: WebGLVarType.TEXTURE2D },
+                    colorFilter: { name: 'u_colorFilter', valueType: WebGLVarType._1I },
+                },
+                attribs: {
+                    vertices:    { name: 'a_vertex' },
+                    texVertices: { name: 'a_texVertex' },
+                    colors:      { name: 'a_color' },
+                },
+                index: {
+                    valueName: 'indices',
+                    drawMode: gl.TRIANGLES
+                }
+            },
+            vertexShader: `
+                uniform bool u_colorFilter;
+                attribute vec2 a_texVertex;
+                attribute vec2 a_vertex;
+                attribute vec3 a_color;
+                varying vec2 v_texVertex;
+                varying vec3 v_color;
+                void main() {
+                   if(u_colorFilter) {
+                       v_color = a_color;
+                   }
+                   v_texVertex = a_texVertex;
+                   setPosition(a_vertex);
+                }
+            `,
+            fragmentShader: `
+                uniform bool u_colorFilter;
+                uniform sampler2D u_image;
+                varying vec2 v_texVertex;
+                varying vec3 v_color;
+                void main() {
+                   vec3 outColor = texture2D(u_image, v_texVertex).rgb;
+                   if(u_colorFilter) {
+                       outColor = outColor*v_color;
+                   }
+                   setFragColor(vec4(outColor, 1));
+                }
+            `
+        });
         this.updateCode();
         this.updateClone();
         this.updateImage();
@@ -277,72 +322,21 @@ export default class Texer extends Component {
         if(colorData) {
             this.colorBuffer.setData(colorData);
         }
-        this.program.run(this.parent.fm, null,
-                         this.vertexBuffer,
-                         this.texVertexBuffer,
-                         this.indexBuffer,
-                         colorData?this.colorBuffer:null,
-                         this.texture);
+        this.program.run(
+            this.parent.fm,
+            {
+                image: this.texture,
+                colorFilter: colorData ? 1 : 0,
+                vertices: this.vertexBuffer,
+                texVertices: this.texVertexBuffer,
+                colors: colorData ? this.colorBuffer : null
+            }
+        );
     }
 
     handleResize() {
         for(const codeInst of this.code) {
             codeInst.updateDimVars(this.main.rctx.gl);
         }
-    }
-}
-
-class TexerProgram extends ShaderProgram {
-    constructor(rctx: RenderingContext) {
-        super(rctx, {
-            copyOnSwap: true,
-            vertexShader: [
-                "uniform bool u_colorFilter;",
-                "attribute vec2 a_texVertex;",
-                "attribute vec2 a_vertex;",
-                "attribute vec3 a_color;",
-                "varying vec2 v_texVertex;",
-                "varying vec3 v_color;",
-                "void main() {",
-                "   if(u_colorFilter) {",
-                "       v_color = a_color;",
-                "   }",
-                "   v_texVertex = a_texVertex;",
-                "   setPosition(a_vertex);",
-                "}"
-            ],
-            fragmentShader: [
-                "uniform bool u_colorFilter;",
-                "uniform sampler2D u_image;",
-                "varying vec2 v_texVertex;",
-                "varying vec3 v_color;",
-                "void main() {",
-                "   vec3 outColor = texture2D(u_image, v_texVertex).rgb;",
-                "   if(u_colorFilter) {",
-                "       outColor = outColor*v_color;",
-                "   }",
-                "   setFragColor(vec4(outColor, 1));",
-                "}"
-            ]
-        });
-    }
-
-    draw(vertices: Buffer, texVertices: Buffer, indices: Buffer, colors: Buffer, image: WebGLTexture) {
-        this.setUniform("u_image", WebGLVarType.TEXTURE2D, image);
-
-        this.setAttrib("a_vertex", vertices);
-        this.setAttrib("a_texVertex", texVertices);
-
-        if(colors) {
-            this.setUniform("u_colorFilter", WebGLVarType._1I, 1);
-            this.setAttrib("a_color", colors, 3);
-        } else {
-            this.setUniform("u_colorFilter", WebGLVarType._1I, 0);
-            this.disableAttrib("a_color");
-        }
-
-        this.setIndex(indices);
-        const gl = this.rctx.gl;
-        gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
     }
 }

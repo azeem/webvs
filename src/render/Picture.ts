@@ -26,7 +26,7 @@ export default class Picture extends Component {
     };
 
     protected opts: PictureOpts;
-    private program: PictureProgram;
+    private program: ShaderProgram;
     private texture: WebGLTexture;
     private width: number;
     private height: number;
@@ -36,14 +36,51 @@ export default class Picture extends Component {
     }
 
     init() {
-        this.program = new PictureProgram(this.main.rctx);
+        const gl = this.main.rctx.gl;
+        this.program = new ShaderProgram(this.main.rctx, {
+            copyOnSwap: true,
+            bindings: {
+                uniforms: {
+                    position: { name: 'u_pos', valueType: WebGLVarType._2FV },
+                    imageRes: { name: 'u_texRes', valueType: WebGLVarType._2FV },
+                    image:    { name: 'u_image', valueType: WebGLVarType.TEXTURE2D },
+                },
+                attribs: {
+                    points: { name: 'a_texVertex', drawMode: gl.TRIANGLES }
+                }
+            },
+            vertexShader: `
+                attribute vec2 a_texVertex;
+                uniform vec2 u_pos;
+                uniform vec2 u_texRes;
+                varying vec2 v_texCoord;
+
+                void main() {
+                   v_texCoord = a_texVertex;
+                   setPosition(a_texVertex*(u_texRes/u_resolution)*vec2(2,-2)+u_pos);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D u_image;
+                varying vec2 v_texCoord;
+                void main() {
+                   setFragColor(texture2D(u_image, v_texCoord));
+                }
+            `
+        });
         this.updateImage();
     }
 
     draw() {
-        this.program.run(this.parent.fm, null, 
-                         this.opts.x, this.opts.y,
-                         this.texture, this.width, this.height);
+        this.program.run(
+            this.parent.fm,
+            {
+                position: [this.opts.x, this.opts.y],
+                imageRes: [this.width, this.height],
+                image: this.texture,
+                points: squareGeometry(this.main.rctx, true)
+            }
+        );
     }
 
     destroy() {
@@ -72,41 +109,5 @@ export default class Picture extends Component {
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
             }
         );
-    }
-}
-
-class PictureProgram extends ShaderProgram {
-    private points: Buffer;
-    constructor(rctx: RenderingContext) {
-        super(rctx, {
-            copyOnSwap: true,
-            vertexShader: [
-                "attribute vec2 a_texVertex;",
-                "uniform vec2 u_pos;",
-                "uniform vec2 u_texRes;",
-                "varying vec2 v_texCoord;",
-
-                "void main() {",
-                "   v_texCoord = a_texVertex;",
-                "   setPosition(a_texVertex*(u_texRes/u_resolution)*vec2(2,-2)+u_pos);",
-                "}"
-            ],
-            fragmentShader: [
-                "uniform sampler2D u_image;",
-                "varying vec2 v_texCoord;",
-                "void main() {",
-                "   setFragColor(texture2D(u_image, v_texCoord));",
-                "}"
-            ]
-        });
-    }
-
-    draw(x, y, image, imgw, imgh) {
-        this.setUniform("u_pos", WebGLVarType._2F, x, -y);
-        this.setUniform("u_texRes", WebGLVarType._2F, imgw, imgh);
-        this.setUniform("u_image", WebGLVarType.TEXTURE2D, image);
-        this.setAttrib("a_texVertex", squareGeometry(this.rctx, true));
-        const gl = this.rctx.gl;
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
 }

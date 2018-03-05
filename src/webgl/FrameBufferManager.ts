@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
-import CopyProgram from './CopyProgram';
 import RenderingContext from './RenderingContext';
+import ShaderProgram from './ShaderProgram';
 
 interface TextureNameMeta {
     refCount: number,
@@ -11,7 +11,7 @@ interface TextureNameMeta {
 // and can switch between them.
 export default class FrameBufferManager {
     private rctx: RenderingContext;
-    private copier: CopyProgram;
+    private copier: ShaderProgram;
     private initTexCount: number;
     private textureOnly: boolean;
     private framebuffer: WebGLFramebuffer;
@@ -22,7 +22,7 @@ export default class FrameBufferManager {
     private oldFrameBuffer: WebGLFramebuffer;
     private isRenderTarget: boolean;
 
-    constructor(rctx: RenderingContext, copier: CopyProgram, textureOnly: boolean = false, texCount: number = 2) {
+    constructor(rctx: RenderingContext, copier: ShaderProgram, textureOnly: boolean = false, texCount: number = 2) {
         this.rctx = rctx;
         this.copier = copier;
         this.initTexCount = texCount;
@@ -152,7 +152,7 @@ export default class FrameBufferManager {
     copyOver() {
         const texCount = this.textures.length;
         const prevTexture = this.textures[(texCount+this.curTex-1)%texCount];
-        this.copier.run(null, null, prevTexture);
+        this.copier.run(null, {srcTexture: prevTexture});
     }
 
     // Swaps the current texture

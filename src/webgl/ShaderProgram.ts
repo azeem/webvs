@@ -1,8 +1,47 @@
 import * as _ from 'lodash';
-import { BlendModes, logShaderError, WebGLVarType } from '../utils';
+import { BlendModes, logShaderError, WebGLVarType, flatString } from '../utils';
 import Buffer from './Buffer';
 import FrameBufferManager from './FrameBufferManager';
 import RenderingContext from './RenderingContext';
+import { squareGeometry } from './geometries';
+
+interface AttributeBinding {
+    name: string,
+    size?: number, 
+    valueType?: number,
+    normalized?:boolean, 
+    stride?: number, 
+    offset?: number,
+    drawMode?: number
+}
+
+interface UniformBinding {
+    name: string,
+    valueType?: WebGLVarType
+}
+
+interface IndexBinding {
+    valueName: string,
+    drawMode?: number
+}
+
+interface Bindings {
+    uniforms?: {[name:string]: UniformBinding},
+    attribs?: {[name:string]: AttributeBinding},
+    index?: IndexBinding
+}
+
+export interface ShaderOpts<ValueType = any> {
+    fragmentShader: string | string[],
+    vertexShader?: string | string[],
+    blendMode?: BlendModes,
+    swapFrame?: boolean,
+    copyOnSwap?: boolean,
+    dynamicBlend?: boolean,
+    blendValue?: 0.5,
+    bindings?: Bindings,
+    drawHook?: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void
+}
 
 // Base class for Webgl Shaders. This provides an abstraction
 // with support for blended output, easier variable bindings
@@ -29,7 +68,7 @@ import RenderingContext from './RenderingContext';
 //     passed to {@link Webvs.ShaderProgram.run} call
 // + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
 //     when varyingPos option is used
-export default abstract class ShaderProgram {
+export default class ShaderProgram<ValueType = any> {
     protected rctx: RenderingContext;
     private swapFrame: boolean;
     private copyOnSwap: boolean;
@@ -41,6 +80,8 @@ export default abstract class ShaderProgram {
     private fragment: WebGLShader;
     private vertex: WebGLShader;
     private program: WebGLProgram;
+    private drawHook: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void
+    private bindings: Bindings;
     private _locations: {[key:string]: number | WebGLUniformLocation};
     private _textureVars: string[];
     private _enabledAttribs: number[];
@@ -52,10 +93,7 @@ export default abstract class ShaderProgram {
         [BlendModes.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)"
     };
 
-    // Performs the actual drawing and any further bindings and calculations if required.
-    abstract draw(...args: any[]): void;
-
-    constructor(rctx: RenderingContext, opts: any) {
+    constructor(rctx: RenderingContext, opts: ShaderOpts<ValueType>) {
         opts = _.defaults(opts, {
             blendMode: BlendModes.REPLACE,
             swapFrame: false,
@@ -120,17 +158,36 @@ export default abstract class ShaderProgram {
             }
         }
 
-        this.fragmentSrc = fsrc.join("\n") + "\n" + opts.fragmentShader.join("\n");
-        this.vertexSrc = vsrc.join("\n") + "\n" + opts.vertexShader.join("\n");
+        this.drawHook= opts.drawHook;
+        this.vertexSrc = vsrc.join("\n") + "\n";
+        if(opts.vertexShader) {
+            this.vertexSrc += flatString(opts.vertexShader);
+        } else {
+            this.vertexSrc += `
+                attribute vec2 a_position;
+                void main() {
+                   setPosition(a_position);
+                }
+            `;
+            const oldDrawHook = this.drawHook;
+            this.drawHook = (values, gl, shader) => {
+                if (oldDrawHook) {
+                    oldDrawHook(values, gl, shader);
+                }
+                this.setAttrib("a_position", squareGeometry(this.rctx));
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            };
+        }
+
+        this.fragmentSrc = fsrc.join("\n") + "\n" + flatString(opts.fragmentShader);
         this._locations = {};
         this._textureVars = [];
         this._enabledAttribs = [];
+        this.bindings = opts.bindings || {};
 
         this._compile();
-        this.init();
     }
 
-    init() {}
 
     private _isShaderBlend(mode) {
         return (mode in ShaderProgram.shaderBlendEq);
@@ -166,9 +223,8 @@ export default abstract class ShaderProgram {
         return shader;
     }
 
-
     // Runs this shader program
-    run(fm: FrameBufferManager, blendMode: BlendModes, ...args: any[]) {
+    run(fm: FrameBufferManager, values: ValueType, blendMode: BlendModes = null, blendValue: number = null) {
         const gl = this.rctx.gl;
         const oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
@@ -177,6 +233,7 @@ export default abstract class ShaderProgram {
             throw new Error("Cannot set blendmode at runtime. Use dynamicBlend");
         }
         blendMode = blendMode || this.blendMode;
+        blendValue = typeof(blendValue) === 'number' ? blendValue : this.blendValue;
 
         if(fm) {
             this.setUniform("u_resolution", WebGLVarType._2F, gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -195,8 +252,8 @@ export default abstract class ShaderProgram {
             this.setUniform("u_blendMode", WebGLVarType._1I, blendMode);
         }
 
-        this._setGlBlendMode(blendMode);
-        this.draw.apply(this, args);
+        this._setGlBlendMode(blendMode, blendValue);
+        this.draw(values);
         // disable all enabled attributes
         while(this._enabledAttribs.length) {
             gl.disableVertexAttribArray(this._enabledAttribs.shift());
@@ -205,7 +262,78 @@ export default abstract class ShaderProgram {
         gl.useProgram(oldProgram);
     }
 
-    private _setGlBlendMode(mode) {
+    private draw(values: ValueType) {
+        const errorIfNotBuffer = (value, valueName): Buffer => {
+            if(value instanceof Buffer) {
+                return value;
+            } else {
+                throw new Error(`Value "${valueName}" should be a Buffer`);
+            }
+        };
+
+        // bind variables
+        let isElements:boolean = false;
+        let drawMode:number = null;
+        let drawCount:number = null;
+
+        for(const bindingType in this.bindings) {
+            if(bindingType === 'index') {
+                const defn = this.bindings[bindingType];
+                const valueName = defn.valueName;
+                const value = values[valueName];
+                const indexBuffer = errorIfNotBuffer(value, valueName);
+                this.setIndex(indexBuffer);
+                if(defn.drawMode) {
+                    drawCount = indexBuffer.length;
+                    drawMode = defn.drawMode;
+                    isElements = true;
+                }
+            } else {
+                for(const valueName in this.bindings[bindingType]) {
+                    const value = values[valueName];
+                    if(bindingType === 'attribs') {
+                        const defn = this.bindings[bindingType][valueName];
+                        if(!value) {
+                            this.disableAttrib(defn.name);
+                        } else {
+                            const attribBuffer = errorIfNotBuffer(value, valueName);
+                            this.setAttrib(
+                                defn.name, 
+                                attribBuffer,
+                                defn.size,
+                                defn.valueType,
+                                defn.normalized,
+                                defn.stride,
+                                defn.offset
+                            );
+                            if(defn.drawMode) {
+                                drawCount = attribBuffer.length / (defn.size || 2);
+                                drawMode = defn.drawMode;
+                            }
+                        }
+                    } else if(bindingType === 'uniforms') {
+                        const defn = this.bindings[bindingType][valueName];
+                        this.setUniform(defn.name, defn.valueType, value);
+                    }
+                }
+            }
+        }
+
+        const gl = this.rctx.gl;
+        if (this.drawHook) {
+            this.drawHook(values, gl, this);
+        } else if(drawMode !== null) {
+            if(isElements) {
+                gl.drawElements(drawMode, drawCount, gl.UNSIGNED_SHORT, 0);
+            } else {
+                gl.drawArrays(drawMode, 0, drawCount);
+            }
+        } else {
+            throw new Error('Unable to draw shader. No drawHook or varDefs with drawMode found.');
+        }
+    }
+
+    private _setGlBlendMode(mode, blendValue) {
         const gl = this.rctx.gl;
         switch(mode) {
             case BlendModes.ADDITIVE:
@@ -235,7 +363,7 @@ export default abstract class ShaderProgram {
                 break;
             case BlendModes.ADJUSTABLE:
                 gl.enable(gl.BLEND);
-                gl.blendColor(0, 0, 0, this.blendValue);
+                gl.blendColor(0, 0, 0, blendValue);
                 gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;

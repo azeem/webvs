@@ -31,6 +31,14 @@ export interface SuperScopeOpts {
     cycleSpeed: number
 }
 
+interface SuperScopeShaderValues {
+    pointSize: number,
+    points: Buffer,
+    colors: Buffer,
+    isDots: boolean,
+    drawTriangles: boolean
+}
+
 interface SSCodeInstance extends CodeInstance {
     red: number;
     green: number;
@@ -84,7 +92,7 @@ export default class SuperScope extends Component {
     private colorBuffer: Buffer;
     private code: SSCodeInstance[];
     private inited: boolean;
-    private program: SuperScopeShader;
+    private program: ShaderProgram<SuperScopeShaderValues>;
     private source: Source;
     private channel: Channel;
     private drawMode: DrawModes;
@@ -290,17 +298,71 @@ export default class SuperScope extends Component {
         this.pointBuffer.setData(pointBufferData);
         this.colorBuffer.setData(colorData);
 
-        this.program.run(this.parent.fm, null, 
-                         this.pointBuffer, 
-                         this.colorBuffer, 
-                         dots, 
-                         this.veryThick?1:this.opts.thickness, 
-                         this.veryThick);
+        this.program.run(
+            this.parent.fm,
+            {
+                pointSize: this.veryThick ? 1 : this.opts.thickness,
+                points: this.pointBuffer,
+                colors: this.colorBuffer,
+                drawTriangles: this.veryThick,
+                isDots: dots
+            }
+        );
     }
 
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
-        const program = new SuperScopeShader(this.main.rctx, blendMode);
+        const program = new ShaderProgram<SuperScopeShaderValues>(this.main.rctx, {
+            copyOnSwap: true,
+            blendMode: blendMode,
+            vertexShader: `
+                attribute vec2 a_position;
+                attribute vec3 a_color;
+                varying vec3 v_color;
+                uniform float u_pointSize;
+                void main() {
+                    gl_PointSize = u_pointSize;
+                    setPosition(a_position);
+                    v_color = a_color;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 v_color;
+                void main() {
+                    setFragColor(vec4(v_color, 1));
+                }
+            `,
+            bindings: {
+                uniforms: {
+                    pointSize: { name: 'u_pointSize', valueType: WebGLVarType._1F },
+                },
+                attribs: {
+                    points: { name: 'a_position' },
+                    colors: { name: 'a_color', size: 3 },
+                }
+            },
+            drawHook: (values, gl) => {
+                let prevLineWidth;
+                if(!values.isDots) {
+                    prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
+                    gl.lineWidth(values.pointSize);
+                }
+
+                let mode;
+                if(values.drawTriangles) {
+                    mode = gl.TRIANGLES;
+                } else if(values.isDots) {
+                    mode = gl.POINTS;
+                } else {
+                    mode = gl.LINES;
+                }
+                gl.drawArrays(mode, 0, values.points.length/2);
+
+                if(!values.isDots) {
+                    gl.lineWidth(prevLineWidth);
+                }
+            }
+        });
         if(this.program) {
             this.program.destroy();
         }
@@ -385,59 +447,5 @@ export default class SuperScope extends Component {
         _.each(this.code, (code) => {
             code.updateDimVars(this.main.rctx.gl);
         });
-    }
-}
-
-class SuperScopeShader extends ShaderProgram {
-    constructor(rctx: RenderingContext, blendMode: BlendModes) {
-        super(rctx, {
-            copyOnSwap: true,
-            blendMode: blendMode,
-            vertexShader: [
-                "attribute vec2 a_position;",
-                "attribute vec3 a_color;",
-                "varying vec3 v_color;",
-                "uniform float u_pointSize;",
-                "void main() {",
-                "   gl_PointSize = u_pointSize;",
-                "   setPosition(a_position);",
-                "   v_color = a_color;",
-                "}"
-            ],
-            fragmentShader: [
-                "varying vec3 v_color;",
-                "void main() {",
-                "   setFragColor(vec4(v_color, 1));",
-                "}"
-            ]
-        });
-    }
-
-    draw(points, colors, dots, thickness, triangles) {
-        const gl = this.rctx.gl;
-
-        this.setUniform("u_pointSize", WebGLVarType._1F, thickness);
-        this.setAttrib("a_position", points, 2);
-        this.setAttrib("a_color", colors, 3);
-
-        var prevLineWidth;
-        if(!dots) {
-            prevLineWidth = gl.getParameter(gl.LINE_WIDTH);
-            gl.lineWidth(thickness);
-        }
-
-        var mode;
-        if(triangles) {
-            mode = gl.TRIANGLES;
-        } else if(dots) {
-            mode = gl.POINTS;
-        } else {
-            mode = gl.LINES;
-        }
-        gl.drawArrays(mode, 0, points.length/2);
-
-        if(!dots) {
-            gl.lineWidth(prevLineWidth);
-        }
     }
 }

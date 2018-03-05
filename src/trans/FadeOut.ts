@@ -1,7 +1,7 @@
 import IMain from "../IMain";
 import Component, { IContainer } from "../Component";
-import ClearScreenProgram from "../webgl/ClearScreenProgram";
 import { BlendModes, Color, parseColorNorm } from "../utils";
+import ClearScreenProgram from "../webgl/ClearScreenProgram";
 
 export interface FadeOutOpts {
     speed: number,
@@ -41,7 +41,7 @@ export default class FadeOut extends Component {
         this.frameCount++;
         if(this.frameCount == this.maxFrameCount) {
             this.frameCount = 0;
-            this.program.run(this.parent.fm, null, this.color);
+            this.program.run(this.parent.fm, { color: this.color });
         }
     }
 

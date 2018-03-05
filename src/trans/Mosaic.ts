@@ -1,8 +1,8 @@
 import Component, { IContainer } from '../Component';
 import IMain from '../IMain';
-import QuadBoxProgram from '../webgl/QuadBoxProgram';
 import RenderingContext from '../webgl/RenderingContext';
 import { BlendModes, WebGLVarType } from '../utils';
+import ShaderProgram from '../webgl/ShaderProgram';
 
 export interface MosaicOpts {
     blendMode: string,
@@ -29,7 +29,7 @@ export default class Mosaic extends Component {
     protected opts: MosaicOpts;
     private frameCount: number;
     private size: number;
-    private program: MosaicProgram;
+    private program: ShaderProgram;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
@@ -51,7 +51,7 @@ export default class Mosaic extends Component {
         if(this.size !== 0) {
             const sizeX = 1/Math.floor(this.size*(gl.drawingBufferWidth-1)+1);
             const sizeY = 1/Math.floor(this.size*(gl.drawingBufferHeight-1)+1);
-            this.program.run(this.parent.fm, null, sizeX, sizeY);
+            this.program.run(this.parent.fm, { size: [sizeX, sizeY] });
         }
 
         if(this.frameCount > 0) {
@@ -73,31 +73,25 @@ export default class Mosaic extends Component {
 
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
-        const program = new MosaicProgram(this.main.rctx, blendMode);
+        const program = new ShaderProgram(this.main.rctx, {
+            swapFrame: true,
+            blendMode: blendMode,
+            bindings: {
+                uniforms: {
+                    size: { name: 'u_size', valueType: WebGLVarType._2FV }
+                }
+            },
+            fragmentShader: `
+                uniform vec2 u_size;
+                void main() {
+                    vec2 samplePos = u_size * ( floor(v_position/u_size) + vec2(0.5,0.5) );
+                    setFragColor(getSrcColorAtPos(samplePos));
+                }
+            `
+        });
         if(this.program) {
             this.program.destroy();
         }
         this.program = program;
-    }
-}
-
-class MosaicProgram extends QuadBoxProgram {
-    constructor(rctx: RenderingContext, blendMode: BlendModes) {
-        super(rctx, {
-            swapFrame: true,
-            blendMode: blendMode,
-            fragmentShader: [
-                "uniform vec2 u_size;",
-                "void main() {",
-                "    vec2 samplePos = u_size * ( floor(v_position/u_size) + vec2(0.5,0.5) );",
-                "    setFragColor(getSrcColorAtPos(samplePos));",
-                "}"
-            ]
-        });
-    }
-
-    draw(sizeX: number, sizeY: number) {
-        this.setUniform("u_size", WebGLVarType._2F, sizeX, sizeY);
-        super.draw();
     }
 }

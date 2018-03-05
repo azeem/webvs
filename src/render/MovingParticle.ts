@@ -39,7 +39,7 @@ export default class MovingParticle extends Component {
     private velocityY: number;
     private posX: number;
     private posY: number;
-    private program: MovingParticleShader;
+    private program: ShaderProgram;
     private blendMode: BlendModes;
     private color: Color;
 
@@ -56,7 +56,35 @@ export default class MovingParticle extends Component {
         this.posY = 0;
 
         this.updateBlendMode();
-        this.program = new MovingParticleShader(this.main.rctx);
+        const gl = this.main.rctx.gl;
+        this.program = new ShaderProgram(this.main.rctx, {
+            copyOnSwap: true,
+            dynamicBlend: true,
+            bindings: {
+                uniforms: {
+                    scale:    { name: 'u_scale', valueType: WebGLVarType._2FV },
+                    position: { name: 'u_position', valueType: WebGLVarType._2FV },
+                    color:    { name: 'u_color', valueType: WebGLVarType._3FV },
+                },
+                attribs: {
+                    points: { name: 'a_points', drawMode: gl.TRIANGLE_FAN }
+                }
+            },
+            vertexShader: `
+                attribute vec2 a_point;
+                uniform vec2 u_position;
+                uniform vec2 u_scale;
+                void main() {
+                   setPosition((a_point*u_scale)+u_position);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 u_color;
+                void main() {
+                   setFragColor(vec4(u_color, 1));
+                }
+            `
+        });
         this.updateColor();
     }
 
@@ -90,9 +118,16 @@ export default class MovingParticle extends Component {
         scaleX = 2*scaleX/gl.drawingBufferWidth;
         scaleY = 2*scaleY/gl.drawingBufferHeight;
 
-        this.program.run(this.parent.fm, this.blendMode,
-                         circleGeometry(this.main.rctx),
-                         scaleX, scaleY, x, y, this.color);
+        this.program.run(
+            this.parent.fm, 
+            {
+                scale: [scaleX, scaleY],
+                position: [x, y],
+                color: this.color,
+                points: circleGeometry(this.main.rctx)
+            },
+            this.blendMode
+        );
     }
 
     updateBlendMode() {
@@ -106,37 +141,5 @@ export default class MovingParticle extends Component {
     destroy() {
         super.destroy();
         this.program.destroy();
-    }
-}
-
-class MovingParticleShader extends ShaderProgram {
-    constructor(rctx: RenderingContext) {
-        super(rctx, {
-            copyOnSwap: true,
-            dynamicBlend: true,
-            vertexShader: [
-                "attribute vec2 a_point;",
-                "uniform vec2 u_position;",
-                "uniform vec2 u_scale;",
-                "void main() {",
-                "   setPosition((a_point*u_scale)+u_position);",
-                "}"
-            ],
-            fragmentShader: [
-                "uniform vec3 u_color;",
-                "void main() {",
-                "   setFragColor(vec4(u_color, 1));",
-                "}"
-            ]
-        });
-    }
-
-    draw(points: Buffer, scaleX: number, scaleY: number, x: number, y: number, color: Color) {
-        const gl = this.rctx.gl;
-        this.setUniform("u_scale", WebGLVarType._2F, scaleX, scaleY);
-        this.setUniform("u_position", WebGLVarType._2F, x, y);
-        this.setUniform("u_color", WebGLVarType._3FV, color);
-        this.setAttrib("a_point", points);
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, points.length/2);
     }
 }

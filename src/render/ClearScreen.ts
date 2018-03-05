@@ -2,8 +2,8 @@ import * as _ from 'lodash';
 import IMain from '../IMain';
 import Component, {IContainer} from '../Component';
 import ShaderProgram from '../webgl/ShaderProgram';
-import ClearScreenProgram from '../webgl/ClearScreenProgram';
 import {Color, BlendModes, parseColorNorm} from '../utils';
+import ClearScreenProgram from '../webgl/ClearScreenProgram';
 
 export interface ClearScreenOpts {
     beatCount: number,
@@ -59,7 +59,7 @@ export default class ClearScreen extends Component {
         }
 
         if(clear) {
-            this.program.run(this.parent.fm, null, this.color);
+            this.program.run(this.parent.fm, {color: this.color});
         }
     }
 

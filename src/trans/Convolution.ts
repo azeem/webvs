@@ -1,9 +1,9 @@
 import * as _ from 'lodash';
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { glslFloatRepr, WebGLVarType } from "../utils";
+import ShaderProgram from '../webgl/ShaderProgram';
 
 enum EdgeModes {
     EXTEND = 0,
@@ -40,7 +40,7 @@ export default class Convolution extends Component {
     };
 
     protected opts: ConvolutionOpts;
-    private program: ConvolutionProgram;
+    private program: ShaderProgram;
     private scale: number;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
@@ -53,7 +53,7 @@ export default class Convolution extends Component {
     }
 
     draw() {
-        this.program.run(this.parent.fm, null, this.scale, this.opts.bias);
+        this.program.run(this.parent.fm, { scale: this.scale, bias: this.opts.bias });
     }
 
     destroy() {
@@ -81,16 +81,7 @@ export default class Convolution extends Component {
         }
 
         const edgeMode: EdgeModes = EdgeModes[this.opts.edgeMode];
-        const program = new ConvolutionProgram(this.main.rctx, opts.kernel, kernelSize, edgeMode);
-        if(this.program) {
-            this.program.destroy();
-        }
-        this.program = program;
-    }
-}
 
-class ConvolutionProgram extends QuadBoxProgram {
-    constructor(rctx: RenderingContext, kernel, kernelSize, edgeMode) {
         // generate edge correction function
         let edgeFunc = "";
         switch(edgeMode) {
@@ -107,7 +98,7 @@ class ConvolutionProgram extends QuadBoxProgram {
         const mid = Math.floor(kernelSize/2);
         for(let i = 0;i < kernelSize;i++) {
             for(let j = 0;j < kernelSize;j++) {
-                var value = kernel[(i*kernelSize+j)];
+                const value = opts.kernel[(i*kernelSize+j)];
                 if(value === 0) {
                     continue;
                 }
@@ -117,25 +108,30 @@ class ConvolutionProgram extends QuadBoxProgram {
             }
         }
 
-        super(rctx, {
+        const program = new ShaderProgram(this.main.rctx, {
             swapFrame: true,
-            fragmentShader: [
-                "uniform float u_scale;",
-                "uniform float u_bias;",
-                "void main() {",
-                "   vec2 texel = 1.0/(u_resolution-vec2(1,1));",
-                "   vec2 pos;",
-                "   vec4 colorSum = vec4(0,0,0,0);",
-                colorSumEq.join("\n"),
-                "   setFragColor(vec4(((colorSum+u_bias)/u_scale).rgb, 1.0));",
-                "}"
-            ]
+            bindings: {
+                uniforms: {
+                    scale: { name: 'u_scale', valueType: WebGLVarType._1F },
+                    bias: { name: 'u_bias', valueType: WebGLVarType._1F }
+                }
+            },
+            fragmentShader: `
+                uniform float u_scale;
+                uniform float u_bias;
+                void main() {
+                   vec2 texel = 1.0/(u_resolution-vec2(1,1));
+                   vec2 pos;
+                   vec4 colorSum = vec4(0,0,0,0);
+                   ${ colorSumEq.join("\n") }
+                   setFragColor(vec4(((colorSum+u_bias)/u_scale).rgb, 1.0));
+                }
+            `
         });
-    }
 
-    draw(scale: number, bias: number) {
-        this.setUniform("u_scale", WebGLVarType._1F, scale);
-        this.setUniform("u_bias", WebGLVarType._1F, bias);
-        super.draw();
+        if(this.program) {
+            this.program.destroy();
+        }
+        this.program = program;
     }
 }

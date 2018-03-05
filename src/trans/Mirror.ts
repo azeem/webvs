@@ -1,8 +1,8 @@
 import Component, { IContainer } from '../Component';
-import QuadBoxProgram from '../webgl/QuadBoxProgram';
 import RenderingContext from '../webgl/RenderingContext';
 import { WebGLVarType } from '../utils';
 import IMain from '../IMain';
+import ShaderProgram from '../webgl/ShaderProgram';
 
 export interface MirrorDirs {
     topToBottom: boolean,
@@ -38,7 +38,7 @@ export default class Mirror extends Component {
     };
 
     protected opts: MirrorOpts;
-    private program: MirrorProgram;
+    private program: ShaderProgram;
     private animFrameCount: number;
     private map: number[];
     private mix: number[][];
@@ -49,7 +49,57 @@ export default class Mirror extends Component {
     }
 
     init() {
-        this.program = new MirrorProgram(this.main.rctx);
+        this.program = new ShaderProgram(this.main.rctx, {
+            swapFrame: true,
+            bindings: {
+                uniforms: {
+                    transition: { name: 'u_mode', valueType: WebGLVarType._1I },
+                    mix0: { name: 'u_mix0', valueType: WebGLVarType._4FV },
+                    mix1: { name: 'u_mix1', valueType: WebGLVarType._4FV },
+                    mix2: { name: 'u_mix2', valueType: WebGLVarType._4FV },
+                    mix3: { name: 'u_mix3', valueType: WebGLVarType._4FV },
+                }
+            },
+            fragmentShader: `
+                uniform int u_mode;
+                uniform vec4 u_mix0;
+                uniform vec4 u_mix1;
+                uniform vec4 u_mix2;
+                uniform vec4 u_mix3;
+
+                #define getQuadrant(pos) ( (pos.x<0.5) ? (pos.y<0.5?2:0) : (pos.y<0.5?3:1) )
+                #define check(a,b, c,d,e,f) ( ((a==c || a==d) && (b==e || b==f)) || ((a==e || a==f) && (b==c || b==d)) )
+                #define xFlip(qa, qb) (check(qa,qb, 0,2, 1,3)?-1:1)
+                #define yFlip(qa, qb) (check(qa,qb, 0,1, 2,3)?-1:1)
+                #define mirrorPos(pos,qa,qb) ((pos-vec2(0.5,0.5))*vec2(xFlip(qa,qb),yFlip(qa,qb))+vec2(0.5,0.5))
+                #define getMirrorColor(pos,qa,qb) (getSrcColorAtPos(mirrorPos(pos,qa,qb)))
+
+                void main() {",
+                    int quadrant = getQuadrant(v_position);
+                    vec4 mix;
+                    if(quadrant == 0)      { mix = u_mix0; }
+                    else if(quadrant == 1) { mix = u_mix1; }
+                    else if(quadrant == 2) { mix = u_mix2; }
+                    else if(quadrant == 3) { mix = u_mix3; }
+                    if(u_mode == 0) {
+                        int otherQuadrant = int(mix.x);
+                        setFragColor(getMirrorColor(v_position, quadrant, otherQuadrant));
+                    } else {
+                        vec4 c0 = getMirrorColor(v_position, quadrant, 0);
+                        vec4 c1 = getMirrorColor(v_position, quadrant, 1);
+                        vec4 c2 = getMirrorColor(v_position, quadrant, 2);
+                        vec4 c3 = getMirrorColor(v_position, quadrant, 3);
+
+                        setFragColor(vec4(
+                            dot(vec4(c0.r,c1.r,c2.r,c3.r), mix),
+                            dot(vec4(c0.g,c1.g,c2.g,c3.g), mix),
+                            dot(vec4(c0.b,c1.b,c2.b,c3.b), mix),
+                            1.0
+                        ));
+                    }
+                }
+            `
+        });
         this.animFrameCount = 0;
         this.mix = [
             [0, 0, 0, 0],
@@ -71,7 +121,13 @@ export default class Mirror extends Component {
             this._setQuadrantMap(true);
         }
 
-        this.program.run(this.parent.fm, null, this._inTransition(), this.mix);
+        this.program.run(this.parent.fm, {
+            transition: this._inTransition() ? 1 : 0,
+            mix0: this.mix[0],
+            mix1: this.mix[1],
+            mix2: this.mix[2],
+            mix3: this.mix[3],
+        });
 
         if(this._inTransition()) {
             this.animFrameCount--;
@@ -154,80 +210,5 @@ export default class Mirror extends Component {
                 }
             }
         }
-    }
-}
-
-// Working:
-// The program accepts a mode and 4 mix vectors, one for each of the 4 quadrants.
-// The mode decides between two scenarios Case 1. a simple
-// mapping ie. one quadrant is copied over to another.
-// In this case the first value of each vec4 will contain the
-// id of the quadrant from where the pixels will be copied
-// Case 2. This is used during transition animation. Here, the
-// final color of pixels in each quadrant is a weighted mix
-// of colors of corresponding mirrored points in all quadrants.
-// Each of the vec4 contains a mix weight for each 4 quadrants. As
-// the animation proceeds, one of the 4 in the vec4 becomes 1 while others
-// become 0. This two mode allows to make fewer texture sampling when
-// not doing transition animation.
-//
-// The quadrant ids are as follows
-//       |
-//    0  |  1
-//  -----------
-//    2  |  3
-//       |
-class MirrorProgram extends QuadBoxProgram {
-    constructor(rctx: RenderingContext) {
-        super(rctx, {
-            swapFrame: true,
-            fragmentShader: [
-                "uniform int u_mode;",
-                "uniform vec4 u_mix0;",
-                "uniform vec4 u_mix1;",
-                "uniform vec4 u_mix2;",
-                "uniform vec4 u_mix3;",
-
-                "#define getQuadrant(pos) ( (pos.x<0.5) ? (pos.y<0.5?2:0) : (pos.y<0.5?3:1) )",
-                "#define check(a,b, c,d,e,f) ( ((a==c || a==d) && (b==e || b==f)) || ((a==e || a==f) && (b==c || b==d)) )",
-                "#define xFlip(qa, qb) (check(qa,qb, 0,2, 1,3)?-1:1)",
-                "#define yFlip(qa, qb) (check(qa,qb, 0,1, 2,3)?-1:1)",
-                "#define mirrorPos(pos,qa,qb) ((pos-vec2(0.5,0.5))*vec2(xFlip(qa,qb),yFlip(qa,qb))+vec2(0.5,0.5))",
-                "#define getMirrorColor(pos,qa,qb) (getSrcColorAtPos(mirrorPos(pos,qa,qb)))",
-
-                "void main() {",
-                "    int quadrant = getQuadrant(v_position);",
-                "    vec4 mix;",
-                "    if(quadrant == 0)      { mix = u_mix0; }",
-                "    else if(quadrant == 1) { mix = u_mix1; }",
-                "    else if(quadrant == 2) { mix = u_mix2; }",
-                "    else if(quadrant == 3) { mix = u_mix3; }",
-                "    if(u_mode == 0) {",
-                "        int otherQuadrant = int(mix.x);",
-                "        setFragColor(getMirrorColor(v_position, quadrant, otherQuadrant));",
-                "    } else {",
-                "        vec4 c0 = getMirrorColor(v_position, quadrant, 0);",
-                "        vec4 c1 = getMirrorColor(v_position, quadrant, 1);",
-                "        vec4 c2 = getMirrorColor(v_position, quadrant, 2);",
-                "        vec4 c3 = getMirrorColor(v_position, quadrant, 3);",
-
-                "        setFragColor(vec4(",
-                "            dot(vec4(c0.r,c1.r,c2.r,c3.r), mix),",
-                "            dot(vec4(c0.g,c1.g,c2.g,c3.g), mix),",
-                "            dot(vec4(c0.b,c1.b,c2.b,c3.b), mix),",
-                "            1.0",
-                "        ));",
-                "    }",
-                "}"
-            ]
-        });
-    }
-
-    draw(transition: boolean, mix: number[][]) {
-        this.setUniform("u_mode", WebGLVarType._1I, transition?1:0);
-        for(let i = 0;i < 4;i++) {
-            this.setUniform("u_mix"+i, WebGLVarType._4FV, mix[i]);
-        }
-        super.draw();
     }
 }

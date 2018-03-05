@@ -1,24 +1,26 @@
-import { BlendModes, WebGLVarType } from "../utils";
-import QuadBoxProgram from "./QuadBoxProgram";
+import { BlendModes, WebGLVarType, Color } from "../utils";
 import RenderingContext from "./RenderingContext";
+import ShaderProgram from "./ShaderProgram";
 
-// A Shader that clears the screen to a given color
-export default class ClearScreenProgram extends QuadBoxProgram {
+export interface ClearScreenProgramValues {
+    color: Color
+}
+
+export default class ClearScreenProgram extends ShaderProgram<ClearScreenProgramValues> {
     constructor(rctx: RenderingContext, blendMode: BlendModes) {
         super(rctx, {
-            fragmentShader: [
-                "uniform vec3 u_color;",
-                "void main() {",
-                "   setFragColor(vec4(u_color, 1));",
-                "}"
-            ],
-            blendMode: blendMode
+            blendMode: blendMode,
+            bindings: {
+                uniforms: {
+                    color: { name: 'u_color', valueType: WebGLVarType._3FV}
+                }
+            },
+            fragmentShader: `
+                uniform vec3 u_color;
+                void main() {
+                setFragColor(vec4(u_color, 1));
+                }
+            `
         });
-    }
-
-    // Renders this shader
-    draw(color) {
-        this.setUniform("u_color", WebGLVarType._3FV, color);
-        super.draw();
     }
 }

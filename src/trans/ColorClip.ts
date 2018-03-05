@@ -1,8 +1,8 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { WebGLVarType, Color, parseColorNorm } from "../utils";
+import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface ColorClipOpts {
     mode: string,
@@ -34,7 +34,7 @@ export default class ColorClip extends Component {
     };
 
     protected opts: ColorClipOpts;
-    private program: ColorClipProgram;
+    private program: ShaderProgram;
     private mode: ClipModes;
     private color: Color;
     private outColor: Color;
@@ -44,13 +44,57 @@ export default class ColorClip extends Component {
     }
 
     init() {
-        this.program = new ColorClipProgram(this.main.rctx);
+        this.program = new ShaderProgram(this.main.rctx, {
+            swapFrame: true,
+            bindings: {
+                uniforms: {
+                    mode:     { name: 'u_mode', valueType: WebGLVarType._1I },
+                    color:    { name: 'u_color', valueType: WebGLVarType._3FV },
+                    outColor: { name: 'u_outColor', valueType: WebGLVarType._3FV },
+                    level:    { name: 'u_level', valueType: WebGLVarType._1F },
+                }
+            },
+            fragmentShader: `
+                uniform int u_mode;
+                uniform vec3 u_color;
+                uniform vec3 u_outColor;
+                uniform float u_level;
+
+                void main() {
+                   vec4 inColor4 = getSrcColor();
+                   vec3 inColor = inColor4.rgb;
+                   bool clip = false;
+                   if(u_mode == 0) {
+                        clip = all(lessThanEqual(inColor, u_color));
+                   }
+                   if(u_mode == 1) {
+                        clip = all(greaterThanEqual(inColor, u_color));
+                   }
+                   if(u_mode == 2) {
+                        clip = (distance(inColor, u_color) <= u_level*0.5);
+                   }
+                   if(clip) {
+                       setFragColor(vec4(u_outColor, inColor4.a));
+                   } else {
+                       setFragColor(inColor4);
+                   }
+                }
+            `
+        });
         this.updateColor();
         this.updateMode();
     }
 
     draw() {
-        this.program.run(this.parent.fm, null, this.mode, this.color, this.outColor, this.opts.level);
+        this.program.run(
+            this.parent.fm, 
+            {
+                mode: this.mode, 
+                color: this.color, 
+                outColor: this.outColor, 
+                level: this.opts.level
+            }
+        );
     }
 
     destroy() {
@@ -65,47 +109,5 @@ export default class ColorClip extends Component {
     private updateColor() {
         this.color = parseColorNorm(this.opts.color);
         this.outColor = parseColorNorm(this.opts.outColor);
-    }
-}
-
-class ColorClipProgram extends QuadBoxProgram {
-    constructor(rctx: RenderingContext) {
-        super(rctx, {
-            swapFrame: true,
-            fragmentShader: [
-                "uniform int u_mode;",
-                "uniform vec3 u_color;",
-                "uniform vec3 u_outColor;",
-                "uniform float u_level;",
-
-                "void main() {",
-                "   vec4 inColor4 = getSrcColor();",
-                "   vec3 inColor = inColor4.rgb;",
-                "   bool clip = false;",
-                "   if(u_mode == 0) {",
-                "           clip = all(lessThanEqual(inColor, u_color));",
-                "   }",
-                "   if(u_mode == 1) {",
-                "           clip = all(greaterThanEqual(inColor, u_color));",
-                "   }",
-                "   if(u_mode == 2) {",
-                "           clip = (distance(inColor, u_color) <= u_level*0.5);",
-                "   }",
-                "   if(clip) {",
-                "       setFragColor(vec4(u_outColor, inColor4.a));",
-                "   } else {",
-                "       setFragColor(inColor4);",
-                "   }",
-                "}",
-            ]
-        });
-    }
-
-    draw(mode: ClipModes, color: Color, outColor: Color, level: number) {
-        this.setUniform("u_mode", WebGLVarType._1I, mode);
-        this.setUniform("u_color", WebGLVarType._3FV, color);
-        this.setUniform("u_outColor", WebGLVarType._3FV, outColor);
-        this.setUniform("u_level", WebGLVarType._1F, level);
-        super.draw();
     }
 }

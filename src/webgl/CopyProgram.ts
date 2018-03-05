@@ -1,23 +1,27 @@
 import * as _ from 'lodash';
-import QuadBoxProgram from './QuadBoxProgram';
 import { WebGLVarType } from '../utils';
+import RenderingContext from './RenderingContext';
+import ShaderProgram from './ShaderProgram';
+
+export interface CopyProgramValues {
+    srcTexture: WebGLTexture
+}
 
 // A Shader that copies given texture onto current buffer
-export default class CopyProgram extends QuadBoxProgram {
-    constructor(gl, options) {
-        options = _.defaults(options||{}, {
-            fragmentShader: [
-                "uniform sampler2D u_copySource;",
-                "void main() {",
-                "   setFragColor(texture2D(u_copySource, v_position));",
-                "}"
-            ]
+export default class CopyProgram extends ShaderProgram<CopyProgramValues> {
+    constructor(rctx: RenderingContext) {
+        super(rctx, {
+            bindings: {
+                uniforms: {
+                    srcTexture: { name: 'u_copySource', valueType: WebGLVarType.TEXTURE2D }
+                }
+            },
+            fragmentShader: `
+                uniform sampler2D u_copySource;
+                void main() {
+                setFragColor(texture2D(u_copySource, v_position));
+                }
+            `
         });
-        super(gl, options);
-    }
-    // Renders this shader
-    draw(srcTexture) {
-        this.setUniform("u_copySource", WebGLVarType.TEXTURE2D, srcTexture);
-        super.draw();
     }
 }

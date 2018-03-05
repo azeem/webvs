@@ -1,9 +1,9 @@
 import * as _ from 'lodash';
 import IMain from "../IMain";
 import Component, { IContainer } from "../Component";
-import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { WebGLVarType } from "../utils";
+import ShaderProgram from '../webgl/ShaderProgram';
 
 export interface ChannelShiftOpts {
     channel: string,
@@ -33,7 +33,7 @@ export default class ChannelShift extends Component {
     };
 
     protected opts: ChannelShiftOpts;
-    private program: ChannelShiftProgram;
+    private program: ShaderProgram;
     private channel: ShiftChannels;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
@@ -41,7 +41,27 @@ export default class ChannelShift extends Component {
     }
 
     init() {
-        this.program = new ChannelShiftProgram(this.main.rctx);
+        this.program = new ShaderProgram(this.main.rctx, {
+            swapFrame: true,
+            bindings: {
+                uniforms: {
+                    channel: { name: 'u_channel', valueType: WebGLVarType._1I }
+                }
+            },
+            fragmentShader: `
+                uniform int u_channel;
+                void main() {
+                    vec3 color = getSrcColor().rgb;
+                    ${
+                        _.flatMap(ShiftChannelsKeys, (channel) => `
+                            if(u_channel == ${ShiftChannels[channel]}) {
+                                setFragColor(vec4(color.${channel.toLowerCase()}, 1));
+                            }
+                        `).join("\n")
+                    }
+                }
+            `
+        });
         this.updateChannel();
     }
 
@@ -49,7 +69,7 @@ export default class ChannelShift extends Component {
         if(this.opts.onBeatRandom && this.main.analyser.beat) {
             this.channel = Math.floor(Math.random() * ShiftChannelsKeys.length);
         }
-        this.program.run(this.parent.fm, null, this.channel);
+        this.program.run(this.parent.fm, { channel: this.channel });
     }
 
     destroy() {
@@ -59,31 +79,5 @@ export default class ChannelShift extends Component {
 
     private updateChannel() {
         this.channel = ShiftChannels[this.opts.channel];
-    }
-}
-
-class ChannelShiftProgram extends QuadBoxProgram {
-    constructor(rctx: RenderingContext) {
-        super(rctx, {
-            swapFrame: true,
-            fragmentShader: [
-                "uniform int u_channel;",
-                "void main() {",
-                "   vec3 color = getSrcColor().rgb;",
-                _.flatMap(ShiftChannelsKeys, (channel) => {
-                    return [
-                        "if(u_channel == "+ShiftChannels[channel]+") {",
-                        "   setFragColor(vec4(color." + channel.toLowerCase() + ",1));",
-                        "}"
-                    ];
-                }).join("\n"),
-            "}"
-            ]
-        });
-    }
-
-    draw(channel) {
-        this.setUniform("u_channel", WebGLVarType._1I, channel);
-        super.draw();
     }
 }

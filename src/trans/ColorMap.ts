@@ -1,9 +1,9 @@
 import * as _ from 'lodash';
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import QuadBoxProgram from "../webgl/QuadBoxProgram";
 import RenderingContext from "../webgl/RenderingContext";
 import { WebGLVarType, BlendModes, parseColor, Color } from "../utils";
+import ShaderProgram from '../webgl/ShaderProgram';
 
 export type ColorMapItem = {index: number, color: string}
 export interface ColorMapOpts {
@@ -52,7 +52,7 @@ export default class ColorMap extends Component {
     };
 
     protected opts: ColorMapOpts;
-    private program: ColorMapProgram;
+    private program: ShaderProgram;
     private mapCycleMode: MapCycleModes;
     private currentMap: MapKey;
     private colorMaps: WebGLTexture[];
@@ -64,7 +64,31 @@ export default class ColorMap extends Component {
     }
 
     init() {
-        this.program = new ColorMapProgram(this.main.rctx);
+        this.program = new ShaderProgram(this.main.rctx, {
+            dynamicBlend: true,
+            swapFrame: true,
+            bindings: {
+                uniforms: {
+                    key:      { name: 'u_key', valueType: WebGLVarType._1I },
+                    colorMap: { name: 'u_colorMap', valueType: WebGLVarType.TEXTURE2D }
+                }
+            },
+            fragmentShader: `
+                uniform int u_key;
+                uniform sampler2D u_colorMap;
+                void main() {
+                   vec4 srcColor = getSrcColor();
+                   float key;
+                   if(u_key == ${MapKey.RED}          ) { key = srcColor.r; }
+                   if(u_key == ${MapKey.GREEN}        ) { key = srcColor.g; }
+                   if(u_key == ${MapKey.BLUE}         ) { key = srcColor.b; }
+                   if(u_key == ${MapKey["(R+G+B)/2"]} ) { key = min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0); }
+                   if(u_key == ${MapKey["(R+G+B)/3"]} ) { key = (srcColor.r+srcColor.g+srcColor.b)/3.0; }
+                   if(u_key == ${MapKey.MAX}          ) { key = max(srcColor.r, max(srcColor.g, srcColor.b)); }
+                   setFragColor(texture2D(u_colorMap, vec2(key, 0)));
+                }
+            `
+        });
         this.updateMap();
         this.updateKey();
         this.updateCycleMode();
@@ -79,7 +103,14 @@ export default class ColorMap extends Component {
                 this.currentMap = (this.currentMap+1)%this.colorMaps.length;
             }
         }
-        this.program.run(this.parent.fm, this.blendMode, this.colorMaps[this.currentMap], this.key);
+        this.program.run(
+            this.parent.fm, 
+            {
+                colorMap: this.colorMaps[this.currentMap],
+                key: this.key
+            },
+            this.blendMode
+        );
     }
 
     destroy() {
@@ -165,35 +196,5 @@ export default class ColorMap extends Component {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         return texture;
-    }
-}
-
-class ColorMapProgram extends QuadBoxProgram {
-    constructor(rctx: RenderingContext) {
-        super(rctx, {
-            dynamicBlend: true,
-            swapFrame: true,
-            fragmentShader: [
-                "uniform int u_key;",
-                "uniform sampler2D u_colorMap;",
-                "void main() {",
-                "   vec4 srcColor = getSrcColor();",
-                "   float key;",
-                "   if(u_key == "+ MapKey.RED          +") { key = srcColor.r; } ",
-                "   if(u_key == "+ MapKey.GREEN        +") { key = srcColor.g; } ",
-                "   if(u_key == "+ MapKey.BLUE         +") { key = srcColor.b; } ",
-                "   if(u_key == "+ MapKey["(R+G+B)/2"] +") { key = min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0); } ",
-                "   if(u_key == "+ MapKey["(R+G+B)/3"] +") { key = (srcColor.r+srcColor.g+srcColor.b)/3.0; } ",
-                "   if(u_key == "+ MapKey.MAX          +") { key = max(srcColor.r, max(srcColor.g, srcColor.b)); } ",
-                "   setFragColor(texture2D(u_colorMap, vec2(key, 0)));",
-                "}"
-            ]
-        });
-    }
-
-    draw(colorMap: WebGLTexture, key: number) {
-        this.setUniform("u_key", WebGLVarType._1I, key);
-        this.setUniform("u_colorMap", WebGLVarType.TEXTURE2D, colorMap);
-        super.draw();
     }
 }

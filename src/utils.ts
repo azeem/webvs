@@ -13,7 +13,7 @@ export function checkRequiredOptions(options: any, requiredOptions: string[]): v
 
 // Returns a floating point value representation of a number
 // embeddable in glsl shader code
-export function glslFloatRepr(val: string): string {
+export function glslFloatRepr(val): string {
     return val + (parseFloat(val)%1 === 0?".0":"");
 }
 
@@ -173,5 +173,13 @@ export function setProperty(obj: any, name: string | string[], value: any): void
         obj[propertyName] = value;
     } else {
         setProperty(obj[propertyName], name, value);
+    }
+}
+
+export function flatString(value: string | string[], sep: string = '\n'): string {
+    if(typeof(value) === 'string') {
+        return value;
+    } else {
+        return value.join(sep);
     }
 }

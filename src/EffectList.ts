@@ -119,8 +119,7 @@ export default class EffectList extends Container {
         // blend input texture onto internal texture
         if(this.input !== ELBlendModes.IGNORE) {
             const inputTexture = this.parent.fm.getCurrentTexture();
-            //const blendMode: BlendModes = this.input as number;
-            this.main.copier.run(this.fm, this.input as number, inputTexture);
+            this.main.copier.run(this.fm, { srcTexture: inputTexture }, this.input as number);
         }
 
         // render all the components
@@ -136,9 +135,9 @@ export default class EffectList extends Container {
         // blend current texture to the output framebuffer
         if(this.output != ELBlendModes.IGNORE) {
             if(this.parent) {
-                this.main.copier.run(this.parent.fm, this.output as number, this.fm.getCurrentTexture());
+                this.main.copier.run(this.parent.fm, { srcTexture: this.fm.getCurrentTexture() }, this.output as number);
             } else {
-                this.main.copier.run(null, null, this.fm.getCurrentTexture());
+                this.main.copier.run(null, { srcTexture: this.fm.getCurrentTexture() });
             }
         }
     }
