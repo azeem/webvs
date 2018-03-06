@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import { Channel } from "../analyser/AnalyserAdapter";
 import Component, {IContainer} from "../Component";
 import CodeInstance from "../expr/CodeInstance";
-import compileExpr, { CompileResult } from "../expr/compileExpr";
+import compileExpr, { ICompileResult } from "../expr/compileExpr";
 import IMain from "../IMain";
 import { BlendModes, Color, parseColorNorm, Source, WebGLVarType } from "../utils";
 import Buffer from "../webgl/Buffer";
@@ -14,7 +14,7 @@ enum DrawModes {
     DOTS,
 }
 
-export interface SuperScopeOpts {
+export interface ISuperScopeOpts {
     code: {
         init: string,
         perFrame: string,
@@ -31,7 +31,7 @@ export interface SuperScopeOpts {
     cycleSpeed: number;
 }
 
-interface SuperScopeShaderValues {
+interface ISuperScopeShaderValues {
     pointSize: number;
     points: Buffer;
     colors: Buffer;
@@ -39,7 +39,7 @@ interface SuperScopeShaderValues {
     drawTriangles: boolean;
 }
 
-interface SSCodeInstance extends CodeInstance {
+interface ISSCodeInstance extends CodeInstance {
     red: number;
     green: number;
     blue: number;
@@ -60,39 +60,39 @@ export default class SuperScope extends Component {
     public static componentName: string = "SuperScope";
     public static componentTag: string = "render";
     protected static optUpdateHandlers = {
-        code: ["updateCode", "updateClones"],
+        blendMode: "updateProgram",
+        channel: "updateChannel",
+        clone: "updateClones",
+        code: [ "updateCode", "updateClones"],
         colors: "updateColors",
         cycleSpeed: "updateSpeed",
-        clone: "updateClones",
-        channel: "updateChannel",
-        thickness: "updateThickness",
-        blendMode: "updateProgram",
         drawMode: "updateDrawMode",
         source: "updateSource",
+        thickness: "updateThickness",
     };
-    protected static defaultOptions: SuperScopeOpts = {
-        code: {
-            init: "n=800",
-            perFrame: "t=t-0.05",
-            onBeat: "",
-            perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d",
-        },
+    protected static defaultOptions: ISuperScopeOpts = {
         blendMode: "REPLACE",
         channel: "CENTER",
-        source: "SPECTRUM",
-        drawMode: "LINES",
-        thickness: 1,
         clone: 1,
+        code: {
+            init: "n=800",
+            onBeat: "",
+            perFrame: "t=t-0.05",
+            perPoint: "d=i+v*0.2; r=t+i*$PI*4; x=cos(r)*d; y=sin(r)*d",
+        },
         colors: ["#ffffff"],
         cycleSpeed: 0.01,
+        drawMode: "LINES",
+        source: "SPECTRUM",
+        thickness: 1,
     };
 
-    protected opts: SuperScopeOpts;
+    protected opts: ISuperScopeOpts;
     private pointBuffer: Buffer;
     private colorBuffer: Buffer;
-    private code: SSCodeInstance[];
+    private code: ISSCodeInstance[];
     private inited: boolean;
-    private program: ShaderProgram<SuperScopeShaderValues>;
+    private program: ShaderProgram<ISuperScopeShaderValues>;
     private source: Source;
     private channel: Channel;
     private drawMode: DrawModes;
@@ -141,7 +141,7 @@ export default class SuperScope extends Component {
      * renders the scope
      * @memberof Webvs.SuperScope#
      */
-    private drawScope(code: SSCodeInstance, color: Color, runInit: boolean) {
+    private drawScope(code: ISSCodeInstance, color: Color, runInit: boolean) {
         const gl = this.main.rctx.gl;
 
         code.red = color[0];
@@ -161,18 +161,24 @@ export default class SuperScope extends Component {
 
         const nPoints = Math.floor(code.n);
         let data;
-        if (this.source == Source.SPECTRUM) {
+        if (this.source === Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum(this.channel);
         } else {
             data = this.main.analyser.getWaveform(this.channel);
         }
-        const dots = this.drawMode == DrawModes.DOTS;
+        const dots = this.drawMode === DrawModes.DOTS;
         const bucketSize = data.length / nPoints;
         let pbi = 0;
         let cdi = 0;
 
-        let bufferSize, thickX, thickY;
-        let lastX, lastY, lastR, lastG, lastB;
+        let bufferSize;
+        let thickX;
+        let thickY;
+        let lastX;
+        let lastY;
+        let lastR;
+        let lastG;
+        let lastB;
         if (this.veryThick) {
             bufferSize = (dots ? (nPoints * 6) : (nPoints * 6 - 6));
             thickX = this.opts.thickness / gl.drawingBufferWidth;
@@ -191,7 +197,7 @@ export default class SuperScope extends Component {
             }
             value = value / size;
 
-            let pos = i / ((nPoints > 1) ? (nPoints - 1) : 1);
+            const pos = i / ((nPoints > 1) ? (nPoints - 1) : 1);
             code.i = pos;
             code.v = value;
             code.perPoint();
@@ -301,46 +307,29 @@ export default class SuperScope extends Component {
         this.program.run(
             this.parent.fm,
             {
-                pointSize: this.veryThick ? 1 : this.opts.thickness,
-                points: this.pointBuffer,
                 colors: this.colorBuffer,
                 drawTriangles: this.veryThick,
                 isDots: dots,
+                pointSize: this.veryThick ? 1 : this.opts.thickness,
+                points: this.pointBuffer,
             },
         );
     }
 
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
-        const program = new ShaderProgram<SuperScopeShaderValues>(this.main.rctx, {
-            copyOnSwap: true,
-            blendMode,
-            vertexShader: `
-                attribute vec2 a_position;
-                attribute vec3 a_color;
-                varying vec3 v_color;
-                uniform float u_pointSize;
-                void main() {
-                    gl_PointSize = u_pointSize;
-                    setPosition(a_position);
-                    v_color = a_color;
-                }
-            `,
-            fragmentShader: `
-                varying vec3 v_color;
-                void main() {
-                    setFragColor(vec4(v_color, 1));
-                }
-            `,
+        const program = new ShaderProgram<ISuperScopeShaderValues>(this.main.rctx, {
             bindings: {
+                attribs: {
+                    colors: { name: "a_color", size: 3 },
+                    points: { name: "a_position" },
+                },
                 uniforms: {
                     pointSize: { name: "u_pointSize", valueType: WebGLVarType._1F },
                 },
-                attribs: {
-                    points: { name: "a_position" },
-                    colors: { name: "a_color", size: 3 },
-                },
             },
+            blendMode,
+            copyOnSwap: true,
             drawHook: (values, gl) => {
                 let prevLineWidth;
                 if (!values.isDots) {
@@ -362,6 +351,23 @@ export default class SuperScope extends Component {
                     gl.lineWidth(prevLineWidth);
                 }
             },
+            fragmentShader: `
+                varying vec3 v_color;
+                void main() {
+                    setFragColor(vec4(v_color, 1));
+                }
+            `,
+            vertexShader: `
+                attribute vec2 a_position;
+                attribute vec3 a_color;
+                varying vec3 v_color;
+                uniform float u_pointSize;
+                void main() {
+                    gl_PointSize = u_pointSize;
+                    setPosition(a_position);
+                    v_color = a_color;
+                }
+            `,
         });
         if (this.program) {
             this.program.destroy();
@@ -370,7 +376,10 @@ export default class SuperScope extends Component {
     }
 
     private updateCode() {
-        const code = compileExpr(this.opts.code, ["init", "onBeat", "perFrame", "perPoint"]).codeInst as SSCodeInstance;
+        const code = compileExpr(
+            this.opts.code,
+            ["init", "onBeat", "perFrame", "perPoint"],
+        ).codeInst as ISSCodeInstance;
         code.n = 100;
         code.setup(this.main);
         this.inited = false;
@@ -378,7 +387,7 @@ export default class SuperScope extends Component {
     }
 
     private updateClones() {
-        this.code = CodeInstance.clone(this.code, this.opts.clone) as SSCodeInstance[];
+        this.code = CodeInstance.clone(this.code, this.opts.clone) as ISSCodeInstance[];
     }
 
     private updateColors() {
@@ -412,7 +421,7 @@ export default class SuperScope extends Component {
     private updateThickness() {
         let range;
         const gl = this.main.rctx.gl;
-        if (this.drawMode == DrawModes.DOTS) {
+        if (this.drawMode === DrawModes.DOTS) {
             range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
         } else {
             range = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE);
@@ -425,7 +434,7 @@ export default class SuperScope extends Component {
     }
 
     private _makeColor(): Color {
-        if (this.colors.length == 1) {
+        if (this.colors.length === 1) {
             return this.colors[0];
         } else {
             const color: Color = [0, 0, 0];

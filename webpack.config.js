@@ -3,12 +3,15 @@ var webpack = require('webpack');
 var fs = require('fs');
 var packageJson = require('./package.json');
 
-function commonJsConfig(resourcePackUrl) {
-    if(!resourcePackUrl) {
+function commonJsConfig(devServer) {
+    let resourcePackUrl;
+    if(devServer) {
+        resourcePackUrl = '/resources/';
+    } else {
         resourcePackUrl = 'https://unpkg.com/webvs@' + packageJson.version + '/resources/';
     }
 
-    return {
+    var config = {
         entry: './index.ts',
         output: {
             path: path.resolve(__dirname, 'dist'),
@@ -37,16 +40,21 @@ function commonJsConfig(resourcePackUrl) {
                 WEBVS_VERSION: JSON.stringify(packageJson.version)
             })
         ],
-        serve: {
+    }
+
+    if(devServer) {
+        config.serve = {
             dev: {
                 publicPath: '/dist'
             }
-        }
+        };
     }
+
+    return config;
 };
 
 function webConfig(devServer) {
-    const cjsConfig = commonJsConfig(devServer && '/resources/');
+    const cjsConfig = commonJsConfig(devServer);
     return Object.assign({}, cjsConfig, {
         output: {
             path: path.resolve(__dirname, 'dist'),

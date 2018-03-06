@@ -6,7 +6,7 @@ import { squareGeometry } from "../webgl/geometries";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface PictureOpts {
+export interface IPictureOpts {
     src: string;
     x: number;
     y: number;
@@ -19,13 +19,13 @@ export default class Picture extends Component {
     protected static optUpdateHandlers = {
         src: "updateImage",
     };
-    protected static defaultOptions: PictureOpts = {
+    protected static defaultOptions: IPictureOpts = {
         src: "avsres_texer_circle_edgeonly_19x19.bmp",
         x: 0,
         y: 0,
     };
 
-    protected opts: PictureOpts;
+    protected opts: IPictureOpts;
     private program: ShaderProgram;
     private texture: WebGLTexture;
     private width: number;
@@ -38,17 +38,24 @@ export default class Picture extends Component {
     public init() {
         const gl = this.main.rctx.gl;
         this.program = new ShaderProgram(this.main.rctx, {
-            copyOnSwap: true,
             bindings: {
-                uniforms: {
-                    position: { name: "u_pos", valueType: WebGLVarType._2FV },
-                    imageRes: { name: "u_texRes", valueType: WebGLVarType._2FV },
-                    image:    { name: "u_image", valueType: WebGLVarType.TEXTURE2D },
-                },
                 attribs: {
                     points: { name: "a_texVertex", drawMode: gl.TRIANGLES },
                 },
+                uniforms: {
+                    image:    { name: "u_image", valueType: WebGLVarType.TEXTURE2D },
+                    imageRes: { name: "u_texRes", valueType: WebGLVarType._2FV },
+                    position: { name: "u_pos", valueType: WebGLVarType._2FV },
+                },
             },
+            copyOnSwap: true,
+            fragmentShader: `
+                uniform sampler2D u_image;
+                varying vec2 v_texCoord;
+                void main() {
+                   setFragColor(texture2D(u_image, v_texCoord));
+                }
+            `,
             vertexShader: `
                 attribute vec2 a_texVertex;
                 uniform vec2 u_pos;
@@ -60,13 +67,6 @@ export default class Picture extends Component {
                    setPosition(a_texVertex*(u_texRes/u_resolution)*vec2(2,-2)+u_pos);
                 }
             `,
-            fragmentShader: `
-                uniform sampler2D u_image;
-                varying vec2 v_texCoord;
-                void main() {
-                   setFragColor(texture2D(u_image, v_texCoord));
-                }
-            `,
         });
         this.updateImage();
     }
@@ -75,10 +75,10 @@ export default class Picture extends Component {
         this.program.run(
             this.parent.fm,
             {
-                position: [this.opts.x, -this.opts.y],
-                imageRes: [this.width, this.height],
                 image: this.texture,
+                imageRes: [this.width, this.height],
                 points: squareGeometry(this.main.rctx, true),
+                position: [this.opts.x, -this.opts.y],
             },
         );
     }

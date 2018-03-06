@@ -3,7 +3,7 @@ import CodeInstance from "../expr/CodeInstance";
 import compileExpr from "../expr/compileExpr";
 import IMain from "../IMain";
 
-export interface GlobalVarOpts {
+export interface IGlobalVarOpts {
     code: {
         init: string,
         onBeat: string,
@@ -11,7 +11,7 @@ export interface GlobalVarOpts {
     };
 }
 
-interface GlobalVarCodeInstance extends CodeInstance {
+interface IGlobalVarCodeInstance extends CodeInstance {
     b: number;
     init: () => void;
     perFrame: () => void;
@@ -26,7 +26,7 @@ export default class GlobalVar extends Component {
     protected static optUpdateHandlers = {
         code: "updateCode",
     };
-    protected static defaultOptions: GlobalVarOpts = {
+    protected static defaultOptions: IGlobalVarOpts = {
         code: {
             init: "",
             onBeat: "",
@@ -34,8 +34,8 @@ export default class GlobalVar extends Component {
         },
     };
 
-    protected opts: GlobalVarOpts;
-    private code: GlobalVarCodeInstance;
+    protected opts: IGlobalVarOpts;
+    private code: IGlobalVarCodeInstance;
     private inited: boolean;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
@@ -48,23 +48,23 @@ export default class GlobalVar extends Component {
     }
 
     public draw() {
-		const code = this.code;
-		code.b = this.main.analyser.beat ? 1 : 0;
+        const code = this.code;
+        code.b = this.main.analyser.beat ? 1 : 0;
 
-		if (!this.inited) {
-			code.init();
-			this.inited = true;
-		}
+        if (!this.inited) {
+            code.init();
+            this.inited = true;
+        }
 
-		if (this.main.analyser.beat) {
-			code.onBeat();
-		}
+        if (this.main.analyser.beat) {
+            code.onBeat();
+        }
 
-		code.perFrame();
+        code.perFrame();
     }
 
     public updateCode() {
-        this.code = compileExpr(this.opts.code, ["init", "onBeat", "perFrame"]).codeInst as GlobalVarCodeInstance;
+        this.code = compileExpr(this.opts.code, ["init", "onBeat", "perFrame"]).codeInst as IGlobalVarCodeInstance;
         this.code.setup(this.main);
         this.inited = false;
     }

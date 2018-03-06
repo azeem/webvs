@@ -3,7 +3,7 @@ import IMain from "../IMain";
 import { BlendModes, Color, parseColorNorm } from "../utils";
 import ClearScreenProgram from "../webgl/ClearScreenProgram";
 
-export interface FadeOutOpts {
+export interface IFadeOutOpts {
     speed: number;
     color: string;
 }
@@ -13,15 +13,15 @@ export default class FadeOut extends Component {
     public static componentName: string = "FadeOut";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        speed: "updateSpeed",
         color: "updateColor",
+        speed: "updateSpeed",
     };
-    protected static defaultOptions: FadeOutOpts = {
-        speed: 1,
+    protected static defaultOptions: IFadeOutOpts = {
         color: "#000000",
+        speed: 1,
     };
 
-    protected opts: FadeOutOpts;
+    protected opts: IFadeOutOpts;
     private program: ClearScreenProgram;
     private frameCount: number;
     private maxFrameCount: number;
@@ -39,7 +39,7 @@ export default class FadeOut extends Component {
 
     public draw() {
         this.frameCount++;
-        if (this.frameCount == this.maxFrameCount) {
+        if (this.frameCount === this.maxFrameCount) {
             this.frameCount = 0;
             this.program.run(this.parent.fm, { color: this.color });
         }

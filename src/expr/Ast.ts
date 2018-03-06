@@ -1,5 +1,6 @@
 export type Expression = BinaryExpr | UnaryExpr | FuncCall | PrimaryExpr;
 
+/* tslint:disable:max-classes-per-file */
 export class BinaryExpr {
     constructor(
         public operator: string,

@@ -4,7 +4,7 @@ import { BlendModes, parseColorNorm, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface UniqueToneOpts {
+export interface IUniqueToneOpts {
     color: string;
     invert: boolean;
     blendMode: string;
@@ -14,17 +14,17 @@ export interface UniqueToneOpts {
 export default class UniqueTone extends Component {
     public static componentName = "UniqueTone";
     public static componentTag = "trans";
-    protected static defaultOptions: UniqueToneOpts = {
+    protected static defaultOptions: IUniqueToneOpts = {
+        blendMode: "REPLACE",
         color: "#ffffff",
         invert: false,
-        blendMode: "REPLACE",
     };
     protected static optUpdateHandlers = {
-        color: "updateColor",
         blendMode: "updateProgram",
+        color: "updateColor",
     };
 
-    protected opts: UniqueToneOpts;
+    protected opts: IUniqueToneOpts;
     private program: ShaderProgram;
     private tone: [number, number, number];
 
@@ -39,8 +39,8 @@ export default class UniqueTone extends Component {
 
     public draw() {
         this.program.run(this.parent.fm, {
-            tone: this.tone,
             invert: this.opts.invert ? 1 : 0,
+            tone: this.tone,
         });
     }
 
@@ -56,14 +56,13 @@ export default class UniqueTone extends Component {
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
         const program = new ShaderProgram(this.main.rctx, {
-            blendMode,
-            swapFrame: true,
             bindings: {
                 uniforms: {
-                    tone: { name: "u_tone", valueType: WebGLVarType._3FV },
                     invert: { name: "u_invert", valueType: WebGLVarType._1F },
+                    tone:   { name: "u_tone", valueType: WebGLVarType._3FV },
                 },
             },
+            blendMode,
             fragmentShader: `
                 uniform vec3 u_tone;
                 uniform bool u_invert;
@@ -76,6 +75,7 @@ export default class UniqueTone extends Component {
                    setFragColor(vec4(depth*u_tone, 1));
                 }
             `,
+            swapFrame: true,
         });
         if (this.program) {
             this.program.destroy();

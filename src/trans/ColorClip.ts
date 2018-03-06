@@ -4,7 +4,7 @@ import { Color, parseColorNorm, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface ColorClipOpts {
+export interface IColorClipOpts {
     mode: string;
     color: string;
     outColor: string;
@@ -22,18 +22,18 @@ export default class ColorClip extends Component {
     public static componentName: string = "ColorClip";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        mode: "updateMode",
         color: "updateColor",
+        mode: "updateMode",
         outColor: "updateColor",
     };
-    protected static defaultOptions: ColorClipOpts = {
-        mode: "BELOW",
+    protected static defaultOptions: IColorClipOpts = {
         color: "#202020",
-        outColor: "#202020",
         level: 0,
+        mode: "BELOW",
+        outColor: "#202020",
     };
 
-    protected opts: ColorClipOpts;
+    protected opts: IColorClipOpts;
     private program: ShaderProgram;
     private mode: ClipModes;
     private color: Color;
@@ -45,13 +45,12 @@ export default class ColorClip extends Component {
 
     public init() {
         this.program = new ShaderProgram(this.main.rctx, {
-            swapFrame: true,
             bindings: {
                 uniforms: {
-                    mode:     { name: "u_mode", valueType: WebGLVarType._1I },
                     color:    { name: "u_color", valueType: WebGLVarType._3FV },
-                    outColor: { name: "u_outColor", valueType: WebGLVarType._3FV },
                     level:    { name: "u_level", valueType: WebGLVarType._1F },
+                    mode:     { name: "u_mode", valueType: WebGLVarType._1I },
+                    outColor: { name: "u_outColor", valueType: WebGLVarType._3FV },
                 },
             },
             fragmentShader: `
@@ -80,6 +79,7 @@ export default class ColorClip extends Component {
                    }
                 }
             `,
+            swapFrame: true,
         });
         this.updateColor();
         this.updateMode();
@@ -89,10 +89,10 @@ export default class ColorClip extends Component {
         this.program.run(
             this.parent.fm,
             {
-                mode: this.mode,
                 color: this.color,
-                outColor: this.outColor,
                 level: this.opts.level,
+                mode: this.mode,
+                outColor: this.outColor,
             },
         );
     }

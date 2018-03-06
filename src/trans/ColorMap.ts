@@ -5,12 +5,12 @@ import { BlendModes, Color, parseColor, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface ColorMapItem {index: number; color: string; }
-export interface ColorMapOpts {
+export interface IColorMapItem {index: number; color: string; }
+export interface IColorMapOpts {
     key: string;
     output: string;
     mapCycleMode: string;
-    maps: ColorMapItem[][];
+    maps: IColorMapItem[][];
 }
 
 enum MapKey {
@@ -34,14 +34,13 @@ export default class ColorMap extends Component {
     public static componentName: string = "ColorMap";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        maps: "updateMap",
         key: "updateKey",
         mapCycleMode: "updateCycleMode",
+        maps: "updateMap",
         output: "updateBlendMode",
     };
-    protected static defaultOptions: ColorMapOpts = {
+    protected static defaultOptions: IColorMapOpts = {
         key: "RED",
-        output: "REPLACE",
         mapCycleMode: "SINGLE",
         maps: [
             [
@@ -49,9 +48,10 @@ export default class ColorMap extends Component {
                 {index: 255, color: "#FFFFFF"},
             ],
         ],
+        output: "REPLACE",
     };
 
-    protected opts: ColorMapOpts;
+    protected opts: IColorMapOpts;
     private program: ShaderProgram;
     private mapCycleMode: MapCycleModes;
     private currentMap: MapKey;
@@ -65,14 +65,13 @@ export default class ColorMap extends Component {
 
     public init() {
         this.program = new ShaderProgram(this.main.rctx, {
-            dynamicBlend: true,
-            swapFrame: true,
             bindings: {
                 uniforms: {
-                    key:      { name: "u_key", valueType: WebGLVarType._1I },
                     colorMap: { name: "u_colorMap", valueType: WebGLVarType.TEXTURE2D },
+                    key:      { name: "u_key", valueType: WebGLVarType._1I },
                 },
             },
+            dynamicBlend: true,
             fragmentShader: `
                 uniform int u_key;
                 uniform sampler2D u_colorMap;
@@ -88,6 +87,7 @@ export default class ColorMap extends Component {
                    setFragColor(texture2D(u_colorMap, vec2(key, 0)));
                 }
             `,
+            swapFrame: true,
         });
         this.updateMap();
         this.updateKey();
@@ -97,9 +97,9 @@ export default class ColorMap extends Component {
 
     public draw() {
         if (this.main.analyser.beat) {
-            if (this.mapCycleMode ==  MapCycleModes.ONBEATRANDOM) {
+            if (this.mapCycleMode ===  MapCycleModes.ONBEATRANDOM) {
                 this.currentMap = Math.floor(Math.random() * this.opts.maps.length);
-            } else if (this.mapCycleMode == MapCycleModes.ONBEATSEQUENTIAL) {
+            } else if (this.mapCycleMode === MapCycleModes.ONBEATSEQUENTIAL) {
                 this.currentMap = (this.currentMap + 1) % this.colorMaps.length;
             }
         }
@@ -143,13 +143,13 @@ export default class ColorMap extends Component {
         this.blendMode = BlendModes[this.opts.output];
     }
 
-    private _buildColorMap(map: ColorMapItem[]): WebGLTexture {
+    private _buildColorMap(map: IColorMapItem[]): WebGLTexture {
         const gl = this.main.rctx.gl;
         map = _.sortBy(map, (mapItem) => mapItem.index);
 
         // check for repeated indices
         const indices = _.map(map, (mapItem) => mapItem.index);
-        if (_.uniq(indices).length != indices.length) {
+        if (_.uniq(indices).length !== indices.length) {
             throw new Error("map cannot have repeated indices");
         }
 
@@ -160,32 +160,32 @@ export default class ColorMap extends Component {
         });
 
         // add a cap entries at the ends
-        const first = _.first(parsedMap);
-        if (first.index !== 0) {
-            parsedMap.splice(0, 0, {color: first.color, index: 0});
+        const firstMap = _.first(parsedMap);
+        if (firstMap.index !== 0) {
+            parsedMap.splice(0, 0, {color: firstMap.color, index: 0});
         }
-        const last = _.last(parsedMap);
-        if (last.index !== 255) {
-            parsedMap.push({color: last.color, index: 255});
+        const lastMap = _.last(parsedMap);
+        if (lastMap.index !== 255) {
+            parsedMap.push({color: lastMap.color, index: 255});
         }
 
         // lerp intermediate values
         const colorMap = new Uint8Array(256 * 3);
         let cmi = 0;
         const pairs = _.zip(_.take(parsedMap, parsedMap.length - 1), _.takeRight(parsedMap, parsedMap.length - 1));
-        _.each(pairs, (pair, i) => {
+        _.each(pairs, (pair) => {
             const first = pair[0];
             const second = pair[1];
             const steps = second.index - first.index;
-            _.times(steps, function(i) {
+            _.times(steps, (i) => {
                 colorMap[cmi++] = Math.floor((first.color[0] * (steps - i) + second.color[0] * i) / steps);
                 colorMap[cmi++] = Math.floor((first.color[1] * (steps - i) + second.color[1] * i) / steps);
                 colorMap[cmi++] = Math.floor((first.color[2] * (steps - i) + second.color[2] * i) / steps);
             });
         });
-        colorMap[cmi++] = last.color[0];
-        colorMap[cmi++] = last.color[1];
-        colorMap[cmi++] = last.color[2];
+        colorMap[cmi++] = lastMap.color[0];
+        colorMap[cmi++] = lastMap.color[1];
+        colorMap[cmi++] = lastMap.color[2];
 
         // put the color values into a 256x1 texture
         const texture = gl.createTexture();

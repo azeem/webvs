@@ -10,7 +10,7 @@ enum EdgeModes {
     WRAP,
 }
 
-export interface ConvolutionOpts {
+export interface IConvolutionOpts {
     edgeMode: string;
     autoScale: boolean;
     scale: number;
@@ -27,19 +27,19 @@ export default class Convolution extends Component {
         kernel: ["updateProgram", "updateScale"],
         scale: "updateScale",
     };
-    protected static defaultOptions: ConvolutionOpts = {
-        edgeMode: "EXTEND",
+    protected static defaultOptions: IConvolutionOpts = {
         autoScale: true,
-        scale: 0,
+        bias: 0,
+        edgeMode: "EXTEND",
         kernel: [
             0, 0, 0,
             0, 1, 0,
             0, 0, 0,
         ],
-        bias: 0,
+        scale: 0,
     };
 
-    protected opts: ConvolutionOpts;
+    protected opts: IConvolutionOpts;
     private program: ShaderProgram;
     private scale: number;
 
@@ -64,7 +64,7 @@ export default class Convolution extends Component {
     private updateScale() {
         const opts = this.opts;
         if (opts.autoScale) {
-            this.scale = _.reduce(opts.kernel, function(memo, num) { return memo + num; }, 0);
+            this.scale = _.reduce(opts.kernel, (memo, num) => memo + num, 0);
         } else {
             this.scale = opts.scale;
         }
@@ -76,7 +76,7 @@ export default class Convolution extends Component {
             throw new Error("Invalid convolution kernel");
         }
         const kernelSize = Math.floor(Math.sqrt(opts.kernel.length));
-        if (kernelSize * kernelSize != opts.kernel.length) {
+        if (kernelSize * kernelSize !== opts.kernel.length) {
             throw new Error("Invalid convolution kernel");
         }
 
@@ -109,11 +109,10 @@ export default class Convolution extends Component {
         }
 
         const program = new ShaderProgram(this.main.rctx, {
-            swapFrame: true,
             bindings: {
                 uniforms: {
-                    scale: { name: "u_scale", valueType: WebGLVarType._1F },
                     bias: { name: "u_bias", valueType: WebGLVarType._1F },
+                    scale: { name: "u_scale", valueType: WebGLVarType._1F },
                 },
             },
             fragmentShader: `
@@ -127,6 +126,7 @@ export default class Convolution extends Component {
                    setFragColor(vec4(((colorSum+u_bias)/u_scale).rgb, 1.0));
                 }
             `,
+            swapFrame: true,
         });
 
         if (this.program) {

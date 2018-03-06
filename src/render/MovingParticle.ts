@@ -6,7 +6,7 @@ import { circleGeometry } from "../webgl/geometries";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface MovingParticleOpts {
+export interface IMovingParticleOpts {
     color: string;
     distance: number;
     particleSize: number;
@@ -20,19 +20,19 @@ export default class MovingParticle extends Component {
     public static componentName: string = "MovingParticle";
     public static componentTag: string = "render";
     protected static optUpdateHandlers = {
-        color: "updateColor",
         blendMode: "updateBlendMode",
+        color: "updateColor",
     };
-    protected static defaultOptions: MovingParticleOpts = {
+    protected static defaultOptions: IMovingParticleOpts = {
+        blendMode: "REPLACE",
         color: "#FFFFFF",
         distance: 0.7,
-        particleSize: 10,
-        onBeatSizeChange: false,
         onBeatParticleSize: 10,
-        blendMode: "REPLACE",
+        onBeatSizeChange: false,
+        particleSize: 10,
     };
 
-    protected opts: MovingParticleOpts;
+    protected opts: IMovingParticleOpts;
     private centerX: number;
     private centerY: number;
     private velocityX: number;
@@ -58,30 +58,30 @@ export default class MovingParticle extends Component {
         this.updateBlendMode();
         const gl = this.main.rctx.gl;
         this.program = new ShaderProgram(this.main.rctx, {
-            copyOnSwap: true,
-            dynamicBlend: true,
             bindings: {
-                uniforms: {
-                    scale:    { name: "u_scale", valueType: WebGLVarType._2FV },
-                    position: { name: "u_position", valueType: WebGLVarType._2FV },
-                    color:    { name: "u_color", valueType: WebGLVarType._3FV },
-                },
                 attribs: {
                     points: { name: "a_points", drawMode: gl.TRIANGLE_FAN },
                 },
+                uniforms: {
+                    color:    { name: "u_color", valueType: WebGLVarType._3FV },
+                    position: { name: "u_position", valueType: WebGLVarType._2FV },
+                    scale:    { name: "u_scale", valueType: WebGLVarType._2FV },
+                },
             },
+            copyOnSwap: true,
+            dynamicBlend: true,
+            fragmentShader: `
+                uniform vec3 u_color;
+                void main() {
+                   setFragColor(vec4(u_color, 1));
+                }
+            `,
             vertexShader: `
                 attribute vec2 a_point;
                 uniform vec2 u_position;
                 uniform vec2 u_scale;
                 void main() {
                    setPosition((a_point*u_scale)+u_position);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 u_color;
-                void main() {
-                   setFragColor(vec4(u_color, 1));
                 }
             `,
         });
@@ -103,10 +103,11 @@ export default class MovingParticle extends Component {
         this.velocityX *= 0.991;
         this.velocityY *= 0.991;
 
-        let x = this.posX * this.opts.distance;
-        let y = this.posY * this.opts.distance;
+        const x = this.posX * this.opts.distance;
+        const y = this.posY * this.opts.distance;
 
-        let scaleX, scaleY;
+        let scaleX;
+        let scaleY;
         if (this.opts.onBeatSizeChange && this.main.analyser.beat) {
             scaleX = this.opts.onBeatParticleSize;
             scaleY = this.opts.onBeatParticleSize;
@@ -121,10 +122,10 @@ export default class MovingParticle extends Component {
         this.program.run(
             this.parent.fm,
             {
-                scale: [scaleX, scaleY],
-                position: [x, y],
                 color: this.color,
                 points: circleGeometry(this.main.rctx),
+                position: [x, y],
+                scale: [scaleX, scaleY],
             },
             this.blendMode,
         );

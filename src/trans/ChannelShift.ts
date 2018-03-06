@@ -5,7 +5,7 @@ import { WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface ChannelShiftOpts {
+export interface IChannelShiftOpts {
     channel: string;
     onBeatRandom: boolean;
 }
@@ -18,7 +18,7 @@ enum ShiftChannels {
     GBR,
     GRB,
 }
-const ShiftChannelsKeys = Object.keys(ShiftChannels).filter((s) => isNaN(parseInt(s)));
+const ShiftChannelsKeys = Object.keys(ShiftChannels).filter((s) => isNaN(parseInt(s, 10)));
 
 // A component that swizzles the color component
 export default class ChannelShift extends Component {
@@ -27,12 +27,12 @@ export default class ChannelShift extends Component {
     protected static optUpdateHandlers = {
         channel: "updateChannel",
     };
-    protected static defaultOptions: ChannelShiftOpts = {
+    protected static defaultOptions: IChannelShiftOpts = {
         channel: "RGB",
         onBeatRandom: false,
     };
 
-    protected opts: ChannelShiftOpts;
+    protected opts: IChannelShiftOpts;
     private program: ShaderProgram;
     private channel: ShiftChannels;
 
@@ -42,7 +42,6 @@ export default class ChannelShift extends Component {
 
     public init() {
         this.program = new ShaderProgram(this.main.rctx, {
-            swapFrame: true,
             bindings: {
                 uniforms: {
                     channel: { name: "u_channel", valueType: WebGLVarType._1I },
@@ -61,6 +60,7 @@ export default class ChannelShift extends Component {
                     }
                 }
             `,
+            swapFrame: true,
         });
         this.updateChannel();
     }

@@ -4,7 +4,7 @@ import { BlendModes, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface MosaicOpts {
+export interface IMosaicOpts {
     blendMode: string;
     squareSize: number;
     onBeatSizeChange: boolean;
@@ -15,18 +15,18 @@ export interface MosaicOpts {
 export default class Mosaic extends Component {
     public static componentName = "Mosaic";
     public static componentTag = "trans";
-    protected static defaultOptions: MosaicOpts = {
+    protected static defaultOptions: IMosaicOpts = {
         blendMode: "REPLACE",
-        squareSize: 0.5,
         onBeatSizeChange: false,
-        onBeatSquareSize: 1,
         onBeatSizeDuration: 10,
+        onBeatSquareSize: 1,
+        squareSize: 0.5,
     };
     protected static optUpdateHandlers = {
         blendMode: "updateProgram",
     };
 
-    protected opts: MosaicOpts;
+    protected opts: IMosaicOpts;
     private frameCount: number;
     private size: number;
     private program: ShaderProgram;
@@ -74,13 +74,12 @@ export default class Mosaic extends Component {
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
         const program = new ShaderProgram(this.main.rctx, {
-            swapFrame: true,
-            blendMode,
             bindings: {
                 uniforms: {
                     size: { name: "u_size", valueType: WebGLVarType._2FV },
                 },
             },
+            blendMode,
             fragmentShader: `
                 uniform vec2 u_size;
                 void main() {
@@ -88,6 +87,7 @@ export default class Mosaic extends Component {
                     setFragColor(getSrcColorAtPos(samplePos));
                 }
             `,
+            swapFrame: true,
         });
         if (this.program) {
             this.program.destroy();

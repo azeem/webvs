@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import AnalyserAdapter, { Channel } from "./AnalyserAdapter";
 
-interface VisData {
+interface IVisData {
     spectrum: Float32Array;
     waveform: Float32Array;
 }
@@ -14,7 +14,7 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     private threshold: number;
     private movingThreshold: number = 0;
     private decay: number;
-    private visData: [VisData, VisData, VisData];
+    private visData: [IVisData, IVisData, IVisData];
     private source: AudioNode;
     private gain: GainNode;
     private channelSplit: ChannelSplitterNode;
@@ -23,9 +23,9 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     constructor(options) {
         super();
         options = _.defaults(options || {}, {
+            decay: 0.02,
             fftSize: 512,
             threshold: 0.125,
-            decay: 0.02,
         });
 
         if (options.context) {
@@ -68,7 +68,7 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
         // analser node for each channel
         this.analysers = [null, null];
         for (let ch = 0; ch < 2; ch++) {
-            let analyser = this.context.createAnalyser();
+            const analyser = this.context.createAnalyser();
             analyser.fftSize = this.fftSize;
             this.channelSplit.connect(analyser, ch);
             this.analysers[ch] = analyser;
@@ -79,7 +79,7 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
         if (!this.analysers) {
             return; // analysers not ready. nothing update
         }
-        let byteBuffer = new Uint8Array(this.fftSize);
+        const byteBuffer = new Uint8Array(this.fftSize);
         for (let ch = 0; ch < 2; ch++) {
             const visData = this.visData[ch + 1];
             const analyser = this.analysers[ch];
@@ -106,12 +106,13 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
 
         // Simple kick detection
         this.beat = false;
-        let peak_left = 0, peak_right = 0;
+        let peakLeft = 0;
+        let peakRight = 0;
         for (let i = 0; i < this.fftSize; i++) {
-            peak_left += Math.abs(this.visData[1].waveform[i]);
-            peak_right += Math.abs(this.visData[2].waveform[i]);
+            peakLeft += Math.abs(this.visData[1].waveform[i]);
+            peakRight += Math.abs(this.visData[2].waveform[i]);
         }
-        const peak = Math.max(peak_left, peak_right) / this.fftSize;
+        const peak = Math.max(peakLeft, peakRight) / this.fftSize;
 
         if (peak >= this.movingThreshold && peak >= this.threshold) {
             this.movingThreshold = peak;

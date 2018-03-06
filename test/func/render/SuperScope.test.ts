@@ -31,66 +31,66 @@ describe("SuperScope", () => {
 
     it("should render dots", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 1, drawMode: "DOTS"}),
             expectImageSrc: "SuperScope_0.png",
+            preset: makePreset({code, thickness: 1, drawMode: "DOTS"}),
         });
     });
 
     it("should render thick dots", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 3, drawMode: "DOTS"}),
             expectImageSrc: "SuperScope_1.png",
+            preset: makePreset({code, thickness: 3, drawMode: "DOTS"}),
         });
     });
 
     it("should render extremely thick dots", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 300, drawMode: "DOTS"}),
             expectImageSrc: "SuperScope_2.png",
+            preset: makePreset({code, thickness: 300, drawMode: "DOTS"}),
         });
     });
 
     it("should render lines", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 1, drawMode: "LINES"}),
             expectImageSrc: "SuperScope_3.png",
             mismatchThreshold: 2,
+            preset: makePreset({code, thickness: 1, drawMode: "LINES"}),
         });
     });
 
     it("should render lines", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 1, drawMode: "LINES"}),
             expectImageSrc: "SuperScope_3.png",
             mismatchThreshold: 4,
+            preset: makePreset({code, thickness: 1, drawMode: "LINES"}),
         });
     });
 
     it("should render thick lines", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 3, drawMode: "LINES"}),
             expectImageSrc: "SuperScope_4.png",
+            preset: makePreset({code, thickness: 3, drawMode: "LINES"}),
         });
     });
 
     it("should render very thick lines", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 25, drawMode: "LINES"}),
             expectImageSrc: "SuperScope_5.png",
+            preset: makePreset({code, thickness: 25, drawMode: "LINES"}),
         });
     });
 
     it("should render very thick lines #1", () => {
         return mainTest({
-            preset: makePreset({code, thickness: 25, drawMode: "LINES"}),
             expectImageSrc: "SuperScope_5.png",
+            preset: makePreset({code, thickness: 25, drawMode: "LINES"}),
         });
     });
 
     it("should render very thick lines #2", () => {
         return mainTest({
-            preset: makePreset({code: code2, thickness: 25, drawMode: "LINES"}),
             expectImageSrc: "SuperScope_6.png",
+            preset: makePreset({code: code2, thickness: 25, drawMode: "LINES"}),
         });
     });
 });

@@ -3,15 +3,14 @@ import { mainTest } from "../funcTestUtils";
 describe("DynamicMovement", function() {
     function makePreset(opts: any) {
         const dmOpts = Object.assign({
-            type: "DynamicMovement",
             code: {
                 perPixel: "alpha=0.5;d=sin(d*(1+d*sin(r*150)*.15))*.5+d*.5;r=r+.01;",
             },
+            type: "DynamicMovement",
         }, opts);
         return {
             components: [
                 {
-                    type: "SuperScope",
                     code: {
                         init: "n=12",
                         perFrame: "c=0",
@@ -24,6 +23,7 @@ describe("DynamicMovement", function() {
                             "c=c+1;",
                         ],
                     },
+                    type: "SuperScope",
                 },
                 dmOpts,
             ],
@@ -34,51 +34,51 @@ describe("DynamicMovement", function() {
 
     it("should run for noGrid, compat, !blend", () => {
         return mainTest({
-            preset: makePreset({noGrid: true, compat: true, blend: false}),
-            expectImageSrc: "DynamicMovement_0.png",
             distanceThreshold: 10,
-            mismatchThreshold: 50,
+            expectImageSrc: "DynamicMovement_0.png",
             frameCount: 500,
+            mismatchThreshold: 50,
+            preset: makePreset({noGrid: true, compat: true, blend: false}),
         });
     });
 
     it("should run for !noGrid, compat, !blend", () => {
         return mainTest({
-            preset: makePreset({noGrid: false, compat: true, blend: false}),
-            expectImageSrc: "DynamicMovement_1.png",
             distanceThreshold: 10,
-            mismatchThreshold: 50,
+            expectImageSrc: "DynamicMovement_1.png",
             frameCount: 500,
+            mismatchThreshold: 50,
+            preset: makePreset({noGrid: false, compat: true, blend: false}),
         });
     });
 
     it("should run for !noGrid, !compat, !blend", () => {
         return mainTest({
-            preset: makePreset({noGrid: false, compat: false, blend: false}),
-            expectImageSrc: "DynamicMovement_2.png",
             distanceThreshold: 10,
-            mismatchThreshold: 50,
+            expectImageSrc: "DynamicMovement_2.png",
             frameCount: 500,
+            mismatchThreshold: 50,
+            preset: makePreset({noGrid: false, compat: false, blend: false}),
         });
     });
 
     it("should run for !noGrid, !compat, blend", () => {
         return mainTest({
-            preset: makePreset({noGrid: false, compat: false, blend: true}),
-            expectImageSrc: "DynamicMovement_3.png",
             distanceThreshold: 10,
-            mismatchThreshold: 50,
+            expectImageSrc: "DynamicMovement_3.png",
             frameCount: 500,
+            mismatchThreshold: 50,
+            preset: makePreset({noGrid: false, compat: false, blend: true}),
         });
     });
 
     it("should run for noGrid, !compat, blend", () => {
         return mainTest({
-            preset: makePreset({noGrid: true, compat: false, blend: true}),
-            expectImageSrc: "DynamicMovement_4.png",
             distanceThreshold: 10,
-            mismatchThreshold: 50,
+            expectImageSrc: "DynamicMovement_4.png",
             frameCount: 500,
+            mismatchThreshold: 50,
+            preset: makePreset({noGrid: true, compat: false, blend: true}),
         });
     });
 });

@@ -1,5 +1,6 @@
 import * as _ from "lodash";
 
+// tslint:disable-next-line:no-empty
 export function noop() {}
 
 // Checks if an object contains the required properties
@@ -63,22 +64,23 @@ export function logShaderError(src: string, error: string): void {
 
     const numberedLines = _.map(lines, (line, index) => {
         let i;
-        let number = (index + 1) + "";
-        for (i = 0; i < (ndigits - number.length); i++) {
-            number = "0" + number;
+        let lineNumber = (index + 1) + "";
+        for (i = 0; i < (ndigits - lineNumber.length); i++) {
+            lineNumber = "0" + lineNumber;
         }
 
         let errorIndicator = "";
-        if (errorPos && errorPos[1] == index + 1) {
+        if (errorPos && errorPos[1] === index + 1) {
             let indent = "";
             for (i = 0; i < errorPos[0] + ndigits + 2; i++) {
                 indent += " ";
             }
             errorIndicator = "\n" + indent + "^\n" + indent + error;
         }
-        return number + ": " + line + errorIndicator;
+        return lineNumber + ": " + line + errorIndicator;
     }).join("\n");
 
+    // tslint:disable-next-line:no-console
     console.log("Shader Error : \n" + numberedLines);
 }
 
@@ -109,12 +111,12 @@ export enum Source {
 
 // Returns a random string of given length
 export function randString(count: number, chars: string): string {
-    const string = [];
+    const randStr = [];
     chars = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     for (let i = 0; i < count; i++) {
-        string.push(chars.charAt(Math.floor(Math.random() * chars.length)));
+        randStr.push(chars.charAt(Math.floor(Math.random() * chars.length)));
     }
-    return string.join("");
+    return randStr.join("");
 }
 
 export enum WebGLVarType {

@@ -44,9 +44,17 @@ describe("Mirror", () => {
         seedrandom(undefined, {global: true});
     });
 
-    function mirrorTest(opts: any, expectImageSrc: string, frameCount?: number, onFrame?: (main: IMain, frame: number) => void) {
+    function mirrorTest(
+        opts: any,
+        expectImageSrc: string,
+        frameCount?: number,
+        onFrame?: (main: IMain, frame: number) => void,
+    ) {
         const mirrorOpts = Object.assign({type: "Mirror"}, opts);
         return mainTest({
+            expectImageSrc,
+            frameCount,
+            onFrame,
             onInit: (main: IMain) => {
                 main.componentRegistry.addComponent(QuadrantColorComponent);
             },
@@ -56,9 +64,6 @@ describe("Mirror", () => {
                     mirrorOpts,
                 ],
             },
-            expectImageSrc,
-            frameCount,
-            onFrame,
         });
     }
 
@@ -82,7 +87,15 @@ describe("Mirror", () => {
     });
     it("Should onBeatRandom with transition #2", () => {
         return mirrorTest(
-            {topToBottom: true, bottomToTop: true, rightToLeft: true, leftToRight: true, onBeatRandom: true, smoothTransition: true, transitionDuration: 15},
+            {
+                bottomToTop: true,
+                leftToRight: true,
+                onBeatRandom: true,
+                rightToLeft: true,
+                smoothTransition: true,
+                topToBottom: true,
+                transitionDuration: 15,
+            },
             "Mirror_5.png",
             15,
             (main, frame) => {
@@ -94,5 +107,7 @@ describe("Mirror", () => {
             },
         );
     });
-    it("Should mirror topToBottom and rightToLeft", () => mirrorTest({topToBottom: true, rightToLeft: true}, "Blue.png"));
+    it("Should mirror topToBottom and rightToLeft", () => {
+        return mirrorTest({topToBottom: true, rightToLeft: true}, "Blue.png");
+    });
 });

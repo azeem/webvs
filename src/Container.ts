@@ -7,8 +7,8 @@ import FrameBufferManager from "./webgl/FrameBufferManager";
 // A base class for all components that can have sub components.
 // Manages, cloning and component tree operations
 export default abstract class Container extends Component implements IContainer {
-    protected components: Component[];
     public fm: FrameBufferManager;
+    protected components: Component[];
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
@@ -18,8 +18,7 @@ export default abstract class Container extends Component implements IContainer 
     public init() {
         const components = [];
         if (this.opts.components) {
-            for (let i = 0; i < this.opts.components.length; i++) {
-                const opts = this.opts.components[i];
+            for (const opts of this.opts.components) {
                 const componentClass = this.main.componentRegistry.getComponentClass(opts.type);
                 const component = new componentClass(this.main, this, opts);
                 components.push(component);
@@ -31,8 +30,8 @@ export default abstract class Container extends Component implements IContainer 
 
     public destroy() {
         super.destroy();
-        for (let i = 0; i < this.components.length; i++) {
-            this.components[i].destroy();
+        for (const component of this.components) {
+            component.destroy();
         }
     }
 
@@ -63,12 +62,12 @@ export default abstract class Container extends Component implements IContainer 
             const id = pos;
             let i;
             for (i = 0; i < this.components.length; i++) {
-                if (this.components[i].id == id) {
+                if (this.components[i].id === id) {
                     pos = i;
                     break;
                 }
             }
-            if (i == this.components.length) {
+            if (i === this.components.length) {
                 return;
             }
         }
@@ -81,16 +80,14 @@ export default abstract class Container extends Component implements IContainer 
     }
 
     public findComponent(id: string) {
-        for (let i = 0; i < this.components.length; i++) {
-            const component = this.components[i];
-            if (component.id == id) {
+        for (const component of this.components) {
+            if (component.id === id) {
                 return component;
             }
         }
 
         // search in any subcontainers
-        for (let i = 0; i < this.components.length; i++) {
-            const container = this.components[i];
+        for (const container of this.components) {
             if (!(container instanceof Container)) {
                 continue;
             }
@@ -107,8 +104,8 @@ export default abstract class Container extends Component implements IContainer 
         const opts = super.toJSON();
 
         opts.components = [];
-        for (let i = 0; i < this.components.length; i++) {
-            opts.components.push(this.components[i].toJSON());
+        for (const component of this.components) {
+            opts.components.push(component.toJSON());
         }
         return opts;
     }

@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import Model from "./Model";
 
-export interface Pack {
+export interface IPack {
     name: string;
     prefix: string;
     fileNames: string[];
@@ -14,14 +14,14 @@ export interface Pack {
 // a ready state with callbacks that tells when one or more resources are being loaded and
 // when all resources are ready.
 export default class ResourceManager extends Model {
-    private packs: Pack[];
+    public ready: boolean = true;
+    private packs: IPack[];
     private uris: {[key: string]: string} = {};
     private images: {[key: string]: HTMLImageElement} = {};
     private waitImages: {[key: string]: HTMLImageElement} = {};
     private waitCount: number = 0;
-    public ready: boolean = true;
 
-    constructor(packs: Pack | Pack[]) {
+    constructor(packs: IPack | IPack[]) {
         super();
         if (packs) {
             if (!_.isArray(packs)) {
@@ -45,15 +45,15 @@ export default class ResourceManager extends Model {
     }
 
     public get(key: string) {
-        if (key == "uris") {
+        if (key === "uris") {
             return this.uris;
-        } else if (key == "packs") {
+        } else if (key === "packs") {
             return this.packs;
         }
     }
 
     public setAttribute(key: string, value: any, options: any) {
-        if (key == "uris") {
+        if (key === "uris") {
             this.uris = value;
             return true;
         }
@@ -69,6 +69,9 @@ export default class ResourceManager extends Model {
     // Clears state, uri mappings and caches. Browser caches still apply.
     public clear(keys: string[] = null) {
         for (const fileName in this.waitImages) {
+            if (!this.waitImages.hasOwnProperty(fileName)) {
+                continue;
+            }
             const image = this.waitImages[fileName];
             image.onload = null;
             image.onerror = null;
@@ -84,37 +87,6 @@ export default class ResourceManager extends Model {
         }
         this.waitCount = 0;
         this.ready = true;
-    }
-
-    public destroy() {}
-
-    private _getUri(fileName: string): string {
-        const uri = this.uris[fileName];
-        if (uri) {
-            return uri;
-        }
-        for (let i = this.packs.length - 1; i >= 0; i--) {
-            const pack = this.packs[i];
-            if (pack.fileNames.indexOf(fileName) != -1) {
-                return pack.prefix + fileName;
-            }
-        }
-    }
-
-    private _loadStart() {
-        this.waitCount++;
-        if (this.waitCount == 1) {
-            this.ready = false;
-            this.emit("wait");
-        }
-    }
-
-    private _loadEnd() {
-        this.waitCount--;
-        if (this.waitCount === 0) {
-            this.ready = true;
-            this.emit("ready");
-        }
     }
 
     // Loads an Image resource
@@ -148,7 +120,6 @@ export default class ResourceManager extends Model {
         };
         if (error) {
             image.onerror = () => {
-                console.log(">>> onError Called");
                 delete this.waitImages[fileName];
                 if (error()) {
                     // then we treat this load as complete
@@ -161,4 +132,34 @@ export default class ResourceManager extends Model {
         image.src = uri;
         this.waitImages[fileName] = image;
     }
+
+    private _getUri(fileName: string): string {
+        const uri = this.uris[fileName];
+        if (uri) {
+            return uri;
+        }
+        for (let i = this.packs.length - 1; i >= 0; i--) {
+            const pack = this.packs[i];
+            if (pack.fileNames.indexOf(fileName) !== -1) {
+                return pack.prefix + fileName;
+            }
+        }
+    }
+
+    private _loadStart() {
+        this.waitCount++;
+        if (this.waitCount === 1) {
+            this.ready = false;
+            this.emit("wait");
+        }
+    }
+
+    private _loadEnd() {
+        this.waitCount--;
+        if (this.waitCount === 0) {
+            this.ready = true;
+            this.emit("ready");
+        }
+    }
+
 }

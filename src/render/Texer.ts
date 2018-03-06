@@ -8,7 +8,7 @@ import Buffer from "../webgl/Buffer";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface TexerOpts {
+export interface ITexerOpts {
     code: {
         init: string,
         onBeat: string,
@@ -23,7 +23,7 @@ export interface TexerOpts {
     colorFiltering: boolean;
 }
 
-interface TexerCodeInstance extends CodeInstance {
+interface ITexerCodeInstance extends CodeInstance {
     n: number;
     b: number;
     i: number;
@@ -46,33 +46,33 @@ export default class Texer extends Component {
     public static componentName: string = "Texer";
     public static componentTag: string = "render";
     protected static optUpdateHandlers = {
-        code: "updateCode",
         clone: "updateClone",
+        code: "updateCode",
         imageSrc: "updateImage",
         source: "updateSource",
     };
-    protected static defaultOptions: TexerOpts = {
+    protected static defaultOptions: ITexerOpts = {
+        clone: 1,
         code: {
             init: "",
             onBeat: "",
             perFrame: "",
             perPoint: "",
         },
-        imageSrc: "avsres_texer_circle_edgeonly_19x19.bmp",
-        source: "SPECTRUM",
-        resizing: false,
-        wrapAround: false,
-        clone: 1,
         colorFiltering: true,
+        imageSrc: "avsres_texer_circle_edgeonly_19x19.bmp",
+        resizing: false,
+        source: "SPECTRUM",
+        wrapAround: false,
     };
 
-    protected opts: TexerOpts;
+    protected opts: ITexerOpts;
     private program: ShaderProgram;
     private vertexBuffer: Buffer;
     private texVertexBuffer: Buffer;
     private colorBuffer: Buffer;
     private indexBuffer: Buffer;
-    private code: TexerCodeInstance[];
+    private code: ITexerCodeInstance[];
     private inited: boolean;
     private texture: WebGLTexture;
     private imageWidth: number;
@@ -83,26 +83,45 @@ export default class Texer extends Component {
         super(main, parent, opts);
     }
 
+    public handleResize() {
+        for (const codeInst of this.code) {
+            codeInst.updateDimVars(this.main.rctx.gl);
+        }
+    }
+
     public init() {
         const rctx = this.main.rctx;
         const gl = this.main.rctx.gl;
         this.program = new ShaderProgram(rctx, {
-            copyOnSwap: true,
             bindings: {
-                uniforms: {
-                    image:       { name: "u_image", valueType: WebGLVarType.TEXTURE2D },
-                    colorFilter: { name: "u_colorFilter", valueType: WebGLVarType._1I },
-                },
                 attribs: {
-                    vertices:    { name: "a_vertex" },
-                    texVertices: { name: "a_texVertex" },
                     colors:      { name: "a_color", size: 3 },
+                    texVertices: { name: "a_texVertex" },
+                    vertices:    { name: "a_vertex" },
                 },
                 index: {
-                    valueName: "indices",
                     drawMode: gl.TRIANGLES,
+                    valueName: "indices",
+                },
+                uniforms: {
+                    colorFilter: { name: "u_colorFilter", valueType: WebGLVarType._1I },
+                    image:       { name: "u_image", valueType: WebGLVarType.TEXTURE2D },
                 },
             },
+            copyOnSwap: true,
+            fragmentShader: `
+                uniform bool u_colorFilter;
+                uniform sampler2D u_image;
+                varying vec2 v_texVertex;
+                varying vec3 v_color;
+                void main() {
+                   vec3 outColor = texture2D(u_image, v_texVertex).rgb;
+                   if(u_colorFilter) {
+                       outColor = outColor*v_color;
+                   }
+                   setFragColor(vec4(outColor, 1));
+                }
+            `,
             vertexShader: `
                 uniform bool u_colorFilter;
                 attribute vec2 a_texVertex;
@@ -116,19 +135,6 @@ export default class Texer extends Component {
                    }
                    v_texVertex = a_texVertex;
                    setPosition(a_vertex);
-                }
-            `,
-            fragmentShader: `
-                uniform bool u_colorFilter;
-                uniform sampler2D u_image;
-                varying vec2 v_texVertex;
-                varying vec3 v_color;
-                void main() {
-                   vec3 outColor = texture2D(u_image, v_texVertex).rgb;
-                   if(u_colorFilter) {
-                       outColor = outColor*v_color;
-                   }
-                   setFragColor(vec4(outColor, 1));
                 }
             `,
         });
@@ -163,7 +169,10 @@ export default class Texer extends Component {
     }
 
     private updateCode() {
-        const code = compileExpr(this.opts.code, ["init", "onBeat", "perFrame", "perPoint"]).codeInst as TexerCodeInstance;
+        const code = compileExpr(
+            this.opts.code,
+            ["init", "onBeat", "perFrame", "perPoint"],
+        ).codeInst as ITexerCodeInstance;
         code.n = 100;
         code.setup(this.main);
         this.inited = false;
@@ -171,7 +180,7 @@ export default class Texer extends Component {
     }
 
     private updateClone() {
-        this.code = CodeInstance.clone(this.code, this.opts.clone) as TexerCodeInstance[];
+        this.code = CodeInstance.clone(this.code, this.opts.clone) as ITexerCodeInstance[];
     }
 
     private updateImage() {
@@ -200,7 +209,7 @@ export default class Texer extends Component {
         this.source = Source[this.opts.source];
     }
 
-    private _drawScope(code: TexerCodeInstance, runInit: boolean) {
+    private _drawScope(code: ITexerCodeInstance, runInit: boolean) {
         const gl = this.main.rctx.gl;
         if (runInit) {
             code.init();
@@ -215,7 +224,7 @@ export default class Texer extends Component {
 
         const nPoints = Math.floor(code.n);
         let data;
-        if (this.source == Source.SPECTRUM) {
+        if (this.source === Source.SPECTRUM) {
             data = this.main.analyser.getSpectrum();
         } else {
             data = this.main.analyser.getWaveform();
@@ -293,16 +302,16 @@ export default class Texer extends Component {
                 sizex *= code.sizex;
                 sizey *= code.sizey;
             }
-            let cornx = code.x - sizex / 2;
-            let corny = (-code.y) - sizey / 2;
+            const cornx = code.x - sizex / 2;
+            const corny = (-code.y) - sizey / 2;
 
             addRect(cornx, corny, sizex, sizey, code.red, code.green, code.blue);
             if (this.opts.wrapAround) {
                 // wrapped around x value is 1-(-1-cornx) or -1-(1-cornx)
                 // depending on the edge
                 // ie. 2+cornx or -2+cornx
-                let xwrap = (cornx < -1) ? 2 : ((cornx > (1 - sizex)) ? -2 : 0);
-                let ywrap = (corny < -1) ? 2 : ((corny > (1 - sizey)) ? -2 : 0);
+                const xwrap = (cornx < -1) ? 2 : ((cornx > (1 - sizex)) ? -2 : 0);
+                const ywrap = (corny < -1) ? 2 : ((corny > (1 - sizey)) ? -2 : 0);
                 if (xwrap) {
                     addRect(xwrap + cornx, corny, sizex, sizey, code.red, code.green, code.blue);
                 }
@@ -324,19 +333,13 @@ export default class Texer extends Component {
         this.program.run(
             this.parent.fm,
             {
-                image: this.texture,
                 colorFilter: colorData ? 1 : 0,
-                vertices: this.vertexBuffer,
-                texVertices: this.texVertexBuffer,
-                indices: this.indexBuffer,
                 colors: colorData ? this.colorBuffer : null,
+                image: this.texture,
+                indices: this.indexBuffer,
+                texVertices: this.texVertexBuffer,
+                vertices: this.vertexBuffer,
             },
         );
-    }
-
-    public handleResize() {
-        for (const codeInst of this.code) {
-            codeInst.updateDimVars(this.main.rctx.gl);
-        }
     }
 }

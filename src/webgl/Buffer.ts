@@ -2,10 +2,10 @@ import { isTypedArray, TypedArray } from "../utils";
 import RenderingContext from "./RenderingContext";
 
 export default class Buffer {
+    public length: number;
     private type: number;
     private rctx: RenderingContext;
     private glBuffer: WebGLBuffer;
-    public length: number;
 
     constructor(rctx: RenderingContext, isElemArray: boolean = false, data?: number[] | TypedArray) {
         const gl = rctx.gl;

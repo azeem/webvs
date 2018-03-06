@@ -14,12 +14,12 @@ export default class Invert extends Component {
 
     public init() {
         this.program = new ShaderProgram(this.main.rctx, {
-            swapFrame: true,
             fragmentShader: `
                 void main() {
                    setFragColor(vec4(1,1,1,1)-getSrcColor());
                 }
             `,
+            swapFrame: true,
         });
     }
 

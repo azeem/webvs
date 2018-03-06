@@ -1,32 +1,34 @@
 import * as EventEmitter from "eventemitter3";
 import * as _ from "lodash";
 
-interface Subscription {
+interface ISubscription {
     emitter: EventEmitter;
     event: string;
     callback: (...args: any[]) => void;
 }
 
 export default abstract class Model extends EventEmitter {
-    private subscriptions: Subscription[] = [];
+    private subscriptions: ISubscription[] = [];
 
     public abstract get(key: string): any;
     public abstract toJSON(key: string): any;
     public abstract setAttribute(key: string, value: any, options: any): void;
     public set(key: string | object, value: any, options?: any): boolean {
-        let success, silent;
+        let success;
 
         if (typeof(key) === "string") {
             options = options || {};
+            const silent = typeof(options.silent) === "undefined" ? true : false;
             success = this.setAttribute(key, value, options);
-            if (success && !options.silent) {
+            if (success && !silent) {
                 this.emit("change:" + key, this, value, options);
                 this.emit("change", this, options);
             }
         } else {
             // if map of key values are passed
             // then set each value separately
-            const options = value;
+            options = value || {};
+            const silent = typeof(options.silent) === "undefined" ? true : false;
             const keyValueMap = key;
 
             success = false;

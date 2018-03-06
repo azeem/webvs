@@ -7,9 +7,9 @@ describe("ClearScreen", () => {
             components: [
                 { type: "TestPattern", blue: 0 },
                 {
-                    type: "ClearScreen",
-                    color: "#00FFFF",
                     beatCount,
+                    color: "#00FFFF",
+                    type: "ClearScreen",
                 },
             ],
         };
@@ -21,23 +21,23 @@ describe("ClearScreen", () => {
 
     it("should not clear screen till beatCount is reached", () => {
         return mainTest({
-            preset: makeClearScreenPreset(5),
             expectImageSrc: "ClearScreen_1.png",
+            frameCount: 8,
             onFrame: (main: IMain, frame: number) => {
                 main.analyser.beat = (frame % 2) === 0;
             },
-            frameCount: 8,
+            preset: makeClearScreenPreset(5),
         });
     });
 
     it("should clear screen when beatCount is reached", () => {
         return mainTest({
-            preset: makeClearScreenPreset(5),
             expectImageSrc: "Cyan.png",
+            frameCount: 9,
             onFrame: (main: IMain, frame: number) => {
                 main.analyser.beat = (frame % 2) === 0;
             },
-            frameCount: 9,
+            preset: makeClearScreenPreset(5),
         });
     });
 });

@@ -3,12 +3,12 @@ import { mainTest } from "../funcTestUtils";
 describe("Convolution", () => {
     it("should apply pattern", () => {
         return mainTest({
+            expectImageSrc: "Convolution_0.png",
+            frameCount: 1,
+            mismatchThreshold: 50,
             preset: {
                 components: [
                     {
-                        type: "SuperScope",
-                        drawMode: "DOTS",
-                        thickness: 1,
                         code: {
                             init: "n=1",
                             perPoint: [
@@ -16,9 +16,12 @@ describe("Convolution", () => {
                                 "red=0;green=1;blue=1;",
                             ],
                         },
+                        drawMode: "DOTS",
+                        thickness: 1,
+                        type: "SuperScope",
                     },
                     {
-                        type: "Convolution",
+                        autoScale: false,
                         kernel: [ // @QOAL's smiley test
                             1, 1, 1, 0, 0, 0, 1, 1, 1,
                             1, 1, 1, 0, 0, 0, 1, 1, 1,
@@ -31,13 +34,10 @@ describe("Convolution", () => {
                             1, 1, 1, 1, 1, 1, 1, 1, 1,
                         ],
                         scale: 1,
-                        autoScale: false,
+                        type: "Convolution",
                     },
                 ],
             },
-            expectImageSrc: "Convolution_0.png",
-            mismatchThreshold: 50,
-            frameCount: 1,
         });
     });
 });

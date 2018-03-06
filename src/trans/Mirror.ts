@@ -4,14 +4,14 @@ import { WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface MirrorDirs {
+export interface IMirrorDirs {
     topToBottom: boolean;
     bottomToTop: boolean;
     leftToRight: boolean;
     rightToLeft: boolean;
 }
 
-export interface MirrorOpts extends MirrorDirs {
+export interface IMirrorOpts extends IMirrorDirs {
     onBeatRandom: boolean;
     smoothTransition: boolean;
     transitionDuration: number;
@@ -22,22 +22,22 @@ export default class Mirror extends Component {
     public static componentName: string = "Mirror";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        topToBottom: "updateMap",
         bottomToTop: "updateMap",
         leftToRight: "updateMap",
         rightToLeft: "updateMap",
+        topToBottom: "updateMap",
     };
-    protected static defaultOptions: MirrorOpts = {
-        onBeatRandom: false,
-        topToBottom: true,
+    protected static defaultOptions: IMirrorOpts = {
         bottomToTop: false,
         leftToRight: false,
+        onBeatRandom: false,
         rightToLeft: false,
         smoothTransition: false,
+        topToBottom: true,
         transitionDuration: 4,
     };
 
-    protected opts: MirrorOpts;
+    protected opts: IMirrorOpts;
     private program: ShaderProgram;
     private animFrameCount: number;
     private map: number[];
@@ -48,16 +48,47 @@ export default class Mirror extends Component {
         super(main, parent, opts);
     }
 
+    public _setMix(noTransition: boolean) {
+        if (this.opts.smoothTransition && !noTransition) {
+            // set mix vectors to second format if we are not already
+            // in the middle of a transition
+            if (this.animFrameCount === 0) {
+                for (let i = 0; i < 4; i++) {
+                    const quad = this.mix[i][0];
+                    this.mix[i][0] = 0;
+                    this.mix[i][quad] = 1;
+                }
+            }
+
+            // calculate the mix delta values
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const endValue = (j  === this.map[i]) ? 1 : 0;
+                    this.mixDelta[i][j] = (endValue - this.mix[i][j]) / this.opts.transitionDuration;
+                }
+            }
+
+            this.animFrameCount = this.opts.transitionDuration;
+        } else {
+            // set mix value to first format
+            for (let i = 0; i < 4; i++) {
+                this.mix[i][0] = this.map[i];
+                for (let j = 1; j < 4; j++) {
+                    this.mix[i][j] = 0;
+                }
+            }
+        }
+    }
+
     public init() {
         this.program = new ShaderProgram(this.main.rctx, {
-            swapFrame: true,
             bindings: {
                 uniforms: {
-                    transition: { name: "u_mode", valueType: WebGLVarType._1I },
                     mix0: { name: "u_mix0", valueType: WebGLVarType._4FV },
                     mix1: { name: "u_mix1", valueType: WebGLVarType._4FV },
                     mix2: { name: "u_mix2", valueType: WebGLVarType._4FV },
                     mix3: { name: "u_mix3", valueType: WebGLVarType._4FV },
+                    transition: { name: "u_mode", valueType: WebGLVarType._1I },
                 },
             },
             fragmentShader: `
@@ -99,6 +130,7 @@ export default class Mirror extends Component {
                     }
                 }
             `,
+            swapFrame: true,
         });
         this.animFrameCount = 0;
         this.mix = [
@@ -122,11 +154,11 @@ export default class Mirror extends Component {
         }
 
         this.program.run(this.parent.fm, {
-            transition: this._inTransition() ? 1 : 0,
             mix0: this.mix[0],
             mix1: this.mix[1],
             mix2: this.mix[2],
             mix3: this.mix[3],
+            transition: this._inTransition() ? 1 : 0,
         });
 
         if (this._inTransition()) {
@@ -153,14 +185,14 @@ export default class Mirror extends Component {
 
     private _setQuadrantMap(random: boolean = false) {
         const map = [0, 1, 2, 3];
-        let mirrorDirs: MirrorDirs = this.opts;
+        let mirrorDirs: IMirrorDirs = this.opts;
         if (random) {
-            let randVal = Math.floor(Math.random() * 16);
+            const randVal = Math.floor(Math.random() * 16);
             mirrorDirs = {
-                topToBottom: (randVal & 1) && this.opts.topToBottom,
                 bottomToTop: (randVal & 2) && this.opts.bottomToTop,
                 leftToRight: (randVal & 4) && this.opts.leftToRight,
                 rightToLeft: (randVal & 8) && this.opts.rightToLeft,
+                topToBottom: (randVal & 1) && this.opts.topToBottom,
             };
         }
         if (mirrorDirs.topToBottom) {
@@ -178,37 +210,5 @@ export default class Mirror extends Component {
         this.map = map;
 
         this._setMix(false);
-    }
-
-    public _setMix(noTransition: boolean) {
-        if (this.opts.smoothTransition && !noTransition) {
-            // set mix vectors to second format if we are not already
-            // in the middle of a transition
-            if (this.animFrameCount === 0) {
-                for (let i = 0; i < 4; i++) {
-                    const quad = this.mix[i][0];
-                    this.mix[i][0] = 0;
-                    this.mix[i][quad] = 1;
-                }
-            }
-
-            // calculate the mix delta values
-            for (let i = 0; i < 4; i++) {
-                for (let j = 0; j < 4; j++) {
-                    const endValue = (j  == this.map[i]) ? 1 : 0;
-                    this.mixDelta[i][j] = (endValue - this.mix[i][j]) / this.opts.transitionDuration;
-                }
-            }
-
-            this.animFrameCount = this.opts.transitionDuration;
-        } else {
-            // set mix value to first format
-            for (let i = 0; i < 4; i++) {
-                this.mix[i][0] = this.map[i];
-                for (let j = 1; j < 4; j++) {
-                    this.mix[i][j] = 0;
-                }
-            }
-        }
     }
 }

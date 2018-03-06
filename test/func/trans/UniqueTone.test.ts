@@ -7,17 +7,17 @@ describe("UniqueTone", () => {
         }, opts);
 
         return mainTest({
+            expectImageSrc,
+            frameCount: 2,
             preset: {
                 components: [
                     {
-                        type: "ClearScreen",
                         color: "#008000",
+                        type: "ClearScreen",
                     },
                     uniqueToneOpts,
                 ],
             },
-            frameCount: 2,
-            expectImageSrc,
         });
     }
 

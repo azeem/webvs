@@ -33,7 +33,7 @@ import RenderingContext from "./webgl/RenderingContext";
 
 declare var WEBVS_VERSION: string;
 
-export interface MainOpts {
+export interface IMainOpts {
     canvas: HTMLCanvasElement;
     analyser: AnalyserAdapter;
     showStat?: boolean;
@@ -45,11 +45,7 @@ export interface MainOpts {
 // Main Webvs object, that represents a running webvs instance.
 export default class Main extends Model implements IMain {
     public static version: string = WEBVS_VERSION;
-    private canvas: HTMLCanvasElement;
     public analyser: AnalyserAdapter;
-    private isStarted: boolean;
-    private stats: Stats;
-    private meta: any;
     public rsrcMan: ResourceManager;
     public rctx: RenderingContext;
     public copier: CopyProgram;
@@ -57,6 +53,10 @@ export default class Main extends Model implements IMain {
     public tempBuffers: FrameBufferManager;
     public registerBank: {[key: string]: number};
     public bootTime: number;
+    private canvas: HTMLCanvasElement;
+    private isStarted: boolean;
+    private stats: Stats;
+    private meta: any;
     private rootComponent: Component;
     private animReqId: number;
     private buffers: {[name: string]: Buffer};
@@ -66,7 +66,7 @@ export default class Main extends Model implements IMain {
     private contextLostHander: (event: any) => void;
     private contextRestoredHander: (event: any) => void;
 
-    constructor(options: MainOpts) {
+    constructor(options: IMainOpts) {
         super();
         checkRequiredOptions(options, ["canvas", "analyser"]);
         options = _.defaults(options, {
@@ -78,7 +78,7 @@ export default class Main extends Model implements IMain {
         this.requestAnimationFrame = options.requestAnimationFrame || window.requestAnimationFrame.bind(window);
         this.cancelAnimationFrame = options.cancelAnimationFrame || window.cancelAnimationFrame.bind(window);
         if (options.showStat) {
-            let stats = new Stats();
+            const stats = new Stats();
             stats.setMode(0);
             stats.domElement.style.position = "absolute";
             stats.domElement.style.right = "5px";
@@ -93,6 +93,126 @@ export default class Main extends Model implements IMain {
         this._registerContextEvents();
         this._initGl();
         this._setupRoot({id: "root"});
+    }
+
+    // Starts the animation if not already started
+    public start() {
+        if (this.isStarted) {
+            return;
+        }
+        this.isStarted = true;
+        if (this.rsrcMan.ready) {
+            this._startAnimation();
+        }
+    }
+
+    // Stops the animation
+    public stop() {
+        if (!this.isStarted) {
+            return;
+        }
+        this.isStarted = false;
+        if (this.rsrcMan.ready) {
+            this._stopAnimation();
+        }
+    }
+
+    // Loads a preset JSON. If a preset is already loaded and running, then
+    // the animation is stopped, and the new preset is loaded.
+    public loadPreset(preset: any) {
+        preset = _.clone(preset); // use our own copy
+        preset.id = "root";
+        this.rootComponent.destroy();
+
+        // setup resources
+        this.rsrcMan.clear(this.presetResourceKeys);
+        if ("resources" in preset && "uris" in preset.resources) {
+            this.rsrcMan.registerUri(preset.resources.uris);
+            this.presetResourceKeys = Object.keys(preset.resources.uris);
+        } else {
+            this.presetResourceKeys = [];
+        }
+
+        // load meta
+        this.meta = _.clone(preset.meta);
+
+        this._setupRoot(preset);
+    }
+
+    // Reset all the components.
+    public resetCanvas() {
+        const preset = this.rootComponent.toJSON();
+        this.rootComponent.destroy();
+        this.tempBuffers.destroy();
+        this._initGl();
+        this._setupRoot(preset);
+    }
+
+    public notifyResize() {
+        const gl = this.rctx.gl;
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        this.tempBuffers.resize();
+        this.emit("resize", gl.drawingBufferWidth, gl.drawingBufferHeight);
+    }
+
+    public cacheBuffer(name: string, buffer: Buffer) {
+        this.buffers[name] = buffer;
+    }
+
+    public getBuffer(name: string): Buffer {
+        return this.buffers[name];
+    }
+
+    public setAttribute(key: string, value: any, options: any) {
+        if (key === "meta") {
+            this.meta = value;
+            return true;
+        }
+        return false;
+    }
+
+    public get(key: string) {
+        if (key === "meta") {
+            return this.meta;
+        }
+    }
+
+    // Generates and returns the instantaneous preset JSON
+    // representation
+    public toJSON(): any {
+        let preset = this.rootComponent.toJSON();
+        preset = _.pick(preset, "clearFrame", "components");
+        preset.resources = this.rsrcMan.toJSON();
+        preset.meta = _.clone(this.meta);
+        return preset;
+    }
+
+    public destroy() {
+        this.stop();
+        this.rootComponent.destroy();
+        this.rootComponent = null;
+        if (this.stats) {
+            const statsDomElement = this.stats.domElement;
+            statsDomElement.parentNode.removeChild(statsDomElement);
+            this.stats = null;
+        }
+        this.rsrcMan = null;
+        this.stopListening();
+        this.canvas.removeEventListener("webglcontextlost", this.contextLostHander);
+        this.canvas.removeEventListener("webglcontextrestored", this.contextRestoredHander);
+    }
+
+    // event handlers
+    public handleRsrcWait() {
+        if (this.isStarted) {
+            this._stopAnimation();
+        }
+    }
+
+    public handleRsrcReady() {
+        if (this.isStarted) {
+            this._startAnimation();
+        }
     }
 
     private _initComponentRegistry() {
@@ -182,126 +302,5 @@ export default class Main extends Model implements IMain {
 
     private _stopAnimation() {
         this.cancelAnimationFrame(this.animReqId);
-    }
-
-    // Starts the animation if not already started
-    public start() {
-        if (this.isStarted) {
-            return;
-        }
-        this.isStarted = true;
-        if (this.rsrcMan.ready) {
-            this._startAnimation();
-        }
-    }
-
-    // Stops the animation
-    public stop() {
-        if (!this.isStarted) {
-            return;
-        }
-        this.isStarted = false;
-        if (this.rsrcMan.ready) {
-            this._stopAnimation();
-        }
-    }
-
-    // Loads a preset JSON. If a preset is already loaded and running, then
-    // the animation is stopped, and the new preset is loaded.
-    public loadPreset(preset: any) {
-        preset = _.clone(preset); // use our own copy
-        preset.id = "root";
-        this.rootComponent.destroy();
-
-        // setup resources
-        this.rsrcMan.clear(this.presetResourceKeys);
-        if ("resources" in preset && "uris" in preset.resources) {
-            this.rsrcMan.registerUri(preset.resources.uris);
-            this.presetResourceKeys = Object.keys(preset.resources.uris);
-        } else {
-            this.presetResourceKeys = [];
-        }
-
-        // load meta
-        this.meta = _.clone(preset.meta);
-
-        this._setupRoot(preset);
-    }
-
-    // Reset all the components.
-    public resetCanvas() {
-        const preset = this.rootComponent.toJSON();
-        this.rootComponent.destroy();
-        this.tempBuffers.destroy();
-        this._initGl();
-        this._setupRoot(preset);
-    }
-
-    public notifyResize() {
-        const gl = this.rctx.gl;
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this.tempBuffers.resize();
-        this.emit("resize", gl.drawingBufferWidth, gl.drawingBufferHeight);
-    }
-
-    public cacheBuffer(name: string, buffer: Buffer) {
-        this.buffers[name] = buffer;
-    }
-
-    public getBuffer(name: string): Buffer {
-        return this.buffers[name];
-    }
-
-    public setAttribute(key: string, value: any, options: any) {
-        if (key == "meta") {
-            this.meta = value;
-            return true;
-        }
-        return false;
-    }
-
-    public get(key: string) {
-        if (key == "meta") {
-            return this.meta;
-        }
-    }
-
-    // Generates and returns the instantaneous preset JSON
-    // representation
-    public toJSON(): any {
-        let preset = this.rootComponent.toJSON();
-        preset = _.pick(preset, "clearFrame", "components");
-        preset.resources = this.rsrcMan.toJSON();
-        preset.meta = _.clone(this.meta);
-        return preset;
-    }
-
-    public destroy() {
-        this.stop();
-        this.rootComponent.destroy();
-        this.rootComponent = null;
-        if (this.stats) {
-            const statsDomElement = this.stats.domElement;
-            statsDomElement.parentNode.removeChild(statsDomElement);
-            this.stats = null;
-        }
-        this.rsrcMan.destroy();
-        this.rsrcMan = null;
-        this.stopListening();
-        this.canvas.removeEventListener("webglcontextlost", this.contextLostHander);
-        this.canvas.removeEventListener("webglcontextrestored", this.contextRestoredHander);
-    }
-
-    // event handlers
-    public handleRsrcWait() {
-        if (this.isStarted) {
-            this._stopAnimation();
-        }
-    }
-
-    public handleRsrcReady() {
-        if (this.isStarted) {
-            this._startAnimation();
-        }
     }
 }

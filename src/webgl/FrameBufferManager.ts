@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import RenderingContext from "./RenderingContext";
 import ShaderProgram from "./ShaderProgram";
 
-interface TextureNameMeta {
+interface ITextureNameMeta {
     refCount: number;
     index: number;
 }
@@ -15,7 +15,7 @@ export default class FrameBufferManager {
     private initTexCount: number;
     private textureOnly: boolean;
     private framebuffer: WebGLFramebuffer;
-    private names: {[key: string]: TextureNameMeta};
+    private names: {[key: string]: ITextureNameMeta};
     private textures: WebGLTexture[];
     private curTex: number;
     private oldTexture: WebGLTexture;
@@ -28,22 +28,6 @@ export default class FrameBufferManager {
         this.initTexCount = texCount;
         this.textureOnly = textureOnly;
         this.initFrameBuffers();
-    }
-
-    private initFrameBuffers() {
-        const gl = this.rctx.gl;
-
-        if (!this.textureOnly) {
-            this.framebuffer = gl.createFramebuffer();
-        }
-
-        this.names = {};
-        this.textures = [];
-        for (let i = 0; i < this.initTexCount; i++) {
-            this.addTexture();
-        }
-        this.curTex = 0;
-        this.isRenderTarget = false;
     }
 
     public addTexture(name?: string): number {
@@ -63,8 +47,8 @@ export default class FrameBufferManager {
         this.textures.push(texture);
         if (name) {
             this.names[name] = {
-                refCount: 1,
                 index: this.textures.length - 1,
+                refCount: 1,
             };
         }
         return this.textures.length - 1;
@@ -78,7 +62,7 @@ export default class FrameBufferManager {
             }
         }
         const index = this.findIndex(nameOrIndex);
-        if (index == this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
+        if (index === this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
             throw new Error("Cannot remove current texture when set as render target");
         }
         const gl = this.rctx.gl;
@@ -144,7 +128,7 @@ export default class FrameBufferManager {
     }
 
     public getTexture(arg): WebGLTexture {
-        let index = this.findIndex(arg);
+        const index = this.findIndex(arg);
         return this.textures[index];
     }
 
@@ -171,8 +155,8 @@ export default class FrameBufferManager {
     public resize() {
         // TODO: investigate chrome warning: INVALID_OPERATION: no texture
         const gl = this.rctx.gl;
-        for (let i = 0; i < this.textures.length; i++) {
-            gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+        for (const texture of this.textures) {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
                           gl.drawingBufferHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
@@ -181,12 +165,28 @@ export default class FrameBufferManager {
     // cleans up all webgl resources
     public destroy() {
         const gl = this.rctx.gl;
-        for (let i = 0; i < this.textures.length; i++) {
-            gl.deleteTexture(this.textures[i]);
+        for (const texture of this.textures) {
+            gl.deleteTexture(texture);
         }
         if (!this.textureOnly) {
             gl.deleteFramebuffer(this.framebuffer);
         }
+    }
+
+    private initFrameBuffers() {
+        const gl = this.rctx.gl;
+
+        if (!this.textureOnly) {
+            this.framebuffer = gl.createFramebuffer();
+        }
+
+        this.names = {};
+        this.textures = [];
+        for (let i = 0; i < this.initTexCount; i++) {
+            this.addTexture();
+        }
+        this.curTex = 0;
+        this.isRenderTarget = false;
     }
 
     private findIndex(arg: string | number): number {
@@ -196,6 +196,7 @@ export default class FrameBufferManager {
         } else if (_.isNumber(arg) && arg >= 0 && arg < this.textures.length) {
             index = arg;
         } else {
+            // tslint:disable-next-line:no-console
             console.log("arg = ", typeof(arg), "textures = ", this.textures);
             throw new Error("Unknown texture '" + arg + "'");
         }

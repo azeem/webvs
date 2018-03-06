@@ -8,9 +8,6 @@ describe("FadeOut", () => {
         return {
             components: [
                 {
-                    type: "SuperScope",
-                    thickness: 50,
-                    drawMode: "DOTS",
                     code: {
                         init: "n=1",
                         perPoint: [
@@ -22,6 +19,9 @@ describe("FadeOut", () => {
                             "n=0;",
                         ],
                     },
+                    drawMode: "DOTS",
+                    thickness: 50,
+                    type: "SuperScope",
                 },
                 fadeOutOpts,
             ],
@@ -30,17 +30,17 @@ describe("FadeOut", () => {
 
     it("should fade to color", () => {
         return mainTest({
-            preset: makePreset({speed: 1, color: "#FF0000"}),
             expectImageSrc: "FadeOut_0.png",
             frameCount: 2,
+            preset: makePreset({speed: 1, color: "#FF0000"}),
         });
     });
 
     it("should fade to color at slower speed", () => {
         return mainTest({
-            preset: makePreset({speed: 0.1, color: "#FF0000"}),
             expectImageSrc: "FadeOut_0.png",
             frameCount: 20,
+            preset: makePreset({speed: 0.1, color: "#FF0000"}),
         });
     });
 });

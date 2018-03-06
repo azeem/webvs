@@ -5,7 +5,7 @@ import {BlendModes, Color, parseColorNorm} from "../utils";
 import ClearScreenProgram from "../webgl/ClearScreenProgram";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface ClearScreenOpts {
+export interface IClearScreenOpts {
     beatCount: number;
     color: string;
     blendMode: string;
@@ -15,21 +15,21 @@ export interface ClearScreenOpts {
 export default class ClearScreen extends Component {
     public static componentName = "ClearScreen";
     public static componentTag = "render";
-    protected static defaultOptions: ClearScreenOpts = {
+    protected static defaultOptions: IClearScreenOpts = {
         beatCount: 0,
-        color: "#000000",
         blendMode: "REPLACE",
+        color: "#000000",
     };
     protected static optUpdateHandlers = {
-        color: "updateColor",
         blendMode: "updateProgram",
+        color: "updateColor",
     };
+    protected opts: IClearScreenOpts;
 
     private prevBeat: boolean;
     private beatCount: number;
     private program: ClearScreenProgram;
     private color: Color;
-    protected opts: ClearScreenOpts;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);

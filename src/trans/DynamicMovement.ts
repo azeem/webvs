@@ -12,7 +12,7 @@ enum CoordModes {
     RECT,
 }
 
-export interface DynamicMovementOpts {
+export interface IDynamicMovementOpts {
     code: {
         init: string,
         onBeat: string,
@@ -28,7 +28,7 @@ export interface DynamicMovementOpts {
     coord: string;
 }
 
-interface DMovCodeInstance extends CodeInstance {
+interface IDMovCodeInstance extends CodeInstance {
     x: number;
     y: number;
     d: number;
@@ -45,33 +45,36 @@ export default class DynamicMovement extends Component {
     public static componentName: string = "DynamicMovement";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        code: "updateCode",
-        noGrid: ["updateProgram", "updateGrid"],
-        compat: "updateProgram",
         bFilter: "updateProgram",
-        coord: "updateProgram",
         blend: "updateProgram",
-        gridW: "updateGrid",
+        code: "updateCode",
+        compat: "updateProgram",
+        coord: "updateProgram",
         gridH: "updateGrid",
+        gridW: "updateGrid",
+        noGrid: [
+            "updateProgram",
+            "updateGrid",
+        ],
     };
-    protected static defaultOptions: DynamicMovementOpts = {
+    protected static defaultOptions: IDynamicMovementOpts = {
+        bFilter: true,
+        blend: false,
         code: {
             init: "",
             onBeat: "",
             perFrame: "",
             perPixel: "",
         },
-        gridW: 16,
-        gridH: 16,
-        blend: false,
-        noGrid: false,
         compat: false,
-        bFilter: true,
         coord: "POLAR",
+        gridH: 16,
+        gridW: 16,
+        noGrid: false,
     };
 
-    protected opts: DynamicMovementOpts;
-    private code: DMovCodeInstance;
+    protected opts: IDynamicMovementOpts;
+    private code: IDMovCodeInstance;
     private glslCode: string;
     private inited: boolean;
     private program: ShaderProgram;
@@ -118,13 +121,18 @@ export default class DynamicMovement extends Component {
     }
 
     private updateCode() {
-        const compileResult = compileExpr(this.opts.code, ["init", "onBeat", "perFrame"], ["perPixel"], ["x", "y", "d", "r", "b", "alpha"]);
+        const compileResult = compileExpr(
+            this.opts.code,
+            ["init", "onBeat", "perFrame"],
+            ["perPixel"],
+            ["x", "y", "d", "r", "b", "alpha"],
+        );
 
         // js code
         const code = compileResult.codeInst;
         code.setup(this.main);
         this.inited = false;
-        this.code = code as DMovCodeInstance;
+        this.code = code as IDMovCodeInstance;
 
         // glsl code
         this.glslCode = compileResult.glslCode;
@@ -138,15 +146,15 @@ export default class DynamicMovement extends Component {
 
         const programOpts: ShaderOpts = {
             blendMode: opts.blend ? BlendModes.ALPHA : BlendModes.REPLACE,
-            swapFrame: true,
             fragmentShader: "",
+            swapFrame: true,
         };
         if (opts.noGrid) {
             programOpts.fragmentShader = `
                 ${ this.glslCode }
                 ${ glslFilter(opts.bFilter, opts.compat) }
                 void main() {
-                    ${this.code._hasRandom ? "__randSeed = v_position;" : ""}
+                    ${this.code.hasRandom ? "__randSeed = v_position;" : ""}
                     x = v_position.x*2.0-1.0;
                     y = -(v_position.y*2.0-1.0);
                     ${ glslRectToPolar(coordMode) }
@@ -168,7 +176,7 @@ export default class DynamicMovement extends Component {
                 varying float v_alpha;
                 ${ this.glslCode }
                 void main() {
-                    ${this.code._hasRandom ? "__randSeed = a_position;" : ""}
+                    ${this.code.hasRandom ? "__randSeed = a_position;" : ""}
                     x = a_position.x;
                     y = -a_position.y;
                     ${ glslRectToPolar(coordMode) }

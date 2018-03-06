@@ -1,11 +1,10 @@
-///<reference path="./pegjs.d.ts"/>
 import * as _ from "lodash";
 import {glslFloatRepr, noop} from "../utils";
 import * as Ast from "./Ast";
 import CodeInstance from "./CodeInstance";
 import { parse } from "./ExprGrammar.pegjs";
 
-export interface CompileResult {
+export interface ICompileResult {
     codeInst: CodeInstance;
     glslCode: string;
 }
@@ -15,9 +14,12 @@ export default function compileExpr(
     jsFuncs: string[] = [],
     glslFuncs: string[] = [],
     nonUniforms: string[] = [],
-): CompileResult {
+): ICompileResult {
     const codeStrings: {[name: string]: string} = {};
     for (const name in codeSrc) {
+        if (!codeSrc.hasOwnProperty(name)) {
+            continue;
+        }
         let codeString = codeSrc[name];
         if (_.isArray(codeString)) {
             codeString = codeString.join("\n");
@@ -40,11 +42,14 @@ export default function compileExpr(
     return {codeInst, glslCode};
 }
 
-interface CodeAst {[name: string]: Ast.Program; }
+interface ICodeAst {[name: string]: Ast.Program; }
 
-function parseCode(codeSrc: {[name: string]: string}): CodeAst {
-    const codeAst: CodeAst = {}; // abstract syntax tree
+function parseCode(codeSrc: {[name: string]: string}): ICodeAst {
+    const codeAst: ICodeAst = {}; // abstract syntax tree
     for (const name in codeSrc) {
+        if (!codeSrc.hasOwnProperty(name)) {
+            continue;
+        }
         try {
             codeAst[name] = parse(codeSrc[name]) as Ast.Program;
         } catch (e) {
@@ -60,7 +65,7 @@ function isStaticExprList(exprs: Ast.Expression[]): exprs is Ast.PrimaryExpr[] {
     });
 }
 
-interface SymbolTables {
+interface ISymbolTables {
     register: {[name: string]: string[]};
     preCompute: {[uniformName: string]: string[]};
     jsVars: string[];
@@ -72,11 +77,11 @@ interface SymbolTables {
 }
 
 function processAst(
-    codeAst: CodeAst,
+    codeAst: ICodeAst,
     jsFuncs: string[],
     glslFuncs: string[],
     extraNonUniforms: string[],
-): SymbolTables {
+): ISymbolTables {
     const funcCall: {[name: string]: string[]} = {};
     const variable: {[name: string]: string[]} = {};
     const register: {[name: string]: string[]} = {};
@@ -86,8 +91,8 @@ function processAst(
 
     const processNode = (ast, name) => {
         if (ast instanceof Ast.Program) {
-            for (let i = 0; i < ast.statements.length; i++) {
-                processNode(ast.statements[i], name);
+            for (const statement of ast.statements) {
+                processNode(statement, name);
             }
         } else if (ast instanceof Ast.BinaryExpr) {
             processNode(ast.leftOperand, name);
@@ -102,9 +107,11 @@ function processAst(
             if (glslFuncs.indexOf(name) >= 0 && glslPreComputeFuncs.indexOf(ast.funcName) >= 0) {
                 const args = ast.args;
                 if (!isStaticExprList(args)) {
-                    throw new Error("Non Pre-Computable arguments for " + ast.funcName + " in shader code, use variables or constants");
+                    throw new Error(
+                        `Non Pre-Computable arguments for ${ast.funcName} in shader code, use variables or constants`,
+                    );
                 }
-                const entry = [ast.funcName].concat(_.map(args, function(arg) {return arg.value; }));
+                const entry = [ast.funcName].concat(_.map(args, (arg) => arg.value));
                 let uniformName;
                 for (const key in preCompute) {
                     if (_.isEqual(preCompute[key], entry)) {
@@ -121,8 +128,8 @@ function processAst(
             }
 
             funcCall[name].push(ast.funcName);
-            for (let i = 0; i < ast.args.length; i++) {
-               processNode(ast.args[i], name);
+            for (const arg of ast.args) {
+               processNode(arg, name);
             }
         } else if (ast instanceof Ast.Assignment) {
             processNode(ast.lhs, name);
@@ -135,6 +142,9 @@ function processAst(
     };
 
     for (const name in codeAst) {
+        if (!codeAst.hasOwnProperty(name)) {
+            continue;
+        }
         funcCall[name] = [];
         variable[name] = [];
         register[name] = [];
@@ -154,11 +164,11 @@ function processAst(
     const glslRegisters = _.chain(register).pick(glslFuncs).values().flatten().uniq().value();
 
     return {
-        register, preCompute, jsVars, glslVars, nonUniforms, uniforms, glslUsedFuncs, glslRegisters,
+        glslRegisters, glslUsedFuncs, glslVars, jsVars, nonUniforms, preCompute, register, uniforms,
     };
 }
 
-function generateJs(codeAst: CodeAst, tables: SymbolTables, jsFuncs: string[]): CodeInstance {
+function generateJs(codeAst: ICodeAst, tables: ISymbolTables, jsFuncs: string[]): CodeInstance {
     const generateNode = (ast) => {
         if (ast instanceof Ast.BinaryExpr) {
             return "(" + generateNode(ast.leftOperand) + ast.operator + generateNode(ast.rightOperand) + ")";
@@ -205,7 +215,7 @@ function generateJs(codeAst: CodeAst, tables: SymbolTables, jsFuncs: string[]): 
                 case "select":
                     const code = ["((function() {"];
                     code.push("switch(" + generateNode(ast.args[0]) + ") {");
-                    _.each(_.takeRight(ast.args, ast.args.length - 1), function(arg, i) {
+                    _.each(_.takeRight(ast.args, ast.args.length - 1), (arg, i) => {
                         code.push("case " + i + ": return " + generateNode(arg) + ";");
                     });
                     code.push("default : throw new Error('Unknown selector value in select');");
@@ -266,13 +276,12 @@ function generateJs(codeAst: CodeAst, tables: SymbolTables, jsFuncs: string[]): 
     );
 
     // clear all variables
-    for (let i = 0; i < tables.jsVars.length; i++) {
-        codeInst[tables.jsVars[i]] = 0;
+    for (const jsVar of tables.jsVars) {
+        codeInst[jsVar] = 0;
     }
 
     // generate code
-    for (let i = 0; i < jsFuncs.length; i++) {
-        const name = jsFuncs[i];
+    for (const name of jsFuncs) {
         const ast = codeAst[name];
         if (ast) {
             const jsCodeString = generateNode(ast);
@@ -285,7 +294,7 @@ function generateJs(codeAst: CodeAst, tables: SymbolTables, jsFuncs: string[]): 
     return codeInst;
 }
 
-function generateGlsl(codeAst: CodeAst, tables: SymbolTables, glslFuncs: string[]): string {
+function generateGlsl(codeAst: ICodeAst, tables: ISymbolTables, glslFuncs: string[]): string {
     const generateNode = (ast) => {
         if (ast instanceof Ast.BinaryExpr) {
             return "(" + generateNode(ast.leftOperand) + ast.operator + generateNode(ast.rightOperand) + ")";
@@ -332,10 +341,10 @@ function generateGlsl(codeAst: CodeAst, tables: SymbolTables, glslFuncs: string[
                         generateNode(ast.args[2]),
                         ")",
                     ].join("");
-                case "select":
+                case "select": {
                     const selectExpr = generateNode(ast.args[0]);
                     const generateSelect = (args, i) => {
-                        if (args.length == 1) {
+                        if (args.length === 1) {
                             return generateNode(args[0]);
                         } else {
                             return [
@@ -346,6 +355,7 @@ function generateGlsl(codeAst: CodeAst, tables: SymbolTables, glslFuncs: string[
                         }
                     };
                     return generateSelect(_.takeRight(ast.args, ast.args.length - 1), 0);
+                }
                 case "sqr":
                     return "(pow((" + generateNode(ast.args[0]) + "), 2))";
                 case "band":
@@ -358,16 +368,17 @@ function generateGlsl(codeAst: CodeAst, tables: SymbolTables, glslFuncs: string[
                     return "(1/sqrt(" + generateNode(ast.args[0]) + "))";
                 case "atan2":
                     return "(atan((" + generateNode(ast.args[0]) + "),(" + generateNode(ast.args[1]) + "))";
-                default:
+                default: {
                     const args = _.map(ast.args, (arg) => generateNode(arg)).join(",");
                     return "(" + ast.funcName + "(" + args + "))";
+                }
             }
         }
         if (ast instanceof Ast.Assignment) {
             return generateNode(ast.lhs) + "=" + generateNode(ast.expr);
         }
         if (ast instanceof Ast.Program) {
-            let stmts = _.map(ast.statements, function(stmt) {return generateNode(stmt); });
+            const stmts = _.map(ast.statements, (stmt) => generateNode(stmt));
             return stmts.join(";\n") + ";";
         }
         if (ast instanceof Ast.PrimaryExpr && ast.type === "VALUE") {
@@ -401,8 +412,7 @@ function generateGlsl(codeAst: CodeAst, tables: SymbolTables, glslFuncs: string[
     }).value());
 
     // add the functions
-    for (let i = 0; i < glslFuncs.length; i++) {
-        const name = glslFuncs[i];
+    for (const name of glslFuncs) {
         const ast = codeAst[name];
         if (ast) {
             const codeString = generateNode(ast);
@@ -420,36 +430,41 @@ function generateGlsl(codeAst: CodeAst, tables: SymbolTables, glslFuncs: string[
 type ArgLength = number | {min: number};
 const funcArgLengths: {[funcName: string]: ArgLength} = {
     above: 2,
-    below: 2,
-    equal: 2,
-    pow: 2,
-    sqr: 1,
-    sqrt: 1,
-    invsqrt: 1,
-    floor : 1,
-    ceil : 1,
     abs: 1,
-    if: 3,
-    min: 2,
-    max: 2,
-    sin: 1,
-    cos: 1,
-    tan: 1,
-    asin: 1,
     acos: 1,
+    asin: 1,
     atan: 1,
     atan2: 2,
-    log: 1,
     band: 2,
-    bor: 2,
+    below: 2,
     bnot: 1,
-    rand: 1,
-    gettime: 1,
+    bor: 2,
+    ceil: 1,
+    cos: 1,
+    equal: 2,
+    floor: 1,
     getosc: 3,
-    select: {min: 2},
+    gettime: 1,
+    if: 3,
+    invsqrt: 1,
+    log: 1,
+    max: 2,
+    min: 2,
+    pow: 2,
+    rand: 1,
+    select: {
+        min: 2,
+    },
+    sin: 1,
+    sqr: 1,
+    sqrt: 1,
+    tan: 1,
 };
 
-const jsMathFuncs = ["min", "max", "sin", "cos", "abs", "tan", "asin", "acos", "atan", "log", "pow", "sqrt", "floor", "ceil"];
+const jsMathFuncs = [
+    "min", "max", "sin", "cos", "abs", "tan", "asin", "acos",
+    "atan", "log", "pow", "sqrt", "floor", "ceil",
+];
 
 const glslPreComputeFuncs = ["getosc", "gettime"];
 
@@ -471,7 +486,7 @@ function checkFunc(ast: Ast.FuncCall) {
         throw Error("Unknown function " + ast.funcName);
     }
     if (_.isNumber(requiredArgLength)) {
-        if (ast.args.length != requiredArgLength) {
+        if (ast.args.length !== requiredArgLength) {
             throw Error(ast.funcName + " accepts " + requiredArgLength + " arguments");
         }
     } else if (requiredArgLength.min) {

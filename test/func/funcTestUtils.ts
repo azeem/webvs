@@ -18,6 +18,7 @@ class MockAnalyser extends AnalyserAdapter {
         this.sineData = data;
     }
 
+    // tslint:disable-next-line:no-empty
     public update() {}
 
     public getSpectrum(channel?: Channel) {
@@ -28,20 +29,21 @@ class MockAnalyser extends AnalyserAdapter {
     }
 }
 
-interface TestPatternOpts {
+interface ITestPatternOpts {
     blue: number;
 }
 
+// tslint:disable-next-line:max-classes-per-file
 class TestPattern extends Component {
     public static componentName: string = "TestPattern";
     public static componentTag: string = "render";
     protected static optUpdateHandlers = {
         blue: "updateProgram",
     };
-    protected static defaultOptions: TestPatternOpts = {
+    protected static defaultOptions: ITestPatternOpts = {
         blue: 0.5,
     };
-    protected opts: TestPatternOpts;
+    protected opts: ITestPatternOpts;
     private program: ShaderProgram;
 
     public init() {
@@ -98,8 +100,8 @@ function imageFuzzyOk(
     tempCanvas.width = width;
     tempCanvas.height = height;
     const ctxt = tempCanvas.getContext("2d", {
-        preserveDrawingBuffer: true,
         alpha: false,
+        preserveDrawingBuffer: true,
     });
 
     // get source pixels
@@ -167,7 +169,7 @@ function imageFuzzyOk(
     }
 }
 
-interface MainTestOpts {
+interface IMainTestOpts {
     preset: any;
     expectImageSrc: string;
     onFrame?: (main: IMain, index: number) => void;
@@ -177,7 +179,7 @@ interface MainTestOpts {
     mismatchThreshold?: number;
 }
 
-export async function mainTest(opts: MainTestOpts) {
+export async function mainTest(opts: IMainTestOpts) {
     const {preset, expectImageSrc, onFrame, onInit, frameCount = 10} = opts;
     const expectImage = await loadImage("/base/test/func/assert/" + expectImageSrc);
     const canvas = document.createElement("canvas");
@@ -198,10 +200,11 @@ export async function mainTest(opts: MainTestOpts) {
             }
             return ++frameCounter;
         };
+        // tslint:disable-next-line:no-empty
         const cancelAnimationFrame = () => {};
         const analyser = new MockAnalyser();
         main = new Main({
-            canvas, analyser, requestAnimationFrame, cancelAnimationFrame,
+            analyser, cancelAnimationFrame, canvas, requestAnimationFrame,
         });
         if (onInit) {
             onInit(main);
@@ -210,11 +213,11 @@ export async function mainTest(opts: MainTestOpts) {
         main.loadPreset(preset);
         main.start();
     });
-    const main = await runMain;
+    const testMain = await runMain;
     try {
-        imageFuzzyOk(main.rctx.gl, canvas, expectImage, opts.distanceThreshold, opts.mismatchThreshold);
+        imageFuzzyOk(testMain.rctx.gl, canvas, expectImage, opts.distanceThreshold, opts.mismatchThreshold);
     } finally {
-        main.destroy();
+        testMain.destroy();
         canvas.remove();
     }
 }
@@ -226,8 +229,8 @@ export function makeSinglePreset(type: string, opts: any, testPatternBlue: numbe
     ];
     if (_.isNumber(testPatternBlue)) {
         components.unshift({
-            type: "TestPattern",
             blue: testPatternBlue,
+            type: "TestPattern",
         });
     }
     return { components };

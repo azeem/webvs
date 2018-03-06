@@ -2,19 +2,19 @@ import { BlendModes, Color, WebGLVarType } from "../utils";
 import RenderingContext from "./RenderingContext";
 import ShaderProgram from "./ShaderProgram";
 
-export interface ClearScreenProgramValues {
+export interface IClearScreenProgramValues {
     color: Color;
 }
 
-export default class ClearScreenProgram extends ShaderProgram<ClearScreenProgramValues> {
+export default class ClearScreenProgram extends ShaderProgram<IClearScreenProgramValues> {
     constructor(rctx: RenderingContext, blendMode: BlendModes) {
         super(rctx, {
-            blendMode,
             bindings: {
                 uniforms: {
                     color: { name: "u_color", valueType: WebGLVarType._3FV},
                 },
             },
+            blendMode,
             fragmentShader: `
                 uniform vec3 u_color;
                 void main() {

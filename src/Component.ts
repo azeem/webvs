@@ -4,9 +4,9 @@ import Model from "./Model";
 import FrameBufferManager from "./webgl/FrameBufferManager";
 
 export interface IComponentConstructor {
-    new(main: IMain, parent: IContainer, opts: any): Component;
     componentName: string;
     componentTag: string;
+    new(main: IMain, parent: IContainer, opts: any): Component;
 }
 
 export interface IContainer extends Component {
@@ -14,20 +14,17 @@ export interface IContainer extends Component {
 }
 
 export default abstract class Component extends Model {
-    public ["constructor"]: typeof Component;
-    protected main: IMain;
-    protected parent: IContainer;
-    public id: string;
-    public enabled: boolean;
-    protected opts: any;
     public static componentName: string = "Component";
     public static componentTag: string = "";
     protected static optUpdateHandlers: {[key: string]: string | string[] } = null;
     protected static defaultOptions: any = {};
+    public id: string;
+    public enabled: boolean;
     public lastError: any;
-
-    public abstract init();
-    public abstract draw();
+    public ["constructor"]: typeof Component;
+    protected opts: any;
+    protected main: IMain;
+    protected parent: IContainer;
 
     constructor(main: IMain, parent: IContainer, options: any) {
         super();
@@ -50,6 +47,9 @@ export default abstract class Component extends Model {
         this.init();
     }
 
+    public abstract init();
+    public abstract draw();
+
     public destroy() {
         this.stopListening();
     }
@@ -68,14 +68,14 @@ export default abstract class Component extends Model {
 
     public setAttribute(key: string, value: any, options: any) {
         const oldValue = this.get(key);
-        if (key == "type" || _.isEqual(value, oldValue)) {
+        if (key === "type" || _.isEqual(value, oldValue)) {
             return false;
         }
 
         // set the property
-        if (key == "enabled") {
+        if (key === "enabled") {
             this.enabled = value;
-        } else if (key == "id") {
+        } else if (key === "id") {
             this.id = value;
         } else {
             this.opts[key] = value;
@@ -92,14 +92,14 @@ export default abstract class Component extends Model {
                     optUpdateHandlers["*"] || [],
                 ]);
 
-                for (let i = 0; i < onChange.length; i++) {
-                    this[onChange[i]].call(this, value, key, oldValue);
+                for (const onChangeHandler of onChange) {
+                    this[onChangeHandler].call(this, value, key, oldValue);
                 }
             } catch (e) {
                 // restore old value in case any of the onChange handlers fail
-                if (key == "enabled") {
+                if (key === "enabled") {
                     this.enabled = oldValue;
-                } else if (key == "id") {
+                } else if (key === "id") {
                     this.id = oldValue;
                 } else {
                     this.opts[key] = oldValue;
@@ -114,9 +114,9 @@ export default abstract class Component extends Model {
     }
 
     public get(key): any {
-        if (key == "enabled") {
+        if (key === "enabled") {
             return this.enabled;
-        } else if (key == "id") {
+        } else if (key === "id") {
             return this.id;
         } else {
             return this.opts[key];

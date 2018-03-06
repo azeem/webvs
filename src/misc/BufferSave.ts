@@ -2,7 +2,7 @@ import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
 import { BlendModes } from "../utils";
 
-export interface BufferSaveOpts {
+export interface IBufferSaveOpts {
     action: string;
     bufferId: string;
     blendMode: string;
@@ -22,16 +22,16 @@ export default class BufferSave extends Component {
     public static componentTag: string = "misc";
     protected static optUpdateHandlers = {
         action: "updateAction",
-        bufferId: "updateBuffer",
         blendMode: "updateBlendMode",
+        bufferId: "updateBuffer",
     };
-    protected static defaultOptions: BufferSaveOpts = {
+    protected static defaultOptions: IBufferSaveOpts = {
         action: "SAVE",
-        bufferId: "buffer1",
         blendMode: "REPLACE",
+        bufferId: "buffer1",
     };
 
-    protected opts: BufferSaveOpts;
+    protected opts: IBufferSaveOpts;
     private action: Actions;
     private nextAction: Actions;
     private blendMode: BlendModes;
@@ -48,11 +48,11 @@ export default class BufferSave extends Component {
 
     public draw() {
         let currentAction;
-        if (this.action == Actions.SAVERESTORE ||
-           this.action == Actions.RESTORESAVE) {
+        if (this.action === Actions.SAVERESTORE ||
+           this.action === Actions.RESTORESAVE) {
             currentAction = this.nextAction;
             // toggle next action
-            this.nextAction = (this.nextAction == Actions.SAVE) ? Actions.RESTORE : Actions.SAVE;
+            this.nextAction = (this.nextAction === Actions.SAVE) ? Actions.RESTORE : Actions.SAVE;
         } else {
             currentAction = this.action;
         }
@@ -77,9 +77,9 @@ export default class BufferSave extends Component {
 
     public updateAction() {
         this.action = Actions[this.opts.action];
-        if (this.action == Actions.SAVERESTORE) {
+        if (this.action === Actions.SAVERESTORE) {
             this.nextAction = Actions.SAVE;
-        } else if (this.action == Actions.RESTORESAVE) {
+        } else if (this.action === Actions.RESTORESAVE) {
             this.nextAction = Actions.RESTORE;
         }
     }

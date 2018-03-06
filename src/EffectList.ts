@@ -20,7 +20,7 @@ export enum ELBlendModes {
     IGNORE,
 }
 
-export interface EffectListOpts {
+export interface IEffectListOpts {
     code: {
         init: string,
         perFrame: string,
@@ -32,33 +32,41 @@ export interface EffectListOpts {
     enableOnBeatFor: number;
 }
 
+interface IELCodeInstance extends CodeInstance {
+    beat: number;
+    enabled: number;
+    clear: number;
+    init: () => void;
+    perFrame: () => void;
+}
+
 // Effectlist is a container that renders components to a separate buffer. and blends
 // it in with the parent buffer. Its also used as the root component in Webvs.Main
 export default class EffectList extends Container {
     public static componentName = "EffectList";
     public static componentTag = "";
-    protected static defaultOptions: EffectListOpts = {
+    protected static defaultOptions: IEffectListOpts = {
+        clearFrame: false,
         code: {
             init: "",
             perFrame: "",
         },
-        output: "REPLACE",
-        input: "IGNORE",
-        clearFrame: false,
         enableOnBeat: false,
         enableOnBeatFor: 1,
+        input: "IGNORE",
+        output: "REPLACE",
     };
     protected static optUpdateHandlers = {
         code: "updateCode",
-        output: "updateBlendMode",
         input: "updateBlendMode",
+        output: "updateBlendMode",
     };
 
-    protected opts: EffectListOpts;
+    protected opts: IEffectListOpts;
     private frameCounter: number;
     private first: boolean;
     private inited: boolean = false;
-    private code: CodeInstance;
+    private code: IELCodeInstance;
     private input: ELBlendModes;
     private output: ELBlendModes;
 
@@ -95,7 +103,7 @@ export default class EffectList extends Container {
 
         this.code.beat = this.main.analyser.beat ? 1 : 0;
         this.code.enabled = 1;
-        this.code.clear = opts.clearFrame;
+        this.code.clear = opts.clearFrame ? 1 : 0;
         if (!this.inited) {
             this.inited = true;
             this.code.init();
@@ -123,9 +131,10 @@ export default class EffectList extends Container {
         }
 
         // render all the components
-        for (let i = 0; i < this.components.length; i++) {
-            if (this.components[i].enabled) {
-                this.components[i].draw();
+        // for (let i = 0; i < this.components.length; i++) {
+        for (const component of this.components) {
+            if (component.enabled) {
+                component.draw();
             }
         }
 
@@ -133,9 +142,13 @@ export default class EffectList extends Container {
         this.fm.restoreRenderTarget();
 
         // blend current texture to the output framebuffer
-        if (this.output != ELBlendModes.IGNORE) {
+        if (this.output !== ELBlendModes.IGNORE) {
             if (this.parent) {
-                this.main.copier.run(this.parent.fm, { srcTexture: this.fm.getCurrentTexture() }, this.output as number);
+                this.main.copier.run(
+                    this.parent.fm,
+                    { srcTexture: this.fm.getCurrentTexture() },
+                    this.output as number,
+                );
             } else {
                 this.main.copier.run(null, { srcTexture: this.fm.getCurrentTexture() });
             }
@@ -151,7 +164,7 @@ export default class EffectList extends Container {
     }
 
     private updateCode() {
-        this.code = compileExpr(this.opts.code, ["init", "perFrame"]).codeInst;
+        this.code = compileExpr(this.opts.code, ["init", "perFrame"]).codeInst as IELCodeInstance;
         this.code.setup(this.main);
         this.inited = false;
     }

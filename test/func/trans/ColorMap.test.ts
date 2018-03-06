@@ -8,64 +8,64 @@ describe("ColorMap", () => {
 
     it("should map RED", () => {
         return mainTest({
-            preset: makePreset({
-                maps, key: "RED",
-            }),
             expectImageSrc: "ColorMap_0.png",
+            preset: makePreset({
+                key: "RED", maps,
+            }),
         });
     });
 
     it("should blend output", () => {
         return mainTest({
-            preset: makePreset({
-                maps, key: "RED", output: "AVERAGE",
-            }),
             expectImageSrc: "ColorMap_1.png",
+            preset: makePreset({
+                key: "RED", maps, output: "AVERAGE",
+            }),
         });
     });
 
     it("should map GREEN", () => {
         return mainTest({
-            preset: makePreset({
-                maps, key: "GREEN",
-            }),
             expectImageSrc: "ColorMap_2.png",
+            preset: makePreset({
+                key: "GREEN", maps,
+            }),
         });
     });
 
     it("should map (R+G+B)/2", () => {
         return mainTest({
-            preset: makePreset({
-                maps, key: "(R+G+B)/2",
-            }),
             expectImageSrc: "ColorMap_3.png",
+            preset: makePreset({
+                key: "(R+G+B)/2", maps,
+            }),
         });
     });
 
     it("should map (R+G+B)/3", () => {
         return mainTest({
-            preset: makePreset({
-                maps, key: "(R+G+B)/3",
-            }),
             expectImageSrc: "ColorMap_4.png",
+            preset: makePreset({
+                key: "(R+G+B)/3", maps,
+            }),
         });
     });
 
     it("should map MAX", () => {
         return mainTest({
-            preset: makePreset({
-                maps, key: "MAX",
-            }),
             expectImageSrc: "ColorMap_5.png",
+            preset: makePreset({
+                key: "MAX", maps,
+            }),
         });
     });
 
     it("should map BLUE", () => {
         return mainTest({
-            preset: makePreset({
-                maps, key: "BLUE",
-            }),
             expectImageSrc: "blank.png",
+            preset: makePreset({
+                key: "BLUE", maps,
+            }),
         });
     });
 });
