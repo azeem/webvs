@@ -5,7 +5,7 @@ import IMain from "../IMain";
 import { BlendModes, clamp } from "../utils";
 import Buffer from "../webgl/Buffer";
 import RenderingContext from "../webgl/RenderingContext";
-import ShaderProgram, { ShaderOpts } from "../webgl/ShaderProgram";
+import ShaderProgram, { IShaderOpts } from "../webgl/ShaderProgram";
 
 enum CoordModes {
     POLAR = 0,
@@ -144,7 +144,7 @@ export default class DynamicMovement extends Component {
         const coordMode = CoordModes[this.opts.coord];
         const rctx = this.main.rctx;
 
-        const programOpts: ShaderOpts = {
+        const programOpts: IShaderOpts = {
             blendMode: opts.blend ? BlendModes.ALPHA : BlendModes.REPLACE,
             fragmentShader: "",
             swapFrame: true,

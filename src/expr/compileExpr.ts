@@ -261,7 +261,7 @@ function generateJs(codeAst: ICodeAst, tables: ISymbolTables, jsFuncs: string[])
             return "this." + ast.value;
         }
         if (ast instanceof Ast.PrimaryExpr && ast.type === "REG") {
-            return "this._registerBank[\"" + ast.value + "\"]";
+            return "this.registerBank[\"" + ast.value + "\"]";
         }
     };
 
