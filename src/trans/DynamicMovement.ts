@@ -108,7 +108,6 @@ export default class DynamicMovement extends Component {
             code.onBeat();
         }
 
-        this.code.bindUniforms(this.program);
         this.program.run(this.parent.fm, this.opts.noGrid ? {} : { grid: this.gridVertexBuffer });
     }
 
@@ -146,6 +145,13 @@ export default class DynamicMovement extends Component {
 
         const programOpts: IShaderOpts = {
             blendMode: opts.blend ? BlendModes.ALPHA : BlendModes.REPLACE,
+            drawHook: (values, gl, dmProgram) => {
+                // bind values from code instance into program
+                this.code.bindUniforms(dmProgram);
+                // return true to indicate unhandled draw.
+                // This lets ShaderProgram handle draw calls
+                return true;
+            },
             fragmentShader: "",
             swapFrame: true,
         };

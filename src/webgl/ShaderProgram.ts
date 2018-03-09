@@ -40,7 +40,7 @@ export interface IShaderOpts<ValueType = any> {
     dynamicBlend?: boolean;
     blendValue?: 0.5;
     bindings?: IBindings;
-    drawHook?: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void;
+    drawHook?: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => any;
 }
 
 // Base class for Webgl Shaders. This provides an abstraction
@@ -87,7 +87,7 @@ export default class ShaderProgram<ValueType = any> {
     private fragment: WebGLShader;
     private vertex: WebGLShader;
     private program: WebGLProgram;
-    private drawHook: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => void;
+    private drawHook: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => any;
     private bindings: IBindings;
     private locations: {[key: string]: number | WebGLUniformLocation};
     private textureVars: string[];
@@ -409,16 +409,20 @@ export default class ShaderProgram<ValueType = any> {
         }
 
         const gl = this.rctx.gl;
+        let drawHandled = false;
         if (this.drawHook) {
-            this.drawHook(values, gl, this);
-        } else if (drawMode !== null) {
-            if (isElements) {
-                gl.drawElements(drawMode, drawCount, gl.UNSIGNED_SHORT, 0);
+            drawHandled = !this.drawHook(values, gl, this);
+        }
+        if (!drawHandled) {
+            if (drawMode !== null) {
+                if (isElements) {
+                    gl.drawElements(drawMode, drawCount, gl.UNSIGNED_SHORT, 0);
+                } else {
+                    gl.drawArrays(drawMode, 0, drawCount);
+                }
             } else {
-                gl.drawArrays(drawMode, 0, drawCount);
+                throw new Error("Draw unhandled and no bindings containing drawMode.");
             }
-        } else {
-            throw new Error("Unable to draw shader. No drawHook or varDefs with drawMode found.");
         }
     }
 
