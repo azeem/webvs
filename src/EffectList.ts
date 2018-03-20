@@ -133,7 +133,7 @@ export default class EffectList extends Container {
         // render all the components
         // for (let i = 0; i < this.components.length; i++) {
         for (const component of this.components) {
-            if (component.enabled) {
+            if (component.isEnabled()) {
                 component.draw();
             }
         }

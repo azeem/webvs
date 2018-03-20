@@ -7,6 +7,7 @@
   "scripts": {
     "build-all": "cross-env TARGET=all webpack",
     "build-web": "cross-env TARGET=web webpack",
+    "build-doc": "typedoc --theme minimal --mode file --name Webvs --module commonjs --exclude node_modules --hideGenerator --out ./doc src",
     "dev": "cross-env TARGET=dev webpack-serve",
     "func-test": "karma start",
     "unit-test": "cross-env TARGET=cjs mocha-webpack \"./test/unit/**/*.ts\"",
@@ -52,6 +53,7 @@
     "ts-loader": "^3.5.0",
     "ts-mockito": "^2.3.0",
     "tslint": "^5.9.1",
+    "typedoc": "^0.11.1",
     "typemoq": "^2.1.0",
     "typescript": "^2.7.1",
     "webpack": "^3.11.0",

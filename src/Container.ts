@@ -4,17 +4,39 @@ import ComponentRegistry from "./ComponentRegistry";
 import IMain from "./IMain";
 import FrameBufferManager from "./webgl/FrameBufferManager";
 
-// A base class for all components that can have sub components.
-// Manages, cloning and component tree operations
+/**
+ * A Base class for all Components that have a sub component.
+ *
+ * Manages, cloning and component tree operations.
+ */
 export default abstract class Container extends Component implements IContainer {
-    public fm: FrameBufferManager;
     protected components: Component[];
+    private fm: FrameBufferManager;
 
+    /**
+     * See [[Component.constructor]]
+     */
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
         delete this.opts.components;
     }
 
+    /**
+     * Returns the FrameBufferManager for this component.
+     *
+     * A container inherits FrameBufferManager from it's own parent
+     * unless explicitly overridden by Subclass
+     */
+    public getFBM(): FrameBufferManager {
+        return this.fm;
+    }
+
+    /**
+     * Initializes Container. Please override to implement component specific initialization
+     *
+     * Container init basically instantiates all subcomponents from the `components` option.
+     * It also initializes the FrameBufferManager to the parent's.
+     */
     public init() {
         const components = [];
         if (this.opts.components) {
@@ -25,9 +47,12 @@ export default abstract class Container extends Component implements IContainer 
             }
         }
         this.components = components;
-        this.fm = this.parent && this.parent.fm;
+        this.fm = this.parent && this.parent.getFBM();
     }
 
+    /**
+     * Destroy all subcomponents and itself.
+     */
     public destroy() {
         super.destroy();
         for (const component of this.components) {
@@ -35,20 +60,26 @@ export default abstract class Container extends Component implements IContainer 
         }
     }
 
-    public createComponent(opts: any): Component {
-        const componentClass = this.main.componentRegistry.getComponentClass(opts.type);
-        return new componentClass(this.main, this, opts);
-    }
-
-    // Adds a component as child of the given parent that
-    // resides under this containers subtree
+    /**
+     * Adds new sub component in this Container
+     *
+     * Once component is inserted, an `addComponent` event is fired with the following arguments:
+     * 1. The newly created component
+     * 2. This container
+     * 3. Additional params passed in to this call
+     *
+     * @param componentOpts options for the new sub-component
+     * @param pos the position at which the sub-component should be inserted. Defaults to appending
+     * @param params additional params to be passed down the the `addComponent` event
+     */
     public addComponent(componentOpts: any, pos: number = this.components.length, params: any = {}): Component {
         let component;
         if (componentOpts instanceof Component) {
             component = componentOpts;
             component.setParent(this);
         } else {
-            component = this.createComponent(componentOpts);
+            const componentClass = this.main.componentRegistry.getComponentClass(componentOpts.type);
+            component = new componentClass(this.main, this, componentOpts);
         }
         this.components.splice(pos, 0, component);
 
@@ -57,12 +88,23 @@ export default abstract class Container extends Component implements IContainer 
         return component;
     }
 
+    /**
+     * Detaches a component from this container and returns it.
+     *
+     * Once component is detached, a `detachComponent` event is fired with following arguments.
+     * 1. The newly created component
+     * 2. This container
+     * 3. Additional params passed in to this call
+     *
+     * @param pos The position from which component should be detached
+     * @param params additional params to be passed down the the `detachComponent` event
+     */
     public detachComponent(pos: number, params: any = {}): Component {
         if (_.isString(pos)) {
             const id = pos;
             let i;
             for (i = 0; i < this.components.length; i++) {
-                if (this.components[i].id === id) {
+                if (this.components[i].getId() === id) {
                     pos = i;
                     break;
                 }
@@ -79,9 +121,13 @@ export default abstract class Container extends Component implements IContainer 
         return component;
     }
 
-    public findComponent(id: string) {
+    /**
+     * Returns a sub-component under hierarchy of this Container with the given id
+     * @param id id of the component to find
+     */
+    public findComponent(id: string): Component {
         for (const component of this.components) {
-            if (component.id === id) {
+            if (component.getId() === id) {
                 return component;
             }
         }
@@ -98,8 +144,9 @@ export default abstract class Container extends Component implements IContainer 
         }
     }
 
-    // Constructs complete options object for this container and its
-    // subtree
+    /**
+     * Returns the JSON representation of the component options.
+     */
     public toJSON(): any {
         const opts = super.toJSON();
 

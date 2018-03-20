@@ -3,29 +3,115 @@ import IMain from "./IMain";
 import Model from "./Model";
 import FrameBufferManager from "./webgl/FrameBufferManager";
 
+/**
+ * Component Class Constructor interface. This declares static member
+ * and constructor signature for a Component class constructor
+ */
 export interface IComponentConstructor {
-    componentName: string;
-    componentTag: string;
+    /**
+     * Component class constructor
+     */
     new(main: IMain, parent: IContainer, opts: any): Component;
+
+    /**
+     * Returns the name of the component
+     */
+    getComponentName(): string;
+
+    /**
+     * Returns a string tag that categorizes the component. e.g. trans, render
+     */
+    getComponentTag(): string;
 }
 
+/**
+ * Conainer interface. This declares members for
+ * Container Components. see [[Container]] for more details.
+ */
 export interface IContainer extends Component {
-    fm: FrameBufferManager;
+    getFBM(): FrameBufferManager;
 }
 
+/**
+ * Base class for all Components.
+ *
+ * Webvs renders visualizations by layering different Components or effects
+ * one after the other. Each Component type will have a different rendering
+ * behaviour which can be configured through the component options. Some
+ * components may have sub components, in which case the rendering of all
+ * the subcomponents is modified/controlled in some manner by the parent.
+ * eg. [[EffectList]], which renders a set of components into a separate
+ * buffer which is then blended back into the main render.
+ *
+ * Options on components can be modified with a [[Model.set]] call. This
+ * allows Components to respond to changes in options in real-time.
+ * Eg: Changing colors, Code etc. This feature can be used to build
+ * Live-Edit User Interfaces for presets development.
+ */
 export default abstract class Component extends Model {
-    public static componentName: string = "Component";
-    public static componentTag: string = "";
+    /**
+     * Returns the name of the component
+     */
+    public static getComponentName(): string {
+        return this.componentName;
+    }
+
+    /**
+     * Returns a string tag that categorizes the component. e.g. trans, render
+     */
+    public static getComponentTag(): string {
+        return this.componentTag;
+    }
+
+    /**
+     * Name of the component.
+     */
+    protected static componentName: string = "Component";
+
+    /**
+     * A string tag that categorizes the component. e.g. trans, render
+     */
+    protected static componentTag: string = "";
+
+    /**
+     * Map from option name to handler methods. The handler methods are
+     * called in order when on an option is updated with a [[Model.set]] call.
+     * This allows component to respond to option changes live. e.g. In a Live-Edit
+     * User Interface for preset development.
+     */
     protected static optUpdateHandlers: {[key: string]: string | string[] } = null;
+
+    /**
+     * Default options for this component
+     */
     protected static defaultOptions: any = {};
-    public id: string;
-    public enabled: boolean;
-    public lastError: any;
+
     public ["constructor"]: typeof Component;
+
+    /**
+     * current options of the component
+     */
     protected opts: any;
+    /**
+     * The main instance that manages this component
+     */
     protected main: IMain;
+    /**
+     * The parent component that manages this component
+     */
     protected parent: IContainer;
 
+    private id: string;
+    private enabled: boolean;
+    private lastError: any;
+
+    /**
+     * Constructs new Component. Components are usually instantated by a [[Container]] component
+     * or [[Main]] in the case of the root [[EffectList]].
+     * @param main the main object that manages this component
+     * @param parent the parent that manages this component
+     * @param options the initial options for this component
+     */
     constructor(main: IMain, parent: IContainer, options: any) {
         super();
         this.main = main;
@@ -47,18 +133,64 @@ export default abstract class Component extends Model {
         this.init();
     }
 
+    /**
+     * Initializes the component. Override this method to add initialization for the
+     * component. Typically you'd call some updateHandlers here to initialize states
+     * from the component options.
+     */
     public abstract init();
+
+    /**
+     * Performs drawing operations. Override to implement drawing for this component.
+     * Typically you'd make some WebGL operations to render to the framebuffer manager
+     * of this components parent.
+     */
     public abstract draw();
 
+    /**
+     * Returns whether this component is enabled or not
+     */
+    public isEnabled(): boolean {
+        return this.enabled;
+    }
+
+    /**
+     * Returns the id of this component
+     */
+    public getId(): string {
+        return this.id;
+    }
+
+    /**
+     * Returns the last error. That raised an `error:*` event
+     */
+    public getLastError(): any {
+        return this.lastError;
+    }
+
+    /**
+     * Destroys and cleansup resources. Please override to
+     * cleanup component specific resources.
+     */
     public destroy() {
         this.stopListening();
     }
 
+    /**
+     * Sets the parent of this component
+     * @param newParent the new parent of this component
+     */
     public setParent(newParent: IContainer) {
         this.parent = newParent;
     }
 
-    public toJSON() {
+    /**
+     * Returns the JSON representation of the component options.
+     *
+     * This value if passed into constructor will instantiate a component
+     * that behaves the same as this component.
+     */
+    public toJSON(): any {
         const opts = _.clone(this.opts);
         opts.id = this.id;
         opts.type = this.constructor.componentName;
@@ -66,7 +198,31 @@ export default abstract class Component extends Model {
         return opts;
     }
 
-    public setAttribute(key: string, value: any, options: any) {
+    /**
+     * returns a component options given name
+     */
+    public get(name: string): any {
+        if (name === "enabled") {
+            return this.enabled;
+        } else if (name === "id") {
+            return this.id;
+        } else {
+            return this.opts[name];
+        }
+    }
+
+    /**
+     * Returns a `/` path to the component from the root.
+     */
+    public getPath(): string {
+        if (!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
+            return this.parent.getPath() + "/" + this.constructor.componentName + "#" + this.id;
+        } else {
+            return this.constructor.componentName + "#Main";
+        }
+    }
+
+    protected setAttribute(key: string, value: any, options: any) {
         const oldValue = this.get(key);
         if (key === "type" || _.isEqual(value, oldValue)) {
             return false;
@@ -111,23 +267,5 @@ export default abstract class Component extends Model {
         }
 
         return true;
-    }
-
-    public get(key): any {
-        if (key === "enabled") {
-            return this.enabled;
-        } else if (key === "id") {
-            return this.id;
-        } else {
-            return this.opts[key];
-        }
-    }
-
-    public getPath(): string {
-        if (!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
-            return this.parent.getPath() + "/" + this.constructor.componentName + "#" + this.id;
-        } else {
-            return this.constructor.componentName + "#Main";
-        }
     }
 }

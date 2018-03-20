@@ -12,7 +12,6 @@ export default abstract class Model extends EventEmitter {
 
     public abstract get(key: string): any;
     public abstract toJSON(key: string): any;
-    public abstract setAttribute(key: string, value: any, options: any): void;
     public set(key: string | object, value: any, options?: any): boolean {
         let success;
 
@@ -69,4 +68,6 @@ export default abstract class Model extends EventEmitter {
             sub.emitter.removeListener(sub.event, sub.callback);
         });
     }
+
+    protected abstract setAttribute(key: string, value: any, options: any): void;
 }
