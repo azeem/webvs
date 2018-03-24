@@ -3,4 +3,5 @@ node_modules
 *.iml
 dist
 .tmp
+.doc
 coverage
