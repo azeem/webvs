@@ -44,7 +44,7 @@ export default class ColorClip extends Component {
     }
 
     public init() {
-        this.program = new ShaderProgram(this.main.rctx, {
+        this.program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
                     color:    { name: "u_color", valueType: WebGLVarType._3FV },
@@ -87,7 +87,7 @@ export default class ColorClip extends Component {
 
     public draw() {
         this.program.run(
-            this.parent.fm,
+            this.parent.getFBM(),
             {
                 color: this.color,
                 level: this.opts.level,

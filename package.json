@@ -12,7 +12,7 @@
     "func-test": "karma start",
     "unit-test": "cross-env TARGET=cjs mocha-webpack \"./test/unit/**/*.ts\"",
     "lint": "tslint -c tslint.json \"src/**/*.ts\" \"test/**/*.ts\"",
-    "clean": "shx rm -rf ./dist ./coverage"
+    "clean": "shx rm -rf ./doc ./dist ./coverage"
   },
   "repository": {
     "type": "git",

@@ -32,7 +32,7 @@ export default class FadeOut extends Component {
     }
 
     public init() {
-        this.program = new ClearScreenProgram(this.main.rctx, BlendModes.AVERAGE);
+        this.program = new ClearScreenProgram(this.main.getRctx(), BlendModes.AVERAGE);
         this.updateSpeed();
         this.updateColor();
     }
@@ -41,7 +41,7 @@ export default class FadeOut extends Component {
         this.frameCount++;
         if (this.frameCount === this.maxFrameCount) {
             this.frameCount = 0;
-            this.program.run(this.parent.fm, { color: this.color });
+            this.program.run(this.parent.getFBM(), { color: this.color });
         }
     }
 

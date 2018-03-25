@@ -33,11 +33,11 @@ import RenderingContext from "./webgl/RenderingContext";
 
 declare var WEBVS_VERSION: string;
 
-/** 
+/**
  * Options for Main constructor
  */
 export interface IMainOpts {
-    /** 
+    /**
      * Canvas element in which the visualization will be rendered
      */
     canvas: HTMLCanvasElement;
@@ -45,31 +45,31 @@ export interface IMainOpts {
      * an analyser that will provide music data for the visualizations
      */
     analyser: AnalyserAdapter;
-    /** 
+    /**
      * show or hide performance stats
      */
     showStat?: boolean;
-    /** 
+    /**
      * Override baked-in resource url prefix for builtin resources
      */
     resourcePrefix?: string;
-    /** 
+    /**
      * Custom requestAnimationFrame. Useful for testing/custom frame-rate control.
      * Use together with [[cancelAnimationFrame]]
      */
     requestAnimationFrame?: (callback: () => void) => any;
-    /** 
+    /**
      * Custom cancelAnimationFrame. Useful for testing/custom frame-rate control.
      * Use together with [[requestAnimationFrame]]
      */
     cancelAnimationFrame?: (reqId: any) => void;
 }
 
-/** 
+/**
  * Main is the primary interface that controls loading of presets, starting stopping animations, etc.
- * It maintains the root Component and the hierarchy of components under it. 
- * A typical usage involves creating an Analyser and a Main object. The Analyser interfaces with your 
- * audio source and generates the visualization data, while the Main object serves as the primary 
+ * It maintains the root Component and the hierarchy of components under it.
+ * A typical usage involves creating an Analyser and a Main object. The Analyser interfaces with your
+ * audio source and generates the visualization data, while the Main object serves as the primary
  * interface for controlling the visualization. E.g:
  * ```
  * const analyser = new Webvs.WebAudioAnalyser();
@@ -101,38 +101,14 @@ export default class Main extends Model implements IMain {
      * version of Webvs library
      */
     public static version: string = WEBVS_VERSION;
-    /**
-     * Analyser instance that's used to get music data for the visualization
-     */
-    public analyser: AnalyserAdapter;
-    /**
-     * Resource Manager that manages media resources
-     */
-    public rsrcMan: ResourceManager;
-    /**
-     * Rendering context for webgl rendering
-     */
-    public rctx: RenderingContext;
-    /**
-     * A shader program that can be used to copy frames
-     */
-    public copier: CopyProgram;
-    /**
-     * A registry of [[Component]] classes that will be used to create preset effects
-     */
-    public componentRegistry: ComponentRegistry;
-    /**
-     * A manager for temporary buffers.
-     */
-    public tempBuffers: FrameBufferManager;
-    /**
-     * Map of shared register values available in EEL code in components.
-     */
-    public registerBank: {[key: string]: number};
-    /**
-     * Timestamp at which Main was constructed
-     */
-    public bootTime: number;
+    private analyser: AnalyserAdapter;
+    private rsrcMan: ResourceManager;
+    private rctx: RenderingContext;
+    private copier: CopyProgram;
+    private componentRegistry: ComponentRegistry;
+    private tempBuffers: FrameBufferManager;
+    private registerBank: {[key: string]: number};
+    private bootTime: number;
 
     private canvas: HTMLCanvasElement;
     private isStarted: boolean;
@@ -185,10 +161,10 @@ export default class Main extends Model implements IMain {
         this._setupRoot({id: "root"});
     }
 
-    /** 
-     * Starts running the animation when ready. The animation may not start 
-     * playing immediately because preset may use external resources which 
-     * needs to be loaded asynchronously by the resource manager. 
+    /**
+     * Starts running the animation when ready. The animation may not start
+     * playing immediately because preset may use external resources which
+     * needs to be loaded asynchronously by the resource manager.
      */
     public start() {
         if (this.isStarted) {
@@ -200,7 +176,7 @@ export default class Main extends Model implements IMain {
         }
     }
 
-    /** 
+    /**
      * Stops the animation
      */
     public stop() {
@@ -215,13 +191,13 @@ export default class Main extends Model implements IMain {
 
     /**
      * Loads a preset into this webvs main instance.
-     * 
-     * @param preset an object that contains the preset. The root object should 
-     * have a `components` property which will contain an Array for component configurations 
-     * for all the components. All component configurations should have a 
-     * `type` property containing the string name of the Component. Other 
-     * properties are specific to each component. The `resources.uris` property 
-     * in preset is used to register resources with [[ResourceManager]] and has 
+     *
+     * @param preset an object that contains the preset. The root object should
+     * have a `components` property which will contain an Array for component configurations
+     * for all the components. All component configurations should have a
+     * `type` property containing the string name of the Component. Other
+     * properties are specific to each component. The `resources.uris` property
+     * in preset is used to register resources with [[ResourceManager]] and has
      * the same format accepted by the [[ResourceManager.registerUri]].
      */
     public loadPreset(preset: any) {
@@ -244,8 +220,8 @@ export default class Main extends Model implements IMain {
         this._setupRoot(preset);
     }
 
-    /** 
-     * Resets and reinitializes all the components and canvas. 
+    /**
+     * Resets and reinitializes all the components and canvas.
      */
     public resetCanvas() {
         const preset = this.rootComponent.toJSON();
@@ -255,13 +231,13 @@ export default class Main extends Model implements IMain {
         this._setupRoot(preset);
     }
 
-    /** 
-     * This function should be called if the canvas element's 
-     * width or height attribute has changed. This allows Webvs 
-     * to update and resize all the buffers. 
+    /**
+     * This function should be called if the canvas element's
+     * width or height attribute has changed. This allows Webvs
+     * to update and resize all the buffers.
      */
     public notifyResize() {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         this.tempBuffers.resize();
         this.emit("resize", gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -295,7 +271,7 @@ export default class Main extends Model implements IMain {
         }
     }
 
-    /** 
+    /**
      * Generates and returns the instantaneous preset JSON representation
      * @returns JSON representaton of the preset
      */
@@ -325,6 +301,49 @@ export default class Main extends Model implements IMain {
         this.canvas.removeEventListener("webglcontextrestored", this.contextRestoredHander);
     }
 
+    /**
+     * Returns the rendering context for webgl rendering
+     */
+    public getRctx(): RenderingContext { return this.rctx; }
+
+    /**
+     * Returns the Resource Manager that manages media resources
+     */
+    public getRsrcMan(): ResourceManager { return this.rsrcMan; }
+
+    /**
+     * Returns A shader program that can be used to copy frames
+     */
+    public getCopier(): CopyProgram { return this.copier; }
+
+    /**
+     * Returns the analyser instance that's used to get music data
+     * for the visualization
+     */
+    public getAnalyser(): AnalyserAdapter { return this.analyser; }
+
+    /**
+     * Returns a registry of [[Component]] classes that will be used
+     * to create preset effects
+     */
+    public getComponentRegistry(): ComponentRegistry { return this.componentRegistry; }
+    /**
+     * Returns a FrameBufferManager for global temporary buffers, that can
+     * be shared between components.
+     */
+    public getTempFBM(): FrameBufferManager { return this.tempBuffers; }
+
+    /**
+     * Returns register bank, a map of shared register values available
+     * in EEL code in components.
+     */
+    public getRegisterBank(): {[key: string]: number} {return this.registerBank; }
+
+    /**
+     * Returns the timestamp at which this instance was constructed
+     */
+    public getBootTime(): number {return this.bootTime; }
+
     protected setAttribute(key: string, value: any, options: any) {
         if (key === "meta") {
             this.meta = value;
@@ -332,7 +351,6 @@ export default class Main extends Model implements IMain {
         }
         return false;
     }
-
 
     // event handlers
     private handleRsrcWait() {

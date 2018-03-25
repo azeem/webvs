@@ -53,7 +53,7 @@ export default class Convolution extends Component {
     }
 
     public draw() {
-        this.program.run(this.parent.fm, { scale: this.scale, bias: this.opts.bias });
+        this.program.run(this.parent.getFBM(), { scale: this.scale, bias: this.opts.bias });
     }
 
     public destroy() {
@@ -108,7 +108,7 @@ export default class Convolution extends Component {
             }
         }
 
-        const program = new ShaderProgram(this.main.rctx, {
+        const program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
                     bias: { name: "u_bias", valueType: WebGLVarType._1F },

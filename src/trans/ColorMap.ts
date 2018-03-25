@@ -64,7 +64,7 @@ export default class ColorMap extends Component {
     }
 
     public init() {
-        this.program = new ShaderProgram(this.main.rctx, {
+        this.program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
                     colorMap: { name: "u_colorMap", valueType: WebGLVarType.TEXTURE2D },
@@ -96,7 +96,7 @@ export default class ColorMap extends Component {
     }
 
     public draw() {
-        if (this.main.analyser.beat) {
+        if (this.main.getAnalyser().isBeat()) {
             if (this.mapCycleMode ===  MapCycleModes.ONBEATRANDOM) {
                 this.currentMap = Math.floor(Math.random() * this.opts.maps.length);
             } else if (this.mapCycleMode === MapCycleModes.ONBEATSEQUENTIAL) {
@@ -104,7 +104,7 @@ export default class ColorMap extends Component {
             }
         }
         this.program.run(
-            this.parent.fm,
+            this.parent.getFBM(),
             {
                 colorMap: this.colorMaps[this.currentMap],
                 key: this.key,
@@ -117,14 +117,14 @@ export default class ColorMap extends Component {
         super.destroy();
         this.program.destroy();
         _.each(this.colorMaps, (tex) => {
-            this.main.rctx.gl.deleteTexture(tex);
+            this.main.getRctx().getGl().deleteTexture(tex);
         });
     }
 
     private updateMap() {
         if (this.colorMaps) {
             _.each(this.colorMaps, (tex) => {
-                this.main.rctx.gl.deleteTexture(tex);
+                this.main.getRctx().getGl().deleteTexture(tex);
             });
         }
         this.colorMaps = _.map(this.opts.maps, (map) => this._buildColorMap(map));
@@ -144,7 +144,7 @@ export default class ColorMap extends Component {
     }
 
     private _buildColorMap(map: IColorMapItem[]): WebGLTexture {
-        const gl = this.main.rctx.gl;
+        const gl = this.main.getRctx().getGl();
         map = _.sortBy(map, (mapItem) => mapItem.index);
 
         // check for repeated indices

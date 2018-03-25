@@ -1,5 +1,5 @@
 import IMain from "../../../src/IMain";
-import { mainTest, makeSinglePreset } from "../funcTestUtils";
+import { mainTest, makeSinglePreset, MockAnalyser } from "../funcTestUtils";
 
 describe("Mosaic", () => {
     const makeMosaicPreset = (opts) => makeSinglePreset("Mosaic", opts, 1);
@@ -26,7 +26,7 @@ describe("Mosaic", () => {
             expectImageSrc: "Mosaic_3.png",
             frameCount: 5,
             onFrame: (main: IMain, frame: number) => {
-                main.analyser.beat = frame === 0;
+                (main.getAnalyser() as MockAnalyser).setBeat(frame === 0);
             },
             preset: makeMosaicPreset({
                 onBeatSizeChange: true,

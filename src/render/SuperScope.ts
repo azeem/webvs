@@ -118,8 +118,8 @@ export default class SuperScope extends Component {
         this.updateThickness();
         this.listenTo(this.main, "resize", this.handleResize);
 
-        this.pointBuffer = new Buffer(this.main.rctx);
-        this.colorBuffer = new Buffer(this.main.rctx);
+        this.pointBuffer = new Buffer(this.main.getRctx());
+        this.colorBuffer = new Buffer(this.main.getRctx());
     }
 
     public draw() {
@@ -142,7 +142,7 @@ export default class SuperScope extends Component {
      * @memberof Webvs.SuperScope#
      */
     private drawScope(code: ISSCodeInstance, color: Color, runInit: boolean) {
-        const gl = this.main.rctx.gl;
+        const gl = this.main.getRctx().getGl();
 
         code.red = color[0];
         code.green = color[1];
@@ -152,7 +152,7 @@ export default class SuperScope extends Component {
             code.init();
         }
 
-        const beat = this.main.analyser.beat;
+        const beat = this.main.getAnalyser().isBeat();
         code.b = beat ? 1 : 0;
         code.perFrame();
         if (beat) {
@@ -162,9 +162,9 @@ export default class SuperScope extends Component {
         const nPoints = Math.floor(code.n);
         let data;
         if (this.source === Source.SPECTRUM) {
-            data = this.main.analyser.getSpectrum(this.channel);
+            data = this.main.getAnalyser().getSpectrum(this.channel);
         } else {
-            data = this.main.analyser.getWaveform(this.channel);
+            data = this.main.getAnalyser().getWaveform(this.channel);
         }
         const dots = this.drawMode === DrawModes.DOTS;
         const bucketSize = data.length / nPoints;
@@ -305,7 +305,7 @@ export default class SuperScope extends Component {
         this.colorBuffer.setData(colorData);
 
         this.program.run(
-            this.parent.fm,
+            this.parent.getFBM(),
             {
                 colors: this.colorBuffer,
                 drawTriangles: this.veryThick,
@@ -318,7 +318,7 @@ export default class SuperScope extends Component {
 
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
-        const program = new ShaderProgram<ISuperScopeShaderValues>(this.main.rctx, {
+        const program = new ShaderProgram<ISuperScopeShaderValues>(this.main.getRctx(), {
             bindings: {
                 attribs: {
                     colors: { name: "a_color", size: 3 },
@@ -420,7 +420,7 @@ export default class SuperScope extends Component {
 
     private updateThickness() {
         let range;
-        const gl = this.main.rctx.gl;
+        const gl = this.main.getRctx().getGl();
         if (this.drawMode === DrawModes.DOTS) {
             range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
         } else {
@@ -454,7 +454,7 @@ export default class SuperScope extends Component {
 
     private handleResize() {
         _.each(this.code, (code) => {
-            code.updateDimVars(this.main.rctx.gl);
+            code.updateDimVars(this.main.getRctx().getGl());
         });
     }
 }

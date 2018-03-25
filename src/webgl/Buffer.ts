@@ -8,7 +8,7 @@ export default class Buffer {
     private glBuffer: WebGLBuffer;
 
     constructor(rctx: RenderingContext, isElemArray: boolean = false, data?: number[] | TypedArray) {
-        const gl = rctx.gl;
+        const gl = rctx.getGl();
         this.type = isElemArray ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER;
         this.rctx = rctx;
         this.glBuffer = gl.createBuffer();
@@ -22,7 +22,7 @@ export default class Buffer {
         if (!isTypedArray(array)) {
             array = new Float32Array(array);
         }
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         this.length = array.length;
         gl.bindBuffer(this.type, this.glBuffer);
         gl.bufferData(this.type, array, gl.STATIC_DRAW);
@@ -33,6 +33,6 @@ export default class Buffer {
     }
 
     public destroy() {
-        this.rctx.gl.deleteBuffer(this.glBuffer);
+        this.rctx.getGl().deleteBuffer(this.glBuffer);
     }
 }

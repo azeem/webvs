@@ -190,7 +190,7 @@ export default class ShaderProgram<ValueType = any> {
 
     // Runs this shader program
     public run(fm: FrameBufferManager, values: ValueType, blendMode: BlendModes = null, blendValue: number = null) {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         const oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
 
@@ -231,7 +231,7 @@ export default class ShaderProgram<ValueType = any> {
     public getLocation(name: string, attrib: boolean = false): number | WebGLUniformLocation {
         let location = this.locations[name];
         if (typeof location === "undefined") {
-            const gl = this.rctx.gl;
+            const gl = this.rctx.getGl();
             if (attrib) {
                 location = gl.getAttribLocation(this.program, name);
             } else {
@@ -255,7 +255,7 @@ export default class ShaderProgram<ValueType = any> {
     // binds value of a uniform variable in this program
     public setUniform(name: string, type: WebGLVarType, ...values) {
         const location = this.getLocation(name);
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         switch (type) {
             case "texture2D":
                 const id = this.getTextureId(name);
@@ -279,7 +279,7 @@ export default class ShaderProgram<ValueType = any> {
     }
 
     public setIndex(buffer: Buffer) {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.getGlBuffer());
     }
 
@@ -287,12 +287,12 @@ export default class ShaderProgram<ValueType = any> {
         name: string,
         buffer: Buffer,
         size: number = 2,
-        type: number = this.rctx.gl.FLOAT,
+        type: number = this.rctx.getGl().FLOAT,
         normalized: boolean = false,
         stride: number = 0,
         offset: number = 0,
     ) {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         const location = this.getLocation(name, true) as number;
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer.getGlBuffer());
         gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
@@ -302,13 +302,13 @@ export default class ShaderProgram<ValueType = any> {
 
     public disableAttrib(name: string) {
         const location = this.getLocation(name, true) as number;
-        this.rctx.gl.disableVertexAttribArray(location);
+        this.rctx.getGl().disableVertexAttribArray(location);
     }
 
     // destroys webgl resources consumed by this program.
     // call in component destroy
     public destroy() {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         gl.deleteProgram(this.program);
         gl.deleteShader(this.vertex);
         gl.deleteShader(this.fragment);
@@ -319,7 +319,7 @@ export default class ShaderProgram<ValueType = any> {
     }
 
     private _compile() {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         const vertex = this._compileShader(this.vertexSrc, gl.VERTEX_SHADER);
         const fragment = this._compileShader(this.fragmentSrc, gl.FRAGMENT_SHADER);
         const program = gl.createProgram();
@@ -337,7 +337,7 @@ export default class ShaderProgram<ValueType = any> {
     }
 
     private _compileShader(shaderSrc: string, type: number): WebGLShader {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         const shader = gl.createShader(type);
         gl.shaderSource(shader, shaderSrc);
         gl.compileShader(shader);
@@ -408,7 +408,7 @@ export default class ShaderProgram<ValueType = any> {
             }
         }
 
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         let drawHandled = false;
         if (this.drawHook) {
             drawHandled = !this.drawHook(values, gl, this);
@@ -427,7 +427,7 @@ export default class ShaderProgram<ValueType = any> {
     }
 
     private _setGlBlendMode(mode, blendValue) {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         switch (mode) {
             case BlendModes.ADDITIVE:
                 gl.enable(gl.BLEND);

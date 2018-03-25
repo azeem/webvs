@@ -41,7 +41,7 @@ export default class ChannelShift extends Component {
     }
 
     public init() {
-        this.program = new ShaderProgram(this.main.rctx, {
+        this.program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
                     channel: { name: "u_channel", valueType: WebGLVarType._1I },
@@ -66,10 +66,10 @@ export default class ChannelShift extends Component {
     }
 
     public draw() {
-        if (this.opts.onBeatRandom && this.main.analyser.beat) {
+        if (this.opts.onBeatRandom && this.main.getAnalyser().isBeat()) {
             this.channel = Math.floor(Math.random() * ShiftChannelsKeys.length);
         }
-        this.program.run(this.parent.fm, { channel: this.channel });
+        this.program.run(this.parent.getFBM(), { channel: this.channel });
     }
 
     public destroy() {

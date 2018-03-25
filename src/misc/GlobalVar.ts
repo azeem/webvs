@@ -49,14 +49,14 @@ export default class GlobalVar extends Component {
 
     public draw() {
         const code = this.code;
-        code.b = this.main.analyser.beat ? 1 : 0;
+        code.b = this.main.getAnalyser().isBeat() ? 1 : 0;
 
         if (!this.inited) {
             code.init();
             this.inited = true;
         }
 
-        if (this.main.analyser.beat) {
+        if (this.main.getAnalyser().isBeat()) {
             code.onBeat();
         }
 
@@ -70,6 +70,6 @@ export default class GlobalVar extends Component {
     }
 
     public handleResize() {
-        this.code.updateDimVars(this.main.rctx.gl);
+        this.code.updateDimVars(this.main.getRctx().getGl());
     }
 }

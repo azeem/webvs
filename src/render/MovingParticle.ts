@@ -56,8 +56,8 @@ export default class MovingParticle extends Component {
         this.posY = 0;
 
         this.updateBlendMode();
-        const gl = this.main.rctx.gl;
-        this.program = new ShaderProgram(this.main.rctx, {
+        const gl = this.main.getRctx().getGl();
+        this.program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 attribs: {
                     points: { name: "a_points", drawMode: gl.TRIANGLE_FAN },
@@ -89,7 +89,7 @@ export default class MovingParticle extends Component {
     }
 
     public draw() {
-        if (this.main.analyser.beat) {
+        if (this.main.getAnalyser().isBeat()) {
             this.centerX = (Math.random() * 2 - 1) * 0.3;
             this.centerY = (Math.random() * 2 - 1) * 0.3;
         }
@@ -108,22 +108,22 @@ export default class MovingParticle extends Component {
 
         let scaleX;
         let scaleY;
-        if (this.opts.onBeatSizeChange && this.main.analyser.beat) {
+        if (this.opts.onBeatSizeChange && this.main.getAnalyser().isBeat()) {
             scaleX = this.opts.onBeatParticleSize;
             scaleY = this.opts.onBeatParticleSize;
         } else {
             scaleX = this.opts.particleSize;
             scaleY = this.opts.particleSize;
         }
-        const gl = this.main.rctx.gl;
+        const gl = this.main.getRctx().getGl();
         scaleX = 2 * scaleX / gl.drawingBufferWidth;
         scaleY = 2 * scaleY / gl.drawingBufferHeight;
 
         this.program.run(
-            this.parent.fm,
+            this.parent.getFBM(),
             {
                 color: this.color,
-                points: circleGeometry(this.main.rctx),
+                points: circleGeometry(this.main.getRctx()),
                 position: [x, y],
                 scale: [scaleX, scaleY],
             },

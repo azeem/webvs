@@ -57,22 +57,23 @@ export default class BufferSave extends Component {
             currentAction = this.action;
         }
 
-        const fm = this.main.tempBuffers;
+        const fm = this.main.getTempFBM();
         switch (currentAction) {
             case Actions.SAVE:
                 fm.setRenderTarget(this.opts.bufferId);
-                this.main.copier.run(null, { srcTexture: this.parent.fm.getCurrentTexture() });
+                this.main.getCopier().run(null, { srcTexture: this.parent.getFBM().getCurrentTexture() });
                 fm.restoreRenderTarget();
                 break;
             case Actions.RESTORE:
-                this.main.copier.run(this.parent.fm, { srcTexture: fm.getTexture(this.opts.bufferId) }, this.blendMode);
+                this.main.getCopier().run(
+                    this.parent.getFBM(), { srcTexture: fm.getTexture(this.opts.bufferId) }, this.blendMode);
                 break;
         }
     }
 
     public destroy() {
         super.destroy();
-        this.main.tempBuffers.removeTexture(this.opts.bufferId);
+        this.main.getTempFBM().removeTexture(this.opts.bufferId);
     }
 
     public updateAction() {
@@ -89,9 +90,9 @@ export default class BufferSave extends Component {
         // converting to string to maintain backward compatibility
         this.opts.bufferId = this.opts.bufferId + "";
         if (oldValue) {
-            this.main.tempBuffers.removeTexture(oldValue);
+            this.main.getTempFBM().removeTexture(oldValue);
         }
-        this.main.tempBuffers.addTexture(this.opts.bufferId);
+        this.main.getTempFBM().addTexture(this.opts.bufferId);
     }
 
     public updateBlendMode() {

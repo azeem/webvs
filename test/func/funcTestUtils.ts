@@ -6,8 +6,9 @@ import Main from "../../src/Main";
 import { clamp, glslFloatRepr, noop } from "../../src/utils";
 import ShaderProgram from "../../src/webgl/ShaderProgram";
 
-class MockAnalyser extends AnalyserAdapter {
+export class MockAnalyser extends AnalyserAdapter {
     private sineData: Float32Array;
+    private beat: boolean;
 
     constructor() {
         super();
@@ -16,6 +17,14 @@ class MockAnalyser extends AnalyserAdapter {
             data[i] = Math.sin((i / 512) * Math.PI) * 2 - 1;
         }
         this.sineData = data;
+    }
+
+    public setBeat(beat: boolean) {
+        this.beat = beat;
+    }
+
+    public isBeat() {
+        return this.beat;
     }
 
     // tslint:disable-next-line:no-empty
@@ -51,11 +60,11 @@ class TestPattern extends Component {
     }
 
     public draw() {
-        this.program.run(this.parent.fm, {});
+        this.program.run(this.parent.getFBM(), {});
     }
 
     private updateProgram() {
-        const program = new ShaderProgram(this.main.rctx, {
+        const program = new ShaderProgram(this.main.getRctx(), {
             fragmentShader: `
                 void main() {
                    setFragColor(vec4(v_position, ${glslFloatRepr(this.opts.blue)}, 1));
@@ -209,13 +218,13 @@ export async function mainTest(opts: IMainTestOpts) {
         if (onInit) {
             onInit(main);
         }
-        main.componentRegistry.addComponent(TestPattern);
+        main.getComponentRegistry().addComponent(TestPattern);
         main.loadPreset(preset);
         main.start();
     });
     const testMain = await runMain;
     try {
-        imageFuzzyOk(testMain.rctx.gl, canvas, expectImage, opts.distanceThreshold, opts.mismatchThreshold);
+        imageFuzzyOk(testMain.getRctx().getGl(), canvas, expectImage, opts.distanceThreshold, opts.mismatchThreshold);
     } finally {
         testMain.destroy();
         canvas.remove();

@@ -122,15 +122,15 @@ export default class CodeInstance {
 
     // initializes this codeinstance
     public setup(main: IMain) {
-        this.registerBank = main.registerBank;
-        this.bootTime = main.bootTime;
-        this.analyser = main.analyser;
-        this.updateDimVars(main.rctx.gl);
+        this.registerBank = main.getRegisterBank();
+        this.bootTime = main.getBootTime();
+        this.analyser = main.getAnalyser();
+        this.updateDimVars(main.getRctx().getGl());
 
         // clear all used registers
         _.each(this.registerUsages, (name) => {
-            if (!_.has(main.registerBank, name)) {
-                main.registerBank[name] = 0;
+            if (!_.has(this.registerBank, name)) {
+                this.registerBank[name] = 0;
             }
         });
     }

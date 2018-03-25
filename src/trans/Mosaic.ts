@@ -42,8 +42,8 @@ export default class Mosaic extends Component {
     }
 
     public draw() {
-        const gl = this.main.rctx.gl;
-        if (this.opts.onBeatSizeChange && this.main.analyser.beat) {
+        const gl = this.main.getRctx().getGl();
+        if (this.opts.onBeatSizeChange && this.main.getAnalyser().isBeat()) {
             this.size = this.opts.onBeatSquareSize;
             this.frameCount = this.opts.onBeatSizeDuration;
         }
@@ -51,7 +51,7 @@ export default class Mosaic extends Component {
         if (this.size !== 0) {
             const sizeX = 1 / Math.floor(this.size * (gl.drawingBufferWidth - 1) + 1);
             const sizeY = 1 / Math.floor(this.size * (gl.drawingBufferHeight - 1) + 1);
-            this.program.run(this.parent.fm, { size: [sizeX, sizeY] });
+            this.program.run(this.parent.getFBM(), { size: [sizeX, sizeY] });
         }
 
         if (this.frameCount > 0) {
@@ -73,7 +73,7 @@ export default class Mosaic extends Component {
 
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
-        const program = new ShaderProgram(this.main.rctx, {
+        const program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
                     size: { name: "u_size", valueType: WebGLVarType._2FV },

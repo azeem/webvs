@@ -1,5 +1,5 @@
 import IMain from "../../../src/IMain";
-import { mainTest } from "../funcTestUtils";
+import { mainTest, MockAnalyser } from "../funcTestUtils";
 
 describe("ClearScreen", () => {
     function makeClearScreenPreset(beatCount = 0) {
@@ -24,7 +24,7 @@ describe("ClearScreen", () => {
             expectImageSrc: "ClearScreen_1.png",
             frameCount: 8,
             onFrame: (main: IMain, frame: number) => {
-                main.analyser.beat = (frame % 2) === 0;
+                (main.getAnalyser() as MockAnalyser).setBeat((frame % 2) === 0);
             },
             preset: makeClearScreenPreset(5),
         });
@@ -35,7 +35,7 @@ describe("ClearScreen", () => {
             expectImageSrc: "Cyan.png",
             frameCount: 9,
             onFrame: (main: IMain, frame: number) => {
-                main.analyser.beat = (frame % 2) === 0;
+                (main.getAnalyser() as MockAnalyser).setBeat((frame % 2) === 0);
             },
             preset: makeClearScreenPreset(5),
         });

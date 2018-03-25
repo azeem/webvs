@@ -6,12 +6,15 @@ export enum Channel {
     RIGHT,
 }
 
-// AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
-// Adapters extend this class and define the required methods.
+/**
+ * AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
+ *
+ * Implement this to send music data into webvs
+ */
 export default abstract class AnalyserAdapter {
     // boolean value indicating whether a beat
     // is in progress or not
-    public beat = false;
+    public abstract isBeat(): boolean;
 
     // Called every frame. Override and implement analyser code
     public abstract update(): void;

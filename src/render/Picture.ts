@@ -36,8 +36,8 @@ export default class Picture extends Component {
     }
 
     public init() {
-        const gl = this.main.rctx.gl;
-        this.program = new ShaderProgram(this.main.rctx, {
+        const gl = this.main.getRctx().getGl();
+        this.program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 attribs: {
                     points: { name: "a_texVertex", drawMode: gl.TRIANGLES },
@@ -73,11 +73,11 @@ export default class Picture extends Component {
 
     public draw() {
         this.program.run(
-            this.parent.fm,
+            this.parent.getFBM(),
             {
                 image: this.texture,
                 imageRes: [this.width, this.height],
-                points: squareGeometry(this.main.rctx, true),
+                points: squareGeometry(this.main.getRctx(), true),
                 position: [this.opts.x, -this.opts.y],
             },
         );
@@ -86,12 +86,12 @@ export default class Picture extends Component {
     public destroy() {
         super.destroy();
         this.program.destroy();
-        this.main.rctx.gl.deleteTexture(this.texture);
+        this.main.getRctx().getGl().deleteTexture(this.texture);
     }
 
     public updateImage() {
-        const gl = this.main.rctx.gl;
-        this.main.rsrcMan.getImage(
+        const gl = this.main.getRctx().getGl();
+        this.main.getRsrcMan().getImage(
             this.opts.src,
             (image) => {
                 this.width = image.width;

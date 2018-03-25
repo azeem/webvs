@@ -85,13 +85,13 @@ export default class Texer extends Component {
 
     public handleResize() {
         for (const codeInst of this.code) {
-            codeInst.updateDimVars(this.main.rctx.gl);
+            codeInst.updateDimVars(this.main.getRctx().getGl());
         }
     }
 
     public init() {
-        const rctx = this.main.rctx;
-        const gl = this.main.rctx.gl;
+        const rctx = this.main.getRctx();
+        const gl = this.main.getRctx().getGl();
         this.program = new ShaderProgram(rctx, {
             bindings: {
                 attribs: {
@@ -158,7 +158,7 @@ export default class Texer extends Component {
     }
 
     public destroy() {
-        const gl = this.main.rctx.gl;
+        const gl = this.main.getRctx().getGl();
         super.destroy();
         this.program.destroy();
         gl.deleteTexture(this.texture);
@@ -184,8 +184,8 @@ export default class Texer extends Component {
     }
 
     private updateImage() {
-        const gl = this.main.rctx.gl;
-        this.main.rsrcMan.getImage(
+        const gl = this.main.getRctx().getGl();
+        this.main.getRsrcMan().getImage(
             this.opts.imageSrc,
             (image) => {
                 this.imageWidth = image.width;
@@ -210,12 +210,12 @@ export default class Texer extends Component {
     }
 
     private _drawScope(code: ITexerCodeInstance, runInit: boolean) {
-        const gl = this.main.rctx.gl;
+        const gl = this.main.getRctx().getGl();
         if (runInit) {
             code.init();
         }
 
-        const beat = this.main.analyser.beat;
+        const beat = this.main.getAnalyser().isBeat();
         code.b = beat ? 1 : 0;
         code.perFrame();
         if (beat) {
@@ -225,9 +225,9 @@ export default class Texer extends Component {
         const nPoints = Math.floor(code.n);
         let data;
         if (this.source === Source.SPECTRUM) {
-            data = this.main.analyser.getSpectrum();
+            data = this.main.getAnalyser().getSpectrum();
         } else {
-            data = this.main.analyser.getWaveform();
+            data = this.main.getAnalyser().getWaveform();
         }
         const bucketSize = data.length / nPoints;
 
@@ -331,7 +331,7 @@ export default class Texer extends Component {
             this.colorBuffer.setData(colorData);
         }
         this.program.run(
-            this.parent.fm,
+            this.parent.getFBM(),
             {
                 colorFilter: colorData ? 1 : 0,
                 colors: colorData ? this.colorBuffer : null,

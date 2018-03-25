@@ -2,7 +2,7 @@ import * as seedrandom from "seedrandom";
 import Component from "../../../src/Component";
 import IMain from "../../../src/IMain";
 import ShaderProgram from "../../../src/webgl/ShaderProgram";
-import { mainTest } from "../funcTestUtils";
+import { mainTest, MockAnalyser } from "../funcTestUtils";
 
 class QuadrantColorComponent extends Component {
     public static componentName: string = "QuadrantColor";
@@ -10,7 +10,7 @@ class QuadrantColorComponent extends Component {
     private program: ShaderProgram;
 
     public init() {
-        this.program = new ShaderProgram(this.main.rctx, {
+        this.program = new ShaderProgram(this.main.getRctx(), {
             fragmentShader: `
                 void main() {
                     if(v_position.x < 0.5 && v_position.y < 0.5) {
@@ -31,7 +31,7 @@ class QuadrantColorComponent extends Component {
     }
 
     public draw() {
-        this.program.run(this.parent.fm, {});
+        this.program.run(this.parent.getFBM(), {});
     }
 }
 
@@ -56,7 +56,7 @@ describe("Mirror", () => {
             frameCount,
             onFrame,
             onInit: (main: IMain) => {
-                main.componentRegistry.addComponent(QuadrantColorComponent);
+                main.getComponentRegistry().addComponent(QuadrantColorComponent);
             },
             preset: {
                 components: [
@@ -78,9 +78,9 @@ describe("Mirror", () => {
             5,
             (main, frame) => {
                 if (frame === 0) {
-                    main.analyser.beat = true;
+                    (main.getAnalyser() as MockAnalyser).setBeat(true);
                 } else {
-                    main.analyser.beat = false;
+                    (main.getAnalyser() as MockAnalyser).setBeat(false);
                 }
             },
         );
@@ -100,9 +100,9 @@ describe("Mirror", () => {
             15,
             (main, frame) => {
                 if (frame === 0 || frame === 10) {
-                    main.analyser.beat = true;
+                    (main.getAnalyser() as MockAnalyser).setBeat(true);
                 } else {
-                    main.analyser.beat = false;
+                    (main.getAnalyser() as MockAnalyser).setBeat(false);
                 }
             },
         );

@@ -41,7 +41,7 @@ export default abstract class Container extends Component implements IContainer 
         const components = [];
         if (this.opts.components) {
             for (const opts of this.opts.components) {
-                const componentClass = this.main.componentRegistry.getComponentClass(opts.type);
+                const componentClass = this.main.getComponentRegistry().getComponentClass(opts.type);
                 const component = new componentClass(this.main, this, opts);
                 components.push(component);
             }
@@ -78,7 +78,7 @@ export default abstract class Container extends Component implements IContainer 
             component = componentOpts;
             component.setParent(this);
         } else {
-            const componentClass = this.main.componentRegistry.getComponentClass(componentOpts.type);
+            const componentClass = this.main.getComponentRegistry().getComponentClass(componentOpts.type);
             component = new componentClass(this.main, this, componentOpts);
         }
         this.components.splice(pos, 0, component);
@@ -155,5 +155,13 @@ export default abstract class Container extends Component implements IContainer 
             opts.components.push(component.toJSON());
         }
         return opts;
+    }
+
+    /**
+     * sets the frambuffer manager for this container
+     * @param fm the frambuffermanager
+     */
+    protected setFBM(fm: FrameBufferManager) {
+        this.fm = fm;
     }
 }

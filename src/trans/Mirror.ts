@@ -81,7 +81,7 @@ export default class Mirror extends Component {
     }
 
     public init() {
-        this.program = new ShaderProgram(this.main.rctx, {
+        this.program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
                     mix0: { name: "u_mix0", valueType: WebGLVarType._4FV },
@@ -149,11 +149,11 @@ export default class Mirror extends Component {
     }
 
     public draw() {
-        if (this.opts.onBeatRandom && this.main.analyser.beat) {
+        if (this.opts.onBeatRandom && this.main.getAnalyser().isBeat()) {
             this._setQuadrantMap(true);
         }
 
-        this.program.run(this.parent.fm, {
+        this.program.run(this.parent.getFBM(), {
             mix0: this.mix[0],
             mix1: this.mix[1],
             mix2: this.mix[2],

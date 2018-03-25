@@ -48,18 +48,18 @@ export default class ClearScreen extends Component {
         if (this.opts.beatCount === 0) {
             clear = true;
         } else {
-            if (this.main.analyser.beat && !this.prevBeat) {
+            if (this.main.getAnalyser().isBeat() && !this.prevBeat) {
                 this.beatCount++;
                 if (this.beatCount >= this.opts.beatCount) {
                     clear = true;
                     this.beatCount = 0;
                 }
             }
-            this.prevBeat = this.main.analyser.beat;
+            this.prevBeat = this.main.getAnalyser().isBeat();
         }
 
         if (clear) {
-            this.program.run(this.parent.fm, {color: this.color});
+            this.program.run(this.parent.getFBM(), {color: this.color});
         }
     }
 
@@ -74,7 +74,7 @@ export default class ClearScreen extends Component {
 
     public updateProgram() {
         const blendMode = BlendModes[this.opts.blendMode];
-        const program = new ClearScreenProgram(this.main.rctx, blendMode);
+        const program = new ClearScreenProgram(this.main.getRctx(), blendMode);
         if (this.program) {
             this.program.destroy();
         }

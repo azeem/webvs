@@ -6,13 +6,45 @@ import CopyProgram from "./webgl/CopyProgram";
 import FrameBufferManager from "./webgl/FrameBufferManager";
 import RenderingContext from "./webgl/RenderingContext";
 
+/**
+ * Interface for [[Main]] like objects. This is
+ * used by Components to refer to main, avoiding circular references
+ */
 export default interface IMain extends Model {
-    rctx: RenderingContext;
-    rsrcMan: ResourceManager;
-    copier: CopyProgram;
-    analyser: AnalyserAdapter;
-    componentRegistry: ComponentRegistry;
-    tempBuffers: FrameBufferManager;
-    registerBank: {[key: string]: number};
-    bootTime: number;
+    /**
+     * Returns the rendering context for webgl rendering
+     */
+    getRctx(): RenderingContext;
+    /**
+     * Returns the Resource Manager that manages media resources
+     */
+    getRsrcMan(): ResourceManager;
+    /**
+     * Returns A shader program that can be used to copy frames
+     */
+    getCopier(): CopyProgram;
+    /**
+     * Returns the analyser instance that's used to get music data
+     * for the visualization
+     */
+    getAnalyser(): AnalyserAdapter;
+    /**
+     * Returns a registry of [[Component]] classes that will be used
+     * to create preset effects
+     */
+    getComponentRegistry(): ComponentRegistry;
+    /**
+     * Returns a FrameBufferManager for global temporary buffers, that can
+     * be shared between components.
+     */
+    getTempFBM(): FrameBufferManager;
+    /**
+     * Returns register bank, a map of shared register values available
+     * in EEL code in components.
+     */
+    getRegisterBank(): {[key: string]: number};
+    /**
+     * Returns the timestamp at which this instance was constructed
+     */
+    getBootTime(): number;
 }

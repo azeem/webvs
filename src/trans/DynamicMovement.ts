@@ -99,7 +99,7 @@ export default class DynamicMovement extends Component {
             this.inited = true;
         }
 
-        const beat = this.main.analyser.beat;
+        const beat = this.main.getAnalyser().isBeat();
         code.b = beat ? 1 : 0;
         // run per frame
         code.perFrame();
@@ -108,7 +108,7 @@ export default class DynamicMovement extends Component {
             code.onBeat();
         }
 
-        this.program.run(this.parent.fm, this.opts.noGrid ? {} : { grid: this.gridVertexBuffer });
+        this.program.run(this.parent.getFBM(), this.opts.noGrid ? {} : { grid: this.gridVertexBuffer });
     }
 
     public destroy() {
@@ -141,7 +141,7 @@ export default class DynamicMovement extends Component {
     private updateProgram() {
         const opts = this.opts;
         const coordMode = CoordModes[this.opts.coord];
-        const rctx = this.main.rctx;
+        const rctx = this.main.getRctx();
 
         const programOpts: IShaderOpts = {
             blendMode: opts.blend ? BlendModes.ALPHA : BlendModes.REPLACE,
@@ -173,7 +173,7 @@ export default class DynamicMovement extends Component {
         } else {
             programOpts.bindings = {
                 attribs: {
-                    grid: {name: "a_position", drawMode: rctx.gl.TRIANGLES },
+                    grid: {name: "a_position", drawMode: rctx.getGl().TRIANGLES },
                 },
             };
             programOpts.vertexShader = `
@@ -213,7 +213,7 @@ export default class DynamicMovement extends Component {
 
     private updateGrid() {
         const opts = this.opts;
-        const gl = this.main.rctx.gl;
+        const gl = this.main.getRctx().getGl();
         if (!opts.noGrid) {
             const gridW = clamp(opts.gridW, 1, gl.drawingBufferWidth);
             const gridH = clamp(opts.gridH, 1, gl.drawingBufferHeight);
@@ -250,14 +250,14 @@ export default class DynamicMovement extends Component {
                 cury += nGridH;
             }
             if (!this.gridVertexBuffer) {
-                this.gridVertexBuffer = new Buffer(this.main.rctx);
+                this.gridVertexBuffer = new Buffer(this.main.getRctx());
             }
             this.gridVertexBuffer.setData(gridVertices);
         }
     }
 
     private handleResize() {
-        this.code.updateDimVars(this.main.rctx.gl);
+        this.code.updateDimVars(this.main.getRctx().getGl());
     }
 }
 

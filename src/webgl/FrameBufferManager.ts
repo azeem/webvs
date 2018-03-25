@@ -35,7 +35,7 @@ export default class FrameBufferManager {
             this.names[name].refCount++;
             return this.names[name].index;
         }
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -65,7 +65,7 @@ export default class FrameBufferManager {
         if (index === this.curTex && (this.oldTexture || this.oldFrameBuffer)) {
             throw new Error("Cannot remove current texture when set as render target");
         }
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         gl.deleteTexture(this.textures[index]);
         this.textures.splice(index, 1);
         if (this.curTex >= this.textures.length) {
@@ -79,7 +79,7 @@ export default class FrameBufferManager {
     // Saves the current render target and sets this
     // as the render target
     public setRenderTarget(texName?: string) {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         const curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer;
         if (this.textureOnly) {
             if (!curFrameBuffer) {
@@ -108,7 +108,7 @@ export default class FrameBufferManager {
     // Restores the render target previously saved with
     // a Webvs.FrameBufferManager.setRenderTarget call
     public restoreRenderTarget() {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         if (this.textureOnly) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                     gl.COLOR_ATTACHMENT0,
@@ -144,7 +144,7 @@ export default class FrameBufferManager {
         if (!this.isRenderTarget) {
             throw new Error("Cannot switch texture when not set as rendertarget");
         }
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         this.curTex = this.findIndex(nameOrIndex);
         const texture = this.textures[this.curTex];
         gl.framebufferTexture2D(gl.FRAMEBUFFER,
@@ -154,7 +154,7 @@ export default class FrameBufferManager {
 
     public resize() {
         // TODO: investigate chrome warning: INVALID_OPERATION: no texture
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         for (const texture of this.textures) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth,
@@ -164,7 +164,7 @@ export default class FrameBufferManager {
 
     // cleans up all webgl resources
     public destroy() {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
         for (const texture of this.textures) {
             gl.deleteTexture(texture);
         }
@@ -174,7 +174,7 @@ export default class FrameBufferManager {
     }
 
     private initFrameBuffers() {
-        const gl = this.rctx.gl;
+        const gl = this.rctx.getGl();
 
         if (!this.textureOnly) {
             this.framebuffer = gl.createFramebuffer();

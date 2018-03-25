@@ -38,7 +38,7 @@ export default class UniqueTone extends Component {
     }
 
     public draw() {
-        this.program.run(this.parent.fm, {
+        this.program.run(this.parent.getFBM(), {
             invert: this.opts.invert ? 1 : 0,
             tone: this.tone,
         });
@@ -55,7 +55,7 @@ export default class UniqueTone extends Component {
 
     private updateProgram() {
         const blendMode: BlendModes = BlendModes[this.opts.blendMode];
-        const program = new ShaderProgram(this.main.rctx, {
+        const program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
                     invert: { name: "u_invert", valueType: WebGLVarType._1F },

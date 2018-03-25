@@ -19,6 +19,7 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     private gain: GainNode;
     private channelSplit: ChannelSplitterNode;
     private analysers: [AnalyserNode, AnalyserNode];
+    private beat: boolean;
 
     constructor(options) {
         super();
@@ -162,5 +163,9 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     // Returns array of spectrum values
     public getSpectrum(channel: Channel = Channel.CENTER) {
         return this.visData[channel].spectrum;
+    }
+
+    public isBeat(): boolean {
+        return this.beat;
     }
 }

@@ -13,7 +13,7 @@ export default class Invert extends Component {
     }
 
     public init() {
-        this.program = new ShaderProgram(this.main.rctx, {
+        this.program = new ShaderProgram(this.main.getRctx(), {
             fragmentShader: `
                 void main() {
                    setFragColor(vec4(1,1,1,1)-getSrcColor());
@@ -24,7 +24,7 @@ export default class Invert extends Component {
     }
 
     public draw() {
-        this.program.run(this.parent.fm, null);
+        this.program.run(this.parent.getFBM(), null);
     }
 
     public destroy() {

@@ -19,8 +19,8 @@ describe("DynamicMovement", () => {
         const mockCompileExpr   = Mock.ofType<Function>();
         const mockGl            = Mock.ofType<WebGLRenderingContext>();
 
-        mockRctx.setup((x) => x.gl).returns(() => mockGl.object);
-        mockMain.setup((x) => x.rctx).returns(() => mockRctx.object);
+        mockRctx.setup((x) => x.getGl()).returns(() => mockGl.object);
+        mockMain.setup((x) => x.getRctx()).returns(() => mockRctx.object);
         mockCompileExpr.setup((x) => x(It.isAny(), It.isAny(), It.isAny(), It.isAny()))
                        .returns(() => ({ codeInst: mockCodeInstance.object }));
 
