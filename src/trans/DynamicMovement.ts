@@ -108,7 +108,7 @@ export default class DynamicMovement extends Component {
             code.onBeat();
         }
 
-        this.program.run(this.parent.getFBM(), this.opts.noGrid ? {} : { grid: this.gridVertexBuffer });
+        this.program.run(this.parent.getTSM(), this.opts.noGrid ? {} : { grid: this.gridVertexBuffer });
     }
 
     public destroy() {

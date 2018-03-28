@@ -1,5 +1,6 @@
 import * as _ from "lodash";
-import AnalyserAdapter, { Channel } from "./AnalyserAdapter";
+import { Channels } from "../utils";
+import AnalyserAdapter from "./AnalyserAdapter";
 
 interface IVisData {
     spectrum: Float32Array;
@@ -156,12 +157,12 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     }
 
     // Returns array of waveform values
-    public getWaveform(channel: Channel = Channel.CENTER) {
+    public getWaveform(channel: Channels = Channels.CENTER) {
         return this.visData[channel].waveform;
     }
 
     // Returns array of spectrum values
-    public getSpectrum(channel: Channel = Channel.CENTER) {
+    public getSpectrum(channel: Channels = Channels.CENTER) {
         return this.visData[channel].spectrum;
     }
 

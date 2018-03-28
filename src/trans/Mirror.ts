@@ -153,7 +153,7 @@ export default class Mirror extends Component {
             this._setQuadrantMap(true);
         }
 
-        this.program.run(this.parent.getFBM(), {
+        this.program.run(this.parent.getTSM(), {
             mix0: this.mix[0],
             mix1: this.mix[1],
             mix2: this.mix[2],

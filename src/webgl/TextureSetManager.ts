@@ -7,13 +7,15 @@ interface ITextureNameMeta {
     index: number;
 }
 
-// FrameBufferManager maintains a set of render targets
-// and can switch between them.
-export default class FrameBufferManager {
+/**
+ * TextureSetManager maintains a set of named/indexed textures and optionally, a
+ * FrameBuffer for offscreen rendering.
+ */
+export default class TextureSetManager {
     private rctx: RenderingContext;
     private copier: ShaderProgram;
     private initTexCount: number;
-    private textureOnly: boolean;
+    private hasFrameBuffer: boolean;
     private framebuffer: WebGLFramebuffer;
     private names: {[key: string]: ITextureNameMeta};
     private textures: WebGLTexture[];
@@ -22,14 +24,25 @@ export default class FrameBufferManager {
     private oldFrameBuffer: WebGLFramebuffer;
     private isRenderTarget: boolean;
 
-    constructor(rctx: RenderingContext, copier: ShaderProgram, textureOnly: boolean = false, texCount: number = 2) {
+    /**
+     * Creates a new TextureSetManager
+     * @param rctx the rendering context in which the textures and buffers will be created
+     * @param copier an instance of a copier program
+     * @param hasFrameBuffer if true, then a FrameBuffer is also created
+     * @param texCount initial number of textures
+     */
+    constructor(rctx: RenderingContext, copier: ShaderProgram, hasFrameBuffer: boolean = false, texCount: number = 2) {
         this.rctx = rctx;
         this.copier = copier;
         this.initTexCount = texCount;
-        this.textureOnly = textureOnly;
-        this.initFrameBuffers();
+        this.hasFrameBuffer = hasFrameBuffer;
+        this.init();
     }
 
+    /**
+     * Adds the texture
+     * @param name name of the texture
+     */
     public addTexture(name?: string): number {
         if (name && name in this.names) {
             this.names[name].refCount++;
@@ -54,6 +67,10 @@ export default class FrameBufferManager {
         return this.textures.length - 1;
     }
 
+    /**
+     * Removes a texture
+     * @param nameOrIndex name or index of the texture to be removed
+     */
     public removeTexture(nameOrIndex: string | number) {
         if (_.isString(nameOrIndex) && nameOrIndex in this.names) {
             if (this.names[nameOrIndex].refCount > 1) {
@@ -76,14 +93,18 @@ export default class FrameBufferManager {
         }
     }
 
-    // Saves the current render target and sets this
-    // as the render target
-    public setRenderTarget(texName?: string) {
+    /**
+     * Sets the current texture as the frame buffer attachment. If `hasFrameBuffer` is true
+     * then the FrameBuffer manager is bound and the texture is set as the frame buffer attachment.
+     * @param texName name of the texture to set as target. If undefined then we cycle
+     *                through to next texture
+     */
+    public setAsRenderTarget(texName?: string) {
         const gl = this.rctx.getGl();
         const curFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer;
-        if (this.textureOnly) {
+        if (!this.hasFrameBuffer) {
             if (!curFrameBuffer) {
-                throw new Error("Cannot use textureOnly when current rendertarget is the default FrameBuffer");
+                throw new Error("Cannot set texture when current rendertarget is the default FrameBuffer");
             }
             this.oldTexture = gl.getFramebufferAttachmentParameter(
                                   gl.FRAMEBUFFER,
@@ -105,11 +126,13 @@ export default class FrameBufferManager {
         }
     }
 
-    // Restores the render target previously saved with
-    // a Webvs.FrameBufferManager.setRenderTarget call
-    public restoreRenderTarget() {
+    /**
+     * Restores the texture attachment or framebuffer that was set
+     * with a previous call to [[TextureSetManager.setAsRenderTarget]]
+     */
+    public unsetAsRenderTarget() {
         const gl = this.rctx.getGl();
-        if (this.textureOnly) {
+        if (!this.hasFrameBuffer) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER,
                                     gl.COLOR_ATTACHMENT0,
                                     gl.TEXTURE_2D,
@@ -122,24 +145,39 @@ export default class FrameBufferManager {
         this.isRenderTarget = false;
     }
 
-    // Returns the texture that is currently being used
+    /**
+     * Returns the current texture.
+     *
+     * TextureSetManager has this notion of current texture
+     * that it can cycle through the set of all textures.
+     */
     public getCurrentTexture(): WebGLTexture {
         return this.textures[this.curTex];
     }
 
-    public getTexture(arg): WebGLTexture {
-        const index = this.findIndex(arg);
+    /**
+     * Returns the texture at given index or with given nam,e
+     * @param nameorIndex name of index of the texture to be returned
+     */
+    public getTexture(nameOrIndex: string | number): WebGLTexture {
+        const index = this.findIndex(nameOrIndex);
         return this.textures[index];
     }
 
-    // Copies the previous texture into the current texture
+    /**
+     * Copies previous texture into current texture.
+     */
     public copyOver() {
         const texCount = this.textures.length;
         const prevTexture = this.textures[(texCount + this.curTex - 1) % texCount];
         this.copier.run(null, {srcTexture: prevTexture});
     }
 
-    // Swaps the current texture
+    /**
+     * Sets the current texture and sets it as the current frame buffer attachment
+     * @param nameOrIndex name or index of the texture. If undefined then we cycle through
+     *                    to next texture
+     */
     public switchTexture(nameOrIndex: string | number = (this.curTex + 1) % this.textures.length) {
         if (!this.isRenderTarget) {
             throw new Error("Cannot switch texture when not set as rendertarget");
@@ -152,6 +190,9 @@ export default class FrameBufferManager {
                                 gl.TEXTURE_2D, texture, 0);
     }
 
+    /**
+     * Resizes all textures
+     */
     public resize() {
         // TODO: investigate chrome warning: INVALID_OPERATION: no texture
         const gl = this.rctx.getGl();
@@ -162,21 +203,23 @@ export default class FrameBufferManager {
         }
     }
 
-    // cleans up all webgl resources
+    /**
+     * Destroys all texture and framebuffer
+     */
     public destroy() {
         const gl = this.rctx.getGl();
         for (const texture of this.textures) {
             gl.deleteTexture(texture);
         }
-        if (!this.textureOnly) {
+        if (this.hasFrameBuffer) {
             gl.deleteFramebuffer(this.framebuffer);
         }
     }
 
-    private initFrameBuffers() {
+    private init() {
         const gl = this.rctx.getGl();
 
-        if (!this.textureOnly) {
+        if (this.hasFrameBuffer) {
             this.framebuffer = gl.createFramebuffer();
         }
 

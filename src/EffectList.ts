@@ -4,7 +4,7 @@ import CodeInstance from "./expr/CodeInstance";
 import compileExpr from "./expr/compileExpr";
 import IMain from "./IMain";
 import { BlendModes } from "./utils";
-import FrameBufferManager from "./webgl/FrameBufferManager";
+import TextureSetManager from "./webgl/TextureSetManager";
 
 /**
  * BlendModes supported by Effectlist
@@ -117,9 +117,9 @@ export default class EffectList extends Container {
 
     public init() {
         super.init();
-        const fm = new FrameBufferManager(
-            this.main.getRctx(), this.main.getCopier(), this.parent ? true : false);
-        this.setFBM(fm);
+        const tsm = new TextureSetManager(
+            this.main.getRctx(), this.main.getCopier(), this.parent ? false : true);
+        this.setTSM(tsm);
         this.updateCode();
         this.updateBlendMode(this.opts.input, "input");
         this.updateBlendMode(this.opts.output, "output");
@@ -157,7 +157,7 @@ export default class EffectList extends Container {
         }
 
         // set rendertarget to internal framebuffer
-        this.getFBM().setRenderTarget();
+        this.getTSM().setAsRenderTarget();
 
         // clear frame
         if (opts.clearFrame || this.first || this.code.clear) {
@@ -169,8 +169,8 @@ export default class EffectList extends Container {
 
         // blend input texture onto internal texture
         if (this.input !== ELBlendModes.IGNORE) {
-            const inputTexture = this.parent.getFBM().getCurrentTexture();
-            this.main.getCopier().run(this.getFBM(), { srcTexture: inputTexture }, this.input as number);
+            const inputTexture = this.parent.getTSM().getCurrentTexture();
+            this.main.getCopier().run(this.getTSM(), { srcTexture: inputTexture }, this.input as number);
         }
 
         // render all the components
@@ -182,27 +182,27 @@ export default class EffectList extends Container {
         }
 
         // switch to old framebuffer
-        this.getFBM().restoreRenderTarget();
+        this.getTSM().unsetAsRenderTarget();
 
         // blend current texture to the output framebuffer
         if (this.output !== ELBlendModes.IGNORE) {
             if (this.parent) {
                 this.main.getCopier().run(
-                    this.parent.getFBM(),
-                    { srcTexture: this.getFBM().getCurrentTexture() },
+                    this.parent.getTSM(),
+                    { srcTexture: this.getTSM().getCurrentTexture() },
                     this.output as number,
                 );
             } else {
-                this.main.getCopier().run(null, { srcTexture: this.getFBM().getCurrentTexture() });
+                this.main.getCopier().run(null, { srcTexture: this.getTSM().getCurrentTexture() });
             }
         }
     }
 
     public destroy() {
         super.destroy();
-        if (this.getFBM()) {
+        if (this.getTSM()) {
             // destroy the framebuffer manager
-            this.getFBM().destroy();
+            this.getTSM().destroy();
         }
     }
 
@@ -221,7 +221,7 @@ export default class EffectList extends Container {
     }
 
     private handleResize() {
-        this.getFBM().resize();
+        this.getTSM().resize();
         this.code.updateDimVars(this.main.getRctx().getGl());
     }
 }

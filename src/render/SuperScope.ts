@@ -1,10 +1,9 @@
 import * as _ from "lodash";
-import { Channel } from "../analyser/AnalyserAdapter";
 import Component, {IContainer} from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr, { ICompileResult } from "../expr/compileExpr";
 import IMain from "../IMain";
-import { BlendModes, Color, parseColorNorm, Source, WebGLVarType } from "../utils";
+import { BlendModes, Channels, Color, parseColorNorm, Source, WebGLVarType } from "../utils";
 import Buffer from "../webgl/Buffer";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
@@ -94,7 +93,7 @@ export default class SuperScope extends Component {
     private inited: boolean;
     private program: ShaderProgram<ISuperScopeShaderValues>;
     private source: Source;
-    private channel: Channel;
+    private channel: Channels;
     private drawMode: DrawModes;
     private veryThick: boolean;
     private colors: Color[];
@@ -305,7 +304,7 @@ export default class SuperScope extends Component {
         this.colorBuffer.setData(colorData);
 
         this.program.run(
-            this.parent.getFBM(),
+            this.parent.getTSM(),
             {
                 colors: this.colorBuffer,
                 drawTriangles: this.veryThick,
@@ -345,7 +344,7 @@ export default class SuperScope extends Component {
                 } else {
                     mode = gl.LINES;
                 }
-                gl.drawArrays(mode, 0, values.points.length / 2);
+                gl.drawArrays(mode, 0, values.points.getLength() / 2);
 
                 if (!values.isDots) {
                     gl.lineWidth(prevLineWidth);
@@ -407,7 +406,7 @@ export default class SuperScope extends Component {
     }
 
     private updateChannel() {
-        this.channel = Channel[this.opts.channel];
+        this.channel = Channels[this.opts.channel];
     }
 
     private updateSource() {

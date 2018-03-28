@@ -1,6 +1,11 @@
 import Buffer from "./Buffer";
 import RenderingContext from "./RenderingContext";
 
+/**
+ * Returns a cached Buffer with points on a circle
+ * @param rctx RenderingContext undef which the buffer will be created and cached
+ * @param pointCount number of points in the geometry
+ */
 export function circleGeometry(rctx: RenderingContext, pointCount: number = 100) {
     const cacheKey = "CircleGeometry_" + pointCount;
     let buffer = rctx.getBuffer(cacheKey);
@@ -23,6 +28,11 @@ export function circleGeometry(rctx: RenderingContext, pointCount: number = 100)
     return buffer;
 }
 
+/**
+ * Returns a cached buffer with points on a square
+ * @param rctx RenderingContext under which the buffer will be created and cached
+ * @param positiveQuad if true then square will be in [0-1][0-1] range.
+ */
 export function squareGeometry(rctx: RenderingContext, positiveQuad: boolean = false) {
     const cacheKey = "SquareGeometry_" + positiveQuad;
     let buffer = rctx.getBuffer(cacheKey);

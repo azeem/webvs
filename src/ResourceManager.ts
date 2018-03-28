@@ -1,18 +1,36 @@
 import * as _ from "lodash";
 import Model from "./Model";
 
+/**
+ * Defines a resource pack. Resource Packs
+ * can be added to resource manager.
+ */
 export interface IPack {
+    /**
+     * Name of the Resource Pack
+     */
     name: string;
+    /**
+     * URL prefix for the Resource Pack. Full URL to
+     * a file in this pack is obtained by appending the filename
+     * to this prefix
+     */
     prefix: string;
+    /**
+     * Names of the files.
+     */
     fileNames: string[];
 }
 
-// ResourceManager manages async loading and caching of resources.
-// Basically, it maintains a map of fileNames to URI for the resource.
-// When a request for resource fileName is received, the uri is looked up
-// and the file is either async loaded or served from cache. This also manages
-// a ready state with callbacks that tells when one or more resources are being loaded and
-// when all resources are ready.
+/**
+ * ResourceManager manages async loading and caching of resources.
+ *
+ * ResourceManager Basically, it maintains a map of fileNames to URI for
+ * the resource. When a request for resource fileName is received, the uri is looked up
+ * and the file is either async loaded or served from cache. This also manages
+ * a ready state with callbacks that tells when one or more resources are being loaded and
+ * when all resources are ready.
+ */
 export default class ResourceManager extends Model {
     public ready: boolean = true;
     private packs: IPack[];
@@ -34,7 +52,12 @@ export default class ResourceManager extends Model {
         this.clear();
     }
 
-    // Register a filename and a URI in the resource manager.
+    /**
+     * Register a filename and a URI in the resource manager.
+     *
+     * @param fileName name of the file or map of filename: uri.
+     * @param uri uri when string fileName is specified
+     */
     public registerUri(fileName: string | any, uri?: string) {
         if (typeof fileName === "string" && typeof uri === "string") {
             this.uris[fileName] = uri;
@@ -44,29 +67,31 @@ export default class ResourceManager extends Model {
         }
     }
 
+    /**
+     * Returns the attributes for this ResourceManager
+     *
+     * @param key the name of the attribute. Only `"uris"` is acceptable.
+     */
     public get(key: string) {
         if (key === "uris") {
             return this.uris;
-        } else if (key === "packs") {
-            return this.packs;
         }
     }
 
-    public setAttribute(key: string, value: any, options: any) {
-        if (key === "uris") {
-            this.uris = value;
-            return true;
-        }
-        return false;
-    }
-
+    /**
+     * Returns JSON representation of the resource manager
+     */
     public toJSON() {
         return {
             uris: _.clone(this.uris),
         };
     }
 
-    // Clears state, uri mappings and caches. Browser caches still apply.
+    /**
+     * Clears state, uri mappings and caches. Browser caches still apply.
+     *
+     * @param keys the keys which should be cleared. Default clears everything.
+     */
     public clear(keys: string[] = null) {
         for (const fileName in this.waitImages) {
             if (!this.waitImages.hasOwnProperty(fileName)) {
@@ -89,7 +114,13 @@ export default class ResourceManager extends Model {
         this.ready = true;
     }
 
-    // Loads an Image resource
+    /**
+     * Loads an Image resource.
+     *
+     * @param fileName fileName of the image to be returned
+     * @param success handler that'll be called on success
+     * @param error handler that'll be called on error
+     */
     public getImage(fileName: string, success: (image: HTMLImageElement) => void, error?: () => void): void {
         let image = this.images[fileName];
         if (image) { // check in cache
@@ -133,6 +164,14 @@ export default class ResourceManager extends Model {
         this.waitImages[fileName] = image;
     }
 
+    protected setAttribute(key: string, value: any, options: any) {
+        if (key === "uris") {
+            this.uris = value;
+            return true;
+        }
+        return false;
+    }
+
     private _getUri(fileName: string): string {
         const uri = this.uris[fileName];
         if (uri) {
@@ -161,5 +200,4 @@ export default class ResourceManager extends Model {
             this.emit("ready");
         }
     }
-
 }

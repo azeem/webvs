@@ -120,7 +120,7 @@ export default class MovingParticle extends Component {
         scaleY = 2 * scaleY / gl.drawingBufferHeight;
 
         this.program.run(
-            this.parent.getFBM(),
+            this.parent.getTSM(),
             {
                 color: this.color,
                 points: circleGeometry(this.main.getRctx()),

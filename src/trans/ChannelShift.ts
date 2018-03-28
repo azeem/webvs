@@ -69,7 +69,7 @@ export default class ChannelShift extends Component {
         if (this.opts.onBeatRandom && this.main.getAnalyser().isBeat()) {
             this.channel = Math.floor(Math.random() * ShiftChannelsKeys.length);
         }
-        this.program.run(this.parent.getFBM(), { channel: this.channel });
+        this.program.run(this.parent.getTSM(), { channel: this.channel });
     }
 
     public destroy() {

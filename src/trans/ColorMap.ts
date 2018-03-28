@@ -104,7 +104,7 @@ export default class ColorMap extends Component {
             }
         }
         this.program.run(
-            this.parent.getFBM(),
+            this.parent.getTSM(),
             {
                 colorMap: this.colorMaps[this.currentMap],
                 key: this.key,

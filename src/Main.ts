@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import Stats from "stats.js";
 import AnalyserAdapter from "./analyser/AnalyserAdapter";
+import builtinResourcePack from "./builtinResourcePack";
 import Component from "./Component";
 import ComponentRegistry from "./ComponentRegistry";
 import EffectList from "./EffectList";
@@ -14,7 +15,6 @@ import Picture from "./render/Picture";
 import SuperScope from "./render/SuperScope";
 import Texer from "./render/Texer";
 import ResourceManager from "./ResourceManager";
-import ResourcePack from "./ResourcePack";
 import ChannelShift from "./trans/ChannelShift";
 import ColorClip from "./trans/ColorClip";
 import ColorMap from "./trans/ColorMap";
@@ -28,8 +28,8 @@ import UniqueTone from "./trans/UniqueTone";
 import {checkRequiredOptions} from "./utils";
 import Buffer from "./webgl/Buffer";
 import CopyProgram from "./webgl/CopyProgram";
-import FrameBufferManager from "./webgl/FrameBufferManager";
 import RenderingContext from "./webgl/RenderingContext";
+import TextureSetManager from "./webgl/TextureSetManager";
 
 declare var WEBVS_VERSION: string;
 
@@ -106,7 +106,7 @@ export default class Main extends Model implements IMain {
     private rctx: RenderingContext;
     private copier: CopyProgram;
     private componentRegistry: ComponentRegistry;
-    private tempBuffers: FrameBufferManager;
+    private tempTSM: TextureSetManager;
     private registerBank: {[key: string]: number};
     private bootTime: number;
 
@@ -226,7 +226,7 @@ export default class Main extends Model implements IMain {
     public resetCanvas() {
         const preset = this.rootComponent.toJSON();
         this.rootComponent.destroy();
-        this.tempBuffers.destroy();
+        this.tempTSM.destroy();
         this._initGl();
         this._setupRoot(preset);
     }
@@ -239,7 +239,7 @@ export default class Main extends Model implements IMain {
     public notifyResize() {
         const gl = this.rctx.getGl();
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this.tempBuffers.resize();
+        this.tempTSM.resize();
         this.emit("resize", gl.drawingBufferWidth, gl.drawingBufferHeight);
     }
 
@@ -328,10 +328,10 @@ export default class Main extends Model implements IMain {
      */
     public getComponentRegistry(): ComponentRegistry { return this.componentRegistry; }
     /**
-     * Returns a FrameBufferManager for global temporary buffers, that can
+     * Returns a TextureSetManager for global temporary buffers, that can
      * be shared between components.
      */
-    public getTempFBM(): FrameBufferManager { return this.tempBuffers; }
+    public getTempTSM(): TextureSetManager { return this.tempTSM; }
 
     /**
      * Returns register bank, a map of shared register values available
@@ -392,7 +392,7 @@ export default class Main extends Model implements IMain {
     }
 
     private _initResourceManager(prefix: string): void {
-        let builtinPack = ResourcePack;
+        let builtinPack = builtinResourcePack;
         if (prefix) {
             builtinPack = _.clone(builtinPack);
             builtinPack.prefix = prefix;
@@ -419,7 +419,7 @@ export default class Main extends Model implements IMain {
         try {
             this.rctx = new RenderingContext(this.canvas.getContext("webgl", {alpha: false}));
             this.copier = new CopyProgram(this.rctx, true);
-            this.tempBuffers = new FrameBufferManager(this.rctx, this.copier, true, 0);
+            this.tempTSM = new TextureSetManager(this.rctx, this.copier, true, 0);
         } catch (e) {
             throw new Error("Couldnt get webgl context" + e);
         }

@@ -87,7 +87,7 @@ export default class ColorClip extends Component {
 
     public draw() {
         this.program.run(
-            this.parent.getFBM(),
+            this.parent.getTSM(),
             {
                 color: this.color,
                 level: this.opts.level,

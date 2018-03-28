@@ -1,73 +1,163 @@
 import * as _ from "lodash";
 import { BlendModes, flatString, logShaderError, WebGLVarType } from "../utils";
 import Buffer from "./Buffer";
-import FrameBufferManager from "./FrameBufferManager";
 import { squareGeometry } from "./geometries";
 import RenderingContext from "./RenderingContext";
+import TextureSetManager from "./TextureSetManager";
 
+/**
+ * Attribute binding. The properties here are basically just
+ * passed in as arguments to a `gl.vertixAttribPointer` call.
+ */
 interface IAttributeBinding {
+    /**
+     * Name of the attribute
+     */
     name: string;
+    /**
+     * vector size of the attribute. Default: 2
+     */
     size?: number;
+    /**
+     * type of the values. Default: `gl.FLOAT`
+     */
     valueType?: number;
+    /**
+     * Indicates whether integer data valiues should be normalized
+     */
     normalized?: boolean;
+    /**
+     * Stride for attribute packing
+     */
     stride?: number;
+    /**
+     * Offset to first value
+     */
     offset?: number;
+    /**
+     * If specified then this attributes length is to make
+     * a default draw call using this drawMode
+     */
     drawMode?: number;
 }
 
+/**
+ * Uniform binding.
+ */
 interface IUniformBinding {
+    /**
+     * Name of the uniform
+     */
     name: string;
+    /**
+     * Type of the uniform
+     */
     valueType?: WebGLVarType;
 }
 
+/**
+ * Binding for index array.
+ */
 interface IndexBinding {
+    /**
+     * Name under which the index array will be passed in
+     * to the [[ShaderProgram.run]] call
+     */
     valueName: string;
+    /**
+     * Specified the drawmode for the `gl.drawElements` call
+     */
     drawMode?: number;
 }
 
 interface IBindings {
+    /**
+     * Bindings for uniforms
+     */
     uniforms?: {[name: string]: IUniformBinding};
+    /**
+     * Bindings for attributes
+     */
     attribs?: {[name: string]: IAttributeBinding};
+    /**
+     * Index array binding
+     */
     index?: IndexBinding;
 }
 
+/**
+ * Options for [[ShaderProgram]]
+ *
+ * Common functions, variables and constants avialable in
+ * both fragment and vertex shaders:
+ *
+ * + `PI`: The constant pi
+ * + `u_resolution`: a `vec2` with the frame's width and height
+ * + `u_srcTexture`: when `swapFrame` is true then this is a
+ *   reference to the previous texture
+ * + `getSrcColorAtPos(vec2 pos)`: when `swapFrame` is true, this gives
+ *   the color at given position in the previous texture
+ */
 export interface IShaderOpts<ValueType = any> {
+    /**
+     * Source for fragment shader.
+     *
+     * variables and functions available in fragment shaders:
+     * + `v_position`: a [0-1,0-1] varying of the position
+     * + `getSrcColor()`: equivalent to `getSrcColorAtPos(v_position)`
+     * + `setFragColor(vec3 color)`: sets gl_FragColor with correct blending
+     */
     fragmentShader: string | string[];
+    /**
+     * Source for vertex shader. If no vertex shader is provided then a
+     * a default vertex shader with squareGeometry values is provided.
+     *
+     * variables and functions available in fragment shaders:
+     * + `v_position`: a [0-1,0-1] varying of the position
+     * + `setPosition(vec2 position)`: correctly sets the `gl_position`
+     */
     vertexShader?: string | string[];
+    /**
+     * Specifies the default blend mode for this shader.
+     */
     blendMode?: BlendModes;
+    /**
+     * If enabled then everytime this shader is run, we cycle to next frame
+     * in the TextureSetManager that's passed in to the run call. The shader
+     * program may also choose to do this if a blendMode is not supported by
+     * `gl.BlendFunc`
+     */
     swapFrame?: boolean;
+    /**
+     * If enabled, then immediately after a frame swap on the TextureSetManager
+     * we also copy the previous frame into current frame
+     */
     copyOnSwap?: boolean;
+    /**
+     * If enabled then default blendMode is not baked into the shader
+     * and blendMode can be set on [[ShaderProgram.run]] call
+     */
     dynamicBlend?: boolean;
+    /**
+     * Specifies the blendValue when defaultBlend mode is `ADJUSTABLE`
+     */
     blendValue?: 0.5;
+    /**
+     * Variable bindings for the shader.
+     */
     bindings?: IBindings;
+    /**
+     * A hook function that'd called instead of the default draw call behavior.
+     * drawHook can also return a falsy value to indicate that draw has not been
+     * handled, causing the shader to fallback to default draw call behavior.
+     */
     drawHook?: (values: ValueType, gl: WebGLRenderingContext, shader: ShaderProgram) => any;
 }
 
-// Base class for Webgl Shaders. This provides an abstraction
-// with support for blended output, easier variable bindings
-// etc.
-
-// For outputblending, we try to use GL blendEq and blendFunc
-// if possible, otherwise we fallback to shader based blending,
-// where we swap the frame, sample the previous texture, and blend
-// the colors in the shader itself. To do this seamlessly, shader code in subclasses
-// should use a set of macros. eg: setFragColor instead of
-// setting gl_FragColor directly. The proper macro implementation
-// is inserted based on the blending modes.
-
-// #### glsl utilities
-
-// The following utilities are usable inside the shader code in subclasses
-// + `setPosition(vec2 pos)` - sets gl_Position
-// + `getSrcColorAtPos(vec2 pos)` - pixel value at pos in u_srcTexture
-// + `getSrcColor(vec2 pos)` - same as above, but uses v_position
-// + `setFragColor(vec4 color)` - sets the correctly blended fragment color
-// + `sampler2D u_srcTexture` - the source texture from previous frame. enabled
-//     when swapFrame is set to true
-// + `vec1 u_resolution` - the screen resolution. enabled only if fm is
-//     passed to {@link Webvs.ShaderProgram.run} call
-// + `vec2 v_position` - a 0-1, 0-1 normalized varying of the vertex. enabled
-//     when varyingPos option is used
+/**
+ * ShaderProgram is an abstraction for Shaders Programs that provides,
+ * blended output, easier variable bindings and other nice features.
+ */
 export default class ShaderProgram<ValueType = any> {
     // these are blend modes not supported with gl.BLEND
     // and the formula to be used inside shader
@@ -76,7 +166,7 @@ export default class ShaderProgram<ValueType = any> {
         [BlendModes.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)",
     };
 
-    protected rctx: RenderingContext;
+    private rctx: RenderingContext;
     private swapFrame: boolean;
     private copyOnSwap: boolean;
     private blendValue: number;
@@ -93,6 +183,11 @@ export default class ShaderProgram<ValueType = any> {
     private textureVars: string[];
     private enabledAttribs: number[];
 
+    /**
+     * Creates a new shader and compiles the source
+     * @param rctx the rendering context under which the shader program will be created
+     * @param opts shader options
+     */
     constructor(rctx: RenderingContext, opts: IShaderOpts<ValueType>) {
         opts = _.defaults(opts, {
             blendMode: BlendModes.REPLACE,
@@ -188,8 +283,14 @@ export default class ShaderProgram<ValueType = any> {
         this._compile();
     }
 
-    // Runs this shader program
-    public run(fm: FrameBufferManager, values: ValueType, blendMode: BlendModes = null, blendValue: number = null) {
+    /**
+     * Runs the shader program
+     * @param tsm the texture set in which the rendering will be made
+     * @param values an object containing values for variables specified in the bindings
+     * @param blendMode the blendMode for this render
+     * @param blendValue blendValue when blendMode is `ADJUSTABLE`
+     */
+    public run(tsm: TextureSetManager, values: ValueType, blendMode: BlendModes = null, blendValue: number = null) {
         const gl = this.rctx.getGl();
         const oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
@@ -200,13 +301,13 @@ export default class ShaderProgram<ValueType = any> {
         blendMode = blendMode || this.blendMode;
         blendValue = typeof(blendValue) === "number" ? blendValue : this.blendValue;
 
-        if (fm) {
+        if (tsm) {
             this.setUniform("u_resolution", WebGLVarType._2F, gl.drawingBufferWidth, gl.drawingBufferHeight);
             if (this.swapFrame || this._isShaderBlend(blendMode)) {
-                this.setUniform("u_srcTexture", WebGLVarType.TEXTURE2D, fm.getCurrentTexture());
-                fm.switchTexture();
+                this.setUniform("u_srcTexture", WebGLVarType.TEXTURE2D, tsm.getCurrentTexture());
+                tsm.switchTexture();
                 if (this.copyOnSwap) {
-                    fm.copyOver();
+                    tsm.copyOver();
                 }
             } else if (this.dynamicBlend) {
                 this.setUniform("u_srcTexture", WebGLVarType.TEXTURE2D, null);
@@ -227,7 +328,13 @@ export default class ShaderProgram<ValueType = any> {
         gl.useProgram(oldProgram);
     }
 
-    // returns the location of a uniform or attribute. locations are cached.
+    /**
+     * Returns the location of a uniform or attribute.
+     *
+     * Locations are cached
+     * @param name name of the variable
+     * @param attrib if true then name is assumed to be an attribute
+     */
     public getLocation(name: string, attrib: boolean = false): number | WebGLUniformLocation {
         let location = this.locations[name];
         if (typeof location === "undefined") {
@@ -242,7 +349,10 @@ export default class ShaderProgram<ValueType = any> {
         return location;
     }
 
-    // returns the index of a texture. assigns id if not already assigned.
+    /**
+     * Returns the index of a texture. Assigns id if not already assigned.
+     * @param name name of the texture
+     */
     public getTextureId(name: string): number {
         let id = _.indexOf(this.textureVars, name);
         if (id === -1) {
@@ -252,7 +362,12 @@ export default class ShaderProgram<ValueType = any> {
         return id;
     }
 
-    // binds value of a uniform variable in this program
+    /**
+     * Binds value of a uniform variable in this program.
+     * @param name name of the uniforma variable
+     * @param type type of the value
+     * @param values value(s) to be bound
+     */
     public setUniform(name: string, type: WebGLVarType, ...values) {
         const location = this.getLocation(name);
         const gl = this.rctx.getGl();
@@ -278,11 +393,25 @@ export default class ShaderProgram<ValueType = any> {
         }
     }
 
+    /**
+     * Binds given buffer as the `ELEMENT_ARRAY_BUFFER`
+     * @param buffer buffer to be bound as index
+     */
     public setIndex(buffer: Buffer) {
         const gl = this.rctx.getGl();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.getGlBuffer());
     }
 
+    /**
+     * Binds an attribute buffer and sets up vertex pointer
+     * @param name name of the attribute
+     * @param buffer buffer to be bound
+     * @param size size of values
+     * @param type type of values
+     * @param normalized enables normalization for integers
+     * @param stride array value stride
+     * @param offset offset of first value
+     */
     public setAttrib(
         name: string,
         buffer: Buffer,
@@ -305,8 +434,9 @@ export default class ShaderProgram<ValueType = any> {
         this.rctx.getGl().disableVertexAttribArray(location);
     }
 
-    // destroys webgl resources consumed by this program.
-    // call in component destroy
+    /**
+     * Destroys all webgl resources
+     */
     public destroy() {
         const gl = this.rctx.getGl();
         gl.deleteProgram(this.program);
@@ -370,7 +500,7 @@ export default class ShaderProgram<ValueType = any> {
                 const indexBuffer = errorIfNotBuffer(value, valueName);
                 this.setIndex(indexBuffer);
                 if (defn.drawMode) {
-                    drawCount = indexBuffer.length;
+                    drawCount = indexBuffer.getLength();
                     drawMode = defn.drawMode;
                     isElements = true;
                 }
@@ -396,7 +526,7 @@ export default class ShaderProgram<ValueType = any> {
                                 defn.offset,
                             );
                             if (defn.drawMode) {
-                                drawCount = attribBuffer.length / (defn.size || 2);
+                                drawCount = attribBuffer.getLength() / (defn.size || 2);
                                 drawMode = defn.drawMode;
                             }
                         }

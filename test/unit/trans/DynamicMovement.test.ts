@@ -5,9 +5,9 @@ import { IContainer } from "../../../src/Component";
 import CodeInstance from "../../../src/expr/CodeInstance";
 import IMain from "../../../src/IMain";
 import DynamicMovement from "../../../src/trans/DynamicMovement";
-import FrameBufferManager from "../../../src/webgl/FrameBufferManager";
 import RenderingContext from "../../../src/webgl/RenderingContext";
 import ShaderProgram, { IShaderOpts } from "../../../src/webgl/ShaderProgram";
+import TextureSetManager from "../../../src/webgl/TextureSetManager";
 
 describe("DynamicMovement", () => {
     it("drawHook should bind uniforms for codeInstance", () => {

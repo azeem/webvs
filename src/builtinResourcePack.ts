@@ -1,6 +1,6 @@
 declare var RESOURCE_PACK_URL: string;
 
-const ResourcePack = {
+const builtinResourcePack = {
     fileNames: [
         "avsres_texer_circle_edgeonly_19x19.bmp",
         "avsres_texer_circle_edgeonly_29x29.bmp",
@@ -28,4 +28,4 @@ const ResourcePack = {
     name: "Builtin",
     prefix: RESOURCE_PACK_URL,
 };
-export default ResourcePack;
+export default builtinResourcePack;

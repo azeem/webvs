@@ -1,9 +1,17 @@
 import * as _ from "lodash";
 
+/**
+ * A No-Op function
+ */
 // tslint:disable-next-line:no-empty
 export function noop() {}
 
-// Checks if an object contains the required properties
+/**
+ * Checks if an object contains the required properties. Throws an error
+ * for missing options
+ * @param options the options to be checked
+ * @param requiredOptions set of required options
+ */
 export function checkRequiredOptions(options: any, requiredOptions: string[]): void {
     for (const optionName of requiredOptions) {
         if (!(optionName in options)) {
@@ -12,18 +20,31 @@ export function checkRequiredOptions(options: any, requiredOptions: string[]): v
     }
 }
 
-// Returns a floating point value representation of a number
-// embeddable in glsl shader code
+/**
+ * Returns a floating point value representation of a number
+ * embeddable in glsl shader code
+ * @param val value to be converted
+ */
 export function glslFloatRepr(val): string {
     return val + (parseFloat(val) % 1 === 0 ? ".0" : "");
 }
 
+/**
+ * Color type. R, G, B
+ */
 export type Color = [number, number, number];
+/**
+ * Checks whether the argument is a Color or not
+ * @param color color to be checked
+ */
 function isColor(color: string | Color): color is Color {
     return Array.isArray(color) && color.length === 3;
 }
 
-// Parse css color string #RRGGBB or rgb(r, g, b)
+/**
+ * Parse css color string #RRGGBB or rgb(r, g, b)
+ * @param color the color value to be parsed
+ */
 export function parseColor(color: string | Color): Color {
     if (isColor(color)) {
         return color;
@@ -46,12 +67,19 @@ export function parseColor(color: string | Color): Color {
     throw new Error("Invalid Color Format");
 }
 
-// 0-1 normalized version of parseColor
+/**
+ * Parse css color string and return normalizes Color value
+ * @param color the color value to be parsed
+ */
 export function parseColorNorm(color: string | Color): Color {
     return _.map(parseColor(color), (value) => value / 255) as Color;
 }
 
-// Pretty prints a shader compilation error
+/**
+ * Parses shader error message and displays readable information
+ * @param src source of the shader
+ * @param error error message
+ */
 export function logShaderError(src: string, error: string): void {
     const lines = src.split("\n");
     const ndigits = lines.length.toString().length;
@@ -84,7 +112,9 @@ export function logShaderError(src: string, error: string): void {
     console.log("Shader Error : \n" + numberedLines);
 }
 
-// Blend mode constants
+/**
+ * Blend Modes
+ */
 export enum BlendModes {
     REPLACE = 1,
     MAXIMUM,
@@ -98,18 +128,28 @@ export enum BlendModes {
     ALPHA,
 }
 
+/**
+ * Channels
+ */
 export enum Channels {
     CENTER = 0,
     LEFT,
     RIGHT,
 }
 
+/**
+ * Source
+ */
 export enum Source {
     SPECTRUM = 1,
     WAVEFORM,
 }
 
-// Returns a random string of given length
+/**
+ * Returns a random string of given length
+ * @param count number of characters
+ * @param chars character set to choose from
+ */
 export function randString(count: number, chars: string): string {
     const randStr = [];
     chars = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -119,6 +159,9 @@ export function randString(count: number, chars: string): string {
     return randStr.join("");
 }
 
+/**
+ * WebGL data types
+ */
 export enum WebGLVarType {
     TEXTURE2D = "texture2D",
     _1F = "1f", _2F = "2f", _3F = "3f", _4F = "4f",
@@ -145,12 +188,21 @@ export function isTypedArray(array: any): array is TypedArray {
     );
 }
 
-// Clamps a number between two given numbers
+/**
+ * Clamp number between range
+ * @param num number to clamp
+ * @param min min value of the range
+ * @param max max value of the range
+ */
 export function clamp(num: number, min: number, max: number): number {
   return Math.min(Math.max(num, min), max);
 }
 
-// Returns the value of property given its (dot separated) path in an object
+/**
+ * Returns the value of property given its (dot separated) path in an object
+ * @param obj object with the property
+ * @param name name of the property
+ */
 export function getProperty(obj: any, name: string | string[]): any {
     if (typeof name === "string") {
         name = name.split(".");
@@ -165,7 +217,12 @@ export function getProperty(obj: any, name: string | string[]): any {
     }
 }
 
-// Sets a property, given its (dot separated) path in an object
+/**
+ * Sets a property, given its (dot separated) path in an object
+ * @param obj the object in which the property is to be set
+ * @param name name of the property
+ * @param value value of the property
+ */
 export function setProperty(obj: any, name: string | string[], value: any): void {
     if (typeof name === "string") {
         name = name.split(".");
@@ -178,6 +235,11 @@ export function setProperty(obj: any, name: string | string[], value: any): void
     }
 }
 
+/**
+ * flattens array of strings to single string
+ * @param value string or list of strings to be flattened
+ * @param sep seprator to flatten the strings with
+ */
 export function flatString(value: string | string[], sep: string = "\n"): string {
     if (typeof(value) === "string") {
         return value;

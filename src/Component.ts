@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import IMain from "./IMain";
 import Model from "./Model";
-import FrameBufferManager from "./webgl/FrameBufferManager";
+import TextureSetManager from "./webgl/TextureSetManager";
 
 /**
  * Component Class Constructor interface. This declares static member
@@ -29,7 +29,7 @@ export interface IComponentConstructor {
  * Container Components. see [[Container]] for more details.
  */
 export interface IContainer extends Component {
-    getFBM(): FrameBufferManager;
+    getTSM(): TextureSetManager;
 }
 
 /**
@@ -222,7 +222,7 @@ export default abstract class Component extends Model {
         }
     }
 
-    protected setAttribute(key: string, value: any, options: any) {
+    protected setAttribute(key: string, value: any, options: any): boolean {
         const oldValue = this.get(key);
         if (key === "type" || _.isEqual(value, oldValue)) {
             return false;

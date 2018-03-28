@@ -53,7 +53,7 @@ export default class Convolution extends Component {
     }
 
     public draw() {
-        this.program.run(this.parent.getFBM(), { scale: this.scale, bias: this.opts.bias });
+        this.program.run(this.parent.getTSM(), { scale: this.scale, bias: this.opts.bias });
     }
 
     public destroy() {

@@ -73,7 +73,7 @@ export default class Picture extends Component {
 
     public draw() {
         this.program.run(
-            this.parent.getFBM(),
+            this.parent.getTSM(),
             {
                 image: this.texture,
                 imageRes: [this.width, this.height],

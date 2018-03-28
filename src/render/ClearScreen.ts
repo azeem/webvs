@@ -59,7 +59,7 @@ export default class ClearScreen extends Component {
         }
 
         if (clear) {
-            this.program.run(this.parent.getFBM(), {color: this.color});
+            this.program.run(this.parent.getTSM(), {color: this.color});
         }
     }
 

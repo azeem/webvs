@@ -41,7 +41,7 @@ export default class FadeOut extends Component {
         this.frameCount++;
         if (this.frameCount === this.maxFrameCount) {
             this.frameCount = 0;
-            this.program.run(this.parent.getFBM(), { color: this.color });
+            this.program.run(this.parent.getTSM(), { color: this.color });
         }
     }
 

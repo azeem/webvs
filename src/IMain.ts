@@ -3,8 +3,8 @@ import ComponentRegistry from "./ComponentRegistry";
 import Model from "./Model";
 import ResourceManager from "./ResourceManager";
 import CopyProgram from "./webgl/CopyProgram";
-import FrameBufferManager from "./webgl/FrameBufferManager";
 import RenderingContext from "./webgl/RenderingContext";
+import TextureSetManager from "./webgl/TextureSetManager";
 
 /**
  * Interface for [[Main]] like objects. This is
@@ -34,10 +34,10 @@ export default interface IMain extends Model {
      */
     getComponentRegistry(): ComponentRegistry;
     /**
-     * Returns a FrameBufferManager for global temporary buffers, that can
+     * Returns a TextureSetManager for global temporary textures, that can
      * be shared between components.
      */
-    getTempFBM(): FrameBufferManager;
+    getTempTSM(): TextureSetManager;
     /**
      * Returns register bank, a map of shared register values available
      * in EEL code in components.

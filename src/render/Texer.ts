@@ -331,7 +331,7 @@ export default class Texer extends Component {
             this.colorBuffer.setData(colorData);
         }
         this.program.run(
-            this.parent.getFBM(),
+            this.parent.getTSM(),
             {
                 colorFilter: colorData ? 1 : 0,
                 colors: colorData ? this.colorBuffer : null,

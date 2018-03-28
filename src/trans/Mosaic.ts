@@ -51,7 +51,7 @@ export default class Mosaic extends Component {
         if (this.size !== 0) {
             const sizeX = 1 / Math.floor(this.size * (gl.drawingBufferWidth - 1) + 1);
             const sizeY = 1 / Math.floor(this.size * (gl.drawingBufferHeight - 1) + 1);
-            this.program.run(this.parent.getFBM(), { size: [sizeX, sizeY] });
+            this.program.run(this.parent.getTSM(), { size: [sizeX, sizeY] });
         }
 
         if (this.frameCount > 0) {

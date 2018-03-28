@@ -24,7 +24,7 @@ export default class Invert extends Component {
     }
 
     public draw() {
-        this.program.run(this.parent.getFBM(), null);
+        this.program.run(this.parent.getTSM(), null);
     }
 
     public destroy() {

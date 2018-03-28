@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import Component, { IComponentConstructor, IContainer } from "./Component";
 import ComponentRegistry from "./ComponentRegistry";
 import IMain from "./IMain";
-import FrameBufferManager from "./webgl/FrameBufferManager";
+import TextureSetManager from "./webgl/TextureSetManager";
 
 /**
  * A Base class for all Components that have a sub component.
@@ -11,7 +11,7 @@ import FrameBufferManager from "./webgl/FrameBufferManager";
  */
 export default abstract class Container extends Component implements IContainer {
     protected components: Component[];
-    private fm: FrameBufferManager;
+    private tsm: TextureSetManager;
 
     /**
      * See [[Component.constructor]]
@@ -22,20 +22,20 @@ export default abstract class Container extends Component implements IContainer 
     }
 
     /**
-     * Returns the FrameBufferManager for this component.
+     * Returns the TextSetManager for this component.
      *
-     * A container inherits FrameBufferManager from it's own parent
+     * A container inherits TextureSetManager from it's own parent
      * unless explicitly overridden by Subclass
      */
-    public getFBM(): FrameBufferManager {
-        return this.fm;
+    public getTSM(): TextureSetManager {
+        return this.tsm;
     }
 
     /**
      * Initializes Container. Please override to implement component specific initialization
      *
      * Container init basically instantiates all subcomponents from the `components` option.
-     * It also initializes the FrameBufferManager to the parent's.
+     * It also initializes the TextureSetManager to the parent's.
      */
     public init() {
         const components = [];
@@ -47,7 +47,7 @@ export default abstract class Container extends Component implements IContainer 
             }
         }
         this.components = components;
-        this.fm = this.parent && this.parent.getFBM();
+        this.tsm = this.parent && this.parent.getTSM();
     }
 
     /**
@@ -159,9 +159,9 @@ export default abstract class Container extends Component implements IContainer 
 
     /**
      * sets the frambuffer manager for this container
-     * @param fm the frambuffermanager
+     * @param tsm the frambuffermanager
      */
-    protected setFBM(fm: FrameBufferManager) {
-        this.fm = fm;
+    protected setTSM(tsm: TextureSetManager) {
+        this.tsm = tsm;
     }
 }
