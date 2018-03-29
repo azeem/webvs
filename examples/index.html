@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webvs Test Page</title>
+    <link href="style.css" rel="stylesheet" type="text/css"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.35.0/codemirror.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="root-container">
+        <div class="column controls">
+            <div class="line">
+                <select id="track-select">
+                    <option value="-1">Select Track</option>
+                </select>
+                and click
+                <button id="change-track-btn">Change</button>
+                to change track
+            </div>
+            <div class="line">
+                <select id="example-select">
+                    <option value="-1">Select Example</option>
+                </select>
+                and click
+                <button id="load-example-btn">Replace</button>
+                to replace sample code in editor
+            </div>
+            <div class="line">
+                Click
+                <button id="load-preset-btn">Load Preset</button>
+                to load preset code from editor
+            </div>
+            <textarea id="preset-input"></textarea>
+        </div>
+
+        <div class="column">
+            <div class="canvas-wrap">
+                <canvas width="640" height="480" id="canvas"></canvas>
+                <div id="msg-container">
+                    <div class="msg waiting">Whipping the llama's ass! ...</div>
+                </div>
+            </div>
+            <div class="attribution">
+                <em>Music Attribution: </em><code id='attribution-text'></code>
+            </div>
+            <div class="audio">
+                <audio id='audio-player' autoplay loop controls></audio>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.35.0/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.35.0/mode/javascript/javascript.min.js"></script>
+    <script src="../dist/webvs.js"></script>
+    <script src="./test-page.js"></script>
+    <script src="./SilkString.js"></script>
+    <script src="./JelloCube.js"></script>
+    <script src="./PillowFight.js"></script>
+    <script src="./RandomAnja.js"></script>
+    <script src="./SuperscopeScience.js"></script>
+    <script type="text/javascript">
+        window.initPage();
+    </script>
+</body>
+</html>

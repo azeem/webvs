@@ -1,0 +1,58 @@
+.root-container {
+    width: 1300px;
+}
+
+.column {
+    width: 640px;
+}
+
+.canvas-wrap {
+    border: 1px solid black;
+    position: relative;
+    padding: 0px;
+    margin-bottom: 0.5em;
+}
+
+.canvas-wrap .msg-container {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.25em;
+    font-family: sans;
+    background-color: rgba(50,50,50,0.5);
+    padding: 20px 0px;
+    color: white;
+    position: absolute;
+    top: 40%;
+    left: 0px;
+}
+
+.attribution {
+    border: 1px solid #E7F7F4;
+    background-color: #E1E7E8;
+    box-sizing: border-box;
+    padding: 10px;
+    margin-bottom: 0.25em;
+}
+
+.controls {
+    float: right;
+}
+
+.controls .line {
+    color: #888888;
+    display: block;
+    margin-bottom: 0.25em;
+}
+
+.CodeMirror {
+    border: 1px solid #888888;
+    margin: 5px 0px;
+}
+
+.audio {
+    margin-bottom: 2em;
+}
+.audio audio {
+    width: 100%;
+}
