@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { BlendModes, flatString, logShaderError, WebGLVarType } from "../utils";
+import { BlendMode, flatString, logShaderError, WebGLVarType } from "../utils";
 import Buffer from "./Buffer";
 import { squareGeometry } from "./geometries";
 import RenderingContext from "./RenderingContext";
@@ -120,7 +120,7 @@ export interface IShaderOpts<ValueType = any> {
     /**
      * Specifies the default blend mode for this shader.
      */
-    blendMode?: BlendModes;
+    blendMode?: BlendMode;
     /**
      * If enabled then everytime this shader is run, we cycle to next frame
      * in the TextureSetManager that's passed in to the run call. The shader
@@ -162,15 +162,15 @@ export default class ShaderProgram<ValueType = any> {
     // these are blend modes not supported with gl.BLEND
     // and the formula to be used inside shader
     private static shaderBlendEq = {
-        [BlendModes.MAXIMUM]: "max(color, texture2D(u_srcTexture, v_position))",
-        [BlendModes.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)",
+        [BlendMode.MAXIMUM]: "max(color, texture2D(u_srcTexture, v_position))",
+        [BlendMode.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)",
     };
 
     private rctx: RenderingContext;
     private swapFrame: boolean;
     private copyOnSwap: boolean;
     private blendValue: number;
-    private blendMode: BlendModes;
+    private blendMode: BlendMode;
     private dynamicBlend: boolean;
     private fragmentSrc: string;
     private vertexSrc: string;
@@ -190,7 +190,7 @@ export default class ShaderProgram<ValueType = any> {
      */
     constructor(rctx: RenderingContext, opts: IShaderOpts<ValueType>) {
         opts = _.defaults(opts, {
-            blendMode: BlendModes.REPLACE,
+            blendMode: BlendMode.REPLACE,
             blendValue: 0.5,
             copyOnSwap: false,
             dynamicBlend: false,
@@ -290,7 +290,7 @@ export default class ShaderProgram<ValueType = any> {
      * @param blendMode the blendMode for this render
      * @param blendValue blendValue when blendMode is `ADJUSTABLE`
      */
-    public run(tsm: TextureSetManager, values: ValueType, blendMode: BlendModes = null, blendValue: number = null) {
+    public run(tsm: TextureSetManager, values: ValueType, blendMode: BlendMode = null, blendValue: number = null) {
         const gl = this.rctx.getGl();
         const oldProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         gl.useProgram(this.program);
@@ -559,47 +559,47 @@ export default class ShaderProgram<ValueType = any> {
     private _setGlBlendMode(mode, blendValue) {
         const gl = this.rctx.getGl();
         switch (mode) {
-            case BlendModes.ADDITIVE:
+            case BlendMode.ADDITIVE:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            case BlendModes.SUBTRACTIVE1:
+            case BlendMode.SUBTRACTIVE1:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
                 break;
-            case BlendModes.SUBTRACTIVE2:
+            case BlendMode.SUBTRACTIVE2:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_SUBTRACT);
                 break;
-            case BlendModes.ALPHA:
+            case BlendMode.ALPHA:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            case BlendModes.MULTIPLY2:
+            case BlendMode.MULTIPLY2:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.DST_COLOR, gl.ZERO);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            case BlendModes.ADJUSTABLE:
+            case BlendMode.ADJUSTABLE:
                 gl.enable(gl.BLEND);
                 gl.blendColor(0, 0, 0, blendValue);
                 gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            case BlendModes.AVERAGE:
+            case BlendMode.AVERAGE:
                 gl.enable(gl.BLEND);
                 gl.blendColor(0.5, 0.5, 0.5, 1);
                 gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
             // shader blending cases
-            case BlendModes.REPLACE:
-            case BlendModes.MULTIPLY:
-            case BlendModes.MAXIMUM:
+            case BlendMode.REPLACE:
+            case BlendMode.MULTIPLY:
+            case BlendMode.MAXIMUM:
                 gl.disable(gl.BLEND);
                 break;
             default:

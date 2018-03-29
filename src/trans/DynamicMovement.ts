@@ -2,29 +2,80 @@ import Component, { IContainer } from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr from "../expr/compileExpr";
 import IMain from "../IMain";
-import { BlendModes, clamp } from "../utils";
+import { BlendMode, clamp } from "../utils";
 import Buffer from "../webgl/Buffer";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram, { IShaderOpts } from "../webgl/ShaderProgram";
 
-enum CoordModes {
+/**
+ * Coordinate Movement coordinate modes
+ */
+enum DynamicMovementCoordMode {
     POLAR = 0,
     RECT,
 }
 
+/**
+ * Options for [[DynamicMovement]] component
+ */
 export interface IDynamicMovementOpts {
+    /**
+     * EEL code to control the movement of pixels
+     *
+     * EEL Variables:
+     * + `x`: `(ReadWrite, perPixel, RECT mode)` - Current x position. Set this value to move pixel to new position
+     * + `y`: `(ReadWrite, perPixel, RECT mode)` - Current y position. Set this value to move pixel to new position
+     * + `d`: `(ReadWrite, perPixel, POLAR mode)` - Current distance from center. Set this value to move pixel to
+     *   new position
+     * + `r`: `(ReadWrite, perPixel, POLAR mode)` - Current angle. Set this value to move pixel to new location
+     * + `alpha`: `(ReadWrite, perPixel)` - When blend mode is enabled this sets the alpha of the new pixel
+     * + `b`: `(Read, onBeat/perFrame/perPixel)` - 0/1 value indicate a beat
+     */
     code: {
+        /**
+         * EEL that'll be run on init
+         */
         init: string,
+        /**
+         * EEL code that's run on beat
+         */
         onBeat: string,
+        /**
+         * EEL code that will be run once per frame
+         */
         perFrame: string,
+        /**
+         * EEL code that will be run once per pixel or grid point
+         */
         perPixel: string,
     };
+    /**
+     * When `noGrid` is true. This indicates the width of the grids. Default: 16
+     */
     gridW: number;
+    /**
+     * When `noGrid` is true. This indicates the height of the grids. Default: 16
+     */
     gridH: number;
+    /**
+     * Enables blending. Set `alpha` in EEL to control belnding
+     */
     blend: boolean;
+    /**
+     * If true then no grids are used. Movement is computed for every pixel.
+     */
     noGrid: boolean;
+    /**
+     * Enable AVS compatibility mode.
+     */
     compat: boolean;
+    /**
+     * Enable bilinear filtering
+     */
     bFilter: boolean;
+    /**
+     * Coordinate mode. see [[DynamicMovementCoordMode]]
+     */
     coord: string;
 }
 
@@ -40,7 +91,9 @@ interface IDMovCodeInstance extends CodeInstance {
     onBeat: () => void;
 }
 
-// A component that moves pixels according to user code.
+/**
+ * A component that moves pixels according to user code
+ */
 export default class DynamicMovement extends Component {
     public static componentName: string = "DynamicMovement";
     public static componentTag: string = "trans";
@@ -140,11 +193,11 @@ export default class DynamicMovement extends Component {
 
     private updateProgram() {
         const opts = this.opts;
-        const coordMode = CoordModes[this.opts.coord];
+        const coordMode = DynamicMovementCoordMode[this.opts.coord];
         const rctx = this.main.getRctx();
 
         const programOpts: IShaderOpts = {
-            blendMode: opts.blend ? BlendModes.ALPHA : BlendModes.REPLACE,
+            blendMode: opts.blend ? BlendMode.ALPHA : BlendMode.REPLACE,
             drawHook: (values, gl, dmProgram) => {
                 // bind values from code instance into program
                 this.code.bindUniforms(dmProgram);
@@ -261,8 +314,8 @@ export default class DynamicMovement extends Component {
     }
 }
 
-function glslRectToPolar(coordMode: CoordModes): string {
-    if (coordMode === CoordModes.POLAR) {
+function glslRectToPolar(coordMode: DynamicMovementCoordMode): string {
+    if (coordMode === DynamicMovementCoordMode.POLAR) {
         return `
             float ar = u_resolution.x/u_resolution.y;
             x=x*ar;
@@ -274,8 +327,8 @@ function glslRectToPolar(coordMode: CoordModes): string {
     }
 }
 
-function glslPolarToRect(coordMode: CoordModes): string {
-    if (coordMode === CoordModes.POLAR) {
+function glslPolarToRect(coordMode: DynamicMovementCoordMode): string {
+    if (coordMode === DynamicMovementCoordMode.POLAR) {
         return `
             d = d*sqrt(2.0);
             x = d*sin(r)/ar;

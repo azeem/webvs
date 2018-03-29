@@ -1,4 +1,4 @@
-import { BlendModes, Color, WebGLVarType } from "../utils";
+import { BlendMode, Color, WebGLVarType } from "../utils";
 import RenderingContext from "./RenderingContext";
 import ShaderProgram from "./ShaderProgram";
 
@@ -21,7 +21,7 @@ export default class ClearScreenProgram extends ShaderProgram<IClearScreenProgra
      * @param rctx the rendering context in which to create this shader
      * @param blendMode blend mode for this shader
      */
-    constructor(rctx: RenderingContext, blendMode: BlendModes) {
+    constructor(rctx: RenderingContext, blendMode: BlendMode) {
         super(rctx, {
             bindings: {
                 uniforms: {

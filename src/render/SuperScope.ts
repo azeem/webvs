@@ -3,30 +3,89 @@ import Component, {IContainer} from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr, { ICompileResult } from "../expr/compileExpr";
 import IMain from "../IMain";
-import { BlendModes, Channels, Color, parseColorNorm, Source, WebGLVarType } from "../utils";
+import { BlendMode, Channels, Color, parseColorNorm, Source, WebGLVarType } from "../utils";
 import Buffer from "../webgl/Buffer";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-enum DrawModes {
+/**
+ * Drawing modes for the [[SuperScope]] component
+ */
+enum SuperScopeDrawMode {
     LINES = 1,
     DOTS,
 }
 
+/**
+ * Options for the [[SuperScope]] component
+ */
 export interface ISuperScopeOpts {
+    /**
+     * EEL code to control drawing of scope
+     *
+     * EEL Variables:
+     * + `red: `(ReadWrite, perPoint)` Set red of color (0-1)
+     * + `green`: `(ReadWrite, perPoint)` Set green of color (0-1)
+     * + `blue`: `(ReadWrite, perPoint)` Set blue of color (0-1)
+     * + `n`: `(ReadWrite, init/perFrame/onBeat)` Set the number of points to be drawn
+     * + `b`: `(Read, onBeat/perFrame/perPixel)` - 0/1 value indicate a beat
+     * + `i`: `(Read, perPixel)` - (0-1) value indicating index of current point
+     * + `v`: `(Read, perPixel)` - (0-1) value indicating value of scope at current point
+     * + `x`: `(Write, perPixel)` - set this to set position of current point
+     * + `y`: `(Write, perPixel)` - set this to set position of current point
+     */
     code: {
+        /**
+         * EEL that'll be run on init
+         */
         init: string,
+        /**
+         * EEL code that's run per frame
+         */
         perFrame: string,
+        /**
+         * EEL code that's run on beat
+         */
         onBeat: string,
+        /**
+         * EEL code that's run for each point
+         */
         perPoint: string,
     };
+    /**
+     * Blend mode for superscope. Default: `REPLACE`
+     */
     blendMode: string;
+    /**
+     * Channel for scope values. Default: `CENTER`
+     */
     channel: string;
+    /**
+     * Data source of scope value. Default: `SPECTRUM`
+     */
     source: string;
+    /**
+     * Drawing mode for the scope. see [[SuperScopeDrawMode]]. Default: `LINES`
+     */
     drawMode: string;
+    /**
+     * Thickness of dots/line. Default: 1
+     */
     thickness: number;
+    /**
+     * Number of times this superscope instance should be cloned. Default: 1
+     */
     clone: number;
+    /**
+     * Colors that the superscope should cycle through.
+     * RGB values set through EEL override this color.
+     * Default: `["#FFFFFF"]`
+     */
     colors: string[];
+    /**
+     * Speed at which superscope colors will be cycled.
+     * Default: `0.01`
+     */
     cycleSpeed: number;
 }
 
@@ -54,7 +113,9 @@ interface ISSCodeInstance extends CodeInstance {
     perPoint: () => void;
 }
 
-// A generic scope, that can draw points or lines based on user code
+/**
+ * A generic scope, that can draw points or lines based on user code
+ */
 export default class SuperScope extends Component {
     public static componentName: string = "SuperScope";
     public static componentTag: string = "render";
@@ -94,7 +155,7 @@ export default class SuperScope extends Component {
     private program: ShaderProgram<ISuperScopeShaderValues>;
     private source: Source;
     private channel: Channels;
-    private drawMode: DrawModes;
+    private drawMode: SuperScopeDrawMode;
     private veryThick: boolean;
     private colors: Color[];
     private curColorId: number;
@@ -165,7 +226,7 @@ export default class SuperScope extends Component {
         } else {
             data = this.main.getAnalyser().getWaveform(this.channel);
         }
-        const dots = this.drawMode === DrawModes.DOTS;
+        const dots = this.drawMode === SuperScopeDrawMode.DOTS;
         const bucketSize = data.length / nPoints;
         let pbi = 0;
         let cdi = 0;
@@ -316,7 +377,7 @@ export default class SuperScope extends Component {
     }
 
     private updateProgram() {
-        const blendMode: BlendModes = BlendModes[this.opts.blendMode];
+        const blendMode: BlendMode = BlendMode[this.opts.blendMode];
         const program = new ShaderProgram<ISuperScopeShaderValues>(this.main.getRctx(), {
             bindings: {
                 attribs: {
@@ -414,13 +475,13 @@ export default class SuperScope extends Component {
     }
 
     private updateDrawMode() {
-        this.drawMode = DrawModes[this.opts.drawMode];
+        this.drawMode = SuperScopeDrawMode[this.opts.drawMode];
     }
 
     private updateThickness() {
         let range;
         const gl = this.main.getRctx().getGl();
-        if (this.drawMode === DrawModes.DOTS) {
+        if (this.drawMode === SuperScopeDrawMode.DOTS) {
             range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
         } else {
             range = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE);

@@ -115,7 +115,7 @@ export function logShaderError(src: string, error: string): void {
 /**
  * Blend Modes
  */
-export enum BlendModes {
+export enum BlendMode {
     REPLACE = 1,
     MAXIMUM,
     AVERAGE,

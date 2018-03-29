@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import Component, {IContainer} from "../Component";
 import IMain from "../IMain";
-import {BlendModes, Color, parseColorNorm} from "../utils";
+import {BlendMode, Color, parseColorNorm} from "../utils";
 import ClearScreenProgram from "../webgl/ClearScreenProgram";
 import ShaderProgram from "../webgl/ShaderProgram";
 
@@ -73,7 +73,7 @@ export default class ClearScreen extends Component {
     }
 
     public updateProgram() {
-        const blendMode = BlendModes[this.opts.blendMode];
+        const blendMode = BlendMode[this.opts.blendMode];
         const program = new ClearScreenProgram(this.main.getRctx(), blendMode);
         if (this.program) {
             this.program.destroy();

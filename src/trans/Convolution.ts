@@ -5,20 +5,50 @@ import { glslFloatRepr, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-enum EdgeModes {
+/**
+ * Edge handling modes for [[Convolution]] component
+ */
+enum ConvEdgeMode {
+    /**
+     * Extend edge value beyond edge
+     */
     EXTEND = 0,
+    /**
+     * Wrap around to opposite edge
+     */
     WRAP,
 }
 
+/**
+ * Options for [[Convolution]] component
+ */
 export interface IConvolutionOpts {
+    /**
+     * Edge handline mode. see [[ConvEdgeMode]].
+     * Default: `EXTEND`
+     */
     edgeMode: string;
+    /**
+     * Automatically compute scale value. Default: `true`
+     */
     autoScale: boolean;
+    /**
+     * Scale for convolution. Default: 0
+     */
     scale: number;
+    /**
+     * 2D Matrix with convolution kernel. Default: `[0,0,0 0,1,0, 0,0,0]`
+     */
     kernel: number[];
+    /**
+     * Convolution bias value. Default: 0
+     */
     bias: number;
 }
 
-// A component that applies a convolution kernel
+/**
+ * A component that applies a convolution kernel
+ */
 export default class Convolution extends Component {
     public static componentName: string = "Convolution";
     public static componentTag: string = "trans";
@@ -80,15 +110,15 @@ export default class Convolution extends Component {
             throw new Error("Invalid convolution kernel");
         }
 
-        const edgeMode: EdgeModes = EdgeModes[this.opts.edgeMode];
+        const edgeMode: ConvEdgeMode = ConvEdgeMode[this.opts.edgeMode];
 
         // generate edge correction function
         let edgeFunc = "";
         switch (edgeMode) {
-            case EdgeModes.WRAP:
+            case ConvEdgeMode.WRAP:
                 edgeFunc = "pos = vec2(pos.x<0?pos.x+1.0:pos.x%1, pos.y<0?pos.y+1.0:pos.y%1);";
                 break;
-            case EdgeModes.EXTEND:
+            case ConvEdgeMode.EXTEND:
                 edgeFunc = "pos = clamp(pos, vec2(0,0), vec2(1,1));";
                 break;
         }

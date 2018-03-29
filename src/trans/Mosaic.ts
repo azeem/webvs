@@ -1,6 +1,6 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import { BlendModes, WebGLVarType } from "../utils";
+import { BlendMode, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
@@ -72,7 +72,7 @@ export default class Mosaic extends Component {
     }
 
     private updateProgram() {
-        const blendMode: BlendModes = BlendModes[this.opts.blendMode];
+        const blendMode: BlendMode = BlendMode[this.opts.blendMode];
         const program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {

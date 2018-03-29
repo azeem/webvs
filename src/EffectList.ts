@@ -3,13 +3,13 @@ import Container from "./Container";
 import CodeInstance from "./expr/CodeInstance";
 import compileExpr from "./expr/compileExpr";
 import IMain from "./IMain";
-import { BlendModes } from "./utils";
+import { BlendMode } from "./utils";
 import TextureSetManager from "./webgl/TextureSetManager";
 
 /**
  * BlendModes supported by Effectlist
  */
-export enum ELBlendModes {
+export enum ELBlendMode {
     REPLACE = 1,
     MAXIMUM,
     AVERAGE,
@@ -108,8 +108,8 @@ export default class EffectList extends Container {
     private first: boolean;
     private inited: boolean = false;
     private code: IELCodeInstance;
-    private input: ELBlendModes;
-    private output: ELBlendModes;
+    private input: ELBlendMode;
+    private output: ELBlendMode;
 
     constructor(main: IMain, parent: Container, opts: any) {
         super(main, parent, opts);
@@ -168,7 +168,7 @@ export default class EffectList extends Container {
         }
 
         // blend input texture onto internal texture
-        if (this.input !== ELBlendModes.IGNORE) {
+        if (this.input !== ELBlendMode.IGNORE) {
             const inputTexture = this.parent.getTSM().getCurrentTexture();
             this.main.getCopier().run(this.getTSM(), { srcTexture: inputTexture }, this.input as number);
         }
@@ -185,7 +185,7 @@ export default class EffectList extends Container {
         this.getTSM().unsetAsRenderTarget();
 
         // blend current texture to the output framebuffer
-        if (this.output !== ELBlendModes.IGNORE) {
+        if (this.output !== ELBlendMode.IGNORE) {
             if (this.parent) {
                 this.main.getCopier().run(
                     this.parent.getTSM(),
@@ -214,9 +214,9 @@ export default class EffectList extends Container {
 
     private updateBlendMode(value: string, name: "input" | "output") {
         if (name === "input") {
-            this.input = ELBlendModes[value];
+            this.input = ELBlendMode[value];
         } else {
-            this.output = ELBlendModes[value];
+            this.output = ELBlendMode[value];
         }
     }
 

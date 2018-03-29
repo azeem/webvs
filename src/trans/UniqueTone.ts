@@ -1,6 +1,6 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import { BlendModes, parseColorNorm, WebGLVarType } from "../utils";
+import { BlendMode, parseColorNorm, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
@@ -54,7 +54,7 @@ export default class UniqueTone extends Component {
     }
 
     private updateProgram() {
-        const blendMode: BlendModes = BlendModes[this.opts.blendMode];
+        const blendMode: BlendMode = BlendMode[this.opts.blendMode];
         const program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {

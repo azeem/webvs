@@ -4,20 +4,41 @@ import { Color, parseColorNorm, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
+/**
+ * Options for the [[ColorClip]] component
+ */
 export interface IColorClipOpts {
+    /**
+     * Clipping mode. see [[ColorClipMode]]
+     */
     mode: string;
+    /**
+     * Clip Color
+     */
     color: string;
+    /**
+     * Output color
+     */
     outColor: string;
+    /**
+     * distance value when mode is `NEAR`
+     */
     level: number;
 }
-enum ClipModes {
+
+/**
+ * Clipping moder for the [[ColorClip]] component
+ */
+enum ColorClipMode {
     BELOW = 0,
     ABOVE,
     NEAR,
 }
 
-// A component that clips colors to a different color depending
-// on whether the source colors are above or below a reference color.
+/**
+ * A component that clips colors to a different color depending
+ * on whether the source colors are above or below a reference color.
+ */
 export default class ColorClip extends Component {
     public static componentName: string = "ColorClip";
     public static componentTag: string = "trans";
@@ -35,7 +56,7 @@ export default class ColorClip extends Component {
 
     protected opts: IColorClipOpts;
     private program: ShaderProgram;
-    private mode: ClipModes;
+    private mode: ColorClipMode;
     private color: Color;
     private outColor: Color;
 
@@ -103,7 +124,7 @@ export default class ColorClip extends Component {
     }
 
     private updateMode() {
-        this.mode = ClipModes[this.opts.mode];
+        this.mode = ColorClipMode[this.opts.mode];
     }
 
     private updateColor() {

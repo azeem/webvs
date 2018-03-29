@@ -1,6 +1,6 @@
 import Component, {IContainer} from "../Component";
 import IMain from "../IMain";
-import { BlendModes, Color, parseColorNorm, WebGLVarType } from "../utils";
+import { BlendMode, Color, parseColorNorm, WebGLVarType } from "../utils";
 import Buffer from "../webgl/Buffer";
 import { circleGeometry } from "../webgl/geometries";
 import RenderingContext from "../webgl/RenderingContext";
@@ -40,7 +40,7 @@ export default class MovingParticle extends Component {
     private posX: number;
     private posY: number;
     private program: ShaderProgram;
-    private blendMode: BlendModes;
+    private blendMode: BlendMode;
     private color: Color;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
@@ -132,7 +132,7 @@ export default class MovingParticle extends Component {
     }
 
     public updateBlendMode() {
-        this.blendMode = BlendModes[this.opts.blendMode];
+        this.blendMode = BlendMode[this.opts.blendMode];
     }
 
     public updateColor() {

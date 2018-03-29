@@ -1,22 +1,39 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import { BlendModes } from "../utils";
+import { BlendMode } from "../utils";
 
+/**
+ * Options for BufferSave
+ */
 export interface IBufferSaveOpts {
+    /**
+     * Action to be taken see [[BufferSaveAction]]
+     */
     action: string;
+    /**
+     * A unique name for the buffer
+     */
     bufferId: string;
+    /**
+     * BlendMode when restoring
+     */
     blendMode: string;
 }
 
-enum Actions {
+/**
+ * Actions for BufferSave
+ */
+enum BufferSaveAction {
     SAVE = 0,
     RESTORE,
     SAVERESTORE,
     RESTORESAVE,
 }
 
-// A components that saves or restores a copy of the current
-// frame buffer.
+/**
+ * A component that saves or restores a copy of the current
+ * frame buffer
+ */
 export default class BufferSave extends Component {
     public static componentName: string = "BufferSave";
     public static componentTag: string = "misc";
@@ -32,9 +49,9 @@ export default class BufferSave extends Component {
     };
 
     protected opts: IBufferSaveOpts;
-    private action: Actions;
-    private nextAction: Actions;
-    private blendMode: BlendModes;
+    private action: BufferSaveAction;
+    private nextAction: BufferSaveAction;
+    private blendMode: BlendMode;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
@@ -48,23 +65,24 @@ export default class BufferSave extends Component {
 
     public draw() {
         let currentAction;
-        if (this.action === Actions.SAVERESTORE ||
-           this.action === Actions.RESTORESAVE) {
+        if (this.action === BufferSaveAction.SAVERESTORE ||
+           this.action === BufferSaveAction.RESTORESAVE) {
             currentAction = this.nextAction;
             // toggle next action
-            this.nextAction = (this.nextAction === Actions.SAVE) ? Actions.RESTORE : Actions.SAVE;
+            this.nextAction =
+                (this.nextAction === BufferSaveAction.SAVE) ? BufferSaveAction.RESTORE : BufferSaveAction.SAVE;
         } else {
             currentAction = this.action;
         }
 
         const tempTSM = this.main.getTempTSM();
         switch (currentAction) {
-            case Actions.SAVE:
+            case BufferSaveAction.SAVE:
                 tempTSM.setAsRenderTarget(this.opts.bufferId);
                 this.main.getCopier().run(null, { srcTexture: this.parent.getTSM().getCurrentTexture() });
                 tempTSM.unsetAsRenderTarget();
                 break;
-            case Actions.RESTORE:
+            case BufferSaveAction.RESTORE:
                 this.main.getCopier().run(
                     this.parent.getTSM(), { srcTexture: tempTSM.getTexture(this.opts.bufferId) }, this.blendMode);
                 break;
@@ -77,11 +95,11 @@ export default class BufferSave extends Component {
     }
 
     public updateAction() {
-        this.action = Actions[this.opts.action];
-        if (this.action === Actions.SAVERESTORE) {
-            this.nextAction = Actions.SAVE;
-        } else if (this.action === Actions.RESTORESAVE) {
-            this.nextAction = Actions.RESTORE;
+        this.action = BufferSaveAction[this.opts.action];
+        if (this.action === BufferSaveAction.SAVERESTORE) {
+            this.nextAction = BufferSaveAction.SAVE;
+        } else if (this.action === BufferSaveAction.RESTORESAVE) {
+            this.nextAction = BufferSaveAction.RESTORE;
         }
     }
 
@@ -96,6 +114,6 @@ export default class BufferSave extends Component {
     }
 
     public updateBlendMode() {
-        this.blendMode = BlendModes[this.opts.blendMode];
+        this.blendMode = BlendMode[this.opts.blendMode];
     }
 }

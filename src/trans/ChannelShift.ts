@@ -5,12 +5,24 @@ import { WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
+/**
+ * Options for [[ChannelShift]] component
+ */
 export interface IChannelShiftOpts {
+    /**
+     * Channel shift mode. see [[ChannelShiftMode]]
+     */
     channel: string;
+    /**
+     * If enabled, channel shift mode will randomize on beat
+     */
     onBeatRandom: boolean;
 }
 
-enum ShiftChannels {
+/**
+ * Channel shift mode for [[ChannelShift]] component
+ */
+enum ChannelShiftMode {
     RGB = 0,
     RBG,
     BRG,
@@ -18,9 +30,11 @@ enum ShiftChannels {
     GBR,
     GRB,
 }
-const ShiftChannelsKeys = Object.keys(ShiftChannels).filter((s) => isNaN(parseInt(s, 10)));
+const ShiftChannelsKeys = Object.keys(ChannelShiftMode).filter((s) => isNaN(parseInt(s, 10)));
 
-// A component that swizzles the color component
+/**
+ * A component that swizzles the color component
+ */
 export default class ChannelShift extends Component {
     public static componentName: string = "ChannelShift";
     public static componentTag: string = "trans";
@@ -34,7 +48,7 @@ export default class ChannelShift extends Component {
 
     protected opts: IChannelShiftOpts;
     private program: ShaderProgram;
-    private channel: ShiftChannels;
+    private channel: ChannelShiftMode;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
@@ -53,7 +67,7 @@ export default class ChannelShift extends Component {
                     vec3 color = getSrcColor().rgb;
                     ${
                         _.flatMap(ShiftChannelsKeys, (channel) => `
-                            if(u_channel == ${ShiftChannels[channel]}) {
+                            if(u_channel == ${ChannelShiftMode[channel]}) {
                                 setFragColor(vec4(color.${channel.toLowerCase()}, 1));
                             }
                         `).join("\n")
@@ -78,6 +92,6 @@ export default class ChannelShift extends Component {
     }
 
     private updateChannel() {
-        this.channel = ShiftChannels[this.opts.channel];
+        this.channel = ChannelShiftMode[this.opts.channel];
     }
 }

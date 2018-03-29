@@ -1,19 +1,44 @@
 import * as _ from "lodash";
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import { BlendModes, Color, parseColor, WebGLVarType } from "../utils";
+import { BlendMode, Color, parseColor, WebGLVarType } from "../utils";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
-export interface IColorMapItem {index: number; color: string; }
+/**
+ * Color Map Item for [[IColorMapOpts]]
+ */
+export interface IColorMapItem {
+    index: number;
+    color: string;
+}
+
+/**
+ * Options for [[ColorMap]] component
+ */
 export interface IColorMapOpts {
+    /**
+     * Key by which color should be mapped. see [[ColorMapKey]]
+     */
     key: string;
+    /**
+     * Output blending mode. see [[BlendMode]]
+     */
     output: string;
+    /**
+     * Color map cycling mode. see [[ColorMapCycleMode]]
+     */
     mapCycleMode: string;
+    /**
+     * Color map items
+     */
     maps: IColorMapItem[][];
 }
 
-enum MapKey {
+/**
+ * Color mapping key for [[ColorMap]] component
+ */
+enum ColorMapKey {
     RED = 0,
     GREEN,
     BLUE,
@@ -22,14 +47,19 @@ enum MapKey {
     MAX,
 }
 
-enum MapCycleModes {
+/**
+ * Color map cycling modes for [[ColorMap]] component
+ */
+enum ColorMapCycleMode {
     SINGLE = 0,
     ONBEATRANDOM,
     ONBEATSEQUENTIAL,
 }
 
-// a component that changes colors according to a gradient map using
-// a key generated from the source colors
+/**
+ * A component that changes colors according to a gradient map using
+ * a key generated from the source colors
+ */
 export default class ColorMap extends Component {
     public static componentName: string = "ColorMap";
     public static componentTag: string = "trans";
@@ -53,11 +83,11 @@ export default class ColorMap extends Component {
 
     protected opts: IColorMapOpts;
     private program: ShaderProgram;
-    private mapCycleMode: MapCycleModes;
-    private currentMap: MapKey;
+    private mapCycleMode: ColorMapCycleMode;
+    private currentMap: ColorMapKey;
     private colorMaps: WebGLTexture[];
-    private blendMode: BlendModes;
-    private key: MapKey;
+    private blendMode: BlendMode;
+    private key: ColorMapKey;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
@@ -78,12 +108,12 @@ export default class ColorMap extends Component {
                 void main() {
                    vec4 srcColor = getSrcColor();
                    float key;
-                   if(u_key == ${MapKey.RED}          ) { key = srcColor.r; }
-                   if(u_key == ${MapKey.GREEN}        ) { key = srcColor.g; }
-                   if(u_key == ${MapKey.BLUE}         ) { key = srcColor.b; }
-                   if(u_key == ${MapKey["(R+G+B)/2"]} ) { key = min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0); }
-                   if(u_key == ${MapKey["(R+G+B)/3"]} ) { key = (srcColor.r+srcColor.g+srcColor.b)/3.0; }
-                   if(u_key == ${MapKey.MAX}          ) { key = max(srcColor.r, max(srcColor.g, srcColor.b)); }
+                   if(u_key == ${ColorMapKey.RED}          ) { key = srcColor.r; }
+                   if(u_key == ${ColorMapKey.GREEN}        ) { key = srcColor.g; }
+                   if(u_key == ${ColorMapKey.BLUE}         ) { key = srcColor.b; }
+                   if(u_key == ${ColorMapKey["(R+G+B)/2"]} ) { key = min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0); }
+                   if(u_key == ${ColorMapKey["(R+G+B)/3"]} ) { key = (srcColor.r+srcColor.g+srcColor.b)/3.0; }
+                   if(u_key == ${ColorMapKey.MAX}          ) { key = max(srcColor.r, max(srcColor.g, srcColor.b)); }
                    setFragColor(texture2D(u_colorMap, vec2(key, 0)));
                 }
             `,
@@ -97,9 +127,9 @@ export default class ColorMap extends Component {
 
     public draw() {
         if (this.main.getAnalyser().isBeat()) {
-            if (this.mapCycleMode ===  MapCycleModes.ONBEATRANDOM) {
+            if (this.mapCycleMode ===  ColorMapCycleMode.ONBEATRANDOM) {
                 this.currentMap = Math.floor(Math.random() * this.opts.maps.length);
-            } else if (this.mapCycleMode === MapCycleModes.ONBEATSEQUENTIAL) {
+            } else if (this.mapCycleMode === ColorMapCycleMode.ONBEATSEQUENTIAL) {
                 this.currentMap = (this.currentMap + 1) % this.colorMaps.length;
             }
         }
@@ -132,15 +162,15 @@ export default class ColorMap extends Component {
     }
 
     private updateCycleMode() {
-        this.mapCycleMode = MapCycleModes[this.opts.mapCycleMode];
+        this.mapCycleMode = ColorMapCycleMode[this.opts.mapCycleMode];
     }
 
     private updateKey() {
-        this.key = MapKey[this.opts.key];
+        this.key = ColorMapKey[this.opts.key];
     }
 
     private updateBlendMode() {
-        this.blendMode = BlendModes[this.opts.output];
+        this.blendMode = BlendMode[this.opts.output];
     }
 
     private _buildColorMap(map: IColorMapItem[]): WebGLTexture {

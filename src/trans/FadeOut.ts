@@ -1,6 +1,6 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import { BlendModes, Color, parseColorNorm } from "../utils";
+import { BlendMode, Color, parseColorNorm } from "../utils";
 import ClearScreenProgram from "../webgl/ClearScreenProgram";
 
 export interface IFadeOutOpts {
@@ -32,7 +32,7 @@ export default class FadeOut extends Component {
     }
 
     public init() {
-        this.program = new ClearScreenProgram(this.main.getRctx(), BlendModes.AVERAGE);
+        this.program = new ClearScreenProgram(this.main.getRctx(), BlendMode.AVERAGE);
         this.updateSpeed();
         this.updateColor();
     }
