@@ -2,21 +2,19 @@ var path = require('path');
 var webpack = require('webpack');
 var fs = require('fs');
 var packageJson = require('./package.json');
+var UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
-function commonJsConfig(devServer) {
-    let resourcePackUrl;
-    if(devServer) {
-        resourcePackUrl = '/resources/';
-    } else {
+function commonJsConfig(resourcePackUrl) {
+    if(!resourcePackUrl) {
         resourcePackUrl = 'https://unpkg.com/webvs@' + packageJson.version + '/resources/';
     }
 
-    var config = {
+    return {
         entry: './index.ts',
         output: {
             path: path.resolve(__dirname, 'dist'),
             filename: 'webvs.node.js',
-            libraryTarget: 'commonjs2'
+            libraryTarget: 'commonjs2',
         },
         resolve: {
             extensions: ['.ts', '.js', '.pegjs']
@@ -41,36 +39,45 @@ function commonJsConfig(devServer) {
             })
         ],
     }
+};
 
-    if(devServer) {
+function webConfig(devServer, production) {
+    const config = commonJsConfig(devServer ? '/resources/' : null);
+
+    config.output = {
+        path: path.resolve(__dirname, 'dist'),
+        filename: '[name].js',
+        library: 'Webvs',
+        libraryTarget: 'window',
+        libraryExport: 'default'
+    };
+
+    if (devServer) {
         config.serve = {
             dev: {
                 publicPath: '/dist'
             }
-        };
+        }
     }
 
+    if (production) {
+        config.entry = {
+            "webvs": "./index.ts",
+            "webvs.min": "./index.ts",
+        };
+        config.plugins.push(new UglifyJSPlugin({
+            minimize: true,
+            include: /\.min\.js$/
+        }));
+    }
     return config;
-};
-
-function webConfig(devServer) {
-    const cjsConfig = commonJsConfig(devServer);
-    return Object.assign({}, cjsConfig, {
-        output: {
-            path: path.resolve(__dirname, 'dist'),
-            filename: 'webvs.js',
-            library: 'Webvs',
-            libraryTarget: 'window',
-            libraryExport: 'default'
-        }
-    });
 }
 
 var target = process.env.TARGET || 'all';
 if(target === 'dev') {
     module.exports = webConfig(true);
 } else if(target == 'all') {
-    module.exports = [commonJsConfig(), webConfig()];
+    module.exports = [commonJsConfig(), webConfig(false, true)];
 } else if(target === 'web') {
     module.exports = webConfig();
 } else if(target === 'cjs') {
