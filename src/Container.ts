@@ -43,6 +43,11 @@ export default abstract class Container extends Component implements IContainer 
         if (this.opts.components) {
             for (const opts of this.opts.components) {
                 const componentClass = this.main.getComponentRegistry().getComponentClass(opts.type);
+                if (!componentClass) {
+                    // tslint:disable-next-line:no-console
+                    console.warn(`Unknown ComponentClass: ${opts.type}. Skipping.`);
+                    continue;
+                }
                 const component = new componentClass(this.main, this, opts);
                 components.push(component);
             }
@@ -80,6 +85,11 @@ export default abstract class Container extends Component implements IContainer 
             component.setParent(this);
         } else {
             const componentClass = this.main.getComponentRegistry().getComponentClass(componentOpts.type);
+            if (!componentClass) {
+                // tslint:disable-next-line:no-console
+                console.warn(`Unknown ComponentClass: ${componentOpts.type}.`);
+                return null;
+            }
             component = new componentClass(this.main, this, componentOpts);
         }
         this.components.splice(pos, 0, component);
