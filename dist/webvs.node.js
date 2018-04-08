@@ -1,4 +1,4 @@
-window["Webvs"] =
+module.exports =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -18448,4 +18448,4 @@ exports["default"] = WebAudioAnalyser;
 
 
 /***/ })
-/******/ ])["default"];
+/******/ ]);

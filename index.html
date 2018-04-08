@@ -1195,6 +1195,9 @@ img { max-width: 100%; }
 			<a href="interfaces/ivisdata.html" class="tsd-kind-icon">IVis<wbr>Data</a>
 		</li>
 		<li class=" tsd-kind-interface tsd-is-not-exported">
+			<a href="interfaces/iwebaudioanalyseropts.html" class="tsd-kind-icon">IWeb<wbr>Audio<wbr>Analyser<wbr>Opts</a>
+		</li>
+		<li class=" tsd-kind-interface tsd-is-not-exported">
 			<a href="interfaces/indexbinding.html" class="tsd-kind-icon">Index<wbr>Binding</a>
 		</li>
 		<li class=" tsd-kind-type-alias tsd-is-not-exported">
@@ -1323,14 +1326,59 @@ img { max-width: 100%; }
 	<div class="content-wrap">
 		<div class="tsd-panel tsd-typography">
 			<h1 id="webvs">Webvs</h1>
-			<p>A Winamp AVS like visualization tool for the browser. Webvs is a
-			javascript library that can be used to run visualization presets.</p>
+			<p>A Winamp AVS like visualization library for the web.</p>
+			<h2 id="demo">Demo</h2>
+			<p>Try out some examples, or test your own presets on the <a href="http://azeemarshad.in/webvs/examples/">Webvs test page</a></p>
+			<h2 id="documentation">Documentation</h2>
+			<p>You can find TypeDoc generated documentation for Webvs on the <a href="http://azeemarshad.in/webvs/">website</a>.
+			The documentation for the <a href="http://azeemarshad.in/webvs/classes/main.html">Main</a> class is a good place to start.</p>
+			<h2 id="installation">Installation</h2>
+			<h3 id="npm">npm</h3>
+			<p>For use with package bundlers, Webvs is available on <a href="https://www.npmjs.com/package/webvs">npm</a> as <code>webvs</code>. Install using</p>
+			<pre><code>npm <span class="hljs-keyword">install</span> webvs
+</code></pre><p>and import in your code and initialize as follows</p>
+			<pre><code class="lang-js"><span class="hljs-keyword">import</span> Webvs <span class="hljs-keyword">from</span> <span class="hljs-string">'webvs'</span>;
+<span class="hljs-keyword">const</span> webvs = <span class="hljs-keyword">new</span> Webvs.Main(....)
+</code></pre>
+			<h3 id="cdn">CDN</h3>
+			<p>You can also embed webvs.js directly from <a href="https://unpkg.com">unpkg</a> CDN.</p>
+			<pre><code><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/webvs/dist/webvs.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</code></pre><p>or for a minified version</p>
+			<pre><code><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/webvs/dist/webvs.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</code></pre><p>This script exposes a <code>Webvs</code> global which you can use to initialize like so <code>new Webvs.Main(...)</code>.</p>
+			<h2 id="usage">Usage</h2>
+			<p>A typical usage involves creating an Analyser from your music source (e.g. <a href="http://azeemarshad.in/webvs/classes/webaudioanalyser.html">Webvs.WebAudioAnalyser</a> to use an <code>audio</code> tag or song url as a source) and initializing an instance of <code>Webvs.Main</code> with it. The main object serves as the primary interface or controlling the visualization. e.g.</p>
+			<pre><code class="lang-js"><span class="hljs-keyword">const</span> analyser = <span class="hljs-keyword">new</span> Webvs.WebAudioAnalyser();
+<span class="hljs-keyword">const</span> webvs = <span class="hljs-keyword">new</span> Webvs.Main({
+    <span class="hljs-attr">canvas</span>: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">"canvas"</span>),
+    <span class="hljs-attr">analyser</span>: analyser,
+    <span class="hljs-attr">showStat</span>: <span class="hljs-literal">true</span>
+});
+webvs.loadPreset({
+  <span class="hljs-string">"clearFrame"</span>: <span class="hljs-literal">true</span>,
+  <span class="hljs-string">"components"</span>: [
+      {
+          <span class="hljs-string">"type"</span>: <span class="hljs-string">"SuperScope"</span>,
+          <span class="hljs-string">"source"</span>: <span class="hljs-string">"WAVEFORM"</span>,
+          <span class="hljs-string">"code"</span>: {
+              <span class="hljs-string">"perPoint"</span>: <span class="hljs-string">"x=i*2-1;y=v;"</span>
+          },
+          <span class="hljs-string">"colors"</span>: [<span class="hljs-string">"#ffffff"</span>]
+      }
+  ]
+});
+webvs.start();
+analyser.load(<span class="hljs-string">"music.ogg"</span>);
+analyser.play();
+</code></pre>
 			<h2 id="development">Development</h2>
-			<pre><code><span class="hljs-built_in">npm</span> install
-<span class="hljs-built_in">npm</span> run dev
-</code></pre><p>point browser to <code>http://localhost:8080/examples</code> to view webvs test page.</p>
+			<p>To develop Webvs clone the repo and install packages</p>
+			<pre><code>npm <span class="hljs-keyword">install</span>
+</code></pre><p>For typical workflow, start a dev server with</p>
+			<pre><code>npm <span class="hljs-keyword">run</span><span class="bash"> dev</span>
+</code></pre><p>and point browser to <code>http://localhost:8080/examples/</code> to view webvs test page.</p>
 			<h2 id="contributing">Contributing</h2>
-			<p><a href="https://github.com/azeem/webvs/fork">Fork</a> and submit pull requests. For suggestions/bug fixes use <a href="https://github.com/azeem/webvs/issues">Github/Issues</a>.</p>
+			<p><a href="https://github.com/azeem/webvs/fork">Fork</a> and submit pull requests against master branch. For suggestions/bug fixes use <a href="https://github.com/azeem/webvs/issues">Github/Issues</a>. Chat with us at <a href="https://gitter.im/visbot/AVS">visbot/AVS gitter channel</a>.</p>
 		</div>
 		<div style="position:relative;"><a name="typedoc-main-index" class="tsd-anchor"></a></div>
 		<section class="tsd-panel-group tsd-index-group">
@@ -1445,6 +1493,7 @@ img { max-width: 100%; }
 							<li class="tsd-kind-interface tsd-is-not-exported"><a href="interfaces/iuniformbinding.html" class="tsd-kind-icon">IUniform<wbr>Binding</a></li>
 							<li class="tsd-kind-interface"><a href="interfaces/iuniquetoneopts.html" class="tsd-kind-icon">IUnique<wbr>Tone<wbr>Opts</a></li>
 							<li class="tsd-kind-interface tsd-is-not-exported"><a href="interfaces/ivisdata.html" class="tsd-kind-icon">IVis<wbr>Data</a></li>
+							<li class="tsd-kind-interface tsd-is-not-exported"><a href="interfaces/iwebaudioanalyseropts.html" class="tsd-kind-icon">IWeb<wbr>Audio<wbr>Analyser<wbr>Opts</a></li>
 							<li class="tsd-kind-interface tsd-is-not-exported"><a href="interfaces/indexbinding.html" class="tsd-kind-icon">Index<wbr>Binding</a></li>
 						</ul>
 					</section>
@@ -1519,7 +1568,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">Arg<wbr>Length<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L430">expr/compileExpr.ts:430</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L451">expr/compileExpr.ts:451</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1529,7 +1578,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">Color<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L35">utils.ts:35</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L38">utils.ts:38</a></li>
 					</ul>
 				</aside>
 				<div class="tsd-comment tsd-typography">
@@ -1544,7 +1593,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">Expression<span class="tsd-signature-symbol">:</span> <a href="classes/binaryexpr.html" class="tsd-signature-type">BinaryExpr</a><span class="tsd-signature-symbol"> | </span><a href="classes/unaryexpr.html" class="tsd-signature-type">UnaryExpr</a><span class="tsd-signature-symbol"> | </span><a href="classes/funccall.html" class="tsd-signature-type">FuncCall</a><span class="tsd-signature-symbol"> | </span><a href="classes/primaryexpr.html" class="tsd-signature-type">PrimaryExpr</a></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/Ast.ts#L1">expr/Ast.ts:1</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/Ast.ts#L1">expr/Ast.ts:1</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1554,7 +1603,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">Float<wbr>Array<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Float32Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Float64Array</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L173">utils.ts:173</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L182">utils.ts:182</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1564,7 +1613,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">Statement<span class="tsd-signature-symbol">:</span> <a href="globals.html#expression" class="tsd-signature-type">Expression</a><span class="tsd-signature-symbol"> | </span><a href="classes/assignment.html" class="tsd-signature-type">Assignment</a></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/Ast.ts#L37">expr/Ast.ts:37</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/Ast.ts#L37">expr/Ast.ts:37</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1574,7 +1623,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">Typed<wbr>Array<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Int8Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Uint8Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Uint8ClampedArray</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Int16Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Uint16Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Int32Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Uint32Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Float32Array</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Float64Array</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L174">utils.ts:174</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L183">utils.ts:183</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1587,7 +1636,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">RESOURCE_<wbr>PACK_<wbr>URL<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/builtinResourcePack.ts#L1">builtinResourcePack.ts:1</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/builtinResourcePack.ts#L1">builtinResourcePack.ts:1</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1597,7 +1646,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">Shift<wbr>Channels<wbr>Keys<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> =&nbsp;Object.keys(ChannelShiftMode).filter((s) &#x3D;&gt; isNaN(parseInt(s, 10)))</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/trans/ChannelShift.ts#L33">trans/ChannelShift.ts:33</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/trans/ChannelShift.ts#L33">trans/ChannelShift.ts:33</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1607,7 +1656,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">WEBVS_<wbr>VERSION<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/Main.ts#L34">Main.ts:34</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/Main.ts#L36">Main.ts:36</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1617,7 +1666,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">glsl<wbr>Pre<wbr>Compute<wbr>Funcs<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> =&nbsp;[&quot;getosc&quot;, &quot;gettime&quot;]</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L469">expr/compileExpr.ts:469</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L490">expr/compileExpr.ts:490</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1627,7 +1676,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">js<wbr>Math<wbr>Funcs<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> =&nbsp;[&quot;min&quot;, &quot;max&quot;, &quot;sin&quot;, &quot;cos&quot;, &quot;abs&quot;, &quot;tan&quot;, &quot;asin&quot;, &quot;acos&quot;,&quot;atan&quot;, &quot;log&quot;, &quot;pow&quot;, &quot;sqrt&quot;, &quot;floor&quot;, &quot;ceil&quot;,]</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L464">expr/compileExpr.ts:464</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L485">expr/compileExpr.ts:485</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -1644,7 +1693,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L483">expr/compileExpr.ts:483</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L504">expr/compileExpr.ts:504</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1667,7 +1716,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L15">utils.ts:15</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L18">utils.ts:18</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -1705,7 +1754,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/webgl/geometries.ts#L9">webgl/geometries.ts:9</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/webgl/geometries.ts#L9">webgl/geometries.ts:9</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -1742,7 +1791,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L197">utils.ts:197</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L206">utils.ts:206</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -1785,7 +1834,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L12">expr/compileExpr.ts:12</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L27">expr/compileExpr.ts:27</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1822,7 +1871,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L243">utils.ts:243</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L252">utils.ts:252</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -1859,7 +1908,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L297">expr/compileExpr.ts:297</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L312">expr/compileExpr.ts:312</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1888,7 +1937,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L171">expr/compileExpr.ts:171</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L186">expr/compileExpr.ts:186</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1917,7 +1966,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L206">utils.ts:206</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L215">utils.ts:215</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -1954,7 +2003,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/trans/DynamicMovement.ts#L342">trans/DynamicMovement.ts:342</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/trans/DynamicMovement.ts#L342">trans/DynamicMovement.ts:342</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1980,7 +2029,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L28">utils.ts:28</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L31">utils.ts:31</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2012,7 +2061,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/trans/DynamicMovement.ts#L330">trans/DynamicMovement.ts:330</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/trans/DynamicMovement.ts#L330">trans/DynamicMovement.ts:330</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2035,7 +2084,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/trans/DynamicMovement.ts#L317">trans/DynamicMovement.ts:317</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/trans/DynamicMovement.ts#L317">trans/DynamicMovement.ts:317</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2058,7 +2107,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L40">utils.ts:40</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L43">utils.ts:43</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2089,7 +2138,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L62">expr/compileExpr.ts:62</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L77">expr/compileExpr.ts:77</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2112,7 +2161,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L177">utils.ts:177</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L186">utils.ts:186</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2135,7 +2184,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L83">utils.ts:83</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L92">utils.ts:92</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2172,7 +2221,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L7">utils.ts:7</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L10">utils.ts:10</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2194,7 +2243,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L47">expr/compileExpr.ts:47</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L62">expr/compileExpr.ts:62</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2222,7 +2271,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L48">utils.ts:48</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L51">utils.ts:51</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2253,7 +2302,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L74">utils.ts:74</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L83">utils.ts:83</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2284,7 +2333,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L79">expr/compileExpr.ts:79</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L94">expr/compileExpr.ts:94</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2316,7 +2365,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L153">utils.ts:153</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L162">utils.ts:162</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2353,7 +2402,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/utils.ts#L226">utils.ts:226</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/utils.ts#L235">utils.ts:235</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2396,7 +2445,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/webgl/geometries.ts#L36">webgl/geometries.ts:36</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/webgl/geometries.ts#L36">webgl/geometries.ts:36</a></li>
 							</ul>
 						</aside>
 						<div class="tsd-comment tsd-typography">
@@ -2433,7 +2482,7 @@ img { max-width: 100%; }
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L499">expr/compileExpr.ts:499</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L520">expr/compileExpr.ts:520</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2455,7 +2504,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">builtin<wbr>Resource<wbr>Pack<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/builtinResourcePack.ts#L3">builtinResourcePack.ts:3</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/builtinResourcePack.ts#L3">builtinResourcePack.ts:3</a></li>
 					</ul>
 				</aside>
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal">
@@ -2464,7 +2513,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">file<wbr>Names<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> =&nbsp;[&quot;avsres_texer_circle_edgeonly_19x19.bmp&quot;,&quot;avsres_texer_circle_edgeonly_29x29.bmp&quot;,&quot;avsres_texer_circle_fade_13x13.bmp&quot;,&quot;avsres_texer_circle_heavyblur_19x19.bmp&quot;,&quot;avsres_texer_circle_heavyblur_21x21.bmp&quot;,&quot;avsres_texer_circle_heavyblur_29x29.bmp&quot;,&quot;avsres_texer_circle_sharp_09x09.bmp&quot;,&quot;avsres_texer_circle_sharp_19x19.bmp&quot;,&quot;avsres_texer_circle_slightblur_13x13.bmp&quot;,&quot;avsres_texer_circle_slightblur_21x21.bmp&quot;,&quot;avsres_texer_hexagon-h_blur_123x123.bmp&quot;,&quot;avsres_texer_square_edgeonly_24x24.bmp&quot;,&quot;avsres_texer_square_edgeonly_28x28.bmp&quot;,&quot;avsres_texer_square_edgeonly_30x30.bmp&quot;,&quot;avsres_texer_square_sharp_20x20.bmp&quot;,&quot;avsres_texer_square_sharp_32x32.bmp&quot;,&quot;avsres_texer_square_sharp_48x48.bmp&quot;,&quot;avsres_texer_square_sharp_60x60.bmp&quot;,&quot;avsres_texer_square_sharp_64x64.bmp&quot;,&quot;avsres_texer_square_sharp_72x72.bmp&quot;,&quot;avsres_texer_square_sharp_96x96.bmp&quot;,&quot;avsres_texer_square_sharp_250x250.bmp&quot;,]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/builtinResourcePack.ts#L4">builtinResourcePack.ts:4</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/builtinResourcePack.ts#L4">builtinResourcePack.ts:4</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2474,7 +2523,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">name<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;Builtin&quot;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/builtinResourcePack.ts#L28">builtinResourcePack.ts:28</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/builtinResourcePack.ts#L28">builtinResourcePack.ts:28</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2484,7 +2533,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">prefix<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;RESOURCE_PACK_URL</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/builtinResourcePack.ts#L29">builtinResourcePack.ts:29</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/builtinResourcePack.ts#L29">builtinResourcePack.ts:29</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2495,7 +2544,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">func<wbr>Arg<wbr>Lengths<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L431">expr/compileExpr.ts:431</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L452">expr/compileExpr.ts:452</a></li>
 					</ul>
 				</aside>
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -2504,7 +2553,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">above<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L432">expr/compileExpr.ts:432</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L453">expr/compileExpr.ts:453</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2514,7 +2563,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">abs<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L433">expr/compileExpr.ts:433</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L454">expr/compileExpr.ts:454</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2524,7 +2573,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">acos<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L434">expr/compileExpr.ts:434</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L455">expr/compileExpr.ts:455</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2534,7 +2583,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">asin<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L435">expr/compileExpr.ts:435</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L456">expr/compileExpr.ts:456</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2544,7 +2593,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">atan<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L436">expr/compileExpr.ts:436</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L457">expr/compileExpr.ts:457</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2554,7 +2603,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">atan2<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L437">expr/compileExpr.ts:437</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L458">expr/compileExpr.ts:458</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2564,7 +2613,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">band<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L438">expr/compileExpr.ts:438</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L459">expr/compileExpr.ts:459</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2574,7 +2623,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">below<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L439">expr/compileExpr.ts:439</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L460">expr/compileExpr.ts:460</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2584,7 +2633,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">bnot<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L440">expr/compileExpr.ts:440</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L461">expr/compileExpr.ts:461</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2594,7 +2643,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">bor<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L441">expr/compileExpr.ts:441</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L462">expr/compileExpr.ts:462</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2604,7 +2653,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">ceil<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L442">expr/compileExpr.ts:442</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L463">expr/compileExpr.ts:463</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2614,7 +2663,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">cos<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L443">expr/compileExpr.ts:443</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L464">expr/compileExpr.ts:464</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2624,7 +2673,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">equal<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L444">expr/compileExpr.ts:444</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L465">expr/compileExpr.ts:465</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2634,7 +2683,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">floor<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L445">expr/compileExpr.ts:445</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L466">expr/compileExpr.ts:466</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2644,7 +2693,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">getosc<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;3</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L446">expr/compileExpr.ts:446</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L467">expr/compileExpr.ts:467</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2654,7 +2703,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">gettime<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L447">expr/compileExpr.ts:447</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L468">expr/compileExpr.ts:468</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2664,7 +2713,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">if<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;3</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L448">expr/compileExpr.ts:448</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L469">expr/compileExpr.ts:469</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2674,7 +2723,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">invsqrt<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L449">expr/compileExpr.ts:449</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L470">expr/compileExpr.ts:470</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2684,7 +2733,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">log<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L450">expr/compileExpr.ts:450</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L471">expr/compileExpr.ts:471</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2694,7 +2743,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">max<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L451">expr/compileExpr.ts:451</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L472">expr/compileExpr.ts:472</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2704,7 +2753,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">min<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L452">expr/compileExpr.ts:452</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L473">expr/compileExpr.ts:473</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2714,7 +2763,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">pow<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L453">expr/compileExpr.ts:453</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L474">expr/compileExpr.ts:474</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2724,7 +2773,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">rand<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L454">expr/compileExpr.ts:454</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L475">expr/compileExpr.ts:475</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2734,7 +2783,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">sin<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L458">expr/compileExpr.ts:458</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L479">expr/compileExpr.ts:479</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2744,7 +2793,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">sqr<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L459">expr/compileExpr.ts:459</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L480">expr/compileExpr.ts:480</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2754,7 +2803,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">sqrt<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L460">expr/compileExpr.ts:460</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L481">expr/compileExpr.ts:481</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2764,7 +2813,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">tan<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L461">expr/compileExpr.ts:461</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L482">expr/compileExpr.ts:482</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -2774,7 +2823,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">select<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L455">expr/compileExpr.ts:455</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L476">expr/compileExpr.ts:476</a></li>
 						</ul>
 					</aside>
 					<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -2783,7 +2832,7 @@ img { max-width: 100%; }
 						<div class="tsd-signature tsd-kind-icon">min<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;2</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L456">expr/compileExpr.ts:456</a></li>
+								<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L477">expr/compileExpr.ts:477</a></li>
 							</ul>
 						</aside>
 					</section>
@@ -2795,7 +2844,7 @@ img { max-width: 100%; }
 				<div class="tsd-signature tsd-kind-icon">glsl<wbr>Func<wbr>Code<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L471">expr/compileExpr.ts:471</a></li>
+						<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L492">expr/compileExpr.ts:492</a></li>
 					</ul>
 				</aside>
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -2804,7 +2853,7 @@ img { max-width: 100%; }
 					<div class="tsd-signature tsd-kind-icon">rand<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;[&quot;uniform vec2 __randStep;&quot;,&quot;vec2 __randSeed;&quot;,&quot;float rand(float max) {&quot;,&quot;   __randSeed +&#x3D; __randStep;&quot;,&quot;   float val &#x3D; fract(sin(dot(__randSeed.xy ,vec2(12.9898,78.233))) * 43758.5453);&quot;,&quot;   return (floor(val*max)+1);&quot;,&quot;}&quot;,].join(&quot;\n&quot;)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/azeem/webvs/blob/c117e66/src/expr/compileExpr.ts#L472">expr/compileExpr.ts:472</a></li>
+							<li>Defined in <a href="https://github.com/azeem/webvs/blob/792a1e8/src/expr/compileExpr.ts#L493">expr/compileExpr.ts:493</a></li>
 						</ul>
 					</aside>
 				</section>
