@@ -1,4 +1,7 @@
-import * as _ from "lodash";
+import clone from "lodash-es/clone";
+import extend from "lodash-es/extend";
+import isArray from "lodash-es/isArray";
+import pickBy from "lodash-es/pickBy";
 import Model from "./Model";
 
 /**
@@ -42,7 +45,7 @@ export default class ResourceManager extends Model {
     constructor(packs: IPack | IPack[]) {
         super();
         if (packs) {
-            if (!_.isArray(packs)) {
+            if (!isArray(packs)) {
                 packs = [packs];
             }
             this.packs = packs;
@@ -63,7 +66,7 @@ export default class ResourceManager extends Model {
             this.uris[fileName] = uri;
         } else {
             const inputUris = fileName;
-            _.extend(this.uris, inputUris);
+            extend(this.uris, inputUris);
         }
     }
 
@@ -83,7 +86,7 @@ export default class ResourceManager extends Model {
      */
     public toJSON() {
         return {
-            uris: _.clone(this.uris),
+            uris: clone(this.uris),
         };
     }
 
@@ -104,8 +107,8 @@ export default class ResourceManager extends Model {
         this.waitImages = {};
         if (keys) {
             const pickPredicate = (val, key) => keys.indexOf(key) === -1;
-            this.uris = _.pickBy(this.uris, pickPredicate);
-            this.images = _.pickBy(this.images, pickPredicate);
+            this.uris = pickBy(this.uris, pickPredicate);
+            this.images = pickBy(this.images, pickPredicate);
         } else {
             this.uris = {};
             this.images = {};

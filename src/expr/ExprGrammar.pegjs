@@ -1,5 +1,7 @@
 {
-    var _ = require('lodash');
+    var flatten = require('lodash-es/flatten').default;
+    var map = require('lodash-es/map').default;
+    var each = require('lodash-es/each').default;
     var Ast = require('./Ast.ts');
 
     function makeBinaryExpr(head, tail) {
@@ -11,13 +13,13 @@
     }
 
     function flattenChars(val) {
-        return _.flatten(val).join("");
+        return flatten(val).join("");
     }
 }
 
 program = p:(__ statement __ (";" __ statement __)* ";"? __) {
     var stmts = [p[1]];
-    stmts = stmts.concat(_.map(p[3], function(pp) {
+    stmts = stmts.concat(map(p[3], function(pp) {
         return pp[2];
     }));
     return new Ast.Program(stmts);
@@ -50,7 +52,7 @@ unary
 func_call
 		= funcName:([a-zA-Z_] [a-zA-Z_0-9]*) __ "(" args:((__ expr __ ",")* __ expr)? __ ")" {
 		        var argsList = [];
-		        _.each(args[0], function(toks) {
+		        each(args[0], function(toks) {
 		            argsList.push(toks[1]);
 		        });
                 argsList.push(args[2]);

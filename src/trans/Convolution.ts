@@ -1,4 +1,5 @@
-import * as _ from "lodash";
+import isArray from "lodash-es/isArray";
+import reduce from "lodash-es/reduce";
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
 import { glslFloatRepr, WebGLVarType } from "../utils";
@@ -94,7 +95,7 @@ export default class Convolution extends Component {
     private updateScale() {
         const opts = this.opts;
         if (opts.autoScale) {
-            this.scale = _.reduce(opts.kernel, (memo, num) => memo + num, 0);
+            this.scale = reduce(opts.kernel, (memo, num) => memo + num, 0);
         } else {
             this.scale = opts.scale;
         }
@@ -102,7 +103,7 @@ export default class Convolution extends Component {
 
     private updateProgram() {
         const opts = this.opts;
-        if (!_.isArray(opts.kernel) || opts.kernel.length % 2 !== 1) {
+        if (!isArray(opts.kernel) || opts.kernel.length % 2 !== 1) {
             throw new Error("Invalid convolution kernel");
         }
         const kernelSize = Math.floor(Math.sqrt(opts.kernel.length));

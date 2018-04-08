@@ -56,8 +56,9 @@ function webConfig(devServer, production) {
         config.serve = {
             dev: {
                 publicPath: '/dist'
-            }
-        }
+            },
+        };
+        config.output.publicPath = '/dist';
     }
 
     if (production) {
@@ -69,6 +70,10 @@ function webConfig(devServer, production) {
             minimize: true,
             include: /\.min\.js$/
         }));
+    } else {
+        config.entry = {
+            "webvs": ["./index.ts"]
+        };
     }
     return config;
 }

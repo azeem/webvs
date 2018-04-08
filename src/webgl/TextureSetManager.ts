@@ -1,4 +1,6 @@
-import * as _ from "lodash";
+import isNumber from "lodash-es/isNumber";
+import isString from "lodash-es/isString";
+import isUndefined from "lodash-es/isUndefined";
 import RenderingContext from "./RenderingContext";
 import ShaderProgram from "./ShaderProgram";
 
@@ -72,7 +74,7 @@ export default class TextureSetManager {
      * @param nameOrIndex name or index of the texture to be removed
      */
     public removeTexture(nameOrIndex: string | number) {
-        if (_.isString(nameOrIndex) && nameOrIndex in this.names) {
+        if (isString(nameOrIndex) && nameOrIndex in this.names) {
             if (this.names[nameOrIndex].refCount > 1) {
                 this.names[nameOrIndex].refCount--;
                 return;
@@ -115,7 +117,7 @@ export default class TextureSetManager {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         }
         this.isRenderTarget = true;
-        if (!_.isUndefined(texName)) {
+        if (!isUndefined(texName)) {
             this.switchTexture(texName);
         } else {
             const texture = this.textures[this.curTex];
@@ -234,9 +236,9 @@ export default class TextureSetManager {
 
     private findIndex(arg: string | number): number {
         let index;
-        if (_.isString(arg) && arg in this.names) {
+        if (isString(arg) && arg in this.names) {
             index = this.names[arg].index;
-        } else if (_.isNumber(arg) && arg >= 0 && arg < this.textures.length) {
+        } else if (isNumber(arg) && arg >= 0 && arg < this.textures.length) {
             index = arg;
         } else {
             // tslint:disable-next-line:no-console

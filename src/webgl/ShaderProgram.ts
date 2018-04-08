@@ -1,4 +1,6 @@
-import * as _ from "lodash";
+import defaults from "lodash-es/defaults";
+import each from "lodash-es/each";
+import indexOf from "lodash-es/indexOf";
 import { BlendMode, flatString, logShaderError, WebGLVarType } from "../utils";
 import Buffer from "./Buffer";
 import { squareGeometry } from "./geometries";
@@ -189,7 +191,7 @@ export default class ShaderProgram<ValueType = any> {
      * @param opts shader options
      */
     constructor(rctx: RenderingContext, opts: IShaderOpts<ValueType>) {
-        opts = _.defaults(opts, {
+        opts = defaults(opts, {
             blendMode: BlendMode.REPLACE,
             blendValue: 0.5,
             copyOnSwap: false,
@@ -231,7 +233,7 @@ export default class ShaderProgram<ValueType = any> {
                 uniform int u_blendMode;
                 void setFragColor(vec4 color) {
             `);
-            _.each(ShaderProgram.shaderBlendEq, (eq, mode) => {
+            each(ShaderProgram.shaderBlendEq, (eq, mode) => {
                 fsrc.push(`
                     if(u_blendMode == ${mode}) {
                         gl_FragColor = (${eq});
@@ -354,7 +356,7 @@ export default class ShaderProgram<ValueType = any> {
      * @param name name of the texture
      */
     public getTextureId(name: string): number {
-        let id = _.indexOf(this.textureVars, name);
+        let id = indexOf(this.textureVars, name);
         if (id === -1) {
             this.textureVars.push(name);
             id = this.textureVars.length - 1;

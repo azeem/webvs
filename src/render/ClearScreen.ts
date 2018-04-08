@@ -1,4 +1,3 @@
-import * as _ from "lodash";
 import Component, {IContainer} from "../Component";
 import IMain from "../IMain";
 import {BlendMode, Color, parseColorNorm} from "../utils";

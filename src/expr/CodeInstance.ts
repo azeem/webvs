@@ -1,4 +1,13 @@
-import * as _ from "lodash";
+import drop from "lodash-es/drop";
+import each from "lodash-es/each";
+import extend from "lodash-es/extend";
+import has from "lodash-es/has";
+import isArray from "lodash-es/isArray";
+import isFunction from "lodash-es/isFunction";
+import isString from "lodash-es/isString";
+import map from "lodash-es/map";
+import take from "lodash-es/take";
+import times from "lodash-es/times";
 import AnalyserAdapter from "../analyser/AnalyserAdapter";
 import { IContainer } from "../Component";
 import IMain from "../IMain";
@@ -12,7 +21,7 @@ export default class CodeInstance {
     // creates an array of clones of code instances
     public static clone(cloneOrClones: CodeInstance | CodeInstance[], count): CodeInstance[] {
         let clones: CodeInstance[];
-        if (!_.isArray(cloneOrClones)) {
+        if (!isArray(cloneOrClones)) {
             cloneOrClones.cid = 0;
             clones = [cloneOrClones];
         } else {
@@ -20,22 +29,22 @@ export default class CodeInstance {
         }
         const clonesLength = clones.length;
         if (clonesLength < count) {
-            _.times(count - clonesLength, (index) => {
+            times(count - clonesLength, (index) => {
                 const clone = Object.create(CodeInstance.prototype);
-                _.extend(clone, clones[0]);
+                extend(clone, clones[0]);
                 clone.cid = index + clonesLength;
                 clones.push(clone);
             });
         } else if (clonesLength > count) {
-            clones = _.take(clones, count);
+            clones = take(clones, count);
         }
         return clones;
     }
 
     // copies instance values from one code instance to another
     public static copyValues(dest: CodeInstance, src: CodeInstance) {
-        _.each(src, (value, name) => {
-            if (!_.isFunction(value) && name.charAt(0) !== "_") {
+        each(src, (value, name) => {
+            if (!isFunction(value) && name.charAt(0) !== "_") {
                 dest[name] = value;
             }
         });
@@ -87,12 +96,12 @@ export default class CodeInstance {
     // bind state values to uniforms
     public bindUniforms(program: ShaderProgram) {
         // bind all values
-        _.each(this.uniforms, (name) => {
+        each(this.uniforms, (name) => {
             program.setUniform(name, WebGLVarType._1F, this[name]);
         });
 
         // bind registers
-        _.each(this.glslRegisters, (name) => {
+        each(this.glslRegisters, (name) => {
             program.setUniform(name, WebGLVarType._1F, this.registerBank[name]);
         });
 
@@ -103,9 +112,9 @@ export default class CodeInstance {
         }
 
         // bind precomputed values
-        _.each(this.preCompute, (entry, name) => {
-            const args = _.map(_.drop(entry), (arg) => {
-                if (_.isString(arg)) {
+        each(this.preCompute, (entry, name) => {
+            const args = map(drop(entry), (arg) => {
+                if (isString(arg)) {
                     if (arg.substring(0, 5) === "__REG") {
                         return this.registerBank[arg];
                     } else {
@@ -128,8 +137,8 @@ export default class CodeInstance {
         this.updateDimVars(main.getRctx().getGl());
 
         // clear all used registers
-        _.each(this.registerUsages, (name) => {
-            if (!_.has(this.registerBank, name)) {
+        each(this.registerUsages, (name) => {
+            if (!has(this.registerBank, name)) {
                 this.registerBank[name] = 0;
             }
         });

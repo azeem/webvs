@@ -1,4 +1,10 @@
-import * as _ from "lodash";
+import clone from "lodash-es/clone";
+import defaults from "lodash-es/defaults";
+import flatten from "lodash-es/flatten";
+import isEqual from "lodash-es/isEqual";
+import isUndefined from "lodash-es/isUndefined";
+import omit from "lodash-es/omit";
+import uniqueId from "lodash-es/uniqueId";
 import IMain from "./IMain";
 import Model from "./Model";
 import TextureSetManager from "./webgl/TextureSetManager";
@@ -119,15 +125,15 @@ export default abstract class Component extends Model {
 
         this.id = options.id; // TODO: check for id uniqueness
         if (!this.id) {
-            this.id = _.uniqueId(this.constructor.componentName  + "_");
+            this.id = uniqueId(this.constructor.componentName  + "_");
         }
-        this.enabled = _.isUndefined(options.enabled) ? true : options.enabled;
+        this.enabled = isUndefined(options.enabled) ? true : options.enabled;
 
-        this.opts = _.omit(options, ["id", "enabled"]);
+        this.opts = omit(options, ["id", "enabled"]);
 
         const defaultOptions = this.constructor.defaultOptions;
         if (defaultOptions) {
-            this.opts = _.defaults(this.opts, defaultOptions);
+            this.opts = defaults(this.opts, defaultOptions);
         }
 
         this.init();
@@ -191,7 +197,7 @@ export default abstract class Component extends Model {
      * that behaves the same as this component.
      */
     public toJSON(): any {
-        const opts = _.clone(this.opts);
+        const opts = clone(this.opts);
         opts.id = this.id;
         opts.type = this.constructor.componentName;
         opts.enabled = this.enabled;
@@ -215,7 +221,7 @@ export default abstract class Component extends Model {
      * Returns a `/` path to the component from the root.
      */
     public getPath(): string {
-        if (!_.isUndefined(this.parent) && !_.isUndefined(this.id)) {
+        if (!isUndefined(this.parent) && !isUndefined(this.id)) {
             return this.parent.getPath() + "/" + this.constructor.componentName + "#" + this.id;
         } else {
             return this.constructor.componentName + "#Main";
@@ -224,7 +230,7 @@ export default abstract class Component extends Model {
 
     protected setAttribute(key: string, value: any, options: any): boolean {
         const oldValue = this.get(key);
-        if (key === "type" || _.isEqual(value, oldValue)) {
+        if (key === "type" || isEqual(value, oldValue)) {
             return false;
         }
 
@@ -243,7 +249,7 @@ export default abstract class Component extends Model {
         const optUpdateHandlers = this.constructor.optUpdateHandlers;
         if (optUpdateHandlers) {
             try {
-                const onChange = _.flatten([
+                const onChange = flatten([
                     optUpdateHandlers[key] || [],
                     optUpdateHandlers["*"] || [],
                 ]);

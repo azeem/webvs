@@ -8,7 +8,7 @@
     "build-all": "cross-env TARGET=all webpack",
     "build-web": "cross-env TARGET=web webpack",
     "build-doc": "typedoc --theme minimal --mode file --name Webvs --module commonjs --exclude node_modules --hideGenerator --out ./doc src",
-    "dev": "cross-env TARGET=dev webpack-serve",
+    "dev": "npm run clean && cross-env TARGET=dev webpack-serve",
     "func-test": "karma start",
     "unit-test": "cross-env TARGET=cjs mocha-webpack \"./test/unit/**/*.ts\"",
     "lint": "tslint -c tslint.json \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -27,12 +27,12 @@
   },
   "dependencies": {
     "eventemitter3": "^3.0.1",
-    "lodash": "^4.17.5",
+    "lodash-es": "^4.17.8",
     "stats.js": "*"
   },
   "devDependencies": {
     "@types/chai": "^4.1.2",
-    "@types/lodash": "^4.14.102",
+    "@types/lodash-es": "^4.17.0",
     "@types/mocha": "^2.2.48",
     "chai": "^4.1.2",
     "cross-env": "^5.1.3",

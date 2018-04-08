@@ -1,4 +1,5 @@
-import * as _ from "lodash";
+import each from "lodash-es/each";
+import map from "lodash-es/map";
 import Component, {IContainer} from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr, { ICompileResult } from "../expr/compileExpr";
@@ -184,7 +185,7 @@ export default class SuperScope extends Component {
 
     public draw() {
         const color = this._makeColor();
-        _.each(this.code, (code) => {
+        each(this.code, (code) => {
             this.drawScope(code, color, !this.inited);
         });
         this.inited = true;
@@ -451,7 +452,7 @@ export default class SuperScope extends Component {
     }
 
     private updateColors() {
-        this.colors = _.map(this.opts.colors, parseColorNorm);
+        this.colors = map(this.opts.colors, parseColorNorm);
         this.curColorId = 0;
     }
 
@@ -513,7 +514,7 @@ export default class SuperScope extends Component {
     }
 
     private handleResize() {
-        _.each(this.code, (code) => {
+        each(this.code, (code) => {
             code.updateDimVars(this.main.getRctx().getGl());
         });
     }

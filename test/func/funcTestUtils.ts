@@ -1,4 +1,5 @@
-import * as _ from "lodash";
+import isNumber from "lodash-es/isNumber";
+import uniqueId from "lodash-es/uniqueId";
 import AnalyserAdapter from "../../src/analyser/AnalyserAdapter";
 import Component from "../../src/Component";
 import IMain from "../../src/IMain";
@@ -151,7 +152,7 @@ function imageFuzzyOk(
 
     if (mismatch >= mismatchThreshold) {
         // show the diff image
-        const errorId = _.uniqueId();
+        const errorId = uniqueId();
         const errorElement = document.createElement("span");
         const expectSrc = expectDataUrl;
         const outputSrc = canvas.toDataURL();
@@ -236,7 +237,7 @@ export function makeSinglePreset(type: string, opts: any, testPatternBlue: numbe
     const components = [
         componentOpts,
     ];
-    if (_.isNumber(testPatternBlue)) {
+    if (isNumber(testPatternBlue)) {
         components.unshift({
             blue: testPatternBlue,
             type: "TestPattern",

@@ -1,4 +1,3 @@
-import * as _ from "lodash";
 import { WebGLVarType } from "../utils";
 import RenderingContext from "./RenderingContext";
 import ShaderProgram from "./ShaderProgram";

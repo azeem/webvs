@@ -1,4 +1,13 @@
-import * as _ from "lodash";
+import each from "lodash-es/each";
+import first from "lodash-es/first";
+import last from "lodash-es/last";
+import map from "lodash-es/map";
+import sortBy from "lodash-es/sortBy";
+import take from "lodash-es/take";
+import takeRight from "lodash-es/takeRight";
+import times from "lodash-es/times";
+import uniq from "lodash-es/uniq";
+import zip from "lodash-es/zip";
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
 import { BlendMode, Color, parseColor, WebGLVarType } from "../utils";
@@ -146,18 +155,18 @@ export default class ColorMap extends Component {
     public destroy() {
         super.destroy();
         this.program.destroy();
-        _.each(this.colorMaps, (tex) => {
+        each(this.colorMaps, (tex) => {
             this.main.getRctx().getGl().deleteTexture(tex);
         });
     }
 
     private updateMap() {
         if (this.colorMaps) {
-            _.each(this.colorMaps, (tex) => {
+            each(this.colorMaps, (tex) => {
                 this.main.getRctx().getGl().deleteTexture(tex);
             });
         }
-        this.colorMaps = _.map(this.opts.maps, (map) => this._buildColorMap(map));
+        this.colorMaps = map(this.opts.maps, (colorMap) => this._buildColorMap(colorMap));
         this.currentMap = 0;
     }
 
@@ -173,28 +182,28 @@ export default class ColorMap extends Component {
         this.blendMode = BlendMode[this.opts.output];
     }
 
-    private _buildColorMap(map: IColorMapItem[]): WebGLTexture {
+    private _buildColorMap(mapItems: IColorMapItem[]): WebGLTexture {
         const gl = this.main.getRctx().getGl();
-        map = _.sortBy(map, (mapItem) => mapItem.index);
+        mapItems = sortBy(mapItems, (mapItem) => mapItem.index);
 
         // check for repeated indices
-        const indices = _.map(map, (mapItem) => mapItem.index);
-        if (_.uniq(indices).length !== indices.length) {
+        const indices = map(mapItems, (mapItem) => mapItem.index);
+        if (uniq(indices).length !== indices.length) {
             throw new Error("map cannot have repeated indices");
         }
 
         // parse all the colors
-        const parsedMap = _.map(map, (mapItem) => {
+        const parsedMap = map(mapItems, (mapItem) => {
             const color = parseColor(mapItem.color);
             return {color, index: mapItem.index};
         });
 
         // add a cap entries at the ends
-        const firstMap = _.first(parsedMap);
+        const firstMap = first(parsedMap);
         if (firstMap.index !== 0) {
             parsedMap.splice(0, 0, {color: firstMap.color, index: 0});
         }
-        const lastMap = _.last(parsedMap);
+        const lastMap = last(parsedMap);
         if (lastMap.index !== 255) {
             parsedMap.push({color: lastMap.color, index: 255});
         }
@@ -202,15 +211,15 @@ export default class ColorMap extends Component {
         // lerp intermediate values
         const colorMap = new Uint8Array(256 * 3);
         let cmi = 0;
-        const pairs = _.zip(_.take(parsedMap, parsedMap.length - 1), _.takeRight(parsedMap, parsedMap.length - 1));
-        _.each(pairs, (pair) => {
-            const first = pair[0];
-            const second = pair[1];
-            const steps = second.index - first.index;
-            _.times(steps, (i) => {
-                colorMap[cmi++] = Math.floor((first.color[0] * (steps - i) + second.color[0] * i) / steps);
-                colorMap[cmi++] = Math.floor((first.color[1] * (steps - i) + second.color[1] * i) / steps);
-                colorMap[cmi++] = Math.floor((first.color[2] * (steps - i) + second.color[2] * i) / steps);
+        const pairs = zip(take(parsedMap, parsedMap.length - 1), takeRight(parsedMap, parsedMap.length - 1));
+        each(pairs, (pair) => {
+            const firstItem = pair[0];
+            const secondItem = pair[1];
+            const steps = secondItem.index - firstItem.index;
+            times(steps, (i) => {
+                colorMap[cmi++] = Math.floor((firstItem.color[0] * (steps - i) + secondItem.color[0] * i) / steps);
+                colorMap[cmi++] = Math.floor((firstItem.color[1] * (steps - i) + secondItem.color[1] * i) / steps);
+                colorMap[cmi++] = Math.floor((firstItem.color[2] * (steps - i) + secondItem.color[2] * i) / steps);
             });
         });
         colorMap[cmi++] = lastMap.color[0];

@@ -1,4 +1,4 @@
-import * as _ from "lodash";
+import defaults from "lodash-es/defaults";
 import { Channels } from "../utils";
 import AnalyserAdapter from "./AnalyserAdapter";
 
@@ -24,7 +24,7 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
 
     constructor(options) {
         super();
-        options = _.defaults(options || {}, {
+        options = defaults(options || {}, {
             decay: 0.02,
             fftSize: 512,
             threshold: 0.125,

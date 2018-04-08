@@ -1,4 +1,6 @@
-import * as _ from "lodash";
+import clone from "lodash-es/clone";
+import defaults from "lodash-es/defaults";
+import pick from "lodash-es/pick";
 import Stats from "stats.js";
 import AnalyserAdapter from "./analyser/AnalyserAdapter";
 import builtinResourcePack from "./builtinResourcePack";
@@ -130,7 +132,7 @@ export default class Main extends Model implements IMain {
     constructor(options: IMainOpts) {
         super();
         checkRequiredOptions(options, ["canvas", "analyser"]);
-        options = _.defaults(options, {
+        options = defaults(options, {
             showStat: false,
         });
         this.canvas = options.canvas;
@@ -201,7 +203,7 @@ export default class Main extends Model implements IMain {
      * the same format accepted by the [[ResourceManager.registerUri]].
      */
     public loadPreset(preset: any) {
-        preset = _.clone(preset); // use our own copy
+        preset = clone(preset); // use our own copy
         preset.id = "root";
         this.rootComponent.destroy();
 
@@ -215,7 +217,7 @@ export default class Main extends Model implements IMain {
         }
 
         // load meta
-        this.meta = _.clone(preset.meta);
+        this.meta = clone(preset.meta);
 
         this._setupRoot(preset);
     }
@@ -277,9 +279,9 @@ export default class Main extends Model implements IMain {
      */
     public toJSON(): any {
         let preset = this.rootComponent.toJSON();
-        preset = _.pick(preset, "clearFrame", "components");
+        preset = pick(preset, "clearFrame", "components");
         preset.resources = this.rsrcMan.toJSON();
-        preset.meta = _.clone(this.meta);
+        preset.meta = clone(this.meta);
         return preset;
     }
 
@@ -394,7 +396,7 @@ export default class Main extends Model implements IMain {
     private _initResourceManager(prefix: string): void {
         let builtinPack = builtinResourcePack;
         if (prefix) {
-            builtinPack = _.clone(builtinPack);
+            builtinPack = clone(builtinPack);
             builtinPack.prefix = prefix;
         }
         this.rsrcMan = new ResourceManager(builtinPack);
