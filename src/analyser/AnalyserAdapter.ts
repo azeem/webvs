@@ -6,16 +6,26 @@ import { Channels, FloatArray } from "../utils";
  * Implement this to send music data into webvs
  */
 export default abstract class AnalyserAdapter {
-    // boolean value indicating whether a beat
-    // is in progress or not
+    /**
+     * returns boolean value indicating whether a beat
+     * is in progress or not
+     */
     public abstract isBeat(): boolean;
 
-    // Called every frame. Override and implement analyser code
+    /**
+     * Called every frame. Override and implement analyser code
+     */
     public abstract update(): void;
 
-    // Returns array of waveform values
+    /**
+     * Returns array of waveform values. Override and implement analyser code
+     * @param channel channel for which waveform data will be returned
+     */
     public abstract getWaveform(channel?: Channels): FloatArray;
 
-    // Returns array of spectrum values
+    /**
+     * Returns array of spectrum values. Override and implement analyser code
+     * @param channel channel for which spectrum data will be returned
+     */
     public abstract getSpectrum(channel?: Channels): FloatArray;
 }

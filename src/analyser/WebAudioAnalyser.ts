@@ -7,8 +7,32 @@ interface IVisData {
     waveform: Float32Array;
 }
 
-// AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
-// Adapters extend this class and define the required methods.
+/**
+ * Options for [[WebAudioAnalyser]]
+ */
+interface IWebAudioAnalyserOpts {
+    /**
+     * WebAudio Context to be used for creating audio objects.
+     * If none is provided an AudioContext is automatically created.
+     */
+    context?: AudioContext;
+    /**
+     * Decay for beat detection. Default: 0.02
+     */
+    decay?: number;
+    /**
+     * Size of FFT window size. Default: 512
+     */
+    fftSize?: number;
+    /**
+     * Value threshold of beat detection. Default: 0.125
+     */
+    threshold?: number;
+}
+
+/**
+ * WebAudioAnalyser is an AnalyserAdapter that supports `audio` tag sources
+ */
 export default class WebAudioAnalyser extends AnalyserAdapter {
     private context: AudioContext;
     private fftSize: number;
@@ -22,7 +46,11 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     private analysers: [AnalyserNode, AnalyserNode];
     private beat: boolean;
 
-    constructor(options) {
+    /**
+     * Initializes a WebAudioAnalyser
+     * @param options options for analyser
+     */
+    constructor(options: IWebAudioAnalyserOpts) {
         super();
         options = defaults(options || {}, {
             decay: 0.02,
@@ -53,7 +81,10 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
         }
     }
 
-    // Connect this analyser to any WebAudio Node
+    /**
+     * Connect this analyser to any WebAudio Node
+     * @param sourceNode node which will be used as audio source
+     */
     public connectToNode(sourceNode: AudioNode) {
         this.source = sourceNode;
 
@@ -77,6 +108,7 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
         }
     }
 
+    // Called every frame. Override and implement analyser code
     public update() {
         if (!this.analysers) {
             return; // analysers not ready. nothing update
@@ -124,8 +156,12 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
         }
     }
 
-    // Helper for Webvs.WebAudioAnalyser#connectToNode. This creates Audio object
-    // for the audio file and connects this analyser to its mediaElementSource
+    /**
+     * Helper for Webvs.WebAudioAnalyser#connectToNode. This creates Audio object
+     * for the audio file and connects this analyser to its mediaElementSource
+     * @param source source for the audio. Use an audio tag element or a url
+     * @param readyFunc a callback that'll be called when ready to play
+     */
     public load(source: HTMLMediaElement | string, readyFunc): HTMLMediaElement {
         let element: HTMLMediaElement;
         if (source instanceof HTMLMediaElement) {
@@ -166,6 +202,8 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
         return this.visData[channel].spectrum;
     }
 
+    // boolean value indicating whether a beat
+    // is in progress or not
     public isBeat(): boolean {
         return this.beat;
     }
