@@ -80,4 +80,4 @@ and point browser to `http://localhost:8080/examples/` to view webvs test page.
 
 ## Contributing
 
-[Fork](https://github.com/azeem/webvs/fork) and submit pull requests against master branch. For suggestions/bug fixes use [Github/Issues](https://github.com/azeem/webvs/issues). Chat with us at [visbot/AVS gitter channel](https://gitter.im/visbot/AVS).
+[Fork](https://github.com/azeem/webvs/fork) and submit pull requests against master branch. Look for issues with [help wanted](https://github.com/azeem/webvs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) label for things that we need help with. For suggestions/bug fixes use [Github/Issues](https://github.com/azeem/webvs/issues). Chat with us at [visbot/AVS gitter channel](https://gitter.im/visbot/AVS).
