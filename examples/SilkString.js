@@ -142,9 +142,12 @@ addExamplePreset({
             "type": "ColorMap",
             "output": "ADDITIVE",
             "maps": [
-                [
-                    {color: "rgb(82,18,55)", index:43}
-                ]
+                {
+                    "enabled": true,
+                    "colors": [
+                        {color: "rgb(82,18,55)", position:43}
+                    ]
+                }
             ]
         }
     ]

@@ -42,11 +42,14 @@ addExamplePreset({
             "output": "REPLACE",
             "key": "RED",
             "maps": [
-                [
-                    {color: "#FFFFFF", index:52},
-                    {color: "#0FA7F0", index:130},
-                    {color: "#000000", index:255}
-                ]
+                {
+                    "enabled": true,
+                    "colors": [
+                        {color: "#FFFFFF", position: 52},
+                        {color: "#0FA7F0", position: 130},
+                        {color: "#000000", position: 255}
+                    ]
+                }
             ]
         },
         {

@@ -1,4 +1,5 @@
 import each from "lodash-es/each";
+import filter from "lodash-es/filter";
 import first from "lodash-es/first";
 import last from "lodash-es/last";
 import map from "lodash-es/map";
@@ -15,11 +16,26 @@ import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
 /**
- * Color Map Item for [[IColorMapOpts]]
+ * Color Map Item for [[IColorMapDef]]
  */
 export interface IColorMapItem {
-    index: number;
+    position: number;
     color: string;
+}
+
+/**
+ * A single Color Map (a list of colors with position) for [[IcolorMapOpts]]
+ */
+export interface IColorMapDef {
+    /**
+     * If true the color map can be chosen through one of the
+     * [[ColorMapCycleMode]]s.
+     */
+    enabled: boolean;
+    /**
+     * Colors and their position in the [[ColorMapKey]] space
+     */
+    colors: IColorMapItem[];
 }
 
 /**
@@ -41,7 +57,7 @@ export interface IColorMapOpts {
     /**
      * Color map items
      */
-    maps: IColorMapItem[][];
+    maps: IColorMapDef[];
 }
 
 /**
@@ -82,10 +98,13 @@ export default class ColorMap extends Component {
         key: "RED",
         mapCycleMode: "SINGLE",
         maps: [
-            [
-                {index: 0, color: "#000000"},
-                {index: 255, color: "#FFFFFF"},
-            ],
+            {
+                enabled: true,
+                colors: [
+                    {position: 0, color: "#000000"},
+                    {position: 255, color: "#FFFFFF"},
+                ]
+            }
         ],
         output: "REPLACE",
     };
@@ -166,7 +185,7 @@ export default class ColorMap extends Component {
                 this.main.getRctx().getGl().deleteTexture(tex);
             });
         }
-        this.colorMaps = map(this.opts.maps, (colorMap) => this._buildColorMap(colorMap));
+        this.colorMaps = map(filter(this.opts.maps, "enabled"), (colorMap) => this._buildColorMap(colorMap.colors));
         this.currentMap = 0;
     }
 
@@ -184,28 +203,28 @@ export default class ColorMap extends Component {
 
     private _buildColorMap(mapItems: IColorMapItem[]): WebGLTexture {
         const gl = this.main.getRctx().getGl();
-        mapItems = sortBy(mapItems, (mapItem) => mapItem.index);
+        mapItems = sortBy(mapItems, (mapItem) => mapItem.position);
 
-        // check for repeated indices
-        const indices = map(mapItems, (mapItem) => mapItem.index);
-        if (uniq(indices).length !== indices.length) {
-            throw new Error("map cannot have repeated indices");
+        // check for repeated positions
+        const positions = map(mapItems, (mapItem) => mapItem.position);
+        if (uniq(positions).length !== positions.length) {
+            throw new Error("map cannot have repeated positions");
         }
 
         // parse all the colors
         const parsedMap = map(mapItems, (mapItem) => {
             const color = parseColor(mapItem.color);
-            return {color, index: mapItem.index};
+            return {color, position: mapItem.position};
         });
 
         // add a cap entries at the ends
         const firstMap = first(parsedMap);
-        if (firstMap.index !== 0) {
-            parsedMap.splice(0, 0, {color: firstMap.color, index: 0});
+        if (firstMap.position !== 0) {
+            parsedMap.splice(0, 0, {color: firstMap.color, position: 0});
         }
         const lastMap = last(parsedMap);
-        if (lastMap.index !== 255) {
-            parsedMap.push({color: lastMap.color, index: 255});
+        if (lastMap.position !== 255) {
+            parsedMap.push({color: lastMap.color, position: 255});
         }
 
         // lerp intermediate values
@@ -215,7 +234,7 @@ export default class ColorMap extends Component {
         each(pairs, (pair) => {
             const firstItem = pair[0];
             const secondItem = pair[1];
-            const steps = secondItem.index - firstItem.index;
+            const steps = secondItem.position - firstItem.position;
             times(steps, (i) => {
                 colorMap[cmi++] = Math.floor((firstItem.color[0] * (steps - i) + secondItem.color[0] * i) / steps);
                 colorMap[cmi++] = Math.floor((firstItem.color[1] * (steps - i) + secondItem.color[1] * i) / steps);

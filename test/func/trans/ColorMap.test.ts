@@ -3,7 +3,13 @@ import { mainTest, makeSinglePreset } from "../funcTestUtils";
 describe("ColorMap", () => {
     const makePreset = (opts) => makeSinglePreset("ColorMap", opts, 0);
     const maps = [
-        [{index: 0, color: "#000000"}, {index: 255, color: "#FFFFFF"}],
+        {
+            "enabled": true,
+            "colors": [
+                {position: 0, color: "#000000"},
+                {position: 255, color: "#FFFFFF"}
+            ]
+        }
     ];
 
     it("should map RED", () => {
