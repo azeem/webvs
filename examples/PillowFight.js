@@ -89,16 +89,13 @@ addExamplePreset({
             "output": "REPLACE",
             "mapCycleMode": "SINGLE",
             "maps": [
-                [
-                    {
-                        "color": "#ffffff",
-                        "index": 0
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 255
-                    }
-                ]
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#ffffff", "position": 0},
+                        {"color": "#000000", "position": 255}
+                    ]
+                }
             ]
         },
         {
@@ -166,132 +163,69 @@ addExamplePreset({
             "output": "REPLACE",
             "mapCycleMode": "ONBEATSEQUENTIAL",
             "maps": [
-                [
-                    {
-                        "color": "#ff3900",
-                        "index": 63
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 71
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 181
-                    },
-                    {
-                        "color": "#ffffff",
-                        "index": 191
-                    }
-                ],
-                [
-                    {
-                        "color": "#fec501",
-                        "index": 63
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 71
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 181
-                    },
-                    {
-                        "color": "#ffffff",
-                        "index": 191
-                    }
-                ],
-                [
-                    {
-                        "color": "#75e00a",
-                        "index": 63
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 71
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 181
-                    },
-                    {
-                        "color": "#ffffff",
-                        "index": 191
-                    }
-                ],
-                [
-                    {
-                        "color": "#00d9d9",
-                        "index": 63
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 71
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 181
-                    },
-                    {
-                        "color": "#ffffff",
-                        "index": 191
-                    }
-                ],
-                [
-                    {
-                        "color": "#0080c0",
-                        "index": 63
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 71
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 181
-                    },
-                    {
-                        "color": "#ffffff",
-                        "index": 191
-                    }
-                ],
-                [
-                    {
-                        "color": "#be02fd",
-                        "index": 63
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 71
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 181
-                    },
-                    {
-                        "color": "#ffffff",
-                        "index": 191
-                    }
-                ],
-                [
-                    {
-                        "color": "#ff0040",
-                        "index": 63
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 71
-                    },
-                    {
-                        "color": "#000000",
-                        "index": 181
-                    },
-                    {
-                        "color": "#ffffff",
-                        "index": 191
-                    }
-                ]
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#ff3900", "position": 63},
+                        {"color": "#000000", "position": 71},
+                        {"color": "#000000", "position": 181},
+                        {"color": "#ffffff", "position": 191}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#fec501", "position": 63},
+                        {"color": "#000000", "position": 71},
+                        {"color": "#000000", "position": 181},
+                        {"color": "#ffffff", "position": 191}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#75e00a", "position": 63},
+                        {"color": "#000000", "position": 71},
+                        {"color": "#000000", "position": 181},
+                        {"color": "#ffffff", "position": 191}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#00d9d9", "position": 63},
+                        {"color": "#000000", "position": 71},
+                        {"color": "#000000", "position": 181},
+                        {"color": "#ffffff", "position": 191}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#0080c0", "position": 63},
+                        {"color": "#000000", "position": 71},
+                        {"color": "#000000", "position": 181},
+                        {"color": "#ffffff", "position": 191}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#be02fd", "position": 63},
+                        {"color": "#000000", "position": 71},
+                        {"color": "#000000", "position": 181},
+                        {"color": "#ffffff", "position": 191}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#ff0040", "position": 63},
+                        {"color": "#000000", "position": 71},
+                        {"color": "#000000", "position": 181},
+                        {"color": "#ffffff", "position": 191}
+                    ]
+                }
             ]
         },
         {
@@ -300,36 +234,27 @@ addExamplePreset({
             "output": "MULTIPLY",
             "mapCycleMode": "ONBEATSEQUENTIAL",
             "maps": [
-                [
-                    {
-                        "color": "#000000",
-                        "index": 0
-                    },
-                    {
-                        "color": "#e0e0c0",
-                        "index": 255
-                    }
-                ],
-                [
-                    {
-                        "color": "#000000",
-                        "index": 0
-                    },
-                    {
-                        "color": "#e0c0e0",
-                        "index": 255
-                    }
-                ],
-                [
-                    {
-                        "color": "#000000",
-                        "index": 0
-                    },
-                    {
-                        "color": "#c0e0e0",
-                        "index": 255
-                    }
-                ]
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#000000", "position": 0},
+                        {"color": "#e0e0c0", "position": 255}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#000000", "position": 0},
+                        {"color": "#e0c0e0", "position": 255}
+                    ]
+                },
+                {
+                    "enabled": true,
+                    "colors": [
+                        {"color": "#000000", "position": 0},
+                        {"color": "#c0e0e0", "position": 255}
+                    ]
+                }
             ]
         },
         {
