@@ -44,7 +44,7 @@ export default class GlobalVar extends Component {
 
     public init() {
         this.updateCode();
-        this.listenTo(this.main, "resize", this.handleResize);
+        this.listenTo(this.main, "resize", () => this.handleResize());
     }
 
     public draw() {

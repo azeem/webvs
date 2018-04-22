@@ -140,7 +140,7 @@ export default class DynamicMovement extends Component {
     public init() {
         this.updateCode();
         this.updateGrid();
-        this.listenTo(this.main, "resize", this.handleResize);
+        this.listenTo(this.main, "resize", () => this.handleResize());
     }
 
     public draw() {
