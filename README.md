@@ -1,5 +1,7 @@
 # Webvs
 
+[![npm version](https://badge.fury.io/js/webvs.svg)](https://www.npmjs.com/package/webvs)
+
 A Winamp AVS like visualization library for the web.
 
 ## Demo
