@@ -125,7 +125,7 @@ export default class EffectList extends Container {
         this.updateBlendMode(this.opts.output, "output");
         this.frameCounter = 0;
         this.first = true;
-        this.listenTo(this.main, "resize", this.handleResize);
+        this.listenTo(this.main, "resize", () => this.handleResize());
     }
 
     public draw() {

@@ -36,4 +36,13 @@ export default class RenderingContext {
     public getBuffer(name: string): Buffer {
         return this.buffers[name];
     }
+
+    public destroy() {
+        for (const bufName in this.buffers) {
+            if (!this.buffers.hasOwnProperty(bufName)) {
+                continue;
+            }
+            this.buffers[bufName].destroy();
+        }
+    }
 }

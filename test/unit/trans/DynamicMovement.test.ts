@@ -1,49 +1,43 @@
 /* tslint:disable:no-unused-expression ban-types */
 import { expect } from "chai";
-import { It, Mock, Times } from "typemoq";
-import { IContainer } from "../../../src/Component";
-import CodeInstance from "../../../src/expr/CodeInstance";
-import IMain from "../../../src/IMain";
+import { IMock, It, Mock, Times } from "typemoq";
 import DynamicMovement from "../../../src/trans/DynamicMovement";
-import RenderingContext from "../../../src/webgl/RenderingContext";
-import ShaderProgram, { IShaderOpts } from "../../../src/webgl/ShaderProgram";
-import TextureSetManager from "../../../src/webgl/TextureSetManager";
+import ShaderProgram from "../../../src/webgl/ShaderProgram";
+import { IComponentTestSetup, makeComponentTestSetup } from "../../unitTestUtils";
 
 describe("DynamicMovement", () => {
+    let setup: IComponentTestSetup<DynamicMovement>;
+    let drawHook: (values: any, gl: WebGLRenderingContext, shader: ShaderProgram) => any;
+
+    beforeEach(() => {
+        setup = makeComponentTestSetup<DynamicMovement>(
+            require("inject-loader!../../../src/trans/DynamicMovement"),
+            {
+                compileExpr: "../expr/compileExpr",
+                shader: "../webgl/ShaderProgram",
+                shaderInit: (rctx, opts) => {
+                    drawHook = opts.drawHook;
+                },
+            },
+        );
+    });
+
     it("drawHook should bind uniforms for codeInstance", () => {
-        const mockMain          = Mock.ofType<IMain>();
-        const mockParent        = Mock.ofType<IContainer>();
-        const mockShaderProgram = Mock.ofType<ShaderProgram>();
-        const mockCodeInstance  = Mock.ofType(CodeInstance);
-        const mockRctx          = Mock.ofType(RenderingContext);
-        const mockCompileExpr   = Mock.ofType<Function>();
-        const mockGl            = Mock.ofType<WebGLRenderingContext>();
-
-        mockRctx.setup((x) => x.getGl()).returns(() => mockGl.object);
-        mockMain.setup((x) => x.getRctx()).returns(() => mockRctx.object);
-        mockCompileExpr.setup((x) => x(It.isAny(), It.isAny(), It.isAny(), It.isAny()))
-                       .returns(() => ({ codeInst: mockCodeInstance.object }));
-
-        let drawHook: (values: any, gl: WebGLRenderingContext, shader: ShaderProgram) => any;
-        // tslint:disable-next-line:only-arrow-functions
-        const mockShaderProgramConstructor = function(rctx: RenderingContext, opts: IShaderOpts) {
-            drawHook = opts.drawHook;
-            return mockShaderProgram.object;
-        };
-
-        const module = require("inject-loader!../../../src/trans/DynamicMovement");
-        const DMClass = module({
-            "../expr/compileExpr": {
-                default: mockCompileExpr.object,
-            },
-            "../webgl/ShaderProgram": {
-                default: mockShaderProgramConstructor,
-            },
-        }).default as typeof DynamicMovement;
-
+        const { componentClass: DMClass, mockMain, mockParent, mockGl, mockShaderProgram, mockCodeInstance } = setup;
         const dmComponent = new DMClass(mockMain.object, mockParent.object, {});
         expect(drawHook).to.be.ok;
         drawHook({}, mockGl.object, mockShaderProgram.object);
         mockCodeInstance.verify((x) => x.bindUniforms(mockShaderProgram.object), Times.once());
+    });
+
+    it("Should handle resize events properly", () => {
+        const { componentClass: DMClass, mockCodeInstance, mockMain, mockParent, mockGl } = setup;
+        let resizeHandle = null; mockMain
+            .setup((x) => x.addListener(It.is((a) => a === "resize"), It.is((a) => typeof(a) === "function")))
+            .callback((event, cb) => resizeHandle = cb);
+        const dmComponent = new DMClass(mockMain.object, mockParent.object, {});
+        expect(resizeHandle).to.be.not.null;
+        resizeHandle();
+        mockCodeInstance.verify((x) => x.updateDimVars(mockGl.object), Times.once());
     });
 });

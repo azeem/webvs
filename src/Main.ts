@@ -156,6 +156,7 @@ export default class Main extends Model implements IMain {
         }
 
         this.meta = {};
+        this.buffers = {};
         this._initComponentRegistry();
         this._initResourceManager(options.resourcePrefix || "");
         this._registerContextEvents();
@@ -290,8 +291,20 @@ export default class Main extends Model implements IMain {
      */
     public destroy() {
         this.stop();
+
         this.rootComponent.destroy();
         this.rootComponent = null;
+        this.copier.destroy();
+        for (const bufName in this.buffers) {
+            if (!this.buffers.hasOwnProperty(bufName)) {
+                continue;
+            }
+            this.buffers[bufName].destroy();
+        }
+        this.tempTSM.destroy();
+        this.tempTSM = null;
+        this.rctx.destroy();
+        this.rctx = null;
         if (this.stats) {
             const statsDomElement = this.stats.domElement;
             statsDomElement.parentNode.removeChild(statsDomElement);
@@ -400,8 +413,8 @@ export default class Main extends Model implements IMain {
             builtinPack.prefix = prefix;
         }
         this.rsrcMan = new ResourceManager(builtinPack);
-        this.listenTo(this.rsrcMan, "wait", this.handleRsrcWait.bind(this));
-        this.listenTo(this.rsrcMan, "ready", this.handleRsrcReady.bind(this));
+        this.listenTo(this.rsrcMan, "wait", () => this.handleRsrcWait());
+        this.listenTo(this.rsrcMan, "ready", () => this.handleRsrcReady());
     }
 
     private _registerContextEvents() {
@@ -419,7 +432,11 @@ export default class Main extends Model implements IMain {
 
     private _initGl() {
         try {
-            this.rctx = new RenderingContext(this.canvas.getContext("webgl", {alpha: false}));
+            const gl = this.canvas.getContext("webgl", {alpha: false});
+            if (!gl) {
+                throw new Error("context is falsy");
+            }
+            this.rctx = new RenderingContext(gl);
             this.copier = new CopyProgram(this.rctx, true);
             this.tempTSM = new TextureSetManager(this.rctx, this.copier, true, 0);
         } catch (e) {

@@ -142,7 +142,7 @@ export default class Texer extends Component {
         this.updateClone();
         this.updateImage();
         this.updateSource();
-        this.listenTo(this.main, "resize", this.handleResize);
+        this.listenTo(this.main, "resize", () => this.handleResize());
 
         this.vertexBuffer = new Buffer(rctx);
         this.texVertexBuffer = new Buffer(rctx);

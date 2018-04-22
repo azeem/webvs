@@ -10,6 +10,7 @@ function commonJsConfig(resourcePackUrl) {
     }
 
     return {
+        target: 'node',
         entry: './index.ts',
         output: {
             path: path.resolve(__dirname, 'dist'),
@@ -38,12 +39,14 @@ function commonJsConfig(resourcePackUrl) {
                 WEBVS_VERSION: JSON.stringify(packageJson.version)
             })
         ],
-    }
+        devtool: 'inline-cheap-module-source-map',
+    };
 };
 
 function webConfig(devServer, production) {
     const config = commonJsConfig(devServer ? '/resources/' : null);
 
+    config.target = 'web';
     config.output = {
         path: path.resolve(__dirname, 'dist'),
         filename: '[name].js',

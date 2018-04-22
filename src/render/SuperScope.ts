@@ -177,7 +177,7 @@ export default class SuperScope extends Component {
         this.updateColors();
         this.updateChannel();
         this.updateThickness();
-        this.listenTo(this.main, "resize", this.handleResize);
+        this.listenTo(this.main, "resize", () => this.handleResize());
 
         this.pointBuffer = new Buffer(this.main.getRctx());
         this.colorBuffer = new Buffer(this.main.getRctx());
