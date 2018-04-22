@@ -1,6 +1,6 @@
 {
   "name": "webvs",
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "Audio Visualization rendering library",
   "main": "dist/webvs.node.js",
   "types": "dist/index.d.ts",
