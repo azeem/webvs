@@ -1,4 +1,3 @@
-import clone from "lodash-es/clone";
 import extend from "lodash-es/extend";
 import pickBy from "lodash-es/pickBy";
 import Model from "./Model";
@@ -85,7 +84,7 @@ export default class ResourceManager extends Model {
      */
     public toJSON() {
         return {
-            uris: clone(this.uris),
+            uris: Object.assign({}, this.uris),
         };
     }
 
