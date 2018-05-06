@@ -2,7 +2,6 @@ import drop from "lodash-es/drop";
 import each from "lodash-es/each";
 import extend from "lodash-es/extend";
 import has from "lodash-es/has";
-import isArray from "lodash-es/isArray";
 import isFunction from "lodash-es/isFunction";
 import isString from "lodash-es/isString";
 import map from "lodash-es/map";
@@ -21,7 +20,7 @@ export default class CodeInstance {
     // creates an array of clones of code instances
     public static clone(cloneOrClones: CodeInstance | CodeInstance[], count): CodeInstance[] {
         let clones: CodeInstance[];
-        if (!isArray(cloneOrClones)) {
+        if (!Array.isArray(cloneOrClones)) {
             cloneOrClones.cid = 0;
             clones = [cloneOrClones];
         } else {

@@ -1,6 +1,5 @@
 import clone from "lodash-es/clone";
 import extend from "lodash-es/extend";
-import isArray from "lodash-es/isArray";
 import pickBy from "lodash-es/pickBy";
 import Model from "./Model";
 
@@ -45,7 +44,7 @@ export default class ResourceManager extends Model {
     constructor(packs: IPack | IPack[]) {
         super();
         if (packs) {
-            if (!isArray(packs)) {
+            if (!Array.isArray(packs)) {
                 packs = [packs];
             }
             this.packs = packs;

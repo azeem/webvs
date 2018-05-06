@@ -3,7 +3,6 @@ import each from "lodash-es/each";
 import flatten from "lodash-es/flatten";
 import flow from "lodash-es/flow";
 import intersection from "lodash-es/intersection";
-import isArray from "lodash-es/isArray";
 import isEqual from "lodash-es/isEqual";
 import isNumber from "lodash-es/isNumber";
 import keys from "lodash-es/keys";
@@ -36,7 +35,7 @@ export default function compileExpr(
             continue;
         }
         let codeString = codeSrc[name];
-        if (isArray(codeString)) {
+        if (Array.isArray(codeString)) {
             codeString = codeString.join("\n");
         }
         codeString.trim();
