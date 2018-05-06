@@ -1,7 +1,6 @@
 import drop from "lodash-es/drop";
 import each from "lodash-es/each";
 import extend from "lodash-es/extend";
-import has from "lodash-es/has";
 import isFunction from "lodash-es/isFunction";
 import isString from "lodash-es/isString";
 import map from "lodash-es/map";
@@ -137,7 +136,7 @@ export default class CodeInstance {
 
         // clear all used registers
         each(this.registerUsages, (name) => {
-            if (!has(this.registerBank, name)) {
+            if (!this.registerBank.hasOwnProperty(name)) {
                 this.registerBank[name] = 0;
             }
         });
