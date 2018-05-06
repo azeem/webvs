@@ -1,4 +1,3 @@
-import defaults from "lodash-es/defaults";
 import { Channels } from "../utils";
 import AnalyserAdapter from "./AnalyserAdapter";
 
@@ -50,13 +49,14 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
      * Initializes a WebAudioAnalyser
      * @param options options for analyser
      */
-    constructor(options: IWebAudioAnalyserOpts) {
+    constructor(options: IWebAudioAnalyserOpts = {}) {
         super();
-        options = defaults(options || {}, {
+        options = {
             decay: 0.02,
             fftSize: 512,
             threshold: 0.125,
-        });
+            ...options
+        };
 
         if (options.context) {
             this.context = options.context;

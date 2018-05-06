@@ -1,4 +1,3 @@
-import defaults from "lodash-es/defaults";
 import flatten from "lodash-es/flatten";
 import isEqual from "lodash-es/isEqual";
 import isUndefined from "lodash-es/isUndefined";
@@ -117,7 +116,7 @@ export default abstract class Component extends Model {
      * @param parent the parent that manages this component
      * @param options the initial options for this component
      */
-    constructor(main: IMain, parent: IContainer, options: any) {
+    constructor(main: IMain, parent: IContainer, options: any = {}) {
         super();
         this.main = main;
         this.parent = parent;
@@ -132,7 +131,7 @@ export default abstract class Component extends Model {
 
         const defaultOptions = this.constructor.defaultOptions;
         if (defaultOptions) {
-            this.opts = defaults(this.opts, defaultOptions);
+            this.opts = {...defaultOptions, ...this.opts};
         }
 
         this.init();

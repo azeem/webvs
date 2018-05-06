@@ -131,9 +131,10 @@ export default class Main extends Model implements IMain {
     constructor(options: IMainOpts) {
         super();
         checkRequiredOptions(options, ["canvas", "analyser"]);
-        options = defaults(options, {
+        options = {
+            ...options,
             showStat: false,
-        });
+        };
         this.canvas = options.canvas;
         this.analyser = options.analyser;
         this.isStarted = false;
