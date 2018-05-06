@@ -1,4 +1,3 @@
-import clone from "lodash-es/clone";
 import defaults from "lodash-es/defaults";
 import flatten from "lodash-es/flatten";
 import isEqual from "lodash-es/isEqual";
@@ -197,7 +196,7 @@ export default abstract class Component extends Model {
      * that behaves the same as this component.
      */
     public toJSON(): any {
-        const opts = clone(this.opts);
+        const opts = Object.assign({}, this.opts);
         opts.id = this.id;
         opts.type = this.constructor.componentName;
         opts.enabled = this.enabled;
