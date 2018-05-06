@@ -1,5 +1,4 @@
 import isArray from "lodash-es/isArray";
-import reduce from "lodash-es/reduce";
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
 import { glslFloatRepr, WebGLVarType } from "../utils";
@@ -95,7 +94,7 @@ export default class Convolution extends Component {
     private updateScale() {
         const opts = this.opts;
         if (opts.autoScale) {
-            this.scale = reduce(opts.kernel, (memo, num) => memo + num, 0);
+            this.scale = opts.kernel.reduce((memo, num) => memo + num, 0);
         } else {
             this.scale = opts.scale;
         }
