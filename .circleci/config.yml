@@ -7,19 +7,19 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          name: Restoring npm Package Data Cache
+          name: Restore npm Package Data Cache
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
-          name: Installing npm
+          name: Install npm
           command: npm install
       - save_cache:
-          name: Caching npm Package Data
+          name: Cache npm Package Data
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - ./node_modules
       - run:
-          name: Linting Source
+          name: Lint Source
           command: npm run lint
       - run:
-          name: Running Unit Test
+          name: Run Unit Test
           command: npm run unit-test
