@@ -18,5 +18,8 @@ jobs:
           paths:
             - ./node_modules
       - run:
-          name: Running Tests
-          command: npm run lint && npm run unit-test
+          name: Linting Source
+          command: npm run lint
+      - run:
+          name: Running Unit Test
+          command: npm run unit-test
