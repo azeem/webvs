@@ -132,8 +132,8 @@ export default class Main extends Model implements IMain {
         super();
         checkRequiredOptions(options, ["canvas", "analyser"]);
         options = {
-            ...options,
             showStat: false,
+            ...options,
         };
         this.canvas = options.canvas;
         this.analyser = options.analyser;
