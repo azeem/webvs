@@ -1,6 +1,9 @@
 # Webvs
 
 [![npm version](https://badge.fury.io/js/webvs.svg)](https://www.npmjs.com/package/webvs)
+[![CircleCI](https://img.shields.io/circleci/project/azeem/webvs.svg?)]()
+[![David](https://img.shields.io/david/azeem/webvs.svg)](https://david-dm.org/azeem/webvs)
+[![David](https://img.shields.io/david/dev/azeem/webvs.svg)](https://david-dm.org/azeem/webvs?type=dev)
 
 A Winamp AVS like visualization library for the web.
 
