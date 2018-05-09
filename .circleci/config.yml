@@ -1,0 +1,22 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:latest
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restoring npm Package Data Cache
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: Installing npm
+          command: npm install
+      - save_cache:
+          name: Caching npm Package Data
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run:
+          name: Running Tests
+          command: npm run lint && npm run unit-test
