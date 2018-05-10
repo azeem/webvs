@@ -2,7 +2,6 @@ import each from "lodash-es/each";
 import filter from "lodash-es/filter";
 import first from "lodash-es/first";
 import last from "lodash-es/last";
-import map from "lodash-es/map";
 import sortBy from "lodash-es/sortBy";
 import take from "lodash-es/take";
 import takeRight from "lodash-es/takeRight";
@@ -185,7 +184,7 @@ export default class ColorMap extends Component {
                 this.main.getRctx().getGl().deleteTexture(tex);
             });
         }
-        this.colorMaps = map(filter(this.opts.maps, "enabled"), (colorMap) => this._buildColorMap(colorMap.colors));
+        this.colorMaps = filter(this.opts.maps, "enabled").map(colorMap => this._buildColorMap(colorMap.colors));
         this.currentMap = 0;
     }
 
@@ -206,13 +205,13 @@ export default class ColorMap extends Component {
         mapItems = sortBy(mapItems, (mapItem) => mapItem.position);
 
         // check for repeated positions
-        const positions = map(mapItems, (mapItem) => mapItem.position);
+        const positions = mapItems.map(mapItem => mapItem.position);
         if (uniq(positions).length !== positions.length) {
             throw new Error("map cannot have repeated positions");
         }
 
         // parse all the colors
-        const parsedMap = map(mapItems, (mapItem) => {
+        const parsedMap = mapItems.map(mapItem => {
             const color = parseColor(mapItem.color);
             return {color, position: mapItem.position};
         });

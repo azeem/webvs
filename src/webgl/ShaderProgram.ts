@@ -1,4 +1,3 @@
-import defaults from "lodash-es/defaults";
 import each from "lodash-es/each";
 import indexOf from "lodash-es/indexOf";
 import { BlendMode, flatString, logShaderError, WebGLVarType } from "../utils";
@@ -191,13 +190,14 @@ export default class ShaderProgram<ValueType = any> {
      * @param opts shader options
      */
     constructor(rctx: RenderingContext, opts: IShaderOpts<ValueType>) {
-        opts = defaults(opts, {
+        opts = {
             blendMode: BlendMode.REPLACE,
             blendValue: 0.5,
             copyOnSwap: false,
             dynamicBlend: false,
             swapFrame: false,
-        });
+            ...opts,
+        };
 
         const vsrc = [`
             precision mediump float;

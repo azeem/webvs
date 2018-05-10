@@ -1,11 +1,8 @@
 import drop from "lodash-es/drop";
 import each from "lodash-es/each";
 import extend from "lodash-es/extend";
-import has from "lodash-es/has";
-import isArray from "lodash-es/isArray";
 import isFunction from "lodash-es/isFunction";
 import isString from "lodash-es/isString";
-import map from "lodash-es/map";
 import take from "lodash-es/take";
 import times from "lodash-es/times";
 import AnalyserAdapter from "../analyser/AnalyserAdapter";
@@ -21,7 +18,7 @@ export default class CodeInstance {
     // creates an array of clones of code instances
     public static clone(cloneOrClones: CodeInstance | CodeInstance[], count): CodeInstance[] {
         let clones: CodeInstance[];
-        if (!isArray(cloneOrClones)) {
+        if (!Array.isArray(cloneOrClones)) {
             cloneOrClones.cid = 0;
             clones = [cloneOrClones];
         } else {
@@ -113,7 +110,7 @@ export default class CodeInstance {
 
         // bind precomputed values
         each(this.preCompute, (entry, name) => {
-            const args = map(drop(entry), (arg) => {
+            const args = drop(entry).map(arg => {
                 if (isString(arg)) {
                     if (arg.substring(0, 5) === "__REG") {
                         return this.registerBank[arg];
@@ -138,7 +135,7 @@ export default class CodeInstance {
 
         // clear all used registers
         each(this.registerUsages, (name) => {
-            if (!has(this.registerBank, name)) {
+            if (!this.registerBank.hasOwnProperty(name)) {
                 this.registerBank[name] = 0;
             }
         });

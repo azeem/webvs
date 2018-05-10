@@ -1,4 +1,3 @@
-import clone from "lodash-es/clone";
 import defaults from "lodash-es/defaults";
 import pick from "lodash-es/pick";
 import Stats from "stats.js";
@@ -132,9 +131,10 @@ export default class Main extends Model implements IMain {
     constructor(options: IMainOpts) {
         super();
         checkRequiredOptions(options, ["canvas", "analyser"]);
-        options = defaults(options, {
+        options = {
             showStat: false,
-        });
+            ...options,
+        };
         this.canvas = options.canvas;
         this.analyser = options.analyser;
         this.isStarted = false;
@@ -204,7 +204,7 @@ export default class Main extends Model implements IMain {
      * the same format accepted by the [[ResourceManager.registerUri]].
      */
     public loadPreset(preset: any) {
-        preset = clone(preset); // use our own copy
+        preset = Object.assign({}, preset); // use our own copy
         preset.id = "root";
         this.rootComponent.destroy();
 
@@ -218,7 +218,7 @@ export default class Main extends Model implements IMain {
         }
 
         // load meta
-        this.meta = clone(preset.meta);
+        this.meta = Object.assign({}, preset.meta);
 
         this._setupRoot(preset);
     }
@@ -282,7 +282,7 @@ export default class Main extends Model implements IMain {
         let preset = this.rootComponent.toJSON();
         preset = pick(preset, "clearFrame", "components");
         preset.resources = this.rsrcMan.toJSON();
-        preset.meta = clone(this.meta);
+        preset.meta = Object.assign({}, this.meta);
         return preset;
     }
 
@@ -409,7 +409,7 @@ export default class Main extends Model implements IMain {
     private _initResourceManager(prefix: string): void {
         let builtinPack = builtinResourcePack;
         if (prefix) {
-            builtinPack = clone(builtinPack);
+            builtinPack = Object.assign({}, builtinPack);
             builtinPack.prefix = prefix;
         }
         this.rsrcMan = new ResourceManager(builtinPack);

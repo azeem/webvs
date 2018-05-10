@@ -1,5 +1,4 @@
 import each from "lodash-es/each";
-import map from "lodash-es/map";
 import Component, {IContainer} from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr, { ICompileResult } from "../expr/compileExpr";
@@ -452,7 +451,7 @@ export default class SuperScope extends Component {
     }
 
     private updateColors() {
-        this.colors = map(this.opts.colors, parseColorNorm);
+        this.colors = this.opts.colors.map(parseColorNorm);
         this.curColorId = 0;
     }
 
