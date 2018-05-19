@@ -55,7 +55,7 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
             decay: 0.02,
             fftSize: 512,
             threshold: 0.125,
-            ...options
+            ...options,
         };
 
         if (options.context) {

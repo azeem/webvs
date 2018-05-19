@@ -98,12 +98,12 @@ export default class ColorMap extends Component {
         mapCycleMode: "SINGLE",
         maps: [
             {
-                enabled: true,
                 colors: [
                     {position: 0, color: "#000000"},
                     {position: 255, color: "#FFFFFF"},
-                ]
-            }
+                ],
+                enabled: true,
+            },
         ],
         output: "REPLACE",
     };
@@ -184,7 +184,7 @@ export default class ColorMap extends Component {
                 this.main.getRctx().getGl().deleteTexture(tex);
             });
         }
-        this.colorMaps = filter(this.opts.maps, "enabled").map(colorMap => this._buildColorMap(colorMap.colors));
+        this.colorMaps = filter(this.opts.maps, "enabled").map((colorMap) => this._buildColorMap(colorMap.colors));
         this.currentMap = 0;
     }
 
@@ -205,13 +205,13 @@ export default class ColorMap extends Component {
         mapItems = sortBy(mapItems, (mapItem) => mapItem.position);
 
         // check for repeated positions
-        const positions = mapItems.map(mapItem => mapItem.position);
+        const positions = mapItems.map((mapItem) => mapItem.position);
         if (uniq(positions).length !== positions.length) {
             throw new Error("map cannot have repeated positions");
         }
 
         // parse all the colors
-        const parsedMap = mapItems.map(mapItem => {
+        const parsedMap = mapItems.map((mapItem) => {
             const color = parseColor(mapItem.color);
             return {color, position: mapItem.position};
         });

@@ -4,12 +4,12 @@ describe("ColorMap", () => {
     const makePreset = (opts) => makeSinglePreset("ColorMap", opts, 0);
     const maps = [
         {
-            "enabled": true,
-            "colors": [
+            colors: [
                 {position: 0, color: "#000000"},
-                {position: 255, color: "#FFFFFF"}
-            ]
-        }
+                {position: 255, color: "#FFFFFF"},
+            ],
+            enabled: true,
+        },
     ];
 
     it("should map RED", () => {

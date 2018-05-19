@@ -110,7 +110,7 @@ export default class CodeInstance {
 
         // bind precomputed values
         each(this.preCompute, (entry, name) => {
-            const args = drop(entry).map(arg => {
+            const args = drop(entry).map((arg) => {
                 if (isString(arg)) {
                     if (arg.substring(0, 5) === "__REG") {
                         return this.registerBank[arg];
