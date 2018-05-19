@@ -86,7 +86,7 @@ addExamplePreset({
         {
             "type": "ColorMap",
             "key": "RED",
-            "output": "REPLACE",
+            "blendMode": "REPLACE",
             "mapCycleMode": "SINGLE",
             "maps": [
                 {
@@ -160,7 +160,7 @@ addExamplePreset({
         {
             "type": "ColorMap",
             "key": "RED",
-            "output": "REPLACE",
+            "blendMode": "REPLACE",
             "mapCycleMode": "ONBEATSEQUENTIAL",
             "maps": [
                 {
@@ -231,7 +231,7 @@ addExamplePreset({
         {
             "type": "ColorMap",
             "key": "MAX",
-            "output": "MULTIPLY",
+            "blendMode": "MULTIPLY",
             "mapCycleMode": "ONBEATSEQUENTIAL",
             "maps": [
                 {

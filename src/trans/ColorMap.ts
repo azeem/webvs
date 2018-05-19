@@ -48,7 +48,7 @@ export interface IColorMapOpts {
     /**
      * Output blending mode. see [[BlendMode]]
      */
-    output: string;
+    blendMode: string;
     /**
      * Color map cycling mode. see [[ColorMapCycleMode]]
      */
@@ -88,12 +88,13 @@ export default class ColorMap extends Component {
     public static componentName: string = "ColorMap";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
+        blendMode: "updateBlendMode",
         key: "updateKey",
         mapCycleMode: "updateCycleMode",
         maps: "updateMap",
-        output: "updateBlendMode",
     };
     protected static defaultOptions: IColorMapOpts = {
+        blendMode: "REPLACE",
         key: "RED",
         mapCycleMode: "SINGLE",
         maps: [
@@ -105,7 +106,6 @@ export default class ColorMap extends Component {
                 enabled: true,
             },
         ],
-        output: "REPLACE",
     };
 
     protected opts: IColorMapOpts;
@@ -197,7 +197,7 @@ export default class ColorMap extends Component {
     }
 
     private updateBlendMode() {
-        this.blendMode = BlendMode[this.opts.output];
+        this.blendMode = BlendMode[this.opts.blendMode];
     }
 
     private _buildColorMap(mapItems: IColorMapItem[]): WebGLTexture {

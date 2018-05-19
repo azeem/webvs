@@ -39,7 +39,7 @@ addExamplePreset({
         },
         {
             "type": "ColorMap",
-            "output": "REPLACE",
+            "blendMode": "REPLACE",
             "key": "RED",
             "maps": [
                 {
