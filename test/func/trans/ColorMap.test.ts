@@ -25,7 +25,7 @@ describe("ColorMap", () => {
         return mainTest({
             expectImageSrc: "ColorMap_1.png",
             preset: makePreset({
-                blendMode: "AVERAGE", key: "RED", maps,
+                blendMode: "FIFTY_FIFTY", key: "RED", maps,
             }),
         });
     });

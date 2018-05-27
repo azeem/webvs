@@ -164,7 +164,9 @@ export default class ShaderProgram<ValueType = any> {
     // and the formula to be used inside shader
     private static shaderBlendEq = {
         [BlendMode.MAXIMUM]: "max(color, texture2D(u_srcTexture, v_position))",
+        [BlendMode.MINIMUM]: "min(color, texture2D(u_srcTexture, v_position))",
         [BlendMode.MULTIPLY]: "clamp(color * texture2D(u_srcTexture, v_position) * 256.0, 0.0, 1.0)",
+        [BlendMode.ABSOLUTE_DIFFERENCE]: "abs(color - texture2D(u_srcTexture, v_position))",
     };
 
     private rctx: RenderingContext;
@@ -566,12 +568,12 @@ export default class ShaderProgram<ValueType = any> {
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            case BlendMode.SUBTRACTIVE1:
+            case BlendMode.SUB_DEST_SRC:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
                 break;
-            case BlendMode.SUBTRACTIVE2:
+            case BlendMode.SUB_SRC_DEST:
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.blendEquation(gl.FUNC_SUBTRACT);
@@ -592,7 +594,7 @@ export default class ShaderProgram<ValueType = any> {
                 gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
                 break;
-            case BlendMode.AVERAGE:
+            case BlendMode.FIFTY_FIFTY:
                 gl.enable(gl.BLEND);
                 gl.blendColor(0.5, 0.5, 0.5, 1);
                 gl.blendFunc(gl.CONSTANT_COLOR, gl.CONSTANT_COLOR);
@@ -602,6 +604,8 @@ export default class ShaderProgram<ValueType = any> {
             case BlendMode.REPLACE:
             case BlendMode.MULTIPLY:
             case BlendMode.MAXIMUM:
+            case BlendMode.MINIMUM:
+            case BlendMode.ABSOLUTE_DIFFERENCE:
                 gl.disable(gl.BLEND);
                 break;
             default:

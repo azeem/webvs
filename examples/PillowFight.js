@@ -118,7 +118,7 @@ addExamplePreset({
             "enabled": true,
             "clearFrame": false,
             "input": "IGNORE",
-            "output": "AVERAGE",
+            "output": "FIFTY_FIFTY",
             "components": [
                 {
                     "type": "BufferSave",
