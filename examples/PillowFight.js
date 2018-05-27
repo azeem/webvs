@@ -30,7 +30,7 @@ addExamplePreset({
                 {
                     "type": "DynamicMovement",
                     "noGrid": true,
-                    "coord": "RECT",
+                    "coord": "CARTESIAN",
                     "code": {
                         "perPixel": "x=-x"
                     }
@@ -76,7 +76,7 @@ addExamplePreset({
                 {
                     "type": "DynamicMovement",
                     "noGrid": true,
-                    "coord": "RECT",
+                    "coord": "CARTESIAN",
                     "code": {
                         "perPixel": "y=-y"
                     }
@@ -128,7 +128,7 @@ addExamplePreset({
                 },
                 {
                     "type": "DynamicMovement",
-                    "coord": "RECT",
+                    "coord": "CARTESIAN",
                     "noGrid": true,
                     "bFilter": false,
                     "code": {
@@ -259,7 +259,7 @@ addExamplePreset({
         },
         {
             "type": "DynamicMovement",
-            "coord": "RECT",
+            "coord": "CARTESIAN",
             "noGrid": true,
             "code": {
                 "perPixel": "x=x-(1/6)"
