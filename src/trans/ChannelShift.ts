@@ -12,7 +12,7 @@ export interface IChannelShiftOpts {
     /**
      * Channel shift mode. see [[ChannelShiftMode]]
      */
-    channel: string;
+    mode: string;
     /**
      * If enabled, channel shift mode will randomize on beat
      */
@@ -39,16 +39,16 @@ export default class ChannelShift extends Component {
     public static componentName: string = "ChannelShift";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
-        channel: "updateChannel",
+        mode: "updateMode",
     };
     protected static defaultOptions: IChannelShiftOpts = {
-        channel: "RGB",
+        mode: "RGB",
         onBeatRandom: false,
     };
 
     protected opts: IChannelShiftOpts;
     private program: ShaderProgram;
-    private channel: ChannelShiftMode;
+    private mode: ChannelShiftMode;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
@@ -58,7 +58,7 @@ export default class ChannelShift extends Component {
         this.program = new ShaderProgram(this.main.getRctx(), {
             bindings: {
                 uniforms: {
-                    channel: { name: "u_channel", valueType: WebGLVarType._1I },
+                    mode: { name: "u_channel", valueType: WebGLVarType._1I },
                 },
             },
             fragmentShader: `
@@ -66,9 +66,9 @@ export default class ChannelShift extends Component {
                 void main() {
                     vec3 color = getSrcColor().rgb;
                     ${
-                        flatMap(ShiftChannelsKeys, (channel) => `
-                            if(u_channel == ${ChannelShiftMode[channel]}) {
-                                setFragColor(vec4(color.${channel.toLowerCase()}, 1));
+                        flatMap(ShiftChannelsKeys, (mode) => `
+                            if(u_channel == ${ChannelShiftMode[mode]}) {
+                                setFragColor(vec4(color.${mode.toLowerCase()}, 1));
                             }
                         `).join("\n")
                     }
@@ -76,14 +76,14 @@ export default class ChannelShift extends Component {
             `,
             swapFrame: true,
         });
-        this.updateChannel();
+        this.updateMode();
     }
 
     public draw() {
         if (this.opts.onBeatRandom && this.main.getAnalyser().isBeat()) {
-            this.channel = Math.floor(Math.random() * ShiftChannelsKeys.length);
+            this.mode = Math.floor(Math.random() * ShiftChannelsKeys.length);
         }
-        this.program.run(this.parent.getTSM(), { channel: this.channel });
+        this.program.run(this.parent.getTSM(), { mode: this.mode });
     }
 
     public destroy() {
@@ -91,7 +91,7 @@ export default class ChannelShift extends Component {
         this.program.destroy();
     }
 
-    private updateChannel() {
-        this.channel = ChannelShiftMode[this.opts.channel];
+    private updateMode() {
+        this.mode = ChannelShiftMode[this.opts.mode];
     }
 }
