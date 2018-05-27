@@ -26,8 +26,8 @@ export interface IBufferSaveOpts {
 enum BufferSaveAction {
     SAVE = 0,
     RESTORE,
-    SAVERESTORE,
-    RESTORESAVE,
+    ALTERNATE_SAVE_RESTORE,
+    ALTERNATE_RESTORE_SAVE,
 }
 
 /**
@@ -65,8 +65,8 @@ export default class BufferSave extends Component {
 
     public draw() {
         let currentAction;
-        if (this.action === BufferSaveAction.SAVERESTORE ||
-           this.action === BufferSaveAction.RESTORESAVE) {
+        if (this.action === BufferSaveAction.ALTERNATE_SAVE_RESTORE ||
+           this.action === BufferSaveAction.ALTERNATE_RESTORE_SAVE) {
             currentAction = this.nextAction;
             // toggle next action
             this.nextAction =
@@ -96,9 +96,9 @@ export default class BufferSave extends Component {
 
     public updateAction() {
         this.action = BufferSaveAction[this.opts.action];
-        if (this.action === BufferSaveAction.SAVERESTORE) {
+        if (this.action === BufferSaveAction.ALTERNATE_SAVE_RESTORE) {
             this.nextAction = BufferSaveAction.SAVE;
-        } else if (this.action === BufferSaveAction.RESTORESAVE) {
+        } else if (this.action === BufferSaveAction.ALTERNATE_RESTORE_SAVE) {
             this.nextAction = BufferSaveAction.RESTORE;
         }
     }

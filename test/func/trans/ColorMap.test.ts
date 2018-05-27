@@ -39,20 +39,20 @@ describe("ColorMap", () => {
         });
     });
 
-    it("should map (R+G+B)/2", () => {
+    it("should map CHANNEL_SUM_HALF", () => {
         return mainTest({
             expectImageSrc: "ColorMap_3.png",
             preset: makePreset({
-                key: "(R+G+B)/2", maps,
+                key: "CHANNEL_SUM_HALF", maps,
             }),
         });
     });
 
-    it("should map (R+G+B)/3", () => {
+    it("should map CHANNEL_AVERAGE", () => {
         return mainTest({
             expectImageSrc: "ColorMap_4.png",
             preset: makePreset({
-                key: "(R+G+B)/3", maps,
+                key: "CHANNEL_AVERAGE", maps,
             }),
         });
     });
