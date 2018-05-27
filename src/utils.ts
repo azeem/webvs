@@ -140,18 +140,18 @@ export enum BlendMode {
 }
 
 /**
- * Channels
+ * AudioChannels
  */
-export enum Channels {
+export enum AudioChannels {
     CENTER = 0,
     LEFT,
     RIGHT,
 }
 
 /**
- * Source
+ * AudioSource
  */
-export enum Source {
+export enum AudioSource {
     SPECTRUM = 1,
     WAVEFORM,
 }

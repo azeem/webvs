@@ -3,7 +3,7 @@ import Component, { IContainer } from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr from "../expr/compileExpr";
 import IMain from "../IMain";
-import { Source, WebGLVarType } from "../utils";
+import { AudioSource, WebGLVarType } from "../utils";
 import Buffer from "../webgl/Buffer";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
@@ -16,7 +16,7 @@ export interface ITexerOpts {
         perPoint: string,
     };
     imageSrc: string;
-    source: string;
+    audioSource: string;
     resizing: boolean;
     wrapAround: boolean;
     clone: number;
@@ -46,12 +46,13 @@ export default class Texer extends Component {
     public static componentName: string = "Texer";
     public static componentTag: string = "render";
     protected static optUpdateHandlers = {
+        audioSource: "updateAudioSource",
         clone: "updateClone",
         code: "updateCode",
         imageSrc: "updateImage",
-        source: "updateSource",
     };
     protected static defaultOptions: ITexerOpts = {
+        audioSource: "SPECTRUM",
         clone: 1,
         code: {
             init: "",
@@ -62,7 +63,6 @@ export default class Texer extends Component {
         colorFiltering: true,
         imageSrc: "avsres_texer_circle_edgeonly_19x19.bmp",
         resizing: false,
-        source: "SPECTRUM",
         wrapAround: false,
     };
 
@@ -77,7 +77,7 @@ export default class Texer extends Component {
     private texture: WebGLTexture;
     private imageWidth: number;
     private imageHeight: number;
-    private source: Source;
+    private audioSource: AudioSource;
 
     constructor(main: IMain, parent: IContainer, opts: any) {
         super(main, parent, opts);
@@ -141,7 +141,7 @@ export default class Texer extends Component {
         this.updateCode();
         this.updateClone();
         this.updateImage();
-        this.updateSource();
+        this.updateAudioSource();
         this.listenTo(this.main, "resize", () => this.handleResize());
 
         this.vertexBuffer = new Buffer(rctx);
@@ -205,8 +205,8 @@ export default class Texer extends Component {
         );
     }
 
-    private updateSource() {
-        this.source = Source[this.opts.source];
+    private updateAudioSource() {
+        this.audioSource = AudioSource[this.opts.audioSource];
     }
 
     private _drawScope(code: ITexerCodeInstance, runInit: boolean) {
@@ -224,7 +224,7 @@ export default class Texer extends Component {
 
         const nPoints = Math.floor(code.n);
         let data;
-        if (this.source === Source.SPECTRUM) {
+        if (this.audioSource === AudioSource.SPECTRUM) {
             data = this.main.getAnalyser().getSpectrum();
         } else {
             data = this.main.getAnalyser().getWaveform();

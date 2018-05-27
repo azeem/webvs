@@ -3,7 +3,7 @@ import Component, {IContainer} from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr, { ICompileResult } from "../expr/compileExpr";
 import IMain from "../IMain";
-import { BlendMode, Channels, Color, parseColorNorm, Source, WebGLVarType } from "../utils";
+import { AudioChannels, AudioSource, BlendMode, Color, parseColorNorm, WebGLVarType } from "../utils";
 import Buffer from "../webgl/Buffer";
 import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
@@ -59,11 +59,11 @@ export interface ISuperScopeOpts {
     /**
      * Channel for scope values. Default: `CENTER`
      */
-    channel: string;
+    audioChannel: string;
     /**
      * Data source of scope value. Default: `SPECTRUM`
      */
-    source: string;
+    audioSource: string;
     /**
      * Drawing mode for the scope. see [[SuperScopeDrawMode]]. Default: `LINES`
      */
@@ -120,19 +120,20 @@ export default class SuperScope extends Component {
     public static componentName: string = "SuperScope";
     public static componentTag: string = "render";
     protected static optUpdateHandlers = {
+        audioChannel: "updateAudioChannel",
+        audioSource: "updateAudioSource",
         blendMode: "updateProgram",
-        channel: "updateChannel",
         clone: "updateClones",
         code: [ "updateCode", "updateClones"],
         colors: "updateColors",
         cycleSpeed: "updateSpeed",
         drawMode: "updateDrawMode",
-        source: "updateSource",
         thickness: "updateThickness",
     };
     protected static defaultOptions: ISuperScopeOpts = {
+        audioChannel: "CENTER",
+        audioSource: "SPECTRUM",
         blendMode: "REPLACE",
-        channel: "CENTER",
         clone: 1,
         code: {
             init: "n=800",
@@ -143,7 +144,6 @@ export default class SuperScope extends Component {
         colors: ["#ffffff"],
         cycleSpeed: 0.01,
         drawMode: "LINES",
-        source: "SPECTRUM",
         thickness: 1,
     };
 
@@ -153,8 +153,8 @@ export default class SuperScope extends Component {
     private code: ISSCodeInstance[];
     private inited: boolean;
     private program: ShaderProgram<ISuperScopeShaderValues>;
-    private source: Source;
-    private channel: Channels;
+    private audioSource: AudioSource;
+    private audioChannel: AudioChannels;
     private drawMode: SuperScopeDrawMode;
     private veryThick: boolean;
     private colors: Color[];
@@ -168,13 +168,13 @@ export default class SuperScope extends Component {
 
     public init() {
         this.updateDrawMode();
-        this.updateSource();
+        this.updateAudioSource();
         this.updateProgram();
         this.updateCode();
         this.updateClones();
         this.updateSpeed();
         this.updateColors();
-        this.updateChannel();
+        this.updateAudioChannel();
         this.updateThickness();
         this.listenTo(this.main, "resize", () => this.handleResize());
 
@@ -221,10 +221,10 @@ export default class SuperScope extends Component {
 
         const nPoints = Math.floor(code.n);
         let data;
-        if (this.source === Source.SPECTRUM) {
-            data = this.main.getAnalyser().getSpectrum(this.channel);
+        if (this.audioSource === AudioSource.SPECTRUM) {
+            data = this.main.getAnalyser().getSpectrum(this.audioChannel);
         } else {
-            data = this.main.getAnalyser().getWaveform(this.channel);
+            data = this.main.getAnalyser().getWaveform(this.audioChannel);
         }
         const dots = this.drawMode === SuperScopeDrawMode.DOTS;
         const bucketSize = data.length / nPoints;
@@ -466,12 +466,12 @@ export default class SuperScope extends Component {
         }
     }
 
-    private updateChannel() {
-        this.channel = Channels[this.opts.channel];
+    private updateAudioChannel() {
+        this.audioChannel = AudioChannels[this.opts.audioChannel];
     }
 
-    private updateSource() {
-        this.source = Source[this.opts.source];
+    private updateAudioSource() {
+        this.audioSource = AudioSource[this.opts.audioSource];
     }
 
     private updateDrawMode() {

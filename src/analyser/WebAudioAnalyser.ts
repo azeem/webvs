@@ -1,4 +1,4 @@
-import { Channels } from "../utils";
+import { AudioChannels } from "../utils";
 import AnalyserAdapter from "./AnalyserAdapter";
 
 interface IVisData {
@@ -193,12 +193,12 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     }
 
     // Returns array of waveform values
-    public getWaveform(channel: Channels = Channels.CENTER) {
+    public getWaveform(channel: AudioChannels = AudioChannels.CENTER) {
         return this.visData[channel].waveform;
     }
 
     // Returns array of spectrum values
-    public getSpectrum(channel: Channels = Channels.CENTER) {
+    public getSpectrum(channel: AudioChannels = AudioChannels.CENTER) {
         return this.visData[channel].spectrum;
     }
 

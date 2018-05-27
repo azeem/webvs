@@ -4,7 +4,7 @@ import AnalyserAdapter from "../../src/analyser/AnalyserAdapter";
 import Component from "../../src/Component";
 import IMain from "../../src/IMain";
 import Main from "../../src/Main";
-import { Channels, clamp, glslFloatRepr, noop } from "../../src/utils";
+import { AudioChannels, clamp, glslFloatRepr, noop } from "../../src/utils";
 import ShaderProgram from "../../src/webgl/ShaderProgram";
 
 export class MockAnalyser extends AnalyserAdapter {
@@ -31,10 +31,10 @@ export class MockAnalyser extends AnalyserAdapter {
     // tslint:disable-next-line:no-empty
     public update() {}
 
-    public getSpectrum(channel?: Channels) {
+    public getSpectrum(channel?: AudioChannels) {
         return this.sineData;
     }
-    public getWaveform(channel?: Channels) {
+    public getWaveform(channel?: AudioChannels) {
         return this.sineData;
     }
 }
