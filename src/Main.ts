@@ -8,6 +8,7 @@ import ComponentRegistry from "./ComponentRegistry";
 import EffectList from "./EffectList";
 import IMain from "./IMain";
 import BufferSave from "./misc/BufferSave";
+import Comment from "./misc/Comment";
 import GlobalVar from "./misc/GlobalVar";
 import Model from "./Model";
 import ClearScreen from "./render/ClearScreen";
@@ -403,6 +404,8 @@ export default class Main extends Model implements IMain {
 
             BufferSave,
             GlobalVar,
+
+            Comment,
         ]);
     }
 
