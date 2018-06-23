@@ -379,7 +379,7 @@ function generateGlsl(codeAst: ICodeAst, tables: ISymbolTables, glslFuncs: strin
                 case "bnot":
                     return "(float(!(" + generateNode(ast.args[0]) + ")))";
                 case "invsqrt":
-                    return "(1/sqrt(" + generateNode(ast.args[0]) + "))";
+                    return "(inversesqrt(" + generateNode(ast.args[0]) + "))";
                 case "atan2":
                     return "(atan((" + generateNode(ast.args[0]) + "),(" + generateNode(ast.args[1]) + "))";
                 default: {
