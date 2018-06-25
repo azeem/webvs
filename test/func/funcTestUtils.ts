@@ -135,6 +135,7 @@ function imageFuzzyOk(
     redPixel.data[3] = 255;
 
     let mismatch = 0;
+    let maxDistance = 0;
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const off = y * width * 4 + x * 4;
@@ -143,6 +144,7 @@ function imageFuzzyOk(
             const gd = expectPixels[off + 1] - sourcePixels[srcOff + 1];
             const bd = expectPixels[off + 2] - sourcePixels[srcOff + 2];
             const distance = rd * rd + gd * gd + bd * bd;
+            maxDistance = Math.max(distance, maxDistance);
             if (distance >= distanceThreshold) {
                 ctxt.putImageData(redPixel, x, y); // mark pixel mismatch
                 mismatch++;
@@ -157,6 +159,7 @@ function imageFuzzyOk(
         const expectSrc = expectDataUrl;
         const outputSrc = canvas.toDataURL();
         const diffSrc = tempCanvas.toDataURL();
+        maxDistance = Math.sqrt(maxDistance / 3);
         errorElement.innerHTML = `
             <table style='border:1px solid black;margin:5px;font-family:sans-serif;text-align:center;'>
               <tr>
@@ -175,7 +178,14 @@ function imageFuzzyOk(
             </table>
         `;
         document.body.appendChild(errorElement);
-        throw new Error("ImageMismatch #" + errorId);
+        throw new Error([
+            `ImageMismatch #${errorId}`,
+            `maxDistance: ${maxDistance}`,
+            `mismatch: ${mismatch}`,
+            `ImageMismatch #${errorId}`,
+            `outputSrc: ${outputSrc}`,
+            `diffSrc: #${diffSrc}`,
+        ].join("\n"));
     }
 }
 
