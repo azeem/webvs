@@ -34,7 +34,7 @@ describe("DynamicMovement", function() {
 
     it("should run for noGrid, compat, !blend", () => {
         return mainTest({
-            distanceThreshold: 10,
+            distanceThreshold: 40,
             expectImageSrc: "DynamicMovement_0.png",
             frameCount: 500,
             mismatchThreshold: 50,
@@ -44,7 +44,7 @@ describe("DynamicMovement", function() {
 
     it("should run for !noGrid, compat, !blend", () => {
         return mainTest({
-            distanceThreshold: 10,
+            distanceThreshold: 40,
             expectImageSrc: "DynamicMovement_1.png",
             frameCount: 500,
             mismatchThreshold: 50,
@@ -54,7 +54,7 @@ describe("DynamicMovement", function() {
 
     it("should run for !noGrid, !compat, !blend", () => {
         return mainTest({
-            distanceThreshold: 10,
+            distanceThreshold: 40,
             expectImageSrc: "DynamicMovement_2.png",
             frameCount: 500,
             mismatchThreshold: 50,
@@ -64,7 +64,7 @@ describe("DynamicMovement", function() {
 
     it("should run for !noGrid, !compat, blend", () => {
         return mainTest({
-            distanceThreshold: 10,
+            distanceThreshold: 40,
             expectImageSrc: "DynamicMovement_3.png",
             frameCount: 500,
             mismatchThreshold: 50,
@@ -74,7 +74,7 @@ describe("DynamicMovement", function() {
 
     it("should run for noGrid, !compat, blend", () => {
         return mainTest({
-            distanceThreshold: 10,
+            distanceThreshold: 40,
             expectImageSrc: "DynamicMovement_4.png",
             frameCount: 500,
             mismatchThreshold: 50,

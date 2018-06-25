@@ -23,6 +23,7 @@ describe("Mosaic", () => {
     });
     it("should onBeatSizeChange", () => {
         return mainTest({
+            distanceThreshold: 5,
             expectImageSrc: "Mosaic_3.png",
             frameCount: 5,
             onFrame: (main: IMain, frame: number) => {
