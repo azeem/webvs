@@ -37,7 +37,7 @@ describe("DynamicMovement", function() {
             distanceThreshold: 80,
             expectImageSrc: "DynamicMovement_0.png",
             frameCount: 500,
-            mismatchThreshold: 50,
+            mismatchThreshold: 100,
             preset: makePreset({noGrid: true, compat: true, blend: false}),
         });
     });
@@ -47,7 +47,7 @@ describe("DynamicMovement", function() {
             distanceThreshold: 80,
             expectImageSrc: "DynamicMovement_1.png",
             frameCount: 500,
-            mismatchThreshold: 50,
+            mismatchThreshold: 100,
             preset: makePreset({noGrid: false, compat: true, blend: false}),
         });
     });
@@ -57,7 +57,7 @@ describe("DynamicMovement", function() {
             distanceThreshold: 80,
             expectImageSrc: "DynamicMovement_2.png",
             frameCount: 500,
-            mismatchThreshold: 50,
+            mismatchThreshold: 100,
             preset: makePreset({noGrid: false, compat: false, blend: false}),
         });
     });
@@ -67,7 +67,7 @@ describe("DynamicMovement", function() {
             distanceThreshold: 80,
             expectImageSrc: "DynamicMovement_3.png",
             frameCount: 500,
-            mismatchThreshold: 50,
+            mismatchThreshold: 100,
             preset: makePreset({noGrid: false, compat: false, blend: true}),
         });
     });
@@ -77,7 +77,7 @@ describe("DynamicMovement", function() {
             distanceThreshold: 80,
             expectImageSrc: "DynamicMovement_4.png",
             frameCount: 500,
-            mismatchThreshold: 50,
+            mismatchThreshold: 100,
             preset: makePreset({noGrid: true, compat: false, blend: true}),
         });
     });
