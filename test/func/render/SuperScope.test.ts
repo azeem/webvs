@@ -58,17 +58,10 @@ describe("SuperScope", () => {
         });
     });
 
-    it("should render lines", () => {
-        return mainTest({
-            expectImageSrc: "SuperScope_3.png",
-            mismatchThreshold: 4,
-            preset: makePreset({code, thickness: 1, drawMode: "LINES"}),
-        });
-    });
-
     it("should render thick lines", () => {
         return mainTest({
             expectImageSrc: "SuperScope_4.png",
+            mismatchThreshold: 5,
             preset: makePreset({code, thickness: 3, drawMode: "LINES"}),
         });
     });
