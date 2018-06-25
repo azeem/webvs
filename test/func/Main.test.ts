@@ -4,6 +4,7 @@ describe("Main", () => {
     it("should render components", () => {
         return mainTest({
             expectImageSrc: "Main_0.png",
+            mismatchThreshold: 20,
             preset: {
                 components: [
                     {
