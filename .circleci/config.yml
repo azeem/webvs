@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:latest
+      - image: circleci/node:latest-browsers
     steps:
       - checkout
       - restore_cache:
@@ -25,4 +25,4 @@ jobs:
           command: npm run unit-test
       - run:
           name: Run Functional Test
-          command: HEADLESS=1 npm run func-test --single-run
+          command: HEADLESS=1 npm run func-test -- --single-run
