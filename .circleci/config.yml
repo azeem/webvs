@@ -25,4 +25,4 @@ jobs:
           command: npm run unit-test
       - run:
           name: Run Functional Test
-          command: npm run func-test
+          command: HEADLESS=1 npm run func-test --single-run
