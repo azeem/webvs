@@ -2,10 +2,6 @@ var webpack = require('webpack');
 process.env.TARGET = 'web';
 var webpackConfig = require('./webpack.config');
 var packageJson = require('./package.json');
-var runHeadless = !!process.env.HEADLESS;
-if (runHeadless) {
-  process.env.CHROME_BIN = require('puppeteer').executablePath();
-}
 
 module.exports = function(config) {
   config.set({
@@ -33,6 +29,6 @@ module.exports = function(config) {
       ]
     },
     reporters: ['mocha'],
-    browsers: [ runHeadless ? 'ChromeHeadless' : 'Chrome'],
+    browsers: ['Chrome'],
   })
 }
