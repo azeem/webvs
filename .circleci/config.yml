@@ -23,3 +23,6 @@ jobs:
       - run:
           name: Run Unit Test
           command: npm run unit-test
+      - run:
+          name: Run Functional Test
+          command: npm run func-test
