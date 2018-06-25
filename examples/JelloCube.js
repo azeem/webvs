@@ -39,7 +39,7 @@ addExamplePreset({
         },
         {
             "type": "ColorMap",
-            "output": "REPLACE",
+            "blendMode": "REPLACE",
             "key": "RED",
             "maps": [
                 {
@@ -56,7 +56,7 @@ addExamplePreset({
             type: "EffectList",
             clearFrame: true,
             input: "IGNORE",
-            output: "SUBTRACTIVE1",
+            output: "SUB_DEST_SRC",
             components: [
                 {
                     type: "SuperScope",

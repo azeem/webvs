@@ -1,4 +1,4 @@
-import { Channels, FloatArray } from "../utils";
+import { AudioChannels, FloatArray } from "../utils";
 
 /**
  * AnalyserAdapter adapts music data analysers so that it can be plugged into Webvs.
@@ -21,11 +21,11 @@ export default abstract class AnalyserAdapter {
      * Returns array of waveform values. Override and implement analyser code
      * @param channel channel for which waveform data will be returned
      */
-    public abstract getWaveform(channel?: Channels): FloatArray;
+    public abstract getWaveform(channel?: AudioChannels): FloatArray;
 
     /**
      * Returns array of spectrum values. Override and implement analyser code
      * @param channel channel for which spectrum data will be returned
      */
-    public abstract getSpectrum(channel?: Channels): FloatArray;
+    public abstract getSpectrum(channel?: AudioChannels): FloatArray;
 }

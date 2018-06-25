@@ -140,7 +140,7 @@ addExamplePreset({
         },
         {
             "type": "ColorMap",
-            "output": "ADDITIVE",
+            "blendMode": "ADDITIVE",
             "maps": [
                 {
                     "enabled": true,

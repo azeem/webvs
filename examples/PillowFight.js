@@ -30,7 +30,7 @@ addExamplePreset({
                 {
                     "type": "DynamicMovement",
                     "noGrid": true,
-                    "coord": "RECT",
+                    "coord": "CARTESIAN",
                     "code": {
                         "perPixel": "x=-x"
                     }
@@ -76,7 +76,7 @@ addExamplePreset({
                 {
                     "type": "DynamicMovement",
                     "noGrid": true,
-                    "coord": "RECT",
+                    "coord": "CARTESIAN",
                     "code": {
                         "perPixel": "y=-y"
                     }
@@ -86,7 +86,7 @@ addExamplePreset({
         {
             "type": "ColorMap",
             "key": "RED",
-            "output": "REPLACE",
+            "blendMode": "REPLACE",
             "mapCycleMode": "SINGLE",
             "maps": [
                 {
@@ -118,7 +118,7 @@ addExamplePreset({
             "enabled": true,
             "clearFrame": false,
             "input": "IGNORE",
-            "output": "AVERAGE",
+            "output": "FIFTY_FIFTY",
             "components": [
                 {
                     "type": "BufferSave",
@@ -128,7 +128,7 @@ addExamplePreset({
                 },
                 {
                     "type": "DynamicMovement",
-                    "coord": "RECT",
+                    "coord": "CARTESIAN",
                     "noGrid": true,
                     "bFilter": false,
                     "code": {
@@ -160,8 +160,8 @@ addExamplePreset({
         {
             "type": "ColorMap",
             "key": "RED",
-            "output": "REPLACE",
-            "mapCycleMode": "ONBEATSEQUENTIAL",
+            "blendMode": "REPLACE",
+            "mapCycleMode": "ONBEAT_SEQUENTIAL",
             "maps": [
                 {
                     "enabled": true,
@@ -231,8 +231,8 @@ addExamplePreset({
         {
             "type": "ColorMap",
             "key": "MAX",
-            "output": "MULTIPLY",
-            "mapCycleMode": "ONBEATSEQUENTIAL",
+            "blendMode": "MULTIPLY",
+            "mapCycleMode": "ONBEAT_SEQUENTIAL",
             "maps": [
                 {
                     "enabled": true,
@@ -259,7 +259,7 @@ addExamplePreset({
         },
         {
             "type": "DynamicMovement",
-            "coord": "RECT",
+            "coord": "CARTESIAN",
             "noGrid": true,
             "code": {
                 "perPixel": "x=x-(1/6)"

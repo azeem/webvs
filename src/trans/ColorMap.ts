@@ -48,7 +48,7 @@ export interface IColorMapOpts {
     /**
      * Output blending mode. see [[BlendMode]]
      */
-    output: string;
+    blendMode: string;
     /**
      * Color map cycling mode. see [[ColorMapCycleMode]]
      */
@@ -66,8 +66,8 @@ enum ColorMapKey {
     RED = 0,
     GREEN,
     BLUE,
-    "(R+G+B)/2",
-    "(R+G+B)/3",
+    CHANNEL_SUM_HALF,
+    CHANNEL_AVERAGE,
     MAX,
 }
 
@@ -76,8 +76,8 @@ enum ColorMapKey {
  */
 enum ColorMapCycleMode {
     SINGLE = 0,
-    ONBEATRANDOM,
-    ONBEATSEQUENTIAL,
+    ONBEAT_RANDOM,
+    ONBEAT_SEQUENTIAL,
 }
 
 /**
@@ -88,12 +88,13 @@ export default class ColorMap extends Component {
     public static componentName: string = "ColorMap";
     public static componentTag: string = "trans";
     protected static optUpdateHandlers = {
+        blendMode: "updateBlendMode",
         key: "updateKey",
         mapCycleMode: "updateCycleMode",
         maps: "updateMap",
-        output: "updateBlendMode",
     };
     protected static defaultOptions: IColorMapOpts = {
+        blendMode: "REPLACE",
         key: "RED",
         mapCycleMode: "SINGLE",
         maps: [
@@ -105,7 +106,6 @@ export default class ColorMap extends Component {
                 enabled: true,
             },
         ],
-        output: "REPLACE",
     };
 
     protected opts: IColorMapOpts;
@@ -133,15 +133,19 @@ export default class ColorMap extends Component {
                 uniform int u_key;
                 uniform sampler2D u_colorMap;
                 void main() {
-                   vec4 srcColor = getSrcColor();
-                   float key;
-                   if(u_key == ${ColorMapKey.RED}          ) { key = srcColor.r; }
-                   if(u_key == ${ColorMapKey.GREEN}        ) { key = srcColor.g; }
-                   if(u_key == ${ColorMapKey.BLUE}         ) { key = srcColor.b; }
-                   if(u_key == ${ColorMapKey["(R+G+B)/2"]} ) { key = min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0); }
-                   if(u_key == ${ColorMapKey["(R+G+B)/3"]} ) { key = (srcColor.r+srcColor.g+srcColor.b)/3.0; }
-                   if(u_key == ${ColorMapKey.MAX}          ) { key = max(srcColor.r, max(srcColor.g, srcColor.b)); }
-                   setFragColor(texture2D(u_colorMap, vec2(key, 0)));
+                    vec4 srcColor = getSrcColor();
+                    float key;
+                    if(u_key == ${ColorMapKey.RED}              ) { key = srcColor.r; }
+                    if(u_key == ${ColorMapKey.GREEN}            ) { key = srcColor.g; }
+                    if(u_key == ${ColorMapKey.BLUE}             ) { key = srcColor.b; }
+                    if(u_key == ${ColorMapKey.CHANNEL_SUM_HALF} ) {
+                        key = min((srcColor.r+srcColor.g+srcColor.b)/2.0, 1.0);
+                    }
+                    if(u_key == ${ColorMapKey.CHANNEL_AVERAGE}  ) { key = (srcColor.r+srcColor.g+srcColor.b)/3.0; }
+                    if(u_key == ${ColorMapKey.MAX}              ) {
+                        key = max(srcColor.r, max(srcColor.g, srcColor.b));
+                    }
+                    setFragColor(texture2D(u_colorMap, vec2(key, 0)));
                 }
             `,
             swapFrame: true,
@@ -154,9 +158,9 @@ export default class ColorMap extends Component {
 
     public draw() {
         if (this.main.getAnalyser().isBeat()) {
-            if (this.mapCycleMode ===  ColorMapCycleMode.ONBEATRANDOM) {
+            if (this.mapCycleMode ===  ColorMapCycleMode.ONBEAT_RANDOM) {
                 this.currentMap = Math.floor(Math.random() * this.opts.maps.length);
-            } else if (this.mapCycleMode === ColorMapCycleMode.ONBEATSEQUENTIAL) {
+            } else if (this.mapCycleMode === ColorMapCycleMode.ONBEAT_SEQUENTIAL) {
                 this.currentMap = (this.currentMap + 1) % this.colorMaps.length;
             }
         }
@@ -197,7 +201,7 @@ export default class ColorMap extends Component {
     }
 
     private updateBlendMode() {
-        this.blendMode = BlendMode[this.opts.output];
+        this.blendMode = BlendMode[this.opts.blendMode];
     }
 
     private _buildColorMap(mapItems: IColorMapItem[]): WebGLTexture {

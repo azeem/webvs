@@ -37,7 +37,7 @@ describe("UniqueTone", () => {
 
     it("should run with !invert and ADDITIVE", () => {
         return uniqueToneTest(
-            {color: "#800000", invert: false, blendMode: "AVERAGE"},
+            {color: "#800000", invert: false, blendMode: "FIFTY_FIFTY"},
             "UniqueTone_2.png",
         );
     });
@@ -56,9 +56,9 @@ describe("UniqueTone", () => {
         );
     });
 
-    it("should run with invert and AVERAGE", () => {
+    it("should run with invert and FIFTY_FIFTY", () => {
         return uniqueToneTest(
-            {color: "#800000", invert: true, blendMode: "AVERAGE"},
+            {color: "#800000", invert: true, blendMode: "FIFTY_FIFTY"},
             "UniqueTone_5.png",
         );
     });

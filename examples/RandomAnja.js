@@ -52,7 +52,7 @@ addExamplePreset({
             },
             "noGrid": true,
             "bFilter": true,
-            "coord": "RECT",
+            "coord": "CARTESIAN",
             "gridW": 0,
             "gridH": 0,
             "blend": false,
@@ -80,7 +80,7 @@ addExamplePreset({
                 "perPoint": "x=x+xm;y=y+ym;"
             },
             "bFilter": true,
-            "coord": "RECT",
+            "coord": "CARTESIAN",
             "gridW": 0,
             "gridH": 0,
             "blend": false,
@@ -108,7 +108,7 @@ addExamplePreset({
                 "perPoint": "x=x+xm;y=y+ym;"
             },
             "bFilter": true,
-            "coord": "RECT",
+            "coord": "CARTESIAN",
             "gridW": 0,
             "gridH": 0,
             "blend": false,

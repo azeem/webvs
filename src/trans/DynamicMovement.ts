@@ -12,7 +12,7 @@ import ShaderProgram, { IShaderOpts } from "../webgl/ShaderProgram";
  */
 enum DynamicMovementCoordMode {
     POLAR = 0,
-    RECT,
+    CARTESIAN,
 }
 
 /**
@@ -23,8 +23,8 @@ export interface IDynamicMovementOpts {
      * EEL code to control the movement of pixels
      *
      * EEL Variables:
-     * + `x`: `(ReadWrite, perPixel, RECT mode)` - Current x position. Set this value to move pixel to new position
-     * + `y`: `(ReadWrite, perPixel, RECT mode)` - Current y position. Set this value to move pixel to new position
+     * + `x`: `(ReadWrite, perPixel, CARTESIAN mode)` - Current x position. Set this value to move pixel to new position
+     * + `y`: `(ReadWrite, perPixel, CARTESIAN mode)` - Current y position. Set this value to move pixel to new position
      * + `d`: `(ReadWrite, perPixel, POLAR mode)` - Current distance from center. Set this value to move pixel to
      *   new position
      * + `r`: `(ReadWrite, perPixel, POLAR mode)` - Current angle. Set this value to move pixel to new location
@@ -216,10 +216,10 @@ export default class DynamicMovement extends Component {
                     ${this.code.hasRandom ? "__randSeed = v_position;" : ""}
                     x = v_position.x*2.0-1.0;
                     y = -(v_position.y*2.0-1.0);
-                    ${ glslRectToPolar(coordMode) }
+                    ${ glslCartesianToPolar(coordMode) }
                     alpha=0.5;
                     perPixel();
-                    ${ glslPolarToRect(coordMode) }
+                    ${ glslPolarToCartesian(coordMode) }
                     setFragColor(vec4(filter(vec2(x, -y)), ${opts.blend ? "alpha" : "1.0"}));
                 }
             `;
@@ -238,11 +238,11 @@ export default class DynamicMovement extends Component {
                     ${this.code.hasRandom ? "__randSeed = a_position;" : ""}
                     x = a_position.x;
                     y = -a_position.y;
-                    ${ glslRectToPolar(coordMode) }
+                    ${ glslCartesianToPolar(coordMode) }
                     alpha = 0.5;
                     perPixel();
                     v_alpha = alpha;
-                    ${ glslPolarToRect(coordMode) }
+                    ${ glslPolarToCartesian(coordMode) }
                     v_newPoint = vec2(x,-y);
                     setPosition(a_position);
                 }
@@ -314,7 +314,7 @@ export default class DynamicMovement extends Component {
     }
 }
 
-function glslRectToPolar(coordMode: DynamicMovementCoordMode): string {
+function glslCartesianToPolar(coordMode: DynamicMovementCoordMode): string {
     if (coordMode === DynamicMovementCoordMode.POLAR) {
         return `
             float ar = u_resolution.x/u_resolution.y;
@@ -327,7 +327,7 @@ function glslRectToPolar(coordMode: DynamicMovementCoordMode): string {
     }
 }
 
-function glslPolarToRect(coordMode: DynamicMovementCoordMode): string {
+function glslPolarToCartesian(coordMode: DynamicMovementCoordMode): string {
     if (coordMode === DynamicMovementCoordMode.POLAR) {
         return `
             d = d*sqrt(2.0);

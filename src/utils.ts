@@ -127,29 +127,31 @@ export function logShaderError(src: string, error: string): void {
 export enum BlendMode {
     REPLACE = 1,
     MAXIMUM,
-    AVERAGE,
+    MINIMUM,
+    FIFTY_FIFTY,
     ADDITIVE,
-    SUBTRACTIVE1,
-    SUBTRACTIVE2,
+    SUB_DEST_SRC,
+    SUB_SRC_DEST,
     MULTIPLY,
     MULTIPLY2,
     ADJUSTABLE,
     ALPHA,
+    ABSOLUTE_DIFFERENCE,
 }
 
 /**
- * Channels
+ * AudioChannels
  */
-export enum Channels {
+export enum AudioChannels {
     CENTER = 0,
     LEFT,
     RIGHT,
 }
 
 /**
- * Source
+ * AudioSource
  */
-export enum Source {
+export enum AudioSource {
     SPECTRUM = 1,
     WAVEFORM,
 }
