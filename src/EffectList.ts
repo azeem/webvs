@@ -3,6 +3,7 @@ import Container from "./Container";
 import CodeInstance from "./expr/CodeInstance";
 import compileExpr from "./expr/compileExpr";
 import IMain from "./IMain";
+import Inert from "./Inert";
 import { BlendMode } from "./utils";
 import TextureSetManager from "./webgl/TextureSetManager";
 
@@ -177,7 +178,7 @@ export default class EffectList extends Container {
         // render all the components
         // for (let i = 0; i < this.components.length; i++) {
         for (const component of this.components) {
-            if (component.isEnabled()) {
+            if (component.isEnabled() && !(component instanceof Inert)) {
                 component.draw();
             }
         }

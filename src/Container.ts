@@ -3,6 +3,7 @@ import isString from "lodash-es/isString";
 import Component, { IComponentConstructor, IContainer } from "./Component";
 import ComponentRegistry from "./ComponentRegistry";
 import IMain from "./IMain";
+import Inert from "./Inert";
 import TextureSetManager from "./webgl/TextureSetManager";
 
 /**
@@ -49,6 +50,10 @@ export default abstract class Container extends Component implements IContainer 
                     continue;
                 }
                 const component = new componentClass(this.main, this, opts);
+                if (component instanceof Inert) {
+                    // tslint:disable-next-line:no-console
+                    console.warn(`Inert Component: ${opts.type}. Will not affect rendering.`);
+                }
                 components.push(component);
             }
         }
