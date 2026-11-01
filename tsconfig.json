@@ -5,6 +5,7 @@
         "useDefineForClassFields": false,
         "module": "preserve",
         "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
         "lib": [
             "dom",
             "es2022"

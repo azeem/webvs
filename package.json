@@ -28,8 +28,7 @@
     "smoke-test": "node test/smoke/smoke.mjs",
     "func-test": "vitest run --project func",
     "unit-test": "vitest run --project unit",
-    "lint": "oxlint --deny-warnings src test",
-    "gen:grammar": "peggy --format es --dts -o src/expr/ExprGrammar.js src/expr/ExprGrammar.pegjs"
+    "lint": "oxlint --deny-warnings src test"
   },
   "repository": {
     "type": "git",

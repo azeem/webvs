@@ -1,7 +1,7 @@
 import {glslFloatRepr, noop} from "../utils";
 import * as Ast from "./Ast";
 import CodeInstance from "./CodeInstance";
-import { parse } from "./ExprGrammar";
+import { parse } from "./ExprGrammar.pegjs";
 
 export interface ICompileResult {
     codeInst: CodeInstance;

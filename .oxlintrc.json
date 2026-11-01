@@ -1,7 +1,6 @@
 {
     "$schema": "./node_modules/oxlint/configuration_schema.json",
     "plugins": ["typescript", "unicorn", "oxc"],
-    "ignorePatterns": ["src/expr/ExprGrammar.*"],
     "rules": {
         // unused params mostly match interface or override signatures
         "no-unused-vars": ["warn", { "args": "none" }]

@@ -1,8 +1,10 @@
 import { playwright } from "@vitest/browser-playwright";
 import { readFileSync } from "node:fs";
 import { defineConfig } from "vitest/config";
+import peggy from "./peggy.plugin.ts";
 
 export default defineConfig({
+    plugins: [peggy],
     define: {
         RESOURCE_PACK_URL: JSON.stringify("/resources/"),
         WEBVS_VERSION: JSON.stringify(JSON.parse(readFileSync("package.json", "utf8")).version),
