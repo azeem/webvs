@@ -1,5 +1,3 @@
-import extend from "lodash-es/extend";
-import pickBy from "lodash-es/pickBy";
 import Model from "./Model";
 
 /**
@@ -64,7 +62,7 @@ export default class ResourceManager extends Model {
             this.uris[fileName] = uri;
         } else {
             const inputUris = fileName;
-            extend(this.uris, inputUris);
+            Object.assign(this.uris, inputUris);
         }
     }
 
@@ -104,9 +102,9 @@ export default class ResourceManager extends Model {
         }
         this.waitImages = {};
         if (keys) {
-            const pickPredicate = (val, key) => keys.indexOf(key) === -1;
-            this.uris = pickBy(this.uris, pickPredicate);
-            this.images = pickBy(this.images, pickPredicate);
+            const keep = ([key]: [string, unknown]) => !keys.includes(key);
+            this.uris = Object.fromEntries(Object.entries(this.uris).filter(keep));
+            this.images = Object.fromEntries(Object.entries(this.images).filter(keep));
         } else {
             this.uris = {};
             this.images = {};

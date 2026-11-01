@@ -1,5 +1,3 @@
-import defaults from "lodash-es/defaults";
-import pick from "lodash-es/pick";
 import Stats from "stats.js";
 import AnalyserAdapter from "./analyser/AnalyserAdapter";
 import builtinResourcePack from "./builtinResourcePack";
@@ -279,8 +277,8 @@ export default class Main extends Model implements IMain {
      * @returns JSON representaton of the preset
      */
     public toJSON(): any {
-        let preset = this.rootComponent.toJSON();
-        preset = pick(preset, "clearFrame", "components");
+        const { clearFrame, components } = this.rootComponent.toJSON();
+        const preset: any = { clearFrame, components };
         preset.resources = this.rsrcMan.toJSON();
         preset.meta = Object.assign({}, this.meta);
         return preset;

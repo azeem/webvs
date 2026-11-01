@@ -1,18 +1,3 @@
-import difference from "lodash-es/difference";
-import each from "lodash-es/each";
-import flatten from "lodash-es/flatten";
-import flow from "lodash-es/flow";
-import intersection from "lodash-es/intersection";
-import isEqual from "lodash-es/isEqual";
-import isNumber from "lodash-es/isNumber";
-import keys from "lodash-es/keys";
-import map from "lodash-es/map";
-import { default as pr } from "lodash-es/partialRight";
-import pick from "lodash-es/pick";
-import takeRight from "lodash-es/takeRight";
-import union from "lodash-es/union";
-import uniq from "lodash-es/uniq";
-import values from "lodash-es/values";
 import {glslFloatRepr, noop} from "../utils";
 import * as Ast from "./Ast";
 import CodeInstance from "./CodeInstance";
@@ -125,14 +110,10 @@ function processAst(
                         `Non Pre-Computable arguments for ${ast.funcName} in shader code, use variables or constants`,
                     );
                 }
-                const entry = [ast.funcName].concat(map(args, (arg) => arg.value));
-                let uniformName;
-                for (const key in preCompute) {
-                    if (isEqual(preCompute[key], entry)) {
-                        uniformName = key;
-                        break;
-                    }
-                }
+                const entry = [ast.funcName].concat(args.map((arg) => arg.value));
+                let uniformName = Object.keys(preCompute).find((key) =>
+                    preCompute[key].length === entry.length && preCompute[key].every((v, i) => v === entry[i]),
+                );
                 if (!uniformName) {
                     uniformName = "__PC_" +  ast.funcName + "_" + preComputeCounter++;
                     preCompute[uniformName] = entry;
@@ -165,17 +146,20 @@ function processAst(
 
         processNode(codeAst[name], name);
 
-        funcCall[name] = uniq(funcCall[name]);
-        variable[name] = uniq(variable[name]);
-        register[name] = uniq(register[name]);
+        funcCall[name] = [...new Set(funcCall[name])];
+        variable[name] = [...new Set(variable[name])];
+        register[name] = [...new Set(register[name])];
     }
 
-    const jsVars: string[] = flow([pr(pick, jsFuncs), values, flatten, uniq])(variable);
-    const glslVars: string[] = flow([pr(pick, glslFuncs), values, flatten, uniq])(variable);
-    const nonUniforms: string[] = flow([pr(difference, jsVars), pr(union, extraNonUniforms), uniq])(glslVars);
-    const uniforms: string[]  = intersection(glslVars, jsVars);
-    const glslUsedFuncs: string[] = flow([pr(pick, glslFuncs), values, flatten, uniq])(funcCall);
-    const glslRegisters: string[] = flow([pr(pick, glslFuncs), values, flatten, uniq])(register);
+    const jsVars: string[] = [...new Set(jsFuncs.flatMap((name) => variable[name] ?? []))];
+    const glslVars: string[] = [...new Set(glslFuncs.flatMap((name) => variable[name] ?? []))];
+    const nonUniforms: string[] = [...new Set([
+        ...glslVars.filter((name) => !jsVars.includes(name)),
+        ...extraNonUniforms,
+    ])];
+    const uniforms: string[]  = glslVars.filter((name) => jsVars.includes(name));
+    const glslUsedFuncs: string[] = [...new Set(glslFuncs.flatMap((name) => funcCall[name] ?? []))];
+    const glslRegisters: string[] = [...new Set(glslFuncs.flatMap((name) => register[name] ?? []))];
 
     return {
         glslRegisters, glslUsedFuncs, glslVars, jsVars, nonUniforms, preCompute, register, uniforms,
@@ -229,7 +213,7 @@ function generateJs(codeAst: ICodeAst, tables: ISymbolTables, jsFuncs: string[])
                 case "select":
                     const code = ["((function() {"];
                     code.push("switch(" + generateNode(ast.args[0]) + ") {");
-                    each(takeRight(ast.args, ast.args.length - 1), (arg, i) => {
+                    ast.args.slice(1).forEach((arg, i) => {
                         code.push("case " + i + ": return " + generateNode(arg) + ";");
                     });
                     code.push("default : throw new Error('Unknown selector value in select');");
@@ -249,7 +233,7 @@ function generateJs(codeAst: ICodeAst, tables: ISymbolTables, jsFuncs: string[])
                     return "(Math.atan((" + generateNode(ast.args[0]) + ")/(" + generateNode(ast.args[1]) + ")))";
                 default:
                     let prefix;
-                    const args = map(ast.args, (arg) => generateNode(arg)).join(",");
+                    const args = ast.args.map((arg) => generateNode(arg)).join(",");
                     if (jsMathFuncs.indexOf(ast.funcName) >= 0) {
                         prefix = "Math.";
                     } else {
@@ -262,7 +246,7 @@ function generateJs(codeAst: ICodeAst, tables: ISymbolTables, jsFuncs: string[])
             return generateNode(ast.lhs) + "=" + generateNode(ast.expr);
         }
         if (ast instanceof Ast.Program) {
-            const stmts = map(ast.statements, (stmt) => generateNode(stmt));
+            const stmts = ast.statements.map((stmt) => generateNode(stmt));
             return stmts.join(";\n");
         }
         if (ast instanceof Ast.PrimaryExpr && ast.type === "VALUE") {
@@ -279,7 +263,7 @@ function generateJs(codeAst: ICodeAst, tables: ISymbolTables, jsFuncs: string[])
         }
     };
 
-    const registerUsages = flow([values, flatten, uniq])(tables.register);
+    const registerUsages = [...new Set(Object.values(tables.register).flat())];
     const hasRandom = tables.glslUsedFuncs.indexOf("rand") >= 0;
     const codeInst = new CodeInstance(
         registerUsages,
@@ -364,11 +348,11 @@ function generateGlsl(codeAst: ICodeAst, tables: ISymbolTables, glslFuncs: strin
                             return [
                                 "((" + selectExpr + " === " + i + ")?",
                                 "(" + generateNode(args[0]) + "):",
-                                "(" + generateSelect(takeRight(args, args.length - 1), i + 1) + "))",
+                                "(" + generateSelect(args.slice(1), i + 1) + "))",
                             ].join("");
                         }
                     };
-                    return generateSelect(takeRight(ast.args, ast.args.length - 1), 0);
+                    return generateSelect(ast.args.slice(1), 0);
                 }
                 case "sqr":
                     return "(pow((" + generateNode(ast.args[0]) + "), 2))";
@@ -383,7 +367,7 @@ function generateGlsl(codeAst: ICodeAst, tables: ISymbolTables, glslFuncs: strin
                 case "atan2":
                     return "(atan((" + generateNode(ast.args[0]) + "),(" + generateNode(ast.args[1]) + "))";
                 default: {
-                    const args = map(ast.args, (arg) => generateNode(arg)).join(",");
+                    const args = ast.args.map((arg) => generateNode(arg)).join(",");
                     return "(" + ast.funcName + "(" + args + "))";
                 }
             }
@@ -392,7 +376,7 @@ function generateGlsl(codeAst: ICodeAst, tables: ISymbolTables, glslFuncs: strin
             return generateNode(ast.lhs) + "=" + generateNode(ast.expr);
         }
         if (ast instanceof Ast.Program) {
-            const stmts = map(ast.statements, (stmt) => generateNode(stmt));
+            const stmts = ast.statements.map((stmt) => generateNode(stmt));
             return stmts.join(";\n") + ";";
         }
         if (ast instanceof Ast.PrimaryExpr && ast.type === "VALUE") {
@@ -409,27 +393,21 @@ function generateGlsl(codeAst: ICodeAst, tables: ISymbolTables, glslFuncs: strin
     let glslCode = [];
 
     // glsl variable declarations
-    glslCode = glslCode.concat(map(tables.nonUniforms, (name) => {
+    glslCode = glslCode.concat(tables.nonUniforms.map((name) => {
         return "float " + name + " = 0.0;";
     }));
-    glslCode = glslCode.concat(map(tables.uniforms, (name) => {
+    glslCode = glslCode.concat(tables.uniforms.map((name) => {
         return "uniform float " + name + ";";
     }));
     // include required functions in glsl
-    glslCode = glslCode.concat(flow([
-        pr(map, (name) => {
-            return ((name in glslFuncCode) ? (glslFuncCode[name]) : []);
-        }),
-        flatten,
-    ])(tables.glslUsedFuncs));
+    glslCode = glslCode.concat(tables.glslUsedFuncs.flatMap((name) => {
+        return ((name in glslFuncCode) ? (glslFuncCode[name]) : []);
+    }));
 
     // declarations for precomputed functions
-    glslCode = glslCode.concat(flow([
-        keys,
-        pr(map, (name) => {
-            return "uniform float " + name + ";";
-        }),
-    ])(tables.preCompute));
+    glslCode = glslCode.concat(Object.keys(tables.preCompute).map((name) => {
+        return "uniform float " + name + ";";
+    }));
 
     // add the functions
     for (const name of glslFuncs) {
@@ -505,7 +483,7 @@ function checkFunc(ast: Ast.FuncCall) {
     if (requiredArgLength === undefined) {
         throw Error("Unknown function " + ast.funcName);
     }
-    if (isNumber(requiredArgLength)) {
+    if (typeof requiredArgLength === "number") {
         if (ast.args.length !== requiredArgLength) {
             throw Error(ast.funcName + " accepts " + requiredArgLength + " arguments");
         }

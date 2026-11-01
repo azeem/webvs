@@ -1,11 +1,8 @@
-import flatten from "lodash-es/flatten";
-import isEqual from "lodash-es/isEqual";
-import isUndefined from "lodash-es/isUndefined";
-import omit from "lodash-es/omit";
-import uniqueId from "lodash-es/uniqueId";
 import IMain from "./IMain";
 import Model from "./Model";
 import TextureSetManager from "./webgl/TextureSetManager";
+
+let idCounter = 0;
 
 /**
  * Component Class Constructor interface. This declares static member
@@ -121,13 +118,14 @@ export default abstract class Component extends Model {
         this.main = main;
         this.parent = parent;
 
-        this.id = options.id; // TODO: check for id uniqueness
+        const { id, enabled, ...opts } = options;
+        this.id = id; // TODO: check for id uniqueness
         if (!this.id) {
-            this.id = uniqueId(this.constructor.componentName  + "_");
+            this.id = this.constructor.componentName + "_" + ++idCounter;
         }
-        this.enabled = isUndefined(options.enabled) ? true : options.enabled;
+        this.enabled = enabled === undefined ? true : enabled;
 
-        this.opts = omit(options, ["id", "enabled"]);
+        this.opts = opts;
 
         const defaultOptions = this.constructor.defaultOptions;
         if (defaultOptions) {
@@ -219,7 +217,7 @@ export default abstract class Component extends Model {
      * Returns a `/` path to the component from the root.
      */
     public getPath(): string {
-        if (!isUndefined(this.parent) && !isUndefined(this.id)) {
+        if (this.parent !== undefined && this.id !== undefined) {
             return this.parent.getPath() + "/" + this.constructor.componentName + "#" + this.id;
         } else {
             return this.constructor.componentName + "#Main";
@@ -228,7 +226,8 @@ export default abstract class Component extends Model {
 
     protected setAttribute(key: string, value: any, options: any): boolean {
         const oldValue = this.get(key);
-        if (key === "type" || isEqual(value, oldValue)) {
+        // option values are preset JSON, so JSON equality stands in for a deep compare
+        if (key === "type" || JSON.stringify(value) === JSON.stringify(oldValue)) {
             return false;
         }
 
@@ -247,10 +246,10 @@ export default abstract class Component extends Model {
         const optUpdateHandlers = this.constructor.optUpdateHandlers;
         if (optUpdateHandlers) {
             try {
-                const onChange = flatten([
+                const onChange = [
                     optUpdateHandlers[key] || [],
                     optUpdateHandlers["*"] || [],
-                ]);
+                ].flat();
 
                 for (const onChangeHandler of onChange) {
                     this[onChangeHandler].call(this, value, key, oldValue);

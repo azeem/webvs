@@ -1,8 +1,3 @@
-import flow from "lodash-es/flow";
-import map from "lodash-es/map";
-import { default as pr } from "lodash-es/partialRight";
-import takeRight from "lodash-es/takeRight";
-
 /**
  * A No-Op function
  */
@@ -55,22 +50,12 @@ export function parseColor(color: string | Color): Color {
         color = color.toLowerCase();
         let match = color.match(/^#([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})$/);
         if (match) {
-            return flow([
-                pr(takeRight, 3),
-                pr(map, (channel) => {
-                    return parseInt(channel, 16);
-                }),
-            ])(match) as Color;
+            return match.slice(1).map((channel) => parseInt(channel, 16)) as Color;
         }
 
         match = color.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
         if (match) {
-            return flow([
-                pr(takeRight, 3),
-                pr(map, (channel) => {
-                    return Math.min(parseInt(channel, 10), 255);
-                }),
-            ])(match) as Color;
+            return match.slice(1).map((channel) => Math.min(parseInt(channel, 10), 255)) as Color;
         }
     }
     throw new Error("Invalid Color Format");
@@ -81,7 +66,7 @@ export function parseColor(color: string | Color): Color {
  * @param color the color value to be parsed
  */
 export function parseColorNorm(color: string | Color): Color {
-    return map(parseColor(color), (value) => value / 255) as Color;
+    return parseColor(color).map((value) => value / 255) as Color;
 }
 
 /**
@@ -99,7 +84,7 @@ export function logShaderError(src: string, error: string): void {
         errorPos = [parseInt(errorPosMatch[1], 10), parseInt(errorPosMatch[2], 10)];
     }
 
-    const numberedLines = map(lines, (line, index) => {
+    const numberedLines = lines.map((line, index) => {
         let i;
         let lineNumber = (index + 1) + "";
         for (i = 0; i < (ndigits - lineNumber.length); i++) {

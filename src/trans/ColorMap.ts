@@ -1,13 +1,3 @@
-import each from "lodash-es/each";
-import filter from "lodash-es/filter";
-import first from "lodash-es/first";
-import last from "lodash-es/last";
-import sortBy from "lodash-es/sortBy";
-import take from "lodash-es/take";
-import takeRight from "lodash-es/takeRight";
-import times from "lodash-es/times";
-import uniq from "lodash-es/uniq";
-import zip from "lodash-es/zip";
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
 import { BlendMode, Color, parseColor, WebGLVarType } from "../utils";
@@ -177,18 +167,19 @@ export default class ColorMap extends Component {
     public destroy() {
         super.destroy();
         this.program.destroy();
-        each(this.colorMaps, (tex) => {
+        for (const tex of this.colorMaps ?? []) {
             this.main.getRctx().getGl().deleteTexture(tex);
-        });
+        }
     }
 
     private updateMap() {
         if (this.colorMaps) {
-            each(this.colorMaps, (tex) => {
+            for (const tex of this.colorMaps) {
                 this.main.getRctx().getGl().deleteTexture(tex);
-            });
+            }
         }
-        this.colorMaps = filter(this.opts.maps, "enabled").map((colorMap) => this._buildColorMap(colorMap.colors));
+        this.colorMaps = this.opts.maps.filter((colorMap) => colorMap.enabled)
+            .map((colorMap) => this._buildColorMap(colorMap.colors));
         this.currentMap = 0;
     }
 
@@ -206,11 +197,11 @@ export default class ColorMap extends Component {
 
     private _buildColorMap(mapItems: IColorMapItem[]): WebGLTexture {
         const gl = this.main.getRctx().getGl();
-        mapItems = sortBy(mapItems, (mapItem) => mapItem.position);
+        mapItems = [...mapItems].sort((a, b) => a.position - b.position);
 
         // check for repeated positions
         const positions = mapItems.map((mapItem) => mapItem.position);
-        if (uniq(positions).length !== positions.length) {
+        if (new Set(positions).size !== positions.length) {
             throw new Error("map cannot have repeated positions");
         }
 
@@ -221,11 +212,11 @@ export default class ColorMap extends Component {
         });
 
         // add a cap entries at the ends
-        const firstMap = first(parsedMap);
+        const firstMap = parsedMap[0];
         if (firstMap.position !== 0) {
             parsedMap.splice(0, 0, {color: firstMap.color, position: 0});
         }
-        const lastMap = last(parsedMap);
+        const lastMap = parsedMap[parsedMap.length - 1];
         if (lastMap.position !== 255) {
             parsedMap.push({color: lastMap.color, position: 255});
         }
@@ -233,17 +224,16 @@ export default class ColorMap extends Component {
         // lerp intermediate values
         const colorMap = new Uint8Array(256 * 3);
         let cmi = 0;
-        const pairs = zip(take(parsedMap, parsedMap.length - 1), takeRight(parsedMap, parsedMap.length - 1));
-        each(pairs, (pair) => {
-            const firstItem = pair[0];
-            const secondItem = pair[1];
+        for (let p = 0; p < parsedMap.length - 1; p++) {
+            const firstItem = parsedMap[p];
+            const secondItem = parsedMap[p + 1];
             const steps = secondItem.position - firstItem.position;
-            times(steps, (i) => {
+            for (let i = 0; i < steps; i++) {
                 colorMap[cmi++] = Math.floor((firstItem.color[0] * (steps - i) + secondItem.color[0] * i) / steps);
                 colorMap[cmi++] = Math.floor((firstItem.color[1] * (steps - i) + secondItem.color[1] * i) / steps);
                 colorMap[cmi++] = Math.floor((firstItem.color[2] * (steps - i) + secondItem.color[2] * i) / steps);
-            });
-        });
+            }
+        }
         colorMap[cmi++] = lastMap.color[0];
         colorMap[cmi++] = lastMap.color[1];
         colorMap[cmi++] = lastMap.color[2];

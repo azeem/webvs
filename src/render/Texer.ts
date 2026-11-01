@@ -1,4 +1,3 @@
-import each from "lodash-es/each";
 import Component, { IContainer } from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr from "../expr/compileExpr";
@@ -151,9 +150,9 @@ export default class Texer extends Component {
     }
 
     public draw() {
-        each(this.code, (code) => {
+        for (const code of this.code) {
             this._drawScope(code, !this.inited);
-        });
+        }
         this.inited = true;
     }
 

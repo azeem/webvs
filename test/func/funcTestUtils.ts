@@ -1,11 +1,11 @@
-import isNumber from "lodash-es/isNumber";
-import uniqueId from "lodash-es/uniqueId";
 import AnalyserAdapter from "../../src/analyser/AnalyserAdapter";
 import Component from "../../src/Component";
 import IMain from "../../src/IMain";
 import Main from "../../src/Main";
 import { AudioChannels, clamp, glslFloatRepr, noop } from "../../src/utils";
 import ShaderProgram from "../../src/webgl/ShaderProgram";
+
+let errorCounter = 0;
 
 export class MockAnalyser extends AnalyserAdapter {
     private sineData: Float32Array;
@@ -155,7 +155,7 @@ function imageFuzzyOk(
 
     if (mismatch >= mismatchThreshold) {
         // show the diff image
-        const errorId = uniqueId();
+        const errorId = ++errorCounter;
         const errorElement = document.createElement("span");
         const expectSrc = expectDataUrl;
         const outputSrc = canvas.toDataURL();
@@ -250,7 +250,7 @@ export function makeSinglePreset(type: string, opts: any, testPatternBlue: numbe
     const components = [
         componentOpts,
     ];
-    if (isNumber(testPatternBlue)) {
+    if (typeof testPatternBlue === "number") {
         components.unshift({
             blue: testPatternBlue,
             type: "TestPattern",

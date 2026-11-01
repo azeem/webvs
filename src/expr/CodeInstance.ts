@@ -1,10 +1,3 @@
-import drop from "lodash-es/drop";
-import each from "lodash-es/each";
-import extend from "lodash-es/extend";
-import isFunction from "lodash-es/isFunction";
-import isString from "lodash-es/isString";
-import take from "lodash-es/take";
-import times from "lodash-es/times";
 import AnalyserAdapter from "../analyser/AnalyserAdapter";
 import { IContainer } from "../Component";
 import IMain from "../IMain";
@@ -26,25 +19,25 @@ export default class CodeInstance {
         }
         const clonesLength = clones.length;
         if (clonesLength < count) {
-            times(count - clonesLength, (index) => {
+            for (let index = 0; index < count - clonesLength; index++) {
                 const clone = Object.create(CodeInstance.prototype);
-                extend(clone, clones[0]);
+                Object.assign(clone, clones[0]);
                 clone.cid = index + clonesLength;
                 clones.push(clone);
-            });
+            }
         } else if (clonesLength > count) {
-            clones = take(clones, count);
+            clones = clones.slice(0, count);
         }
         return clones;
     }
 
     // copies instance values from one code instance to another
     public static copyValues(dest: CodeInstance, src: CodeInstance) {
-        each(src, (value, name) => {
-            if (!isFunction(value) && name.charAt(0) !== "_") {
+        for (const [name, value] of Object.entries(src)) {
+            if (typeof value !== "function" && name.charAt(0) !== "_") {
                 dest[name] = value;
             }
-        });
+        }
     }
 
     public w: number;
@@ -93,14 +86,14 @@ export default class CodeInstance {
     // bind state values to uniforms
     public bindUniforms(program: ShaderProgram) {
         // bind all values
-        each(this.uniforms, (name) => {
+        for (const name of this.uniforms) {
             program.setUniform(name, WebGLVarType._1F, this[name]);
-        });
+        }
 
         // bind registers
-        each(this.glslRegisters, (name) => {
+        for (const name of this.glslRegisters) {
             program.setUniform(name, WebGLVarType._1F, this.registerBank[name]);
-        });
+        }
 
         // bind random step value if there are usages of random
         if (this.hasRandom) {
@@ -109,9 +102,9 @@ export default class CodeInstance {
         }
 
         // bind precomputed values
-        each(this.preCompute, (entry, name) => {
-            const args = drop(entry).map((arg) => {
-                if (isString(arg)) {
+        for (const [name, entry] of Object.entries(this.preCompute)) {
+            const args = entry.slice(1).map((arg) => {
+                if (typeof arg === "string") {
                     if (arg.substring(0, 5) === "__REG") {
                         return this.registerBank[arg];
                     } else {
@@ -123,7 +116,7 @@ export default class CodeInstance {
             });
             const result = this[entry[0]].apply(this, args);
             program.setUniform(name, WebGLVarType._1F, result);
-        });
+        }
     }
 
     // initializes this codeinstance
@@ -134,11 +127,11 @@ export default class CodeInstance {
         this.updateDimVars(main.getRctx().getGl());
 
         // clear all used registers
-        each(this.registerUsages, (name) => {
+        for (const name of this.registerUsages) {
             if (!this.registerBank.hasOwnProperty(name)) {
                 this.registerBank[name] = 0;
             }
-        });
+        }
     }
 
     public updateDimVars(gl: WebGLRenderingContext) {

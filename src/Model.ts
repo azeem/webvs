@@ -1,5 +1,4 @@
 import EventEmitter from "eventemitter3";
-import filter from "lodash-es/filter";
 
 interface ISubscription {
     emitter: EventEmitter;
@@ -113,17 +112,11 @@ export default abstract class Model extends EventEmitter {
      * @param callback the callback to be removed
      */
     protected stopListening(emitter?: EventEmitter, event?: string, callback?: (...args: any[]) => void) {
-        const subFilter: any = {};
-        if (emitter) {
-            subFilter.emitter = emitter;
-        }
-        if (event) {
-            subFilter.event = event;
-        }
-        if (emitter) {
-            subFilter.callback = callback;
-        }
-        const subs = filter(this.subscriptions, subFilter);
+        const subs = this.subscriptions.filter((sub) =>
+            (!emitter || sub.emitter === emitter) &&
+            (!event || sub.event === event) &&
+            (!callback || sub.callback === callback),
+        );
         subs.forEach((sub) => {
             sub.emitter.removeListener(sub.event, sub.callback);
         });

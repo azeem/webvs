@@ -1,4 +1,3 @@
-import each from "lodash-es/each";
 import Component, {IContainer} from "../Component";
 import CodeInstance from "../expr/CodeInstance";
 import compileExpr, { ICompileResult } from "../expr/compileExpr";
@@ -184,9 +183,9 @@ export default class SuperScope extends Component {
 
     public draw() {
         const color = this._makeColor();
-        each(this.code, (code) => {
+        for (const code of this.code) {
             this.drawScope(code, color, !this.inited);
-        });
+        }
         this.inited = true;
     }
 
@@ -513,8 +512,8 @@ export default class SuperScope extends Component {
     }
 
     private handleResize() {
-        each(this.code, (code) => {
+        for (const code of this.code) {
             code.updateDimVars(this.main.getRctx().getGl());
-        });
+        }
     }
 }
