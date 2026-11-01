@@ -9,7 +9,7 @@
             "es2022"
         ],
         "types": [
-            "mocha",
+            "vitest/globals",
             "node"
         ]
     }

@@ -36,11 +36,11 @@ class QuadrantColorComponent extends Component {
 }
 
 describe("Mirror", () => {
-    before(() => {
+    beforeAll(() => {
         seedrandom("mirror_test2", {global: true});
     });
 
-    after(() => {
+    afterAll(() => {
         seedrandom(undefined, {global: true});
     });
 

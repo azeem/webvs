@@ -1,6 +1,6 @@
 import { mainTest } from "../funcTestUtils";
 
-describe("DynamicMovement", function() {
+describe("DynamicMovement", () => {
     function makePreset(opts: any) {
         const dmOpts = Object.assign({
             code: {
@@ -29,8 +29,6 @@ describe("DynamicMovement", function() {
             ],
         };
     }
-
-    this.timeout(10000);
 
     it("should run for noGrid, compat, !blend", () => {
         return mainTest({

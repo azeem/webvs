@@ -1,8 +1,6 @@
 import { mainTest } from "../funcTestUtils";
 
-// tslint:disable-next-line:only-arrow-functions
-describe("Convolution", function() {
-    this.timeout(5000);
+describe("Convolution", () => {
     it("should apply pattern", () => {
         return mainTest({
             expectImageSrc: "Convolution_0.png",

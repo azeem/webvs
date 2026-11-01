@@ -204,7 +204,7 @@ interface IMainTestOpts {
 
 export async function mainTest(opts: IMainTestOpts) {
     const {preset, expectImageSrc, onFrame, onInit, frameCount = 10} = opts;
-    const expectImage = await loadImage("/base/test/func/assert/" + expectImageSrc);
+    const expectImage = await loadImage("/test/func/assert/" + expectImageSrc);
     const canvas = document.createElement("canvas");
     canvas.width = expectImage.width;
     canvas.height = expectImage.height;

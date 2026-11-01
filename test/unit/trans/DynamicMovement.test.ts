@@ -1,43 +1,28 @@
-/* tslint:disable:no-unused-expression ban-types */
-import { expect } from "chai";
-import { IMock, It, Mock, Times } from "typemoq";
+import { expect, vi } from "vitest";
 import DynamicMovement from "../../../src/trans/DynamicMovement";
 import ShaderProgram from "../../../src/webgl/ShaderProgram";
-import { IComponentTestSetup, makeComponentTestSetup } from "../../unitTestUtils";
+import { getResizeHandler, makeComponentTestSetup } from "../../unitTestUtils";
+
+vi.mock("../../../src/expr/compileExpr");
+vi.mock("../../../src/webgl/ShaderProgram");
 
 describe("DynamicMovement", () => {
-    let setup: IComponentTestSetup<DynamicMovement>;
-    let drawHook: (values: any, gl: WebGLRenderingContext, shader: ShaderProgram) => any;
-
-    beforeEach(() => {
-        setup = makeComponentTestSetup<DynamicMovement>(
-            require("inject-loader!../../../src/trans/DynamicMovement"),
-            {
-                compileExpr: "../expr/compileExpr",
-                shader: "../webgl/ShaderProgram",
-                shaderInit: (rctx, opts) => {
-                    drawHook = opts.drawHook;
-                },
-            },
-        );
-    });
-
     it("drawHook should bind uniforms for codeInstance", () => {
-        const { componentClass: DMClass, mockMain, mockParent, mockGl, mockShaderProgram, mockCodeInstance } = setup;
-        const dmComponent = new DMClass(mockMain.object, mockParent.object, {});
-        expect(drawHook).to.be.ok;
-        drawHook({}, mockGl.object, mockShaderProgram.object);
-        mockCodeInstance.verify((x) => x.bindUniforms(mockShaderProgram.object), Times.once());
+        const { mockMain, mockParent, mockGl, mockCodeInstance } = makeComponentTestSetup();
+        const dmComponent = new DynamicMovement(mockMain, mockParent, {});
+        const { calls, instances } = vi.mocked(ShaderProgram).mock;
+        const drawHook = calls[0][1].drawHook;
+        expect(drawHook).toBeTypeOf("function");
+        drawHook({}, mockGl, instances[0]);
+        expect(mockCodeInstance.bindUniforms).toHaveBeenCalledExactlyOnceWith(instances[0]);
     });
 
     it("Should handle resize events properly", () => {
-        const { componentClass: DMClass, mockCodeInstance, mockMain, mockParent, mockGl } = setup;
-        let resizeHandle = null; mockMain
-            .setup((x) => x.addListener(It.is((a) => a === "resize"), It.is((a) => typeof(a) === "function")))
-            .callback((event, cb) => resizeHandle = cb);
-        const dmComponent = new DMClass(mockMain.object, mockParent.object, {});
-        expect(resizeHandle).to.be.not.null;
+        const { mockCodeInstance, mockMain, mockParent, mockGl } = makeComponentTestSetup();
+        const dmComponent = new DynamicMovement(mockMain, mockParent, {});
+        const resizeHandle = getResizeHandler(mockMain);
+        expect(resizeHandle).toBeTypeOf("function");
         resizeHandle();
-        mockCodeInstance.verify((x) => x.updateDimVars(mockGl.object), Times.once());
+        expect(mockCodeInstance.updateDimVars).toHaveBeenCalledExactlyOnceWith(mockGl);
     });
 });

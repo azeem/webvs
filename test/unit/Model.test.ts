@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { expect } from "vitest";
 import Model from "../../src/Model";
 
 class TestModel extends Model {
@@ -20,9 +20,9 @@ describe("Model", () => {
         model.on("resize", (...args: any[]) => calls.push(args));
         model.addListener("resize", (...args: any[]) => calls.push(["second", ...args]));
 
-        expect(model.emit("resize", 640, 480)).to.equal(true);
-        expect(model.emit("other")).to.equal(false);
-        expect(calls).to.deep.equal([[640, 480], ["second", 640, 480]]);
+        expect(model.emit("resize", 640, 480)).toBe(true);
+        expect(model.emit("other")).toBe(false);
+        expect(calls).toEqual([[640, 480], ["second", 640, 480]]);
     });
 
     it("Should stop calling removed listeners", () => {
@@ -37,7 +37,7 @@ describe("Model", () => {
         model.removeListener("wait");
         model.emit("wait");
 
-        expect(calls).to.deep.equal(["b"]);
+        expect(calls).toEqual(["b"]);
     });
 
     it("Should remove listenTo subscriptions on stopListening", () => {
@@ -57,6 +57,6 @@ describe("Model", () => {
         main.emit("resize");
         rsrcMan.emit("ready");
 
-        expect(calls).to.deep.equal(["resize", "ready"]);
+        expect(calls).toEqual(["resize", "ready"]);
     });
 });

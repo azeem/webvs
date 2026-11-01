@@ -1,97 +1,37 @@
-import { IMock, It, Mock } from "typemoq";
-import { IContainer } from "../src/Component";
+import { vi } from "vitest";
+import Container from "../src/Container";
 import CodeInstance from "../src/expr/CodeInstance";
+import compileExpr from "../src/expr/compileExpr";
 import IMain from "../src/IMain";
 import ResourceManager from "../src/ResourceManager";
 import RenderingContext from "../src/webgl/RenderingContext";
-import ShaderProgram, { IShaderOpts } from "../src/webgl/ShaderProgram";
-import TextureSetManager from "../src/webgl/TextureSetManager";
 
-export interface IComponentConstructor<C> {
-    new (main: IMain, parent: IContainer, opts: any): C;
+// Every property read returns a lazily created vi.fn, so unstubbed calls return undefined.
+// Symbols and "then" stay undefined, so the mock isn't mistaken for an iterable or a promise.
+export function autoMock<T>(): T {
+    return new Proxy({}, {
+        get: (target, key) => typeof key === "symbol" || key === "then" ? undefined : (target[key] ??= vi.fn()),
+    }) as T;
 }
 
-export interface IComponentTestSetup<C> {
-    mockMain: IMock<IMain>;
-    mockParent: IMock<IContainer>;
-    mockRctx: IMock<RenderingContext>;
-    mockRsrcMan: IMock<ResourceManager>;
-    mockGl: IMock<WebGLRenderingContext>;
-    componentClass: IComponentConstructor<C>;
-    mockShaderProgram?: IMock<ShaderProgram>;
-    mockCodeInstance?: IMock<CodeInstance>;
-    mockTSM?: IMock<TextureSetManager>;
+// Expects the calling test file to vi.mock "src/expr/compileExpr".
+export function makeComponentTestSetup() {
+    const mockMain = autoMock<IMain>();
+    const mockParent = autoMock<Container>();
+    const mockRctx = autoMock<RenderingContext>();
+    const mockRsrcMan = autoMock<ResourceManager>();
+    const mockGl = autoMock<WebGLRenderingContext>();
+    const mockCodeInstance = autoMock<CodeInstance>();
+
+    vi.mocked(mockRctx.getGl).mockReturnValue(mockGl);
+    vi.mocked(mockMain.getRctx).mockReturnValue(mockRctx);
+    vi.mocked(mockMain.getRsrcMan).mockReturnValue(mockRsrcMan);
+    vi.mocked(compileExpr).mockReturnValue({ codeInst: mockCodeInstance } as any);
+
+    return { mockCodeInstance, mockGl, mockMain, mockParent, mockRctx, mockRsrcMan };
 }
 
-export function makeComponentTestSetup<C>(
-    module: any,
-    options?: {
-        tsm?: string,
-        compileExpr?: string,
-        shader?: string,
-        shaderInit?: (rctx: RenderingContext, opts: IShaderOpts) => void,
-    },
-): IComponentTestSetup<C> {
-    options = options || {};
-    const mockMain          = Mock.ofType<IMain>();
-    const mockParent        = Mock.ofType<IContainer>();
-    const mockRctx          = Mock.ofType(RenderingContext);
-    const mockGl            = Mock.ofType<WebGLRenderingContext>();
-    const mockRsrcMan       = Mock.ofType<ResourceManager>();
-
-    mockRctx.setup((x) => x.getGl()).returns(() => mockGl.object);
-    mockMain.setup((x) => x.getRctx()).returns(() => mockRctx.object);
-    mockMain.setup((x) => x.getRsrcMan()).returns(() => mockRsrcMan.object);
-
-    const inject = {};
-    const setup: IComponentTestSetup<C> = {
-        componentClass: null,
-        mockGl,
-        mockMain,
-        mockParent,
-        mockRctx,
-        mockRsrcMan,
-    };
-
-    if (options.shader) {
-        setup.mockShaderProgram = Mock.ofType<ShaderProgram>();
-        // tslint:disable-next-line:only-arrow-functions
-        const mockShaderProgramConstructor = function(rctx: RenderingContext, opts: IShaderOpts) {
-            if (options.shaderInit) {
-                options.shaderInit(rctx, opts);
-            }
-            return setup.mockShaderProgram.object;
-        };
-        inject[options.shader] = {
-            __esModule: true,
-            default: mockShaderProgramConstructor,
-        };
-    }
-
-    if (options.compileExpr) {
-        setup.mockCodeInstance  = Mock.ofType(CodeInstance);
-        // tslint:disable-next-line:ban-types
-        const mockCompileExpr   = Mock.ofType<Function>();
-        mockCompileExpr.setup((x) => x(It.isAny(), It.isAny(), It.isAny(), It.isAny()))
-                       .returns(() => ({ codeInst: setup.mockCodeInstance.object }));
-        inject[options.compileExpr] = {
-            __esModule: true,
-            default: mockCompileExpr.object,
-        };
-    }
-
-    if (options.tsm) {
-        setup.mockTSM = Mock.ofType<TextureSetManager>();
-        // tslint:disable-next-line:only-arrow-functions
-        const mockTSMConstructor = function() {
-            return setup.mockTSM.object;
-        };
-        inject[options.tsm] = {
-            __esModule: true,
-            default: mockTSMConstructor,
-        };
-    }
-
-    setup.componentClass = module(inject).default as IComponentConstructor<C>;
-    return setup;
+export function getResizeHandler(mockMain: IMain): () => void {
+    const call = vi.mocked(mockMain.addListener).mock.calls.find(([event]) => event === "resize");
+    return call?.[1];
 }
