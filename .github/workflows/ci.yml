@@ -22,3 +22,5 @@ jobs:
       - run: npm run lint
       - run: npm run unit-test
       - run: npm run func-test
+      - run: npm run build
+      - run: npm run smoke-test

@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "module": "nodenext",
+        "noEmit": true,
+        "skipLibCheck": true,
+        "lib": ["dom", "es2022"],
+        "types": []
+    },
+    "files": ["types.ts", "types.cts"]
+}

@@ -2,17 +2,32 @@
   "name": "webvs",
   "version": "3.0.0",
   "description": "Audio Visualization rendering library",
-  "main": "dist/webvs.node.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "resources"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "build-all": "cross-env TARGET=all webpack",
-    "build-web": "cross-env TARGET=web webpack",
-    "build-doc": "typedoc --theme minimal --mode file --name Webvs --module commonjs --exclude node_modules --hideGenerator --out ./doc src",
-    "dev": "npm run clean && cross-env TARGET=dev webpack-serve",
+    "build": "tsdown",
+    "smoke-test": "node test/smoke/smoke.mjs",
     "func-test": "vitest run --project func",
     "unit-test": "vitest run --project unit",
     "lint": "tslint -c tslint.json -e \"src/expr/ExprGrammar.d.ts\" \"src/**/*.ts\" \"test/**/*.ts\"",
-    "clean": "shx rm -rf ./doc ./dist ./coverage",
     "gen:grammar": "peggy --format es --dts -o src/expr/ExprGrammar.js src/expr/ExprGrammar.pegjs"
   },
   "repository": {
@@ -21,7 +36,6 @@
   },
   "author": "Azeem Arshad",
   "license": "MIT",
-  "readmeFilename": "README.md",
   "bugs": {
     "url": "https://github.com/azeem/webvs/issues"
   },
@@ -31,19 +45,13 @@
   "devDependencies": {
     "@types/node": "22.20.5",
     "@vitest/browser-playwright": "5.0.5",
-    "cross-env": "^5.1.3",
-    "npm-run-all": "^4.1.2",
     "peggy": "5.1.0",
     "playwright": "1.64.1",
     "seedrandom": "^2.4.3",
-    "shx": "^0.2.2",
-    "ts-loader": "^3.5.0",
+    "tsdown": "0.23.1",
     "tslint": "5.9.1",
-    "typedoc": "^0.11.1",
     "typescript": "^6.0.3",
-    "vitest": "5.0.5",
-    "webpack": "^3.11.0",
-    "webpack-serve": "^0.1.5"
+    "vitest": "5.0.5"
   },
   "overrides": {
     "@types/lodash": "4.14.107",
