@@ -1,7 +1,6 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
 import { glslFloatRepr, WebGLVarType } from "../utils";
-import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
 /**

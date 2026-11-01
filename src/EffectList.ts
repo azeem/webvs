@@ -1,9 +1,7 @@
-import Component from "./Component";
 import Container from "./Container";
 import CodeInstance from "./expr/CodeInstance";
 import compileExpr from "./expr/compileExpr";
 import IMain from "./IMain";
-import { BlendMode } from "./utils";
 import TextureSetManager from "./webgl/TextureSetManager";
 
 /**

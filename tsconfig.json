@@ -2,8 +2,9 @@
     "compilerOptions": {
         "sourceMap": true,
         "strict": false,
-        "target": "es2017",
-        "module": "commonjs",
+        "useDefineForClassFields": false,
+        "module": "preserve",
+        "moduleResolution": "bundler",
         "lib": [
             "dom",
             "es2022"

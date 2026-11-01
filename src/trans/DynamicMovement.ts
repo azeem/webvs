@@ -4,7 +4,6 @@ import compileExpr from "../expr/compileExpr";
 import IMain from "../IMain";
 import { BlendMode, clamp } from "../utils";
 import Buffer from "../webgl/Buffer";
-import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram, { IShaderOpts } from "../webgl/ShaderProgram";
 
 /**

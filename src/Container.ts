@@ -1,5 +1,4 @@
-import Component, { IComponentConstructor, IContainer } from "./Component";
-import ComponentRegistry from "./ComponentRegistry";
+import Component, { IContainer } from "./Component";
 import IMain from "./IMain";
 import TextureSetManager from "./webgl/TextureSetManager";
 
@@ -42,7 +41,6 @@ export default abstract class Container extends Component implements IContainer 
             for (const opts of this.opts.components) {
                 const componentClass = this.main.getComponentRegistry().getComponentClass(opts.type);
                 if (!componentClass) {
-                    // tslint:disable-next-line:no-console
                     console.warn(`Unknown ComponentClass: ${opts.type}. Skipping.`);
                     continue;
                 }
@@ -84,7 +82,6 @@ export default abstract class Container extends Component implements IContainer 
         } else {
             const componentClass = this.main.getComponentRegistry().getComponentClass(componentOpts.type);
             if (!componentClass) {
-                // tslint:disable-next-line:no-console
                 console.warn(`Unknown ComponentClass: ${componentOpts.type}.`);
                 return null;
             }

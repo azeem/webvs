@@ -1,7 +1,6 @@
 import Component, { IContainer } from "../Component";
 import IMain from "../IMain";
-import { BlendMode, Color, parseColor, WebGLVarType } from "../utils";
-import RenderingContext from "../webgl/RenderingContext";
+import { BlendMode, parseColor, WebGLVarType } from "../utils";
 import ShaderProgram from "../webgl/ShaderProgram";
 
 /**

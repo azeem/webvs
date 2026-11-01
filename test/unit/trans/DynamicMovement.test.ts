@@ -9,7 +9,7 @@ vi.mock("../../../src/webgl/ShaderProgram");
 describe("DynamicMovement", () => {
     it("drawHook should bind uniforms for codeInstance", () => {
         const { mockMain, mockParent, mockGl, mockCodeInstance } = makeComponentTestSetup();
-        const dmComponent = new DynamicMovement(mockMain, mockParent, {});
+        new DynamicMovement(mockMain, mockParent, {});
         const { calls, instances } = vi.mocked(ShaderProgram).mock;
         const drawHook = calls[0][1].drawHook;
         expect(drawHook).toBeTypeOf("function");
@@ -19,7 +19,7 @@ describe("DynamicMovement", () => {
 
     it("Should handle resize events properly", () => {
         const { mockCodeInstance, mockMain, mockParent, mockGl } = makeComponentTestSetup();
-        const dmComponent = new DynamicMovement(mockMain, mockParent, {});
+        new DynamicMovement(mockMain, mockParent, {});
         const resizeHandle = getResizeHandler(mockMain);
         expect(resizeHandle).toBeTypeOf("function");
         resizeHandle();

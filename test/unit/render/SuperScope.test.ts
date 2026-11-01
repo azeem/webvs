@@ -9,7 +9,7 @@ describe("SuperScope", () => {
     it("Should handle resize events properly", () => {
         const { mockMain, mockParent, mockCodeInstance, mockGl } = makeComponentTestSetup();
         vi.mocked(mockGl.getParameter).mockReturnValue([0, 10]);
-        const superScope = new SuperScope(mockMain, mockParent, {});
+        new SuperScope(mockMain, mockParent, {});
         const resizeHandle = getResizeHandler(mockMain);
         expect(resizeHandle).toBeTypeOf("function");
         resizeHandle();

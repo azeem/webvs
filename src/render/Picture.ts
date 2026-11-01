@@ -1,9 +1,7 @@
 import Component, {IContainer} from "../Component";
 import IMain from "../IMain";
 import { WebGLVarType } from "../utils";
-import Buffer from "../webgl/Buffer";
 import { squareGeometry } from "../webgl/geometries";
-import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface IPictureOpts {

@@ -4,7 +4,6 @@ import compileExpr from "../expr/compileExpr";
 import IMain from "../IMain";
 import { AudioSource, WebGLVarType } from "../utils";
 import Buffer from "../webgl/Buffer";
-import RenderingContext from "../webgl/RenderingContext";
 import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface ITexerOpts {

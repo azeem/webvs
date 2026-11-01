@@ -1,5 +1,4 @@
 import AnalyserAdapter from "../analyser/AnalyserAdapter";
-import { IContainer } from "../Component";
 import IMain from "../IMain";
 import { WebGLVarType } from "../utils";
 import ShaderProgram from "../webgl/ShaderProgram";

@@ -1,7 +1,6 @@
 /**
  * A No-Op function
  */
-// tslint:disable-next-line:no-empty
 export function noop() {}
 
 /**
@@ -102,7 +101,6 @@ export function logShaderError(src: string, error: string): void {
         return lineNumber + ": " + line + errorIndicator;
     }).join("\n");
 
-    // tslint:disable-next-line:no-console
     console.log("Shader Error : \n" + numberedLines);
 }
 

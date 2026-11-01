@@ -8,7 +8,7 @@ vi.mock("../../../src/webgl/ShaderProgram");
 describe("Texer", () => {
     it("Should handle resize event properly", () => {
         const { mockMain, mockParent, mockGl, mockCodeInstance } = makeComponentTestSetup();
-        const texer = new Texer(mockMain, mockParent, {});
+        new Texer(mockMain, mockParent, {});
         const resizeHandle = getResizeHandler(mockMain);
         expect(resizeHandle).toBeTypeOf("function");
         resizeHandle();

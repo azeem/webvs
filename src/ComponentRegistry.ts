@@ -1,5 +1,4 @@
-import Component, {IComponentConstructor} from "./Component";
-import ClearScreen from "./render/ClearScreen";
+import {IComponentConstructor} from "./Component";
 
 /**
  * A Registry of Component classes.

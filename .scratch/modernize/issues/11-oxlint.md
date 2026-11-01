@@ -6,8 +6,12 @@
 
 **Status:** ready-for-agent
 
-- [ ] oxlint with default rules plus the TypeScript plugin replaces tslint. tslint and its config removed
-- [ ] Small mechanical findings fixed
-- [ ] Rules that would need real code changes are turned off in config, each with a one-line comment giving the reason
-- [ ] No formatter added
+- [x] oxlint with default rules plus the TypeScript plugin replaces tslint. tslint and its config removed
+- [x] Small mechanical findings fixed
+- [x] Rules that would need real code changes are turned off in config, each with a one-line comment giving the reason
+- [x] No formatter added
 - [ ] Lint, unit, func 60/60 and the smoke check pass. CI green
+
+## Comments
+
+**Agent, 2026-11-01:** Folded into 09: TS 7 broke tslint, see the comment there. All checklist items are covered by that change.

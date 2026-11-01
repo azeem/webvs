@@ -238,7 +238,6 @@ export default class TextureSetManager {
         } else if (typeof arg === "number" && arg >= 0 && arg < this.textures.length) {
             index = arg;
         } else {
-            // tslint:disable-next-line:no-console
             console.log("arg = ", typeof(arg), "textures = ", this.textures);
             throw new Error("Unknown texture '" + arg + "'");
         }

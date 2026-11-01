@@ -7,7 +7,7 @@ vi.mock("../../../src/expr/compileExpr");
 describe("GlobalVar", () => {
     it("Should handle resize events properly", () => {
         const { mockMain, mockParent, mockCodeInstance, mockGl } = makeComponentTestSetup();
-        const globalVar = new GlobalVar(mockMain, mockParent, {});
+        new GlobalVar(mockMain, mockParent, {});
         const resizeHandle = getResizeHandler(mockMain);
         expect(resizeHandle).toBeTypeOf("function");
         resizeHandle();

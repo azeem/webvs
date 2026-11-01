@@ -2,7 +2,6 @@ import Component, {IContainer} from "../Component";
 import IMain from "../IMain";
 import {BlendMode, Color, parseColorNorm} from "../utils";
 import ClearScreenProgram from "../webgl/ClearScreenProgram";
-import ShaderProgram from "../webgl/ShaderProgram";
 
 export interface IClearScreenOpts {
     beatCount: number;

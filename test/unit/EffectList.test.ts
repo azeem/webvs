@@ -9,7 +9,7 @@ vi.mock("../../src/webgl/TextureSetManager");
 describe("EffectList", () => {
     it("Should handle resize events properly", () => {
         const { mockGl, mockCodeInstance, mockMain, mockParent } = makeComponentTestSetup();
-        const elComponent = new EffectList(mockMain, mockParent, {});
+        new EffectList(mockMain, mockParent, {});
         const mockTSM = vi.mocked(TextureSetManager).mock.instances[0];
         getResizeHandler(mockMain)();
         expect(mockTSM.resize).toHaveBeenCalledTimes(1);

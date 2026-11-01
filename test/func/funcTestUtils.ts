@@ -2,7 +2,7 @@ import AnalyserAdapter from "../../src/analyser/AnalyserAdapter";
 import Component from "../../src/Component";
 import IMain from "../../src/IMain";
 import Main from "../../src/Main";
-import { AudioChannels, clamp, glslFloatRepr, noop } from "../../src/utils";
+import { AudioChannels, clamp, glslFloatRepr } from "../../src/utils";
 import ShaderProgram from "../../src/webgl/ShaderProgram";
 
 let errorCounter = 0;
@@ -28,7 +28,6 @@ export class MockAnalyser extends AnalyserAdapter {
         return this.beat;
     }
 
-    // tslint:disable-next-line:no-empty
     public update() {}
 
     public getSpectrum(channel?: AudioChannels) {
@@ -43,7 +42,6 @@ interface ITestPatternOpts {
     blue: number;
 }
 
-// tslint:disable-next-line:max-classes-per-file
 class TestPattern extends Component {
     public static componentName: string = "TestPattern";
     public static componentTag: string = "render";
@@ -223,7 +221,6 @@ export async function mainTest(opts: IMainTestOpts) {
             }
             return ++frameCounter;
         };
-        // tslint:disable-next-line:no-empty
         const cancelAnimationFrame = () => {};
         const analyser = new MockAnalyser();
         main = new Main({
