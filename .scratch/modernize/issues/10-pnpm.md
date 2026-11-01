@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] pnpm lockfile replaces the npm lockfile. A `packageManager` field pins the pnpm version
-- [ ] Any undeclared dependency exposed by strict `node_modules` is added explicitly
+- [x] pnpm lockfile replaces the npm lockfile. A `packageManager` field pins the pnpm version
+- [x] Any undeclared dependency exposed by strict `node_modules` is added explicitly
 - [ ] CI installs with pnpm and runs lint, unit, func and the smoke check, all passing
-- [ ] README and scripts don't refer to npm-specific commands for development
+- [x] README and scripts don't refer to npm-specific commands for development

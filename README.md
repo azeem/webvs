@@ -90,11 +90,11 @@ analyser.play();
 
 To develop Webvs clone the repo and install packages
 
-	npm install
+	pnpm install
 
 For typical workflow, start a dev server with
 
-	npm run dev
+	pnpm dev
 
 It serves the webvs test page at `http://localhost:5173/examples/` straight from the source, no build needed.
 

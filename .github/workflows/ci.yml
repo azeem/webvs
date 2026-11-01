@@ -13,14 +13,15 @@ jobs:
         node-version: [22, 24]
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium-headless-shell
-      - run: npm run lint
-      - run: npm run unit-test
-      - run: npm run func-test
-      - run: npm run build
-      - run: npm run smoke-test
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium-headless-shell
+      - run: pnpm lint
+      - run: pnpm unit-test
+      - run: pnpm func-test
+      - run: pnpm build
+      - run: pnpm smoke-test

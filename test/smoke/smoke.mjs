@@ -1,4 +1,4 @@
-// Package smoke check: run after `npm run build`. Resolves webvs through its
+// Package smoke check: run after `pnpm build`. Resolves webvs through its
 // own exports map (package self-reference), like a consumer would.
 import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
@@ -16,9 +16,9 @@ function check(mod, format) {
 check(createRequire(import.meta.url)("webvs"), "require");
 check(await import("webvs"), "import");
 
-execSync("npx tsc -p test/smoke/tsconfig.json", { stdio: "inherit" });
+execSync("pnpm exec tsc -p test/smoke/tsconfig.json", { stdio: "inherit" });
 
-const [{ files }] = JSON.parse(execSync("npm pack --dry-run --json --ignore-scripts", { encoding: "utf8" }));
+const { files } = JSON.parse(execSync("pnpm pack --dry-run --json --ignore-scripts", { encoding: "utf8" }));
 const stray = files.map((f) => f.path)
     .filter((p) => !/^(dist|resources)\/|^(package\.json|README\.md|license\.txt|CHANGELOG\.md)$/.test(p));
 assert.deepEqual(stray, [], "pack listing has only build output and resources");
