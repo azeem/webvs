@@ -20,7 +20,7 @@
     "resources"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "scripts": {
     "build": "tsdown",

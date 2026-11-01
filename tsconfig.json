@@ -2,6 +2,7 @@
     "compilerOptions": {
         "sourceMap": true,
         "strict": false,
+        "target": "es2024",
         "useDefineForClassFields": false,
         "module": "preserve",
         "moduleResolution": "bundler",
@@ -9,7 +10,7 @@
         "noEmit": true,
         "lib": [
             "dom",
-            "es2022"
+            "es2024"
         ],
         "types": [
             "vitest/globals",
