@@ -55,7 +55,7 @@ At the end, 4.0.0 is ready to publish: no runtime dependencies besides stats.js,
 28. As a library consumer, I want the default resource pack URL to still point at the matching published version on unpkg, so that presets that use bundled resources keep loading.
 29. As a library consumer, I want the published package to contain only the build output and the resources, so that installs are small and contain nothing stale.
 30. As a library consumer, I want the package to declare the Node versions it supports (≥22), so that tooling can warn me early.
-31. As a maintainer, I want the expression grammar's generated parser committed, with a script to regenerate it, so that build, test and dev server don't need a grammar-compilation hook.
+31. As a maintainer, I want the expression grammar compiled at build time by one plugin shared by build, test and dev server, so that the parser can't go stale and there's no regeneration script to remember.
 32. As a maintainer, I want the examples page to run against the source through a dev server, so that I can try changes without building first.
 33. As a maintainer, I want the unused typedoc setup removed, so that I don't maintain a docs build nobody publishes.
 34. As a maintainer, I want misleading leftovers removed (a hand-written `gitHead`, `readmeFilename`, `.npmignore`, cross-env, shx, npm-run-all, webpack-serve), so that package metadata reflects reality.
@@ -106,7 +106,7 @@ At the end, 4.0.0 is ready to publish: no runtime dependencies besides stats.js,
 **PR 6: tsdown, TypeScript 7, peggy and ESM + CJS output (4.0.0)**
 - tsdown builds from the public entry point to ESM and CJS with type declarations, on a neutral platform. Build-time constants (the resource pack URL, which defaults to unpkg for the matching version, and the library version) are injected through tsdown's define.
 - TypeScript 7 replaces TS 6. The TS 6 workarounds tied to webpack are dropped (es2017 emit target, commonjs module), and module resolution becomes bundler style.
-- peggy replaces pegjs and pegjs-loader. The generated parser is committed as an ES module, and a script regenerates it from the grammar.
+- peggy replaces pegjs and pegjs-loader. The grammar is imported directly and compiled at build time by a small inline plugin shared by tsdown and vite/vitest. No generated parser is committed.
 - The public entry keeps its default-export object (`Main`, `Component`, `ShaderProgram`, `WebAudioAnalyser`, `AnalyserAdapter`) unchanged and adds the same five as named exports.
 - Package metadata becomes an ES module package:
   - an `exports` map (import → ESM, require → CJS, types);
