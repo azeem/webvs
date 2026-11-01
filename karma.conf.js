@@ -28,7 +28,19 @@ module.exports = function(config) {
         })
       ]
     },
+    client: {
+      mocha: {
+        timeout: 10000
+      }
+    },
+    browserNoActivityTimeout: 60000,
     reporters: ['mocha'],
-    browsers: ['Chrome'],
+    browsers: ['ChromeHeadlessSwiftShader'],
+    customLaunchers: {
+      ChromeHeadlessSwiftShader: {
+        base: 'ChromeHeadless',
+        flags: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+      }
+    },
   })
 }
