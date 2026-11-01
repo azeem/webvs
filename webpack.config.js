@@ -18,14 +18,10 @@ function commonJsConfig(resourcePackUrl) {
             libraryTarget: 'commonjs2',
         },
         resolve: {
-            extensions: ['.ts', '.js', '.pegjs']
+            extensions: ['.ts', '.js']
         },
         module: {
             rules: [
-                {
-                    test: /\.pegjs$/,
-                    loader: 'pegjs-loader'
-                },
                 { 
                     test: /\.tsx?$/,
                     exclude: /node_modules/,

@@ -1,5 +1,5 @@
-{
-    var Ast = require('./Ast.ts');
+{{
+    import * as Ast from "./Ast";
 
     function makeBinaryExpr(head, tail) {
         var result = head;
@@ -12,7 +12,7 @@
     function flattenChars(val) {
         return val.flat().join("");
     }
-}
+}}
 
 program = p:(__ statement __ (";" __ statement __)* ";"? __) {
     var stmts = [p[1]];
