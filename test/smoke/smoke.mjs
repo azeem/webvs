@@ -13,8 +13,8 @@ function check(mod, format) {
     }
 }
 
-check(createRequire(import.meta.url)("webvs"), "require");
-check(await import("webvs"), "import");
+check(createRequire(import.meta.url)("@visbot/webvs"), "require");
+check(await import("@visbot/webvs"), "import");
 
 execSync("pnpm exec tsc -p test/smoke/tsconfig.json", { stdio: "inherit" });
 
