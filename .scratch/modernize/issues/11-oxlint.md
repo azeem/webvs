@@ -4,13 +4,13 @@
 
 **Blocked by:** 10 (pnpm)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] oxlint with default rules plus the TypeScript plugin replaces tslint. tslint and its config removed
 - [x] Small mechanical findings fixed
 - [x] Rules that would need real code changes are turned off in config, each with a one-line comment giving the reason
 - [x] No formatter added
-- [ ] Lint, unit, func 60/60 and the smoke check pass. CI green
+- [x] Lint, unit, func 60/60 and the smoke check pass. CI green
 
 ## Comments
 
