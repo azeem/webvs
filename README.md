@@ -31,17 +31,32 @@ import Webvs from 'webvs';
 const webvs = new Webvs.Main(....)
 ```
 
+or import only what you need
+
+```js
+import { Main, WebAudioAnalyser } from 'webvs';
+const webvs = new Main(....)
+```
+
+Both `import` and `require` are supported.
+
 ### CDN
 
-You can also embed webvs.js directly from [unpkg](https://unpkg.com) CDN.
+You can also load webvs as an ES module directly from [unpkg](https://unpkg.com). Webvs depends on `stats.js`, which has no ES module build, so map it to jsDelivr's ES module wrapper with an import map:
 
-	<script src="https://unpkg.com/webvs/dist/webvs.js"></script>
-
-or for a minified version
-
-	<script src="https://unpkg.com/webvs/dist/webvs.min.js"></script>
-
-This script exposes a `Webvs` global which you can use to initialize like so `new Webvs.Main(...)`.
+```html
+<script type="importmap">
+{
+  "imports": {
+    "stats.js": "https://cdn.jsdelivr.net/npm/stats.js@0.17.0/+esm"
+  }
+}
+</script>
+<script type="module">
+  import Webvs from 'https://unpkg.com/webvs@4/dist/index.js';
+  const webvs = new Webvs.Main(...);
+</script>
+```
 
 ## Usage
 A typical usage involves creating an Analyser from your music source (e.g. [Webvs.WebAudioAnalyser](http://azeemarshad.in/webvs/classes/webaudioanalyser.html) to use an `audio` tag or song url as a source) and initializing an instance of `Webvs.Main` with it. The main object serves as the primary interface or controlling the visualization. e.g.
@@ -81,7 +96,7 @@ For typical workflow, start a dev server with
 
 	npm run dev
 
-and point browser to `http://localhost:8080/examples/` to view webvs test page.
+It serves the webvs test page at `http://localhost:5173/examples/` straight from the source, no build needed.
 
 ## Contributing
 

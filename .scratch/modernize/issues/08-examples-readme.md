@@ -4,9 +4,9 @@
 
 **Blocked by:** 07 (tsdown build: ESM + CJS only)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The examples' test page is an ES module importing the library from source. A dev script serves it via vite, and the preset files stay plain scripts
-- [ ] Manual check: a preset renders in the browser and the `rsrcMan.on('ready')` listener fires (record the result in the PR)
-- [ ] The README's CDN section uses a `<script type="module">` import from unpkg. No reference to `window.Webvs`, `dist/webvs.js` or `webvs.min.js` remains
-- [ ] The README's npm usage section is still accurate (default import, plus a named-import example)
+- [x] The examples' test page is an ES module importing the library from source. A dev script serves it via vite, and the preset files stay plain scripts
+- [x] Manual check: a preset renders in the browser and the `rsrcMan.on('ready')` listener fires (record the result in the PR)
+- [x] The README's CDN section uses a `<script type="module">` import from unpkg. No reference to `window.Webvs`, `dist/webvs.js` or `webvs.min.js` remains
+- [x] The README's npm usage section is still accurate (default import, plus a named-import example)

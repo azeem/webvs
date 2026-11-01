@@ -24,6 +24,7 @@
   },
   "scripts": {
     "build": "tsdown",
+    "dev": "vite --config vitest.config.mts --open /examples/",
     "smoke-test": "node test/smoke/smoke.mjs",
     "func-test": "vitest run --project func",
     "unit-test": "vitest run --project unit",
@@ -51,6 +52,7 @@
     "tsdown": "0.23.1",
     "tslint": "5.9.1",
     "typescript": "^6.0.3",
+    "vite": "8.3.5",
     "vitest": "5.0.5"
   },
   "overrides": {

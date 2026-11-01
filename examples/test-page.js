@@ -1,4 +1,4 @@
-(function() {
+import Webvs from '../index.ts';
 
 var exampleTracks = [
     {
@@ -138,7 +138,7 @@ window.addExamplePreset = function(preset) {
     examplePresets.push(preset);
 }
 
-window.initPage = function() {
+function initPage() {
     initPresetInput();
     initButtons();
     initSelects();
@@ -150,4 +150,5 @@ window.initPage = function() {
     webvsMain.start();
 }
 
-})();
+// preset scripts are deferred, so they all run before this fires
+document.addEventListener('DOMContentLoaded', initPage);
