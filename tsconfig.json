@@ -6,6 +6,7 @@
         "module": "preserve",
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
+        "noEmit": true,
         "lib": [
             "dom",
             "es2022"
