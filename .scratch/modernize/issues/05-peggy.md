@@ -4,10 +4,10 @@
 
 **Blocked by:** 03 (Replace lodash-es), because the grammar must be lodash-free first
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] pegjs and pegjs-loader removed. peggy added as a dev dependency
-- [ ] Generated parser committed. The expression compiler imports it directly, with no loader rule
-- [ ] A `gen:grammar` script regenerates the parser from the grammar. Re-running it on an unchanged grammar produces no diff
-- [ ] Still builds and tests on webpack 3: func 60/60, unit 6/6, lint passes
-- [ ] CI green
+- [x] pegjs and pegjs-loader removed. peggy added as a dev dependency
+- [x] Generated parser committed. The expression compiler imports it directly, with no loader rule
+- [x] A `gen:grammar` script regenerates the parser from the grammar. Re-running it on an unchanged grammar produces no diff
+- [x] Still builds and tests on webpack 3: func 60/60, unit 6/6, lint passes
+- [x] CI green
