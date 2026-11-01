@@ -40,23 +40,7 @@ const webvs = new Main(....)
 
 Both `import` and `require` are supported.
 
-### CDN
-
-You can also load webvs as an ES module directly from [unpkg](https://unpkg.com). Webvs depends on `stats.js`, which has no ES module build, so map it to jsDelivr's ES module wrapper with an import map:
-
-```html
-<script type="importmap">
-{
-  "imports": {
-    "stats.js": "https://cdn.jsdelivr.net/npm/stats.js@0.17.0/+esm"
-  }
-}
-</script>
-<script type="module">
-  import Webvs from 'https://unpkg.com/webvs@4/dist/index.js';
-  const webvs = new Webvs.Main(...);
-</script>
-```
+Builtin resources (images used by some presets) load from `resources/` relative to the page: serve the package's `resources/` folder next to your page, or pass `resourcePrefix` to `Main`.
 
 ## Usage
 A typical usage involves creating an Analyser from your music source (e.g. [Webvs.WebAudioAnalyser](http://azeemarshad.in/webvs/classes/webaudioanalyser.html) to use an `audio` tag or song url as a source) and initializing an instance of `Webvs.Main` with it. The main object serves as the primary interface or controlling the visualization. e.g.

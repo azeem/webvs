@@ -12,7 +12,7 @@ export default defineConfig({
     plugins: [peggy],
     outputOptions: { exports: "named" },
     define: {
-        RESOURCE_PACK_URL: JSON.stringify(`https://unpkg.com/webvs@${version}/resources/`),
+        RESOURCE_PACK_URL: JSON.stringify("resources/"),
         WEBVS_VERSION: JSON.stringify(version),
     },
 });
