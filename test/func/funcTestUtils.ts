@@ -111,7 +111,6 @@ function imageFuzzyOk(
     tempCanvas.height = height;
     const ctxt = tempCanvas.getContext("2d", {
         alpha: false,
-        preserveDrawingBuffer: true,
     });
 
     // get source pixels

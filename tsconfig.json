@@ -1,9 +1,16 @@
 {
     "compilerOptions": {
         "sourceMap": true,
+        "strict": false,
+        "target": "es2017",
+        "module": "commonjs",
         "lib": [
             "dom",
-            "es2015"
+            "es2022"
+        ],
+        "types": [
+            "mocha",
+            "node"
         ]
     }
 }

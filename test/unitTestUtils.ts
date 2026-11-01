@@ -63,6 +63,7 @@ export function makeComponentTestSetup<C>(
             return setup.mockShaderProgram.object;
         };
         inject[options.shader] = {
+            __esModule: true,
             default: mockShaderProgramConstructor,
         };
     }
@@ -74,6 +75,7 @@ export function makeComponentTestSetup<C>(
         mockCompileExpr.setup((x) => x(It.isAny(), It.isAny(), It.isAny(), It.isAny()))
                        .returns(() => ({ codeInst: setup.mockCodeInstance.object }));
         inject[options.compileExpr] = {
+            __esModule: true,
             default: mockCompileExpr.object,
         };
     }
@@ -85,6 +87,7 @@ export function makeComponentTestSetup<C>(
             return setup.mockTSM.object;
         };
         inject[options.tsm] = {
+            __esModule: true,
             default: mockTSMConstructor,
         };
     }

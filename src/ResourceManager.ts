@@ -122,7 +122,7 @@ export default class ResourceManager extends Model {
      * @param success handler that'll be called on success
      * @param error handler that'll be called on error
      */
-    public getImage(fileName: string, success: (image: HTMLImageElement) => void, error?: () => void): void {
+    public getImage(fileName: string, success: (image: HTMLImageElement) => void, error?: () => boolean): void {
         let image = this.images[fileName];
         if (image) { // check in cache
             if (success) {
