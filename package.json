@@ -1,5 +1,5 @@
 {
-  "name": "webvs",
+  "name": "@visbot/webvs",
   "version": "4.0.0",
   "description": "Audio Visualization rendering library",
   "type": "module",
