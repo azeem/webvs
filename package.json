@@ -1,6 +1,6 @@
 {
   "name": "webvs",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Audio Visualization rendering library",
   "type": "module",
   "exports": {
@@ -32,12 +32,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/azeem/webvs.git"
+    "url": "git://github.com/visbot/webvs.git"
   },
   "author": "Azeem Arshad",
+  "contributors": [
+    "Jan T. Sott (https://github.com/idleberg)",
+    "Jakob Karge (https://github.com/grandchild)"
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/azeem/webvs/issues"
+    "url": "https://github.com/visbot/webvs/issues"
   },
   "dependencies": {
     "stats.js": "^0.17.0"
