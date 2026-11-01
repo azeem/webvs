@@ -4,10 +4,10 @@
 
 **Blocked by:** 02 (TypeScript 6)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] No lodash import or require remains in source, grammar or tests
-- [ ] Replacements are native equivalents, not a home-grown lodash-style utility layer. `uniqueId` becomes a module-local counter, `flow`/`partialRight` become plain composition
-- [ ] lodash-es and its @types removed from package metadata and lockfile
-- [ ] Func 60/60 with thresholds and PNGs unchanged. Unit 6/6. Lint passes
-- [ ] CI green
+- [x] No lodash import or require remains in source, grammar or tests
+- [x] Replacements are native equivalents, not a home-grown lodash-style utility layer. `uniqueId` becomes a module-local counter, `flow`/`partialRight` become plain composition
+- [x] lodash-es and its @types removed from package metadata and lockfile
+- [x] Func 60/60 with thresholds and PNGs unchanged. Unit 6/6. Lint passes
+- [x] CI green
