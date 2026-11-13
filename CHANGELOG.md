@@ -1,3 +1,9 @@
+## 4.0.0
++ ESM export
++ remove lodash
++ remove eventemitter3
++ modernize tooling
+
 ## 3.0.0
 + Add support to enable/disable Colormap definitions. Cleanup preset key names. ([@grandchild](https://github.com/grandchild) in [#34](https://github.com/azeem/webvs/pull/34)).
 + Fix Issue #33 event handlers without bindings.
