@@ -84,3 +84,7 @@ It serves the webvs test page at `http://localhost:5173/examples/` straight from
 ## Contributing
 
 [Fork](https://github.com/azeem/webvs/fork) and submit pull requests against master branch. Look for issues with [help wanted](https://github.com/azeem/webvs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) label for things that we need help with. For suggestions/bug fixes use [Github/Issues](https://github.com/azeem/webvs/issues). Chat with us at [visbot/AVS gitter channel](https://gitter.im/visbot/AVS).
+
+## LICENSE
+
+[The MIT License](license.txt) - Feel free to use, modify, and distribute this code.
